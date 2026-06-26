@@ -1,0 +1,24 @@
+CS2 asset import report
+
+Skins imported: 2092
+Cases imported: 42
+
+Rarity breakdown:
+- SpecialItem: 670
+- Classified: 179
+- Covert: 107
+- MilSpec: 438
+- Restricted: 305
+- Industrial: 192
+- Consumer: 200
+- Contraband: 1
+
+Images:
+- Downloaded: 2134
+- Reused: 0
+- Fallback dataset: 0
+- Placeholder: 0
+
+Missing skin references: 0
+
+Image errors: 0
