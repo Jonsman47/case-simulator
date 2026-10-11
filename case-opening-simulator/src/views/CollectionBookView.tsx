@@ -25,54 +25,38 @@ import type { GameUiEvent } from '../data/gameState'
 
 const CARDS_PER_PAGE = 8
 
-const rarityStyles: Record<Rarity, { bar: string; border: string; text: string; tint: string }> = {
+const rarityStyles: Record<Rarity, { bar: string; border: string }> = {
   [Rarity.Consumer]: {
     bar: 'bg-rarity-consumer',
     border: 'border-rarity-consumer',
-    text: 'text-rarity-consumer',
-    tint: 'bg-rarity-consumer/10',
   },
   [Rarity.Industrial]: {
     bar: 'bg-rarity-industrial',
     border: 'border-rarity-industrial',
-    text: 'text-rarity-industrial',
-    tint: 'bg-rarity-industrial/10',
   },
   [Rarity.MilSpec]: {
     bar: 'bg-rarity-mil-spec',
     border: 'border-rarity-mil-spec',
-    text: 'text-rarity-mil-spec',
-    tint: 'bg-rarity-mil-spec/10',
   },
   [Rarity.Restricted]: {
     bar: 'bg-rarity-restricted',
     border: 'border-rarity-restricted',
-    text: 'text-rarity-restricted',
-    tint: 'bg-rarity-restricted/10',
   },
   [Rarity.Classified]: {
     bar: 'bg-rarity-classified',
     border: 'border-rarity-classified',
-    text: 'text-rarity-classified',
-    tint: 'bg-rarity-classified/10',
   },
   [Rarity.Covert]: {
     bar: 'bg-rarity-covert',
     border: 'border-rarity-covert',
-    text: 'text-rarity-covert',
-    tint: 'bg-rarity-covert/10',
   },
   [Rarity.SpecialItem]: {
     bar: 'bg-rarity-special',
     border: 'border-rarity-special',
-    text: 'text-rarity-special',
-    tint: 'bg-rarity-special/10',
   },
   [Rarity.Contraband]: {
     bar: 'bg-rarity-contraband',
     border: 'border-rarity-contraband',
-    text: 'text-rarity-contraband',
-    tint: 'bg-rarity-contraband/10',
   },
 }
 
@@ -135,8 +119,8 @@ function CollectionRewardModal({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4" role="dialog" aria-modal="true">
-      <div className="w-full max-w-md animate-pulse border border-rarity-special bg-cs-panel p-5 shadow-glow">
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 sm:p-4" role="dialog" aria-modal="true">
+      <div className="min-h-dvh w-full max-w-none animate-pulse overflow-y-auto border border-rarity-special bg-cs-panel p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-md">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special">
@@ -189,7 +173,7 @@ function CollectionRewardRow({ status }: { status: CollectionRewardStatus }) {
           {status.isUnlocked ? 'Unlocked' : 'Locked'}
         </span>
       </div>
-      <p className="mt-2 line-clamp-2 min-h-8 text-xs text-cs-muted">{definition.description}</p>
+      <p className="mt-2 min-h-8 text-xs leading-5 text-cs-muted">{definition.description}</p>
       <div className="mt-3 h-2 border border-cs-border bg-cs-panel">
         <div
           className={status.isUnlocked ? 'h-full bg-cs-green' : 'h-full bg-rarity-special'}
@@ -308,7 +292,7 @@ function CollectionCard({
       tabIndex={canOpenDetails ? 0 : undefined}
     >
       <div className="flex items-center justify-between gap-2">
-        <p className={`font-mono text-xs uppercase ${styles.text}`} style={{ color: rarityColor }}>
+        <p className="font-mono text-xs uppercase text-cs-muted">
           {getSkinRarityLabel(row.skin)}
         </p>
         <span
@@ -322,11 +306,8 @@ function CollectionCard({
       </div>
 
       <div
-        className={`mt-2 grid h-24 place-items-center border ${styles.border} ${styles.tint}`}
-        style={{
-          backgroundColor: `${rarityColor}1a`,
-          borderColor: rarityColor,
-        }}
+        className={`mt-2 grid h-24 place-items-center border bg-cs-surface ${styles.border}`}
+        style={{ borderColor: rarityColor }}
       >
         <AssetImage
           alt=""
@@ -633,7 +614,7 @@ export function CollectionBookView() {
             return (
               <div className="border border-cs-border bg-cs-panel p-2" key={rarity}>
                 <div className="flex items-center justify-between gap-2">
-                  <p className={`truncate text-sm font-semibold ${styles.text}`}>{getRarityLabel(rarity)}</p>
+                  <p className="truncate text-sm font-semibold text-cs-text">{getRarityLabel(rarity)}</p>
                   <p className="font-mono text-xs text-cs-muted">
                     {bucket.discovered}/{bucket.total}
                   </p>

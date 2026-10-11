@@ -16,6 +16,9 @@ export const OPENING_DESK_INTERVAL_STEP_MS = 7_500
 export const OPENING_DESK_MIN_INTERVAL_MS = 45_000
 export const CASE_FARM_INTERVAL_MS = 10_000
 export const TRADING_BOT_INTERVAL_MS = 45_000
+export const AUCTION_HOUSE_BASE_REFRESH_MS = 15 * 60_000
+export const AUCTION_HOUSE_MIN_REFRESH_MS = 7 * 60_000
+export const AUCTION_HOUSE_DEAL_DURATION_MS = 20 * 60_000
 
 export interface AutomationModuleDefinition {
   id: AutomationModuleId
@@ -81,7 +84,7 @@ export const AUTOMATION_MODULE_DEFINITIONS: Record<
   [AutomationModuleId.MarketAnalyst]: {
     id: AutomationModuleId.MarketAnalyst,
     name: 'Market Analyst',
-    description: 'Improves sell quotes and prepares the market prediction layer.',
+    description: 'Improves sell quotes for manual sells, bulk sells, and auto-sells.',
     baseCost: 4_000,
     costMultiplier: 2.25,
     maxLevel: 8,
@@ -94,27 +97,27 @@ export const AUTOMATION_MODULE_DEFINITIONS: Record<
   [AutomationModuleId.WarehouseSystem]: {
     id: AutomationModuleId.WarehouseSystem,
     name: 'Warehouse System',
-    description: 'Prepares inventory capacity expansion for future storage limits.',
+    description: 'Expands live inventory capacity without deleting items from older over-capacity saves.',
     baseCost: 2_500,
     costMultiplier: 2.15,
     maxLevel: 8,
     resourceLabel: 'slots',
     getCurrentBenefit: (level) =>
-      level > 0 ? `+${getWarehouseCapacityBonus(level)} future slots` : 'Locked',
-    getNextBenefit: (level) => `+${getWarehouseCapacityBonus(level + 1)} future slots`,
+      level > 0 ? `+${getWarehouseCapacityBonus(level)} inventory slots` : 'Locked',
+    getNextBenefit: (level) => `+${getWarehouseCapacityBonus(level + 1)} inventory slots`,
   },
   [AutomationModuleId.AuctionHouse]: {
     id: AutomationModuleId.AuctionHouse,
     name: 'Auction House',
-    description: 'Unlocks discounted case deal hooks and future exclusive skin offers.',
+    description: 'Generates time-limited discounted skin offers purchased with in-game money.',
     baseCost: 9_000,
     costMultiplier: 2.45,
     maxLevel: 6,
     resourceLabel: 'deals',
     getCurrentBenefit: (level) =>
-      level > 0 ? `${Math.round(getAuctionHouseDiscount(level) * 100)}% future deal discount` : 'Locked',
+      level > 0 ? `${getAuctionHouseDealCount(level)} deals up to ${Math.round(getAuctionHouseDiscount(level) * 100)}% off` : 'Locked',
     getNextBenefit: (level) =>
-      `${Math.round(getAuctionHouseDiscount(level + 1) * 100)}% future deal discount`,
+      `${getAuctionHouseDealCount(level + 1)} deals up to ${Math.round(getAuctionHouseDiscount(level + 1) * 100)}% off`,
   },
 }
 
@@ -205,7 +208,20 @@ export function getWarehouseCapacityBonus(level: number) {
 }
 
 export function getAuctionHouseDiscount(level: number) {
-  return Math.min(0.3, Math.max(0, level) * 0.03)
+  return Math.min(0.24, 0.04 + Math.max(0, level) * 0.025)
+}
+
+export function getAuctionHouseDealCount(level: number, bonusSlots = 0) {
+  return level <= 0
+    ? 0
+    : Math.min(8, 1 + Math.floor((level - 1) / 2) + Math.max(0, Math.floor(bonusSlots)))
+}
+
+export function getAuctionHouseRefreshMs(level: number) {
+  return Math.max(
+    AUCTION_HOUSE_MIN_REFRESH_MS,
+    AUCTION_HOUSE_BASE_REFRESH_MS - Math.max(0, level - 1) * 90_000,
+  )
 }
 
 export function createDefaultAutomationModule(id: AutomationModuleId): AutomationModuleState {
@@ -234,6 +250,11 @@ export const defaultAutomationState: AutomationState = {
     lastOpenTime: 0,
     level: 0,
     totalOpened: 0,
+  },
+  auctionHouse: {
+    deals: [],
+    lastRefreshTime: 0,
+    nextRefreshTime: 0,
   },
   modules: createDefaultAutomationModules(),
 }

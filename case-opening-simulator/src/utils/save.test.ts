@@ -23,13 +23,15 @@ import {
   exportGameStateToFile,
   loadGame,
   loadGameState,
+  loadGameStateOrDefault,
   parseGameSaveText,
   saveGame,
   shouldPromptForBackup,
 } from './save'
 import { getInventoryValue } from './inventory'
+import { POOP_CLEANUP_LAST_COMPLETED_KEY } from './poopCleanupMinigame'
 import { createMarketEvent } from '../market/marketSimulation'
-import { eventManager, type GameEventLog } from '../events/eventManager'
+import { eventManager } from '../events/eventManager'
 import { createDefaultDailyRewardsState } from '../rewards/dailyRewards'
 
 function installLocalStorage() {
@@ -135,18 +137,6 @@ describe('save system', () => {
       startTime: 1_782_147_760_000,
       type: 'RetiredCaseWeek',
     })
-    const eventHistory: GameEventLog[] = [
-      {
-        id: 'past-event',
-        type: 'WinterCases',
-        name: 'Winter Cases',
-        description: 'Past winter test.',
-        startTime: 1_782_147_500_000,
-        endTime: 1_782_147_560_000,
-        endedAt: 1_782_147_560_000,
-        effectSummary: 'Past event summary.',
-      },
-    ]
     const dailyRewards = {
       ...createDefaultDailyRewardsState(1_782_147_700_000),
       streak: 3,
@@ -237,12 +227,17 @@ describe('save system', () => {
       },
       collectionBook: [collectionEntry],
       collectionRewards: [collectionReward],
+      lastPoopCleaningAt: 1_782_147_660_000,
+      workMiniGameCooldowns: {
+        poopCleaning: 1_782_147_660_000,
+        sortBoxes: 1_782_147_670_000,
+      },
       dailyRewards,
       settings,
       trophyAssignments: {
         [TrophySlotId.MostExpensiveSkin]: {
           slotId: TrophySlotId.MostExpensiveSkin,
-          item,
+          itemId: item.instanceId,
           assignedAt: 1_782_147_640_000,
         },
       },
@@ -262,7 +257,7 @@ describe('save system', () => {
       },
       activeEvents: [activeGameEvent],
       upcomingEvents: [upcomingGameEvent],
-      eventHistory,
+      eventHistory: [],
       upcomingMarketEvents: [upcomingEvent],
       lastBackupAt: 1_782_147_500_000,
       statistics: {
@@ -329,27 +324,26 @@ describe('save system', () => {
       },
       collectionBook: [collectionEntry],
       collectionRewards: [collectionReward],
+      lastPoopCleaningAt: 1_782_147_660_000,
+      workMiniGameCooldowns: {
+        poopCleaning: 1_782_147_660_000,
+        sortBoxes: 1_782_147_670_000,
+      },
       dailyRewards,
       trophyAssignments: {
         [TrophySlotId.MostExpensiveSkin]: {
           slotId: TrophySlotId.MostExpensiveSkin,
-          item,
+          itemId: item.instanceId,
           assignedAt: 1_782_147_640_000,
         },
       },
-      eventHistory,
+      eventHistory: [],
       lastBackupAt: 1_782_147_500_000,
       lastSaved: 1_782_147_700_000,
     })
-    expect(loadedPlayerState?.activeEvents[0]).toMatchObject({
-      id: activeGameEvent.id,
-      type: 'TradeUpMadness',
-      name: 'Trade-Up Madness',
-    })
-    expect(loadedPlayerState?.upcomingEvents[0]).toMatchObject({
-      id: upcomingGameEvent.id,
-      type: 'RetiredCaseWeek',
-    })
+    expect(loadedPlayerState?.activeEvents.map((event) => event.id)).toEqual([activeGameEvent.id])
+    expect(loadedPlayerState?.upcomingEvents.map((event) => event.id)).toEqual([upcomingGameEvent.id])
+    expect(loadedPlayerState?.eventHistory).toEqual([])
     expect(loadedGameState?.marketValues[item.id]).toBe(40)
     expect(loadedGameState?.inventoryValue).toBe(inventoryValue)
     expect(loadedGameState?.inventoryValueHistory).toEqual([
@@ -372,24 +366,19 @@ describe('save system', () => {
         value: 40,
       },
     ])
-    expect(loadedGameState?.activeEvents[0]).toMatchObject({
-      id: activeGameEvent.id,
-      type: 'TradeUpMadness',
-      name: 'Trade-Up Madness',
-    })
-    expect(loadedGameState?.upcomingEvents[0]).toMatchObject({
-      id: upcomingGameEvent.id,
-      type: 'RetiredCaseWeek',
-    })
-    expect(loadedGameState?.eventHistory).toEqual(eventHistory)
+    expect(loadedGameState?.activeEvents.map((event) => event.id)).toEqual([activeGameEvent.id])
+    expect(loadedGameState?.upcomingEvents.map((event) => event.id)).toEqual([upcomingGameEvent.id])
+    expect(loadedGameState?.eventHistory).toEqual([])
     expect(loadedGameState?.lastBackupAt).toBe(1_782_147_500_000)
-    expect(loadedGameState?.settings).toMatchObject(settings)
-    expect(loadedGameState?.upcomingMarketEvents[0]).toMatchObject({
-      id: upcomingEvent.id,
-      type: 'KnifeWeekend',
-      name: 'Knife Weekend',
-      startTime: 1_782_147_760_000,
+    expect(loadedGameState?.lastPoopCleaningAt).toBe(1_782_147_660_000)
+    expect(loadedGameState?.workMiniGameCooldowns).toMatchObject({
+      poopCleaning: 1_782_147_660_000,
+      sortBoxes: 1_782_147_670_000,
     })
+    expect(loadedGameState?.settings).toMatchObject(settings)
+    expect(loadedGameState?.upcomingMarketEvents.map((event) => event.id)).toEqual([upcomingEvent.id])
+    expect(loadedGameState?.activeMarketEvents).toEqual([])
+    expect(loadedGameState?.marketEventHistory).toEqual([])
     expect(loadedGameState?.statistics.dropsByRarity[Rarity.Classified]).toBe(1)
     expect(loadedGameState?.statistics.tradeUpsCompleted).toBe(2)
   })
@@ -446,11 +435,86 @@ describe('save system', () => {
     expect(loadedState?.inventoryValue).toBe(getInventoryValue([item], { [item.id]: 38 }))
     expect(loadedState?.inventoryValueHistory[0]?.value).toBe(loadedState?.inventoryValue)
     expect(loadedState?.ui.onboarding).toEqual(defaultGameState.ui.onboarding)
+    expect(loadedState?.lastPoopCleaningAt).toBe(0)
+  })
+
+  it('deduplicates inventory instance ids when saving and loading', () => {
+    installLocalStorage()
+    const item = makeItem({ instanceId: 'duplicate-item', marketValue: 10 })
+    const duplicate = makeItem({ instanceId: 'duplicate-item', marketValue: 999 })
+
+    saveGame(makeState({ inventory: [item, duplicate] }))
+
+    expect(loadGameState()?.inventory.map((inventoryItem) => inventoryItem.instanceId)).toEqual(['duplicate-item'])
+  })
+
+  it('repairs invalid saved money without restoring a corrupted value', () => {
+    installLocalStorage()
+    const state = makeState({ money: 125 })
+
+    window.localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify({
+      version: CURRENT_SAVE_VERSION,
+      savedAt: 1_782_147_700_000,
+      state: {
+        ...state,
+        money: 'broken',
+      },
+    }))
+
+    expect(loadGameState()?.money).toBe(defaultGameState.money)
+  })
+
+  it('migrates legacy trophy item snapshots to item id references only', () => {
+    const item = makeItem()
+    const text = JSON.stringify({
+      version: 24,
+      savedAt: 1_782_147_700_000,
+      state: {
+        ...makeState({
+          inventory: [],
+          trophyAssignments: {} as GameState['trophyAssignments'],
+        }),
+        trophyAssignments: {
+          showcase_1: {
+            slotId: 'showcase_1',
+            item,
+            assignedAt: 1_782_147_640_000,
+          },
+        },
+      },
+    })
+
+    const loadedState = parseGameSaveText(text)
+
+    expect(loadedState.inventory).toEqual([])
+    expect(loadedState.trophyAssignments.showcase_1).toEqual({
+      slotId: 'showcase_1',
+      itemId: item.instanceId,
+      assignedAt: 1_782_147_640_000,
+    })
+    expect(JSON.stringify(loadedState.trophyAssignments)).not.toContain('"weapon"')
+  })
+
+  it('uses the dedicated poop cleaning timestamp when a refresh happens before autosave', () => {
+    const store = installLocalStorage()
+    const completedAt = 1_782_147_660_000
+
+    store.set(POOP_CLEANUP_LAST_COMPLETED_KEY, String(completedAt))
+
+    expect(loadGameState()).toBeNull()
+    expect(loadGameStateOrDefault().lastPoopCleaningAt).toBe(completedAt)
   })
 
   it('throws a friendly error for unreadable save files', () => {
     expect(() => parseGameSaveText('{not-json')).toThrow(SaveGameError)
     expect(() => parseGameSaveText('{not-json')).toThrow('Save file could not be read.')
+  })
+
+  it('preserves the first-case hook flag through save and load', () => {
+    const state = makeState({ hasUsedFirstCaseHook: true })
+    const loadedState = parseGameSaveText(JSON.stringify(createSaveEnvelope(state)))
+
+    expect(loadedState.hasUsedFirstCaseHook).toBe(true)
   })
 
   it('migrates version 21 saves with backup and autosave defaults', () => {
@@ -469,6 +533,7 @@ describe('save system', () => {
 
     expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
     expect(migrated.lastBackupAt).toBe(0)
+    expect(migrated.hasUsedFirstCaseHook).toBe(false)
     expect(migrated.settings.autosaveEnabled).toBe(true)
     expect(migrated.settings.backupPromptEnabled).toBe(true)
   })

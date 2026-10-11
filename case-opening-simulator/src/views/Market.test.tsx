@@ -42,6 +42,7 @@ function makeContextValue(state: GameState): GameContextValue {
     setAutoOpenerCase: voidFn,
     toggleAutoOpener: voidFn,
     purchaseAutomationModule: voidFn,
+    purchaseAuctionDeal: voidFn,
     toggleAutomationModule: voidFn,
     purchaseUpgrade: voidFn,
     prestige: voidFn,

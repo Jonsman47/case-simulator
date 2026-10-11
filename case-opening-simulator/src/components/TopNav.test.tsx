@@ -5,6 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
+import { getPrimaryNavigationItems } from '../data/navigation'
 import { TopNav } from './TopNav'
 
 afterEach(() => {
@@ -12,6 +13,23 @@ afterEach(() => {
 })
 
 describe('TopNav', () => {
+  it('keeps Credits as the final right-aligned red navigation item and Work in normal tabs', () => {
+    expect(getPrimaryNavigationItems()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Work',
+          path: '/work',
+        }),
+      ]),
+    )
+    expect(getPrimaryNavigationItems().at(-1)).toMatchObject({
+      align: 'right',
+      label: 'Credits',
+      path: '/credits',
+      tone: 'danger',
+    })
+  })
+
   it('opens a mobile navigation drawer and closes it after route selection', () => {
     render(
       <MemoryRouter initialEntries={['/inventory']}>

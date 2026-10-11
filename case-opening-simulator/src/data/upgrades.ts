@@ -138,7 +138,7 @@ export function getUpgradeSellValueMultiplier(upgrades: UpgradeLevels) {
 }
 
 export function getTrendPredictionBonus(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.TrendScanner) * 0.1
+  return getUpgradeLevel(upgrades, UpgradeId.TrendScanner) * 0.005
 }
 
 export function getUpgradeAutomationIntervalMultiplier(upgrades: UpgradeLevels) {
@@ -151,6 +151,10 @@ export function getWarehouseUpgradeCapacityBonus(upgrades: UpgradeLevels) {
 
 export function getModuleBaySlots(upgrades: UpgradeLevels) {
   return getUpgradeLevel(upgrades, UpgradeId.ModuleBay)
+}
+
+export function getAutomationModuleCapacity(upgrades: UpgradeLevels) {
+  return 2 + getModuleBaySlots(upgrades)
 }
 
 export function getRarityLuckBonus(upgrades: UpgradeLevels) {
@@ -210,13 +214,13 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: UpgradeId.ClickIncome,
     category: UpgradeCategory.Clicker,
     name: 'Click Income',
-    description: 'Prepares active clicking income scaling for the clicker layer.',
+    description: 'Raises income from active Work mini-games.',
     baseMoneyCost: 300,
     costMultiplier: 1.9,
     maxLevel: 10,
     getCurrentEffect: (level) =>
-      level > 0 ? `${formatPercent(level * 0.25)} click income multiplier` : 'Base click income',
-    getNextEffect: (level) => `${formatPercent((level + 1) * 0.25)} click income multiplier`,
+      level > 0 ? `+${formatPercent(level * 0.25)} Work income` : 'Base Work income',
+    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.25)} Work income`,
   },
   {
     id: UpgradeId.MarketSignal,
@@ -234,15 +238,15 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: UpgradeId.TrendScanner,
     category: UpgradeCategory.Market,
     name: 'Trend Scanner',
-    description: 'Adds market prediction accuracy hooks for future analyst tools.',
+    description: 'Improves the chance of discovering new gameplay and market events.',
     baseMoneyCost: 7_500,
     costMultiplier: 2.6,
     maxLevel: 3,
     prestigePointCost: (level) => (level >= 1 ? 1 : 0),
     requirements: [{ type: 'achievement', achievementId: 'inventory_value_1k', label: '$1K inventory achievement' }],
     getCurrentEffect: (level) =>
-      level > 0 ? `+${formatPercent(level * 0.1)} prediction accuracy` : 'Basic market read',
-    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.1)} prediction accuracy`,
+      level > 0 ? `+${formatPercent(level * 0.005)} event discovery chance` : 'Base event discovery',
+    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.005)} event discovery chance`,
   },
   {
     id: UpgradeId.AutomationServos,
@@ -261,25 +265,25 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: UpgradeId.ModuleBay,
     category: UpgradeCategory.Automation,
     name: 'Module Bay',
-    description: 'Adds future automation slot capacity for running more modules at once.',
+    description: 'Adds automation slot capacity for running more modules at once.',
     baseMoneyCost: 12_000,
     costMultiplier: 2.75,
     maxLevel: 3,
     prestigePointCost: (level) => (level >= 1 ? 1 : 0),
     requirements: [{ type: 'upgrade', upgradeId: UpgradeId.AutomationServos, level: 2 }],
-    getCurrentEffect: (level) => `+${level} future module slot${level === 1 ? '' : 's'}`,
-    getNextEffect: (level) => `+${level + 1} future module slots`,
+    getCurrentEffect: (level) => `${2 + level} active module slots`,
+    getNextEffect: (level) => `${3 + level} active module slots`,
   },
   {
     id: UpgradeId.WarehouseRows,
     category: UpgradeCategory.Capacity,
     name: 'Warehouse Rows',
-    description: 'Extends future inventory capacity once capacity limits are introduced.',
+    description: 'Extends the live inventory capacity limit.',
     baseMoneyCost: 2_400,
     costMultiplier: 2.15,
     maxLevel: 5,
-    getCurrentEffect: (level) => `+${level * 100} future inventory slots`,
-    getNextEffect: (level) => `+${(level + 1) * 100} future inventory slots`,
+    getCurrentEffect: (level) => `+${level * 100} inventory slots`,
+    getNextEffect: (level) => `+${(level + 1) * 100} inventory slots`,
   },
   {
     id: UpgradeId.RarityLuck,

@@ -8,7 +8,7 @@ import {
   type PlayerState,
 } from './models'
 import { SKIN_DEFINITIONS } from './skins'
-import { TROPHY_SLOT_DEFINITIONS, getTrophyAssignmentsList } from '../utils/trophyRoom'
+import { createTrophySlotDefinitions, getTrophyAssignmentsList, getTrophyRoomSlotCount } from '../utils/trophyRoom'
 
 const allWearConditions = Object.values(WearCondition)
 const skinDefinitionsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
@@ -75,19 +75,27 @@ function isWearCatalogComplete(state: PlayerState) {
 }
 
 function hasFilledAllTrophySlots(state: PlayerState) {
-  return TROPHY_SLOT_DEFINITIONS.every((slot) => Boolean(state.trophyAssignments[slot.id]))
+  return createTrophySlotDefinitions(getTrophyRoomSlotCount(state.learnedSkillNodeIds))
+    .every((slot) => Boolean(state.trophyAssignments[slot.id]))
 }
 
 function hasEliteTrophyRoom(state: PlayerState) {
   const assignments = getTrophyAssignmentsList(state.trophyAssignments)
+  const slotCount = getTrophyRoomSlotCount(state.learnedSkillNodeIds)
+  const inventoryById = new Map(state.inventory.map((item) => [item.instanceId, item]))
 
   return (
-    assignments.length === TROPHY_SLOT_DEFINITIONS.length &&
+    assignments.length >= slotCount &&
     assignments.every((assignment) => {
+      const item = inventoryById.get(assignment.itemId)
+
       return (
-        assignment.item.wear === WearCondition.FactoryNew ||
-        assignment.item.rarity === Rarity.SpecialItem ||
-        assignment.item.rarity === Rarity.Contraband
+        item &&
+        (
+          item.wear === WearCondition.FactoryNew ||
+          item.rarity === Rarity.SpecialItem ||
+          item.rarity === Rarity.Contraband
+        )
       )
     })
   )
@@ -240,6 +248,14 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     category: 'Automation',
     condition: (state) => getAutomationRunCount(state) >= 100,
     reward: { upgradePoints: 2 },
+  },
+  {
+    id: 'auction_first_purchase',
+    name: 'Deal Closed',
+    description: 'Purchase your first simulated Auction House offer.',
+    category: 'Automation',
+    condition: (state) => state.statistics.auctionPurchases >= 1,
+    reward: { money: 50 },
   },
   {
     id: 'trophy_room_complete',
@@ -553,6 +569,9 @@ export function toAchievementPlayerState(state: GameState): PlayerState {
     dailyRewards: state.dailyRewards,
     collectionBook: state.collectionBook,
     collectionRewards: state.collectionRewards,
+    hasUsedFirstCaseHook: state.hasUsedFirstCaseHook,
+    lastPoopCleaningAt: state.lastPoopCleaningAt,
+    workMiniGameCooldowns: state.workMiniGameCooldowns,
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: state.prestigeBonuses,

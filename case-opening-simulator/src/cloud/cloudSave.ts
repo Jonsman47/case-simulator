@@ -495,12 +495,21 @@ export function createCloudBackend() {
 }
 
 export function mergeGameStates(localState: GameState, cloudState: GameState): GameState {
+  const latestState = cloudState.lastSaved > localState.lastSaved ? cloudState : localState
   const mergedMarketValues = cloudState.lastSaved > localState.lastSaved
     ? { ...localState.marketValues, ...cloudState.marketValues }
     : { ...cloudState.marketValues, ...localState.marketValues }
-  const inventory = mergeInventory(localState.inventory, cloudState.inventory)
+  const inventory = mergeInventory(latestState.inventory, [])
   const statistics = {
     ...localState.statistics,
+    auctionPurchases: Math.max(
+      localState.statistics.auctionPurchases,
+      cloudState.statistics.auctionPurchases,
+    ),
+    auctionSavings: Math.max(
+      localState.statistics.auctionSavings,
+      cloudState.statistics.auctionSavings,
+    ),
     casesOpened: Math.max(localState.statistics.casesOpened, cloudState.statistics.casesOpened),
     drops: Math.max(localState.statistics.drops, cloudState.statistics.drops),
     dropsByRarity: Object.values(Rarity).reduce((counts, rarity) => ({
@@ -516,7 +525,6 @@ export function mergeGameStates(localState: GameState, cloudState: GameState): G
     rareDrops: Math.max(localState.statistics.rareDrops, cloudState.statistics.rareDrops),
     tradeUpsCompleted: Math.max(localState.statistics.tradeUpsCompleted, cloudState.statistics.tradeUpsCompleted),
   }
-  const latestState = cloudState.lastSaved > localState.lastSaved ? cloudState : localState
   const inventoryValue = getInventoryValue(inventory, mergedMarketValues)
 
   return {
@@ -531,9 +539,10 @@ export function mergeGameStates(localState: GameState, cloudState: GameState): G
       ).values(),
     ],
     favoriteCaseIds: mergeStrings(localState.favoriteCaseIds, cloudState.favoriteCaseIds),
+    hasUsedFirstCaseHook: localState.hasUsedFirstCaseHook || cloudState.hasUsedFirstCaseHook,
     inventory,
     inventoryValue,
-    lastOpenedItems: mergeInventory(localState.lastOpenedItems, cloudState.lastOpenedItems).slice(0, 100),
+    lastOpenedItems: mergeInventory(latestState.lastOpenedItems, []).slice(0, 100),
     lastSaved: Math.max(localState.lastSaved, cloudState.lastSaved, Date.now()),
     learnedSkillNodeIds: mergeStrings(localState.learnedSkillNodeIds, cloudState.learnedSkillNodeIds),
     marketHistory: {
@@ -541,11 +550,11 @@ export function mergeGameStates(localState: GameState, cloudState: GameState): G
       ...localState.marketHistory,
     },
     marketValues: mergedMarketValues,
-    money: Math.max(localState.money, cloudState.money),
+    money: latestState.money,
     prestigeBonuses: mergeNumberRecord(localState.prestigeBonuses, cloudState.prestigeBonuses),
     prestigeLevel: Math.max(localState.prestigeLevel, cloudState.prestigeLevel),
     prestigePoints: Math.max(localState.prestigePoints, cloudState.prestigePoints),
-    recentDrops: mergeInventory(localState.recentDrops, cloudState.recentDrops).slice(0, 20),
+    recentDrops: mergeInventory(latestState.recentDrops, []).slice(0, 20),
     skillPoints: Math.max(localState.skillPoints, cloudState.skillPoints),
     specialEventCaseIds: mergeStrings(localState.specialEventCaseIds, cloudState.specialEventCaseIds),
     statistics,

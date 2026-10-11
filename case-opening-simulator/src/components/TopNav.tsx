@@ -19,9 +19,23 @@ function itemMatchesPath(item: NavigationItem, pathname: string): boolean {
   return item.items?.some((child) => itemMatchesPath(child, pathname)) ?? false
 }
 
-function getLinkClass(isActive: boolean, density: 'desktop' | 'mobile' = 'desktop') {
+function getLinkClass(
+  isActive: boolean,
+  density: 'desktop' | 'mobile' = 'desktop',
+  tone?: NavigationItem['tone'],
+) {
+  if (tone === 'danger') {
+    return [
+      'flex shrink-0 items-center border font-medium transition-colors',
+      density === 'desktop' ? 'min-h-9 px-3 py-1.5 text-xs' : 'min-h-10 px-3 py-2 text-sm',
+      isActive
+        ? 'border-rarity-covert bg-rarity-covert/15 text-rarity-covert'
+        : 'border-rarity-covert/60 text-rarity-covert hover:bg-rarity-covert/10',
+    ].join(' ')
+  }
+
   return [
-    'flex shrink-0 items-center border font-medium transition-colors',
+    'flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap border font-medium transition-colors',
     density === 'desktop' ? 'min-h-9 px-3 py-1.5 text-xs' : 'min-h-10 px-3 py-2 text-sm',
     isActive
       ? 'border-rarity-special bg-rarity-special/10 text-rarity-special'
@@ -38,20 +52,22 @@ function DesktopNavGroup({
 }) {
   const isGroupActive = itemMatchesPath(item, pathname)
   const subItems = item.items ?? []
+  const Icon = item.icon
 
   return (
     <div className="group relative">
       <NavLink
-        className={({ isActive }) => getLinkClass(isActive || isGroupActive)}
+        className={({ isActive }) => getLinkClass(isActive || isGroupActive, 'desktop', item.tone)}
         end={item.end}
         to={item.path}
       >
+        {Icon ? <Icon aria-hidden="true" className="shrink-0" size={15} strokeWidth={1.8} /> : null}
         <span>{item.label}</span>
         {subItems.length > 0 ? <ChevronDown aria-hidden="true" className="ml-1" size={13} /> : null}
       </NavLink>
 
       {subItems.length > 0 ? (
-        <div className="absolute left-0 top-full z-40 hidden min-w-44 border border-cs-border bg-cs-surface p-1 shadow-glow group-hover:grid group-focus-within:grid">
+        <div className="absolute left-0 top-[calc(100%+1px)] z-40 hidden max-h-[min(32rem,calc(100dvh-7rem))] min-w-48 overflow-y-auto border border-cs-border bg-cs-surface p-1 shadow-glow group-hover:grid group-focus-within:grid">
           {subItems.map((subItem) => (
             <NavLink
               className={({ isActive }) => getLinkClass(isActive, 'desktop')}
@@ -103,18 +119,22 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
     }
   }, [isDrawerOpen])
 
-  const desktopLinks = primaryItems.map((item) => (
+  const leftDesktopLinks = primaryItems.filter((item) => item.align !== 'right').map((item) => (
+    <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} />
+  ))
+  const rightDesktopLinks = primaryItems.filter((item) => item.align === 'right').map((item) => (
     <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} />
   ))
 
   const mobileLinks = primaryItems.map((item) => (
     <div className="grid gap-1" key={item.path}>
       <NavLink
-        className={({ isActive }) => getLinkClass(isActive || itemMatchesPath(item, location.pathname), 'mobile')}
+        className={({ isActive }) => getLinkClass(isActive || itemMatchesPath(item, location.pathname), 'mobile', item.tone)}
         end={item.end}
         onClick={() => setDrawerState((currentState) => ({ ...currentState, isOpen: false }))}
         to={item.path}
       >
+        {item.icon ? <item.icon aria-hidden="true" className="shrink-0" size={17} strokeWidth={1.8} /> : null}
         {item.label}
       </NavLink>
       {item.items && item.items.length > 0 ? (
@@ -138,7 +158,10 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
   return (
     <>
       <nav aria-label="Primary navigation" className="hidden border-b border-cs-border bg-cs-panel px-2 py-2 lg:block">
-        <div className="flex flex-wrap gap-1.5">{desktopLinks}</div>
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {leftDesktopLinks}
+          <div className="ml-auto flex min-w-0 flex-wrap gap-1.5">{rightDesktopLinks}</div>
+        </div>
       </nav>
 
       <div className="border-b border-cs-border bg-cs-panel p-2 lg:hidden">
@@ -159,9 +182,12 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
           }
           type="button"
         >
-          <span>
+          <span className="flex min-w-0 items-center gap-3">
+            {activeItem.icon ? <activeItem.icon aria-hidden="true" className="shrink-0 text-rarity-special" size={18} /> : null}
+            <span className="min-w-0">
             <span className="block font-mono text-[10px] uppercase text-cs-muted">Menu</span>
-            <span className="text-sm font-semibold">{activeItem.label}</span>
+            <span className="block truncate text-sm font-semibold">{activeItem.label}</span>
+            </span>
           </span>
           {isDrawerOpen ? <X size={20} /> : <Menu size={20} />}
         </button>

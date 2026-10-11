@@ -4,6 +4,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { GameContext, type GameContextValue } from './GameContext'
 import { MarketEventBanner } from './MarketEventBanner'
 import { defaultGameState } from '../data/gameState'
@@ -33,9 +34,11 @@ function renderBanner() {
   } as unknown as GameContextValue
 
   render(
-    <GameContext.Provider value={contextValue}>
-      <MarketEventBanner />
-    </GameContext.Provider>,
+    <MemoryRouter>
+      <GameContext.Provider value={contextValue}>
+        <MarketEventBanner />
+      </GameContext.Provider>
+    </MemoryRouter>,
   )
 }
 

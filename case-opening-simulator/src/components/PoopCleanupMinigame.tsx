@@ -39,11 +39,11 @@ export const PoopCleanupMinigame = memo(function PoopCleanupMinigame({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-3 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-3">
       <section
         aria-label="A Clean Pooping Job minigame"
         aria-modal="true"
-        className="w-full max-w-2xl border border-cs-border bg-cs-surface p-4 text-cs-text shadow-glow sm:p-5"
+        className="min-h-dvh w-full max-w-none overflow-y-auto border border-cs-border bg-cs-surface p-4 text-cs-text shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-1.5rem)] sm:max-w-2xl sm:p-5"
         role="dialog"
       >
         <div className="flex items-start justify-between gap-3">

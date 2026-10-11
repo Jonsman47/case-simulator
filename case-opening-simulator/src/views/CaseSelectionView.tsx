@@ -10,15 +10,12 @@ import { History, Lock, Star } from 'lucide-react'
 import { type TouchEvent, useMemo, useRef, useState } from 'react'
 import { Pie } from 'react-chartjs-2'
 import { AssetImage } from '../components/AssetImage'
-import { BatchOpenSummaryModal } from '../components/BatchOpenSummaryModal'
-import { CaseOpeningAnimation } from '../components/CaseOpeningAnimation'
 import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenControls'
 import { PriceChart } from '../components/PriceChart'
 import { getCaseLicenseCost, requiresCaseLicense } from '../data/casePricing'
-import { getOfficialWeaponCaseRarityOdds, type OfficialRarityDropOdd } from '../data/officialDropOdds'
 import { SKIN_DEFINITIONS } from '../data/skins'
-import type { AnimationSpeed, GameState } from '../data/gameState'
-import { CaseStatus, Rarity, UpgradeId, type CaseDefinition, type SkinBase } from '../data/models'
+import type { GameState } from '../data/gameState'
+import { CaseStatus, Rarity, type CaseDefinition, type SkinBase } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { useGame } from '../hooks/useGame'
 import {
@@ -32,16 +29,10 @@ import {
   type CaseFilter,
   type CaseSort,
 } from '../utils/caseSelection'
-import { calculateCaseStats } from '../utils/caseStats'
+import { calculateCaseStats, type CaseRarityStat } from '../utils/caseStats'
 import { formatCurrency } from '../utils/format'
-import { getLatestCaseOpeningSummary } from '../utils/caseOpeningSummary'
 import { getRarityLabel, getSkinRarityLabel } from '../utils/itemLabels'
-import {
-  getPotentialSkinOptions,
-  selectOpeningAnimationItem,
-  shouldPlayOpeningAnimation,
-} from '../utils/openingAnimation'
-import { getMaxMultiOpenBatch, getUpgradeLevel } from '../data/upgrades'
+import { getMaxMultiOpenBatch } from '../data/upgrades'
 
 ChartJS.register(ArcElement, Legend, Tooltip)
 
@@ -73,20 +64,6 @@ const rarityChartColors: Record<Rarity, string> = {
 
 type CaseDetailTab = 'overview' | 'stats'
 
-function getEffectiveAnimationSpeed(speed: AnimationSpeed, state: GameState): AnimationSpeed {
-  const motorLevel = getUpgradeLevel(state.upgrades, UpgradeId.OpeningMotor)
-
-  if (motorLevel <= 0 || speed === 'fast' || speed === 'skip') {
-    return speed
-  }
-
-  if (motorLevel === 1) {
-    return 'fast'
-  }
-
-  return 'fast'
-}
-
 function formatDate(value: number | undefined) {
   if (!value) {
     return 'Unknown'
@@ -97,6 +74,14 @@ function formatDate(value: number | undefined) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function formatOddsLine(probability: number) {
+  if (probability <= 0) {
+    return '0.000% / impossible'
+  }
+
+  return `${probability.toFixed(3)}% / 1 in ${Math.round(100 / probability).toLocaleString()}`
 }
 
 function getCaseBadgeClass(caseDef: CaseDefinition, state: GameState) {
@@ -201,24 +186,20 @@ function CaseCard({
   )
 }
 
-function RarityDistributionChart({
-  officialOdds,
-}: {
-  officialOdds: OfficialRarityDropOdd[]
-}) {
+function RarityDistributionChart({ rarityStats }: { rarityStats: CaseRarityStat[] }) {
   const data = useMemo<ChartData<'pie'>>(
     () => ({
-      labels: officialOdds.map((stat) => getRarityLabel(stat.rarity)),
+      labels: rarityStats.map((stat) => getRarityLabel(stat.rarity)),
       datasets: [
         {
-          backgroundColor: officialOdds.map((stat) => rarityChartColors[stat.rarity]),
+          backgroundColor: rarityStats.map((stat) => rarityChartColors[stat.rarity]),
           borderColor: '#080b10',
           borderWidth: 2,
-          data: officialOdds.map((stat) => stat.probability),
+          data: rarityStats.map((stat) => stat.probability),
         },
       ],
     }),
-    [officialOdds],
+    [rarityStats],
   )
   const options = useMemo<ChartOptions<'pie'>>(
     () => ({
@@ -253,23 +234,19 @@ function RarityDistributionChart({
   )
 }
 
-function OfficialRarityOddsList({
-  officialOdds,
-}: {
-  officialOdds: OfficialRarityDropOdd[]
-}) {
+function LiveRarityOddsList({ rarityStats }: { rarityStats: CaseRarityStat[] }) {
   return (
     <div className="border border-cs-border bg-cs-surface p-3">
-      <h4 className="text-sm font-semibold text-cs-text">Official Rarity Odds</h4>
+      <h4 className="text-sm font-semibold text-cs-text">Live Case Odds</h4>
       <p className="mt-1 text-xs text-cs-muted">
-        CS weapon cases use disclosed rarity-tier odds. Individual skins are intentionally listed without per-skin rates.
+        These odds come from this case's active drop table after game balancing, so they match actual openings.
       </p>
       <div className="mt-3 space-y-2">
-        {officialOdds.map((odd) => (
+        {rarityStats.map((odd) => (
           <div key={odd.rarity}>
             <div className="flex justify-between gap-3 text-xs">
               <span className={getRarityTextClass(odd.rarity)}>{getRarityLabel(odd.rarity)}</span>
-              <span className="font-mono text-cs-muted">{odd.probability.toFixed(3)}%</span>
+              <span className="font-mono text-cs-muted">{formatOddsLine(odd.probability)}</span>
             </div>
             <div className="mt-1 h-2 border border-cs-border bg-cs-panel">
               <div className="h-full bg-rarity-special" style={{ width: `${Math.min(100, odd.probability)}%` }} />
@@ -306,25 +283,23 @@ function CaseStatsSection({
   caseStats,
   marketSimulationEnabled,
   marketHistory,
-  officialOdds,
 }: {
   caseDef: CaseDefinition
   caseStats: ReturnType<typeof calculateCaseStats>
   marketSimulationEnabled: boolean
   marketHistory: GameState['marketHistory']
-  officialOdds: OfficialRarityDropOdd[]
 }) {
   return (
     <div className="mt-5 grid gap-3">
       <div className="grid gap-3 sm:grid-cols-3">
         <StatValue label="Open Cost" value={formatCurrency(caseDef.cost)} />
         <StatValue label="Skins Listed" value={caseStats.dropRows.length.toLocaleString()} />
-        <StatValue label="Rarity Tiers" value={officialOdds.length.toString()} />
+        <StatValue label="Rarity Tiers" value={caseStats.rarityStats.length.toString()} />
       </div>
 
       <div className="grid gap-3 2xl:grid-cols-2">
-        <RarityDistributionChart officialOdds={officialOdds} />
-        <OfficialRarityOddsList officialOdds={officialOdds} />
+        <RarityDistributionChart rarityStats={caseStats.rarityStats} />
+        <LiveRarityOddsList rarityStats={caseStats.rarityStats} />
       </div>
 
       {marketSimulationEnabled && caseStats.bestDrop ? (
@@ -423,7 +398,6 @@ function CaseDetailPanel({
   const [pendingLicenseOpen, setPendingLicenseOpen] = useState<
     { options: CaseOpenOptions; quantity: number } | undefined
   >()
-  const officialOdds = useMemo(() => getOfficialWeaponCaseRarityOdds(), [])
   const caseStats = useMemo(
     () => calculateCaseStats(caseDef, state.marketValues, SKIN_DEFINITIONS),
     [caseDef, state.marketValues],
@@ -614,7 +588,7 @@ function CaseDetailPanel({
             </dl>
           </div>
 
-          <OfficialRarityOddsList officialOdds={officialOdds} />
+          <LiveRarityOddsList rarityStats={caseStats.rarityStats} />
 
           <div className="border border-cs-border bg-cs-surface p-3">
             <h4 className="text-sm font-semibold text-cs-text">Case Contents</h4>
@@ -649,13 +623,12 @@ function CaseDetailPanel({
           caseStats={caseStats}
           marketSimulationEnabled={state.settings.marketSimulationEnabled}
           marketHistory={state.marketHistory}
-          officialOdds={officialOdds}
         />
       )}
 
       {pendingLicenseOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4">
-          <div className="w-full max-w-md border border-cs-amber bg-cs-panel p-5 shadow-glow">
+        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-0 sm:p-4">
+          <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-cs-amber bg-cs-panel p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-md">
             <p className="font-mono text-[10px] uppercase text-cs-amber">License Required</p>
             <h4 className="mt-2 text-xl font-semibold text-cs-text">Buy {caseDef.name} license?</h4>
             <p className="mt-3 text-sm text-cs-muted">
@@ -694,9 +667,6 @@ export function CaseSelectionView() {
   const { caseDefinitions, openCase, purchaseCaseLicense, state, toggleCaseFavorite } = useGame()
   const [filter, setFilter] = useState<CaseFilter>('all')
   const [sort, setSort] = useState<CaseSort>('cost')
-  const [summaryOptions, setSummaryOptions] = useState<CaseOpenOptions | undefined>()
-  const [dismissedSummaryEventId, setDismissedSummaryEventId] = useState<string | undefined>()
-  const [completedAnimationEventId, setCompletedAnimationEventId] = useState<string | undefined>()
   const casesWithDisplayData = useMemo(() => {
     return sortCases(filterCases(caseDefinitions, filter), sort, state)
   }, [caseDefinitions, filter, sort, state])
@@ -712,40 +682,8 @@ export function CaseSelectionView() {
     : undefined
   const selectedCanOpen = selectedCase ? canOpenCaseFromSelection(selectedCase, state) : false
   const favoriteCaseIds = useMemo(() => new Set(state.favoriteCaseIds), [state.favoriteCaseIds])
-  const latestOpeningSummary = getLatestCaseOpeningSummary(state)
-  const summaryCase = latestOpeningSummary
-    ? caseDefinitions.find((caseDef) => caseDef.id === latestOpeningSummary.startedEvent.caseId)
-    : undefined
-  const shouldAnimateOpening =
-    summaryOptions !== undefined &&
-    latestOpeningSummary !== undefined &&
-    shouldPlayOpeningAnimation(
-      state.lastOpenedItems,
-      state.settings.animationsEnabled && !state.settings.simplifiedAnimations,
-      summaryOptions.skipAnimations || state.settings.animationSpeed === 'skip',
-    )
-  const openingAnimationItem =
-    shouldAnimateOpening &&
-    latestOpeningSummary &&
-    latestOpeningSummary.startedEvent.id !== completedAnimationEventId
-      ? selectOpeningAnimationItem(state.lastOpenedItems, summaryOptions?.skipAnimations ?? false)
-      : undefined
-  const openingAnimationItems = openingAnimationItem ? state.lastOpenedItems : []
-  const openingPotentialSkins = useMemo(() => {
-    return getPotentialSkinOptions(summaryCase, skinsById)
-  }, [summaryCase])
-  const showBatchSummary =
-    summaryOptions !== undefined &&
-    latestOpeningSummary !== undefined &&
-    latestOpeningSummary.startedEvent.quantity > 1 &&
-    latestOpeningSummary.startedEvent.id !== dismissedSummaryEventId &&
-    (!shouldAnimateOpening || latestOpeningSummary.startedEvent.id === completedAnimationEventId)
-
   function handleOpenCase(quantity: number, options: CaseOpenOptions) {
-    setSummaryOptions(options)
-    setDismissedSummaryEventId(undefined)
-    setCompletedAnimationEventId(undefined)
-    openCase(selectedCase?.id ?? '', quantity)
+    openCase(selectedCase?.id ?? '', quantity, options)
   }
 
   return (
@@ -826,32 +764,6 @@ export function CaseSelectionView() {
         )}
       </div>
 
-      {openingAnimationItem && latestOpeningSummary && summaryOptions ? (
-        <CaseOpeningAnimation
-          caseImage={summaryCase?.image}
-          caseName={summaryCase?.name ?? latestOpeningSummary.startedEvent.caseId}
-          finalItem={openingAnimationItem}
-          finalItems={openingAnimationItems}
-          key={latestOpeningSummary.startedEvent.id}
-          onComplete={() => setCompletedAnimationEventId(latestOpeningSummary.startedEvent.id)}
-          potentialSkins={openingPotentialSkins}
-          soundEnabled={state.settings.soundEnabled}
-          speed={getEffectiveAnimationSpeed(state.settings.animationSpeed, state)}
-          startSkipped={summaryOptions.skipAnimations || state.settings.animationSpeed === 'skip'}
-        />
-      ) : null}
-
-      {showBatchSummary && latestOpeningSummary && summaryOptions ? (
-        <BatchOpenSummaryModal
-          autoSoldItems={latestOpeningSummary.autoSoldEvent?.items ?? []}
-          caseName={summaryCase?.name ?? latestOpeningSummary.startedEvent.caseId}
-          items={state.lastOpenedItems}
-          onClose={() => setDismissedSummaryEventId(latestOpeningSummary.startedEvent.id)}
-          openedCount={latestOpeningSummary.startedEvent.quantity}
-          saleValue={latestOpeningSummary.autoSoldEvent?.salePrice ?? 0}
-          skipAnimations={summaryOptions.skipAnimations}
-        />
-      ) : null}
     </section>
   )
 }

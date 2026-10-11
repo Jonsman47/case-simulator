@@ -127,7 +127,7 @@ describe('cloud save backend', () => {
     await expect(backend.signUp('player@example.com', 'secret-pass')).rejects.toSatisfy(isOfflineError)
   })
 
-  it('merges local and cloud saves without losing unique inventory or achievement progress', () => {
+  it('uses the newest inventory and money while still merging achievement progress', () => {
     const localAchievement: AchievementProgress = {
       id: 'first_case_opened',
       isClaimed: false,
@@ -156,7 +156,7 @@ describe('cloud save backend', () => {
       }),
     )
 
-    expect(merged.inventory.map((item) => item.instanceId)).toEqual(['local-item', 'cloud-item'])
+    expect(merged.inventory.map((item) => item.instanceId)).toEqual(['local-item'])
     expect(merged.achievements).toEqual([
       {
         id: 'first_case_opened',
@@ -164,7 +164,7 @@ describe('cloud save backend', () => {
         unlockedAt: localAchievement.unlockedAt,
       },
     ])
-    expect(merged.money).toBe(250)
+    expect(merged.money).toBe(100)
     expect(merged.prestigeLevel).toBe(2)
   })
 })

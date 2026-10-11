@@ -1,4 +1,5 @@
 import type { ActiveGameEvent, GameEventLog } from '../events/eventManager'
+import type { WorkMiniGameCooldowns } from '../utils/workMinigames'
 
 export enum Rarity {
   Consumer = 'Consumer',
@@ -185,12 +186,12 @@ export interface SkinInstance extends SkinBase {
 }
 
 export interface TrophyAssignment {
-  slotId: TrophySlotId
-  item: SkinInstance
+  slotId: string
+  itemId: string
   assignedAt: number
 }
 
-export type TrophyAssignments = Partial<Record<TrophySlotId, TrophyAssignment>>
+export type TrophyAssignments = Record<string, TrophyAssignment | undefined>
 
 export interface CaseDefinition {
   id: string
@@ -305,8 +306,25 @@ export interface AutomationModuleState {
 
 export type AutomationModulesState = Record<AutomationModuleId, AutomationModuleState>
 
+export interface AuctionHouseDeal {
+  id: string
+  item: SkinInstance
+  listPrice: number
+  price: number
+  discount: number
+  createdAt: number
+  expiresAt: number
+}
+
+export interface AuctionHouseState {
+  deals: AuctionHouseDeal[]
+  lastRefreshTime: number
+  nextRefreshTime: number
+}
+
 export interface AutomationState {
   autoOpener: AutoOpenerState
+  auctionHouse: AuctionHouseState
   modules: AutomationModulesState
 }
 
@@ -326,6 +344,9 @@ export interface PlayerState {
   dailyRewards: DailyRewardsState
   collectionBook: CollectionEntry[]
   collectionRewards: CollectionRewardProgress[]
+  hasUsedFirstCaseHook: boolean
+  lastPoopCleaningAt: number
+  workMiniGameCooldowns: WorkMiniGameCooldowns
   prestigeLevel: number
   prestigePoints: number
   prestigeBonuses: PrestigeBonusLevels
@@ -346,6 +367,8 @@ export interface PlayerState {
   upcomingEvents: ActiveGameEvent[]
   eventHistory: GameEventLog[]
   statistics: {
+    auctionPurchases: number
+    auctionSavings: number
     casesOpened: number
     moneySpent: number
     moneyEarned: number

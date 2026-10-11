@@ -14,8 +14,8 @@ Rarity breakdown:
 - Contraband: 1
 
 Images:
-- Downloaded: 2134
-- Reused: 0
+- Downloaded: 0
+- Reused: 2134
 - Fallback dataset: 0
 - Placeholder: 0
 

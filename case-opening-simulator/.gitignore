@@ -11,6 +11,8 @@ node_modules
 dist
 dist-ssr
 *.local
+# npm/package-lock.json is the authoritative package-manager state.
+pnpm-lock.yaml
 asset-import.config.json
 CSGO-API/
 CounterStrike2Skins/

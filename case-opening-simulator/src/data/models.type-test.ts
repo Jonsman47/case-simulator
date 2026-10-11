@@ -95,6 +95,11 @@ export const examplePlayerState: PlayerState = {
       level: 1,
       totalOpened: 3,
     },
+    auctionHouse: {
+      deals: [],
+      lastRefreshTime: 0,
+      nextRefreshTime: 0,
+    },
     modules: {
       [AutomationModuleId.OpeningDesk]: {
         id: AutomationModuleId.OpeningDesk,
@@ -160,10 +165,15 @@ export const examplePlayerState: PlayerState = {
       unlockedAt: 1_782_147_600_000,
     },
   ],
+  hasUsedFirstCaseHook: true,
+  lastPoopCleaningAt: 1_782_147_500_000,
+  workMiniGameCooldowns: {
+    poopCleaning: 1_782_147_500_000,
+  },
   trophyAssignments: {
     [TrophySlotId.MostExpensiveSkin]: {
       slotId: TrophySlotId.MostExpensiveSkin,
-      item: exampleSkinInstance,
+      itemId: exampleSkinInstance.instanceId,
       assignedAt: 1_782_147_600_000,
     },
   },
@@ -197,6 +207,8 @@ export const examplePlayerState: PlayerState = {
   upcomingEvents: [],
   eventHistory: [],
   statistics: {
+    auctionPurchases: 0,
+    auctionSavings: 0,
     casesOpened: 12,
     moneySpent: 30,
     moneyEarned: 7.5,

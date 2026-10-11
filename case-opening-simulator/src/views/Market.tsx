@@ -1,15 +1,11 @@
-import { Activity, CalendarClock, RefreshCw, Search } from 'lucide-react'
+import { RefreshCw, Search } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
+import { AssetImage } from '../components/AssetImage'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { useMarket } from '../hooks/useMarket'
-import {
-  getMarketEventEffectSummary,
-  getMarketEventName,
-  type ActiveMarketEvent,
-  type MarketTrendArrow,
-} from '../market/marketSimulation'
+import { type MarketTrendArrow } from '../market/marketSimulation'
 import { formatCurrency } from '../utils/format'
 import {
   createMarketSearchIndex,
@@ -23,11 +19,11 @@ const trendClasses: Record<MarketTrendArrow, string> = {
   '→': 'text-cs-muted',
 }
 
-const MARKET_ROW_HEIGHT = 42
+const MARKET_ROW_HEIGHT = 58
 const MARKET_LIST_MAX_HEIGHT = 640
 const marketSearchIndex = createMarketSearchIndex(SKIN_DEFINITIONS)
 const marketGridColumns =
-  'minmax(18rem,2fr) minmax(9rem,1fr) minmax(7rem,.7fr) minmax(8rem,.8fr) minmax(4rem,.35fr)'
+  'minmax(20rem,2fr) minmax(9rem,1fr) minmax(8rem,.8fr) minmax(4rem,.35fr)'
 
 function formatTickTime(value: number) {
   if (!value) {
@@ -38,37 +34,6 @@ function formatTickTime(value: number) {
     hour: '2-digit',
     minute: '2-digit',
   })
-}
-
-function formatEventTime(value: number | undefined) {
-  if (!value) {
-    return 'Pending'
-  }
-
-  return new Date(value).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function MarketEventCard({
-  event,
-  mode,
-}: {
-  event: ActiveMarketEvent
-  mode: 'active' | 'upcoming'
-}) {
-  return (
-    <div className="border border-cs-border bg-cs-surface px-3 py-2">
-      <p className="font-mono text-xs uppercase text-rarity-special">{getMarketEventName(event)}</p>
-      <p className="mt-1 text-xs text-cs-muted">
-        {mode === 'active' ? 'Ends' : 'Starts'} {formatEventTime(mode === 'active' ? event.endTime : event.startTime)}
-      </p>
-      <p className="mt-2 text-sm text-cs-text">{getMarketEventEffectSummary(event)}</p>
-    </div>
-  )
 }
 
 interface MarketRowProps {
@@ -95,6 +60,8 @@ function MarketRow({
     return null
   }
 
+  const rarityColor = getSkinRarityColor(row.skin)
+
   return (
     <div {...ariaAttributes} style={style}>
       <div
@@ -103,19 +70,21 @@ function MarketRow({
           index % 2 === 0 ? 'bg-cs-surface/60' : 'bg-cs-panel',
         ].join(' ')}
         data-testid="market-row"
-        style={{ gridTemplateColumns: marketGridColumns }}
+        style={{ borderColor: rarityColor, gridTemplateColumns: marketGridColumns }}
       >
-        <div className="truncate border-r border-cs-border px-2 py-1.5 text-cs-text">
-          {row.skin.weapon} | {row.skin.finish}
+        <div className="flex min-w-0 items-center gap-2 border-r border-cs-border px-2 py-1.5 text-cs-text">
+          <AssetImage
+            alt=""
+            className="h-11 w-14 shrink-0 object-contain"
+            draggable={false}
+            src={row.skin.image}
+          />
+          <span className="min-w-0 truncate">{row.skin.weapon} | {row.skin.finish}</span>
         </div>
         <div
-          className="truncate border-r border-cs-border px-2 py-1.5"
-          style={{ color: getSkinRarityColor(row.skin) }}
+          className="truncate border-r border-cs-border px-2 py-1.5 text-cs-text"
         >
           {row.rarityLabel}
-        </div>
-        <div className="border-r border-cs-border px-2 py-1.5 font-mono text-cs-muted">
-          {formatCurrency(row.baseValue)}
         </div>
         <div className="border-r border-cs-border px-2 py-1.5 font-mono text-cs-green">
           {formatCurrency(row.marketValue)}
@@ -130,12 +99,10 @@ function MarketRow({
 
 export function Market() {
   const {
-    activeEvents,
     lastMarketTick,
     marketTrends,
     prices,
     tickMarketNow,
-    upcomingEvents,
   } = useMarket()
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
@@ -179,11 +146,11 @@ export function Market() {
         </button>
       </div>
 
-      <label className="mt-4 flex min-h-10 items-center gap-3 border border-cs-border bg-cs-panel px-3 py-1.5 text-sm text-cs-muted">
+      <label className="mt-4 flex min-h-10 min-w-0 items-center gap-3 border border-cs-border bg-cs-panel px-3 py-1.5 text-sm text-cs-muted">
         <Search size={17} className="shrink-0 text-rarity-special" />
         <span className="sr-only">Search market skins</span>
         <input
-          className="min-h-8 flex-1 bg-transparent text-cs-text outline-none placeholder:text-cs-muted"
+          className="min-h-8 min-w-0 flex-1 bg-transparent text-cs-text outline-none placeholder:text-cs-muted"
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder="Search weapon, finish, or rarity"
           type="search"
@@ -194,46 +161,15 @@ export function Market() {
         </span>
       </label>
 
-      <div className="mt-4 grid gap-3 lg:grid-cols-[15rem_1fr]">
-        <aside className="border border-cs-border bg-cs-panel p-3">
-          <div className="flex items-center gap-2">
-            <Activity size={18} className="text-rarity-special" />
-            <h3 className="text-lg font-semibold text-cs-text">Live Events</h3>
-          </div>
-          <div className="mt-3 space-y-2">
-            {activeEvents.length > 0 ? (
-              activeEvents.map((event) => <MarketEventCard event={event} key={event.id} mode="active" />)
-            ) : (
-              <p className="border border-cs-border bg-cs-surface px-3 py-2 text-sm text-cs-muted">
-                No active market events.
-              </p>
-            )}
-          </div>
-          <div className="mt-4 flex items-center gap-2">
-            <CalendarClock size={18} className="text-rarity-industrial" />
-            <h3 className="text-lg font-semibold text-cs-text">Upcoming</h3>
-          </div>
-          <div className="mt-3 space-y-2">
-            {upcomingEvents.length > 0 ? (
-              upcomingEvents
-                .slice(0, 2)
-                .map((event) => <MarketEventCard event={event} key={event.id} mode="upcoming" />)
-            ) : (
-              <p className="border border-cs-border bg-cs-surface px-3 py-2 text-sm text-cs-muted">
-                No scheduled events.
-              </p>
-            )}
-          </div>
-        </aside>
-
+      <div className="mt-4">
         <div className="overflow-hidden border border-cs-border bg-cs-panel">
           <div className="overflow-x-auto">
-            <div className="min-w-[42rem]">
+            <div className="min-w-[44rem]">
               <div
                 className="grid border-b border-cs-border bg-cs-surface text-cs-muted"
                 style={{ gridTemplateColumns: marketGridColumns }}
               >
-                {['Skin', 'Rarity', 'Base', 'Market', 'Trend'].map((heading) => (
+                {['Skin preview', 'Rarity', 'Market', 'Trend'].map((heading) => (
                   <div
                     className="border-r border-cs-border px-2 py-1.5 font-mono text-[10px] uppercase last:border-r-0"
                     key={heading}

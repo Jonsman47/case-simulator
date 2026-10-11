@@ -1,5 +1,6 @@
 import { Star, X, Zap } from 'lucide-react'
 import { Rarity, type SkinInstance } from '../data/models'
+import { getSkinRarityColor } from '../data/rarities'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel, getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { AssetImage } from './AssetImage'
@@ -201,13 +202,15 @@ function DropSummaryCard({
   isHighlighted?: boolean
   item: SkinInstance
 }) {
+  const rarityColor = getSkinRarityColor(item)
+
   return (
     <article
       className={[
-        // Summary result cards are intentionally neutral; rarity color belongs in roll cards, not outcome panels.
-        'border border-cs-border bg-cs-surface p-2',
+        'border bg-cs-surface p-2',
         isHighlighted ? 'shadow-glow' : '',
       ].join(' ')}
+      style={{ borderColor: rarityColor }}
     >
       <div className="flex items-center gap-2">
         <AssetImage

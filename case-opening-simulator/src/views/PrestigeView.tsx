@@ -176,8 +176,8 @@ function PrestigeConfirmModal({
   onConfirm: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4">
-      <div className="w-full max-w-2xl border border-rarity-special bg-cs-panel p-5 shadow-glow">
+    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 sm:p-4">
+      <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-rarity-special bg-cs-panel p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl">
         <div className="flex items-start gap-3">
           <div className="grid h-11 w-11 shrink-0 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special">
             <RotateCcw size={22} />
@@ -370,8 +370,8 @@ export function PrestigeView() {
               <BonusStat label="Drop Luck" value={`${formatPercent(getPrestigeLuckBonus(state.prestigeBonuses))} pressure`} />
               <BonusStat label="Automation" value={`${formatPercent(automationSpeedBonus)} faster`} />
               <BonusStat label="Starting Cash" value={formatCurrency(defaultGameState.money + getPrestigeStartingMoneyBonus(state.prestigeBonuses))} />
-              <BonusStat label="Future Slots" value={`+${getPrestigeInventoryCapacityBonus(state.prestigeBonuses)}`} />
-              <BonusStat label="Market Knowledge" value={`${formatPercent(getPrestigeMarketKnowledgeBonus(state.prestigeBonuses))} accuracy`} />
+              <BonusStat label="Inventory Slots" value={`+${getPrestigeInventoryCapacityBonus(state.prestigeBonuses)}`} />
+              <BonusStat label="Market Knowledge" value={`${formatPercent(getPrestigeMarketKnowledgeBonus(state.prestigeBonuses))} event chance`} />
             </div>
           </section>
 

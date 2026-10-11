@@ -71,6 +71,7 @@ export interface EventManagerTickInput {
   eventHistory?: GameEventLog[]
   now?: number
   prng?: Prng
+  scheduleTicks?: number
   upcomingEvents?: ActiveGameEvent[]
 }
 
@@ -338,6 +339,13 @@ function canScheduleEvent(
   activeEvents: ActiveGameEvent[],
   upcomingEvents: ActiveGameEvent[],
 ) {
+  const overlappingEvents = [...activeEvents, ...upcomingEvents]
+    .filter((event) => eventsOverlap(candidate, event))
+
+  if (overlappingEvents.length >= 3 || overlappingEvents.some((event) => event.type === candidate.type)) {
+    return false
+  }
+
   return [...activeEvents, ...upcomingEvents].every((event) => {
     if (!eventsOverlap(candidate, event)) {
       return true
@@ -359,9 +367,11 @@ function resolveConflicts(events: ActiveGameEvent[]) {
   for (const event of orderedEvents) {
     const conflicts = acceptedEvents.filter((acceptedEvent) => {
       return (
-        event.exclusiveGroup &&
-        acceptedEvent.exclusiveGroup === event.exclusiveGroup &&
-        eventsOverlap(event, acceptedEvent)
+        eventsOverlap(event, acceptedEvent) &&
+        (
+          event.type === acceptedEvent.type ||
+          (event.exclusiveGroup && acceptedEvent.exclusiveGroup === event.exclusiveGroup)
+        )
       )
     })
 
@@ -385,8 +395,8 @@ function getSpecialEventCaseIds(activeEvents: ActiveGameEvent[]) {
   )
 }
 
-function getActiveGameEventEffects(activeEvents: ActiveGameEvent[]) {
-  return activeEvents.reduce<GameEventEffects>((effects, event) => {
+export function getActiveGameEventEffects(activeEvents: ActiveGameEvent[]) {
+  const combined = activeEvents.reduce<GameEventEffects>((effects, event) => {
     const eventEffects = event.effects
 
     return {
@@ -426,6 +436,26 @@ function getActiveGameEventEffects(activeEvents: ActiveGameEvent[]) {
         (effects.tradeUpInputCostMultiplier ?? 1) * (eventEffects.tradeUpInputCostMultiplier ?? 1),
     }
   }, {})
+
+  return {
+    ...combined,
+    caseCostMultiplier: Math.min(1.5, Math.max(0.5, combined.caseCostMultiplier ?? 1)),
+    caseCostMultipliers: Object.fromEntries(
+      Object.entries(combined.caseCostMultipliers ?? {}).map(([caseId, multiplier]) => [
+        caseId,
+        Math.min(1.5, Math.max(0.5, multiplier)),
+      ]),
+    ),
+    collectionRewardMultiplier: Math.min(2, Math.max(1, combined.collectionRewardMultiplier ?? 1)),
+    dropRarityMultipliers: Object.fromEntries(
+      Object.entries(combined.dropRarityMultipliers ?? {}).map(([rarity, multiplier]) => [
+        rarity,
+        Math.min(5, Math.max(0.5, multiplier)),
+      ]),
+    ),
+    prestigePointMultiplier: Math.min(2, Math.max(0.5, combined.prestigePointMultiplier ?? 1)),
+    tradeUpInputCostMultiplier: Math.min(1.5, Math.max(0.5, combined.tradeUpInputCostMultiplier ?? 1)),
+  }
 }
 
 function applyDropRarityMultipliers(
@@ -498,6 +528,10 @@ export function getGameEventTradeUpInputCostMultiplier(activeEvents: ActiveGameE
 
 export function getGameEventPrestigePointMultiplier(activeEvents: ActiveGameEvent[]) {
   return getActiveGameEventEffects(activeEvents).prestigePointMultiplier ?? 1
+}
+
+export function getGameEventCollectionRewardMultiplier(activeEvents: ActiveGameEvent[]) {
+  return getActiveGameEventEffects(activeEvents).collectionRewardMultiplier ?? 1
 }
 
 export function getGameEventName(event: ActiveGameEvent | GameEventLog) {
@@ -596,6 +630,7 @@ export class EventManager {
     now,
     prng,
     upcomingEvents,
+    scheduleTicks = 1,
   }: {
     activeEvents: ActiveGameEvent[]
     casesOpened: number
@@ -604,6 +639,7 @@ export class EventManager {
     now: number
     prng: Prng
     upcomingEvents: ActiveGameEvent[]
+    scheduleTicks?: number
   }) {
     if (
       casesOpened > 0 &&
@@ -637,7 +673,8 @@ export class EventManager {
       return canScheduleEvent(candidate, activeEvents, upcomingEvents) ? candidate : undefined
     }
 
-    const scheduleChance = Math.min(0.25, Math.max(0, randomEventChance + eventChanceBonus))
+    const perTickChance = Math.min(0.25, Math.max(0, randomEventChance + eventChanceBonus))
+    const scheduleChance = 1 - (1 - perTickChance) ** Math.max(1, scheduleTicks)
 
     if (prng() >= scheduleChance) {
       return undefined
@@ -665,6 +702,7 @@ export class EventManager {
     eventHistory = [],
     now = Date.now(),
     prng = Math.random,
+    scheduleTicks = 1,
     upcomingEvents = [],
   }: EventManagerTickInput = {}): EventManagerTickResult {
     const hydratedActiveEvents = activeEvents.map((event) => this.hydrateEvent(event, now))
@@ -695,6 +733,7 @@ export class EventManager {
         eventHistory: nextEventHistory,
         now,
         prng,
+        scheduleTicks,
         upcomingEvents: nextUpcomingEvents,
       })
 

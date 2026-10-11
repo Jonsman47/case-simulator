@@ -82,10 +82,21 @@ describe('inventory filters', () => {
   })
 
   it('filters by rarity, wear, locked, favorited, and duplicates', () => {
+    const inventoryWithSpecialItem = [
+      ...inventory,
+      makeItem({
+        id: 'karambit_doppler',
+        instanceId: 'item-4',
+        weapon: 'Karambit',
+        finish: 'Doppler',
+        rarity: Rarity.SpecialItem,
+      }),
+    ]
+
     expect(
       itemIds(
         filterAndSortInventory(
-          inventory,
+          inventoryWithSpecialItem,
           {
             ...defaultInventoryFilters,
             rarities: [Rarity.Covert],
@@ -94,6 +105,19 @@ describe('inventory filters', () => {
         ),
       ),
     ).toEqual(['item-2'])
+
+    expect(
+      itemIds(
+        filterAndSortInventory(
+          inventoryWithSpecialItem,
+          {
+            ...defaultInventoryFilters,
+            rarities: [Rarity.SpecialItem],
+          },
+          'nameAsc',
+        ),
+      ),
+    ).toEqual(['item-4'])
 
     expect(
       itemIds(

@@ -7,7 +7,6 @@ import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { getSkillTradeUpInputCostMultiplier } from '../data/skills'
-import { getGameEventTradeUpInputCostMultiplier } from '../events/eventManager'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getCurrentItemMarketValue } from '../utils/inventory'
@@ -102,9 +101,7 @@ export function TradeUps() {
     () => eligibleItems.filter((item) => item.rarity === activeRarity),
     [activeRarity, eligibleItems],
   )
-  const tradeUpInputCostMultiplier =
-    getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds) *
-    getGameEventTradeUpInputCostMultiplier(state.activeEvents)
+  const tradeUpInputCostMultiplier = getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds)
   const analysis = useMemo(
     () => analyzeTradeUp({
       inputCostMultiplier: tradeUpInputCostMultiplier,
@@ -284,10 +281,7 @@ export function TradeUps() {
               <div className="mt-3 flex items-center gap-3">
                 <div
                   className="grid h-20 w-20 place-items-center border bg-cs-surface"
-                  style={{
-                    borderColor: getSkinRarityColor(latestTradeUpEvent.item),
-                    backgroundColor: `${getSkinRarityColor(latestTradeUpEvent.item)}14`,
-                  }}
+                  style={{ borderColor: getSkinRarityColor(latestTradeUpEvent.item) }}
                 >
                   <AssetImage
                     alt=""
@@ -299,10 +293,7 @@ export function TradeUps() {
                   <h3 className="truncate text-lg font-semibold text-cs-text">
                     {latestTradeUpEvent.item.weapon} | {latestTradeUpEvent.item.finish}
                   </h3>
-                  <p
-                    className="mt-1 font-mono text-xs uppercase"
-                    style={{ color: getSkinRarityColor(latestTradeUpEvent.item) }}
-                  >
+                  <p className="mt-1 font-mono text-xs uppercase text-cs-muted">
                     {getSkinRarityLabel(latestTradeUpEvent.item)}
                   </p>
                   <p className="mt-1 text-sm text-cs-muted">
@@ -363,7 +354,7 @@ function TradeUpItemButton({
       </span>
       <span
         className="grid h-16 w-16 place-items-center border bg-cs-surface"
-        style={{ borderColor: rarityColor, backgroundColor: `${rarityColor}14` }}
+        style={{ borderColor: rarityColor }}
       >
         <AssetImage alt="" className="h-12 w-12 object-contain" src={getResolvedSkinImage(item)} />
       </span>

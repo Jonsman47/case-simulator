@@ -21,7 +21,7 @@ export function canOpenCaseFromSelection(caseDef: CaseDefinition, state: GameSta
   }
 
   if (caseDef.status === CaseStatus.Retired) {
-    return state.specialEventCaseIds.includes(caseDef.id)
+    return false
   }
 
   return false
@@ -134,7 +134,7 @@ export function getBestPossibleDrop(
 
 export function getCaseStatusLabel(caseDef: CaseDefinition, state: GameState) {
   if (caseDef.status === CaseStatus.Retired) {
-    return canOpenCaseFromSelection(caseDef, state) ? 'Event Access' : 'Retired'
+    return canOpenCaseFromSelection(caseDef, state) ? 'Access owned' : 'Retired'
   }
 
   if (caseDef.status === CaseStatus.Unlocked) {
@@ -149,7 +149,7 @@ export function getCaseStatusLabel(caseDef: CaseDefinition, state: GameState) {
     return canOpenCaseFromSelection(caseDef, state) ? 'Licensed' : 'License Required'
   }
 
-  return state.specialEventCaseIds.includes(caseDef.id) ? 'Event Access' : 'Locked'
+  return 'Locked'
 }
 
 export function getRarityTextClass(rarity: Rarity) {

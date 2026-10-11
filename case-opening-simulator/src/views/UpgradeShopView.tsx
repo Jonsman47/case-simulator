@@ -15,10 +15,10 @@ import {
   UPGRADE_CATEGORY_ORDER,
   UPGRADE_DEFINITIONS,
   canPurchaseUpgrade,
+  getAutomationModuleCapacity,
   getCaseCostReduction,
   getClickIncomeMultiplier,
   getMaxMultiOpenBatch,
-  getModuleBaySlots,
   getOpeningAnimationSpeedBonus,
   getRarityLuckBonus,
   getTrendPredictionBonus,
@@ -152,7 +152,7 @@ function UpgradeCard({
         </span>
       </div>
 
-      <p className="mt-3 line-clamp-2 text-sm leading-5 text-cs-muted">{definition.description}</p>
+      <p className="mt-3 text-sm leading-6 text-cs-muted">{definition.description}</p>
 
       <div className="mt-3">
         <div className="mb-2 flex justify-between gap-3 font-mono text-[10px] uppercase text-cs-muted">
@@ -257,11 +257,11 @@ export function UpgradeShopView() {
         <EffectSummary label="Max Batch" value={String(getMaxMultiOpenBatch(state.upgrades, state.learnedSkillNodeIds))} />
         <EffectSummary label="Automation Speed" value={`${formatPercent(automationReduction)} faster`} />
         <EffectSummary label="Opening Speed" value={`${formatPercent(getOpeningAnimationSpeedBonus(state.upgrades))} faster`} />
-        <EffectSummary label="Click Income" value={`${formatPercent(getClickIncomeMultiplier(state.upgrades) - 1)} bonus`} />
-        <EffectSummary label="Prediction" value={`${formatPercent(getTrendPredictionBonus(state.upgrades))} accuracy`} />
+        <EffectSummary label="Work Income" value={`${formatPercent(getClickIncomeMultiplier(state.upgrades) - 1)} bonus`} />
+        <EffectSummary label="Event Discovery" value={`${formatPercent(getTrendPredictionBonus(state.upgrades))} chance`} />
         <EffectSummary label="Rare Luck" value={`${formatPercent(getRarityLuckBonus(state.upgrades))} pressure`} />
-        <EffectSummary label="Future Slots" value={`+${getWarehouseUpgradeCapacityBonus(state.upgrades)}`} />
-        <EffectSummary label="Module Bays" value={`+${getModuleBaySlots(state.upgrades)}`} />
+        <EffectSummary label="Inventory Slots" value={`+${getWarehouseUpgradeCapacityBonus(state.upgrades)}`} />
+        <EffectSummary label="Module Slots" value={String(getAutomationModuleCapacity(state.upgrades))} />
       </div>
 
       {state.lastError ? (

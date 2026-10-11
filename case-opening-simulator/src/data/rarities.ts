@@ -51,6 +51,10 @@ export function getSkinRarityDefinition(skin: SkinBase) {
 }
 
 export function getSkinRarityColor(skin: SkinBase) {
+  if (skin.rarity === Rarity.SpecialItem) {
+    return fallbackRarityColors[Rarity.SpecialItem]
+  }
+
   return (
     getSkinRarityDefinition(skin)?.color ??
     (hasImportedSkinMetadata(skin) ? skin.rarityColor : undefined) ??
@@ -59,6 +63,10 @@ export function getSkinRarityColor(skin: SkinBase) {
 }
 
 export function getSkinRarityDisplayName(skin: SkinBase) {
+  if (skin.rarity === Rarity.SpecialItem) {
+    return 'Special Item'
+  }
+
   return getSkinRarityDefinition(skin)?.name
 }
 

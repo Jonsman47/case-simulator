@@ -118,7 +118,7 @@ export function getPrestigeInventoryCapacityBonus(prestigeBonuses: PrestigeBonus
 }
 
 export function getPrestigeMarketKnowledgeBonus(prestigeBonuses: PrestigeBonusLevels) {
-  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.MarketKnowledge) * 0.15
+  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.MarketKnowledge) * 0.01
 }
 
 export const PRESTIGE_BONUS_DEFINITIONS: PrestigeBonusDefinition[] = [
@@ -175,22 +175,22 @@ export const PRESTIGE_BONUS_DEFINITIONS: PrestigeBonusDefinition[] = [
   {
     id: PrestigeBonusId.InventoryCapacity,
     name: 'Vault Expansion',
-    description: 'Adds permanent future inventory capacity.',
+    description: 'Adds permanent inventory capacity.',
     maxLevel: 10,
     baseCost: 2,
     costMultiplier: 1.5,
-    getCurrentEffect: (level) => `+${level * 1_000} future slots`,
-    getNextEffect: (level) => `+${(level + 1) * 1_000} future slots`,
+    getCurrentEffect: (level) => `+${level * 1_000} inventory slots`,
+    getNextEffect: (level) => `+${(level + 1) * 1_000} inventory slots`,
   },
   {
     id: PrestigeBonusId.MarketKnowledge,
     name: 'Market Memory',
-    description: 'Improves permanent market knowledge hooks for forecasting tools.',
+    description: 'Permanently improves timed gameplay and market event discovery.',
     maxLevel: 8,
     baseCost: 3,
     costMultiplier: 1.7,
-    getCurrentEffect: (level) => `+${formatPercent(level * 0.15)} market knowledge`,
-    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.15)} market knowledge`,
+    getCurrentEffect: (level) => `+${formatPercent(level * 0.01)} event discovery chance`,
+    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.01)} event discovery chance`,
   },
 ]
 

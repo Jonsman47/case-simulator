@@ -7,7 +7,6 @@ import type {
   CaseDefinition,
   PrestigeBonusId,
   SkillNodeId,
-  TrophySlotId,
   UpgradeId,
 } from '../data/models'
 import type { GameEventType } from '../events/eventManager'
@@ -37,6 +36,7 @@ export interface GameContextValue {
   setAutoOpenerCase: (caseId: string) => void
   toggleAutoOpener: (isEnabled?: boolean) => void
   purchaseAutomationModule: (moduleId: AutomationModuleId) => void
+  purchaseAuctionDeal: (dealId: string) => void
   toggleAutomationModule: (moduleId: AutomationModuleId, isEnabled?: boolean) => void
   purchaseUpgrade: (upgradeId: UpgradeId) => void
   prestige: () => void
@@ -44,13 +44,13 @@ export interface GameContextValue {
   learnSkillNode: (nodeId: SkillNodeId) => void
   triggerGameEvent: (eventType: GameEventType) => void
   tickEventsNow: () => void
-  assignTrophyItem: (slotId: TrophySlotId, itemId: string) => void
-  removeTrophyItem: (slotId: TrophySlotId) => void
+  assignTrophyItem: (slotId: string, itemId: string) => void
+  removeTrophyItem: (slotId: string) => void
   getSelectedItemsValue: (itemIds: string[]) => number
   unlockCase: (caseId: string) => void
   purchaseCaseLicense: (caseId: string) => void
   toggleCaseFavorite: (caseId: string) => void
-  openCase: (caseId: string, quantity?: number) => void
+  openCase: (caseId: string, quantity?: number, options?: { skipAnimations?: boolean }) => void
   updateMarketValue: (skinId: string, value: number) => void
   tickMarketNow: () => void
   updateSettings: (settings: Partial<GameSettings>) => void

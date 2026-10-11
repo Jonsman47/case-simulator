@@ -1,13 +1,12 @@
-import { Rarity, TrophySlotId, type SkinInstance, type TrophyAssignments } from '../data/models'
-import { getRarityLabel, getWearLabel } from './itemLabels'
+import { Rarity, type SkinInstance, type TrophyAssignments } from '../data/models'
+import { getSkillTrophySlotBonus } from '../data/skills'
+import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
 import { applyWearMultiplier } from './wear'
 
 export interface TrophySlotDefinition {
-  id: TrophySlotId
+  id: string
+  index: number
   title: string
-  subtitle: string
-  statLabel: string
-  getStatValue: (item: SkinInstance) => string
 }
 
 const rarityScore: Record<Rarity, number> = {
@@ -21,21 +20,45 @@ const rarityScore: Record<Rarity, number> = {
   [Rarity.Contraband]: 8,
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    currency: 'USD',
-    maximumFractionDigits: 2,
-    style: 'currency',
-  }).format(value)
+export const BASE_TROPHY_SLOT_COUNT = 12
+export const TROPHY_SLOT_ID_PREFIX = 'showcase_'
+
+export function createTrophySlotId(index: number) {
+  return `${TROPHY_SLOT_ID_PREFIX}${index}`
 }
 
-function formatProfit(item: SkinInstance) {
-  const profit = item.marketValue - item.baseValue
-
-  return `${profit >= 0 ? '+' : ''}${formatCurrency(profit)}`
+export function getTrophyRoomSlotCount(learnedSkillNodeIds: string[] = []) {
+  return BASE_TROPHY_SLOT_COUNT + getSkillTrophySlotBonus(learnedSkillNodeIds)
 }
+
+export function createTrophySlotDefinitions(slotCount = BASE_TROPHY_SLOT_COUNT): TrophySlotDefinition[] {
+  return Array.from({ length: Math.max(BASE_TROPHY_SLOT_COUNT, Math.floor(slotCount)) }, (_, index) => {
+    const displayIndex = index + 1
+
+    return {
+      id: createTrophySlotId(displayIndex),
+      index: displayIndex,
+      title: `Showcase Slot ${displayIndex}`,
+    }
+  })
+}
+
+export const TROPHY_SLOT_DEFINITIONS = createTrophySlotDefinitions()
+export const trophySlotDefinitionsById = new Map(TROPHY_SLOT_DEFINITIONS.map((slot) => [slot.id, slot]))
 
 function getTrophyItemValue(item: SkinInstance, marketValues?: Record<string, number>) {
+  const generatedPrice = getMarketAdjustedSkinConditionPrice({
+    fallbackValue: undefined,
+    isStatTrak: Boolean(item.statTrak),
+    marketValues,
+    skin: item,
+    wear: item.wear,
+  })
+
+  if (typeof generatedPrice === 'number') {
+    return generatedPrice
+  }
+
   const currentBaseValue = marketValues?.[item.id]
 
   if (typeof currentBaseValue === 'number') {
@@ -45,88 +68,65 @@ function getTrophyItemValue(item: SkinInstance, marketValues?: Record<string, nu
   return item.marketValue
 }
 
-export const TROPHY_SLOT_DEFINITIONS: TrophySlotDefinition[] = [
-  {
-    id: TrophySlotId.BestKnife,
-    title: 'Best Knife',
-    subtitle: 'Blade spotlight',
-    statLabel: 'Value',
-    getStatValue: (item) => formatCurrency(item.marketValue),
-  },
-  {
-    id: TrophySlotId.BestGloves,
-    title: 'Best Gloves',
-    subtitle: 'Gold rack',
-    statLabel: 'Value',
-    getStatValue: (item) => formatCurrency(item.marketValue),
-  },
-  {
-    id: TrophySlotId.MostExpensiveSkin,
-    title: 'Most Expensive Skin',
-    subtitle: 'Market crown',
-    statLabel: 'Market Value',
-    getStatValue: (item) => formatCurrency(item.marketValue),
-  },
-  {
-    id: TrophySlotId.RarestSkin,
-    title: 'Rarest Skin',
-    subtitle: 'Rarity plinth',
-    statLabel: 'Rarity',
-    getStatValue: (item) => getRarityLabel(item.rarity),
-  },
-  {
-    id: TrophySlotId.BestFloat,
-    title: 'Best Float',
-    subtitle: 'Precision display',
-    statLabel: 'Float',
-    getStatValue: (item) => item.floatValue.toFixed(3),
-  },
-  {
-    id: TrophySlotId.BiggestProfitPull,
-    title: 'Biggest Profit Pull',
-    subtitle: 'Profit marker',
-    statLabel: 'Profit',
-    getStatValue: formatProfit,
-  },
-  {
-    id: TrophySlotId.FavouriteCollection,
-    title: 'Favourite Collection',
-    subtitle: 'Personal hall',
-    statLabel: 'Wear',
-    getStatValue: (item) => getWearLabel(item.wear),
-  },
-]
-
-export const trophySlotDefinitionsById = new Map(TROPHY_SLOT_DEFINITIONS.map((slot) => [slot.id, slot]))
-
 export function createDefaultTrophyAssignments(): TrophyAssignments {
   return {}
 }
 
 export function getTrophyAssignmentsList(trophyAssignments: TrophyAssignments) {
-  return TROPHY_SLOT_DEFINITIONS
-    .map((slot) => trophyAssignments[slot.id])
+  return Object.values(trophyAssignments)
     .filter((assignment): assignment is NonNullable<typeof assignment> => Boolean(assignment))
+    .sort((left, right) => left.slotId.localeCompare(right.slotId, undefined, { numeric: true }))
 }
 
-export function getTrophyScore(trophyAssignments: TrophyAssignments, marketValues?: Record<string, number>) {
+export function isUnlockedTrophySlot(slotId: string, learnedSkillNodeIds: string[] = []) {
+  const match = new RegExp(`^${TROPHY_SLOT_ID_PREFIX}(\\d+)$`).exec(slotId)
+  const slotIndex = match ? Number.parseInt(match[1], 10) : 0
+
+  return Number.isFinite(slotIndex) && slotIndex >= 1 && slotIndex <= getTrophyRoomSlotCount(learnedSkillNodeIds)
+}
+
+export function getTrophyScore(trophyAssignments: TrophyAssignments) {
   const assignments = getTrophyAssignmentsList(trophyAssignments)
+  const items = assignments
+    .map((assignment) => assignment.itemId)
+    .filter(Boolean)
   const combinedValue = assignments.reduce(
-    (total, assignment) => total + getTrophyItemValue(assignment.item, marketValues),
-    0,
-  )
-  const rarityBonus = assignments.reduce(
-    (total, assignment) => total + rarityScore[assignment.item.rarity] * 25,
+    (total) => total,
     0,
   )
 
-  return Math.round(combinedValue + rarityBonus + assignments.length * 50)
+  return Math.round(combinedValue + items.length * 50)
 }
 
-export function getTrophyCombinedValue(trophyAssignments: TrophyAssignments, marketValues?: Record<string, number>) {
+export function getTrophyScoreForInventory(
+  trophyAssignments: TrophyAssignments,
+  inventory: SkinInstance[],
+  marketValues?: Record<string, number>,
+) {
+  const inventoryById = new Map(inventory.map((item) => [item.instanceId, item]))
+  const items = getTrophyAssignmentsList(trophyAssignments)
+    .map((assignment) => inventoryById.get(assignment.itemId))
+    .filter((item): item is SkinInstance => Boolean(item))
+  const combinedValue = items.reduce((total, item) => total + getTrophyItemValue(item, marketValues), 0)
+  const rarityBonus = items.reduce((total, item) => total + rarityScore[item.rarity] * 25, 0)
+
+  return Math.round(combinedValue + rarityBonus + items.length * 50)
+}
+
+export function getTrophyCombinedValue(
+  trophyAssignments: TrophyAssignments,
+  inventory: SkinInstance[] = [],
+  marketValues?: Record<string, number>,
+) {
+  const inventoryById = new Map(inventory.map((item) => [item.instanceId, item]))
+
   return Number(
     getTrophyAssignmentsList(trophyAssignments)
-      .reduce((total, assignment) => total + getTrophyItemValue(assignment.item, marketValues), 0)
+      .reduce((total, assignment) => {
+        const item = inventoryById.get(assignment.itemId)
+
+        return item ? total + getTrophyItemValue(item, marketValues) : total
+      }, 0)
       .toFixed(2),
   )
 }
@@ -138,14 +138,14 @@ export function getMissingTrophyAssignments(
   const inventoryIds = new Set(inventory.map((item) => item.instanceId))
 
   return getTrophyAssignmentsList(trophyAssignments).filter((assignment) => {
-    return !inventoryIds.has(assignment.item.instanceId)
+    return !inventoryIds.has(assignment.itemId)
   })
 }
 
 export function getTrophyInventoryItem(
   trophyAssignments: TrophyAssignments,
   inventory: SkinInstance[],
-  slotId: TrophySlotId,
+  slotId: string,
 ) {
   const assignment = trophyAssignments[slotId]
 
@@ -153,44 +153,19 @@ export function getTrophyInventoryItem(
     return undefined
   }
 
-  return inventory.find((item) => item.instanceId === assignment.item.instanceId)
+  return inventory.find((item) => item.instanceId === assignment.itemId)
 }
 
 export function getTrophyDisplayItem(
   trophyAssignments: TrophyAssignments,
   inventory: SkinInstance[],
-  slotId: TrophySlotId,
+  slotId: string,
 ) {
-  return getTrophyInventoryItem(trophyAssignments, inventory, slotId) ?? trophyAssignments[slotId]?.item
+  return getTrophyInventoryItem(trophyAssignments, inventory, slotId)
 }
 
-export function isKnifeItem(item: SkinInstance) {
-  const weapon = item.weapon.toLowerCase()
-
-  return weapon.includes('knife') || weapon.includes('karambit')
-}
-
-export function isGloveItem(item: SkinInstance) {
-  return item.weapon.toLowerCase().includes('glove')
-}
-
-export function getRecommendedTrophySlot(
-  item: SkinInstance,
-  state: { trophyAssignments: TrophyAssignments },
-) {
-  if (isKnifeItem(item)) {
-    return TrophySlotId.BestKnife
-  }
-
-  if (isGloveItem(item)) {
-    return TrophySlotId.BestGloves
-  }
-
-  const currentMostExpensive = state.trophyAssignments[TrophySlotId.MostExpensiveSkin]?.item
-
-  if (!currentMostExpensive || item.marketValue > currentMostExpensive.marketValue) {
-    return TrophySlotId.MostExpensiveSkin
-  }
-
-  return TrophySlotId.FavouriteCollection
+export function getFirstAvailableTrophySlot(trophyAssignments: TrophyAssignments, learnedSkillNodeIds: string[] = []) {
+  return createTrophySlotDefinitions(getTrophyRoomSlotCount(learnedSkillNodeIds))
+    .find((slot) => !trophyAssignments[slot.id])
+    ?.id ?? createTrophySlotId(1)
 }

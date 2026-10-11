@@ -99,6 +99,7 @@ function renderStatsView(stateOverrides: Partial<GameState> = {}) {
     setAutoOpenerCase: voidFn,
     toggleAutoOpener: voidFn,
     purchaseAutomationModule: voidFn,
+    purchaseAuctionDeal: voidFn,
     toggleAutomationModule: voidFn,
     purchaseUpgrade: voidFn,
     prestige: voidFn,

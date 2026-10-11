@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid'
 import { CASE_DEFINITIONS, unlockCasesForProgress } from './cases'
 import { getCaseLicenseCost, requiresCaseLicense } from './casePricing'
-import { pickDrop } from './dropLogic'
+import { pickDrop, type Prng } from './dropLogic'
 import { defaultGameState, type GameAction, type GameState, type GameUiEvent } from './gameState'
 import {
   AutomationModuleId,
@@ -10,7 +10,6 @@ import {
   PrestigeBonusId,
   Rarity,
   SkillNodeId,
-  TrophySlotId,
   UpgradeId,
   type AutoSellRule,
   type CollectionEntry,
@@ -30,21 +29,23 @@ import {
 } from '../utils/inventory'
 import { getBulkSaleSummary } from '../utils/inventoryBulk'
 import { shouldAutoSell } from '../utils/autoSell'
-import { appendMarketPriceHistory, tickMarket } from '../market/marketSimulation'
 import {
-  applyGameEventEffectsToCase,
-  eventManager,
-  gameEventsToMarketEvents,
-  getGameEventPrestigePointMultiplier,
-  getGameEventTradeUpInputCostMultiplier,
-  type EventManagerTickResult,
-  type GameEventType,
-} from '../events/eventManager'
+  appendMarketPriceHistory,
+  hydrateMarketEvent,
+  tickMarket,
+  type ActiveMarketEvent,
+  type MarketEventLog,
+} from '../market/marketSimulation'
 import { analyzeTradeUp, pickTradeUpOutcome, suggestBestTradeUps } from '../utils/tradeUp'
 import { achievementsById, getNewAchievementUnlocks } from './achievements'
+import { getMarketAdjustedSkinConditionPrice } from './skinPrices'
 import {
   CASE_FARM_INTERVAL_MS,
   TRADING_BOT_INTERVAL_MS,
+  AUCTION_HOUSE_DEAL_DURATION_MS,
+  getAuctionHouseDealCount,
+  getAuctionHouseDiscount,
+  getAuctionHouseRefreshMs,
   getAutomationModuleUpgradeCost,
   getAutomationSellMultiplier,
   getAutoOpenerIntervalMs,
@@ -63,6 +64,9 @@ import {
 import {
   applyUpgradeEffectsToCase,
   canPurchaseUpgrade,
+  getAutomationModuleCapacity,
+  getClickIncomeMultiplier,
+  getTrendPredictionBonus,
   getUpgradeAutomationIntervalMultiplier,
   getUpgradeSellValueMultiplier,
   upgradesById,
@@ -72,6 +76,7 @@ import {
   calculatePrestigePointAward,
   canPurchasePrestigeBonus,
   getPrestigeAutomationIntervalMultiplier,
+  getPrestigeMarketKnowledgeBonus,
   getPrestigeSellMultiplier,
   getPrestigeStartingMoneyBonus,
   getPrestigeEligibility,
@@ -79,9 +84,12 @@ import {
 } from './prestige'
 import {
   applySkillEffectsToCase,
+  getSkillAuctionDealSlotBonus,
   getSkillAutomationIntervalMultiplier,
   getSkillEventChanceBonus,
   getSkillLicenseDiscount,
+  getSkillMarketKnowledgeBonus,
+  getSkillMinigameRewardMultiplier,
   getSkillPassiveIncomeMultiplier,
   getSkillNodeStatus,
   getSkillPrestigePointMultiplier,
@@ -89,7 +97,17 @@ import {
   getSkillTradeUpInputCostMultiplier,
   skillTreeNodesById,
 } from './skills'
-import { trophySlotDefinitionsById } from '../utils/trophyRoom'
+import {
+  applyGameEventEffectsToCase,
+  eventManager,
+  gameEventsToMarketEvents,
+  getGameEventCollectionRewardMultiplier,
+  getGameEventPrestigePointMultiplier,
+  getGameEventTradeUpInputCostMultiplier,
+  type ActiveGameEvent,
+} from '../events/eventManager'
+import { getInventoryFreeSlots, hasInventorySpace } from '../utils/inventoryCapacity'
+import { isUnlockedTrophySlot } from '../utils/trophyRoom'
 import {
   applyDailyCaseDiscountToCase,
   applyDailyChallengeProgress,
@@ -99,7 +117,15 @@ import {
   rerollDailyChallenge,
   type DailyChallengeProgressEvent,
 } from '../rewards/dailyRewards'
-import { clampNumber, roundCurrency } from '../utils/safeNumbers'
+import { clampNumber, normalizeMoney, roundCurrency } from '../utils/safeNumbers'
+import {
+  getPoopCleanupCooldownRemaining,
+} from '../utils/poopCleanupMinigame'
+import {
+  getWorkMiniGameCooldownRemaining,
+  workMiniGamesById,
+  type WorkMiniGameId,
+} from '../utils/workMinigames'
 
 const RECENT_DROPS_LIMIT = 20
 const UI_EVENTS_LIMIT = 50
@@ -121,121 +147,187 @@ function getAutomationSaleValue(state: GameState, item: SkinInstance) {
     getPrestigeSellMultiplier(state.prestigeBonuses) *
     getSkillSellMultiplier(state.learnedSkillNodeIds)
 
-  return roundCurrency(applyCollectionSellValueBonus(baseSaleValue, item, state.collectionRewards))
+  return roundCurrency(applyCollectionSellValueBonus(
+    baseSaleValue,
+    item,
+    state.collectionRewards,
+    getGameEventCollectionRewardMultiplier(state.activeEvents),
+  ))
 }
 
 function appendEvents(state: GameState, events: GameUiEvent[]) {
   return [...events, ...state.uiEvents].slice(0, UI_EVENTS_LIMIT)
 }
 
-function getMarketSpecialCaseIds(activeMarketEvents: GameState['activeMarketEvents']) {
-  return Array.from(new Set(activeMarketEvents.flatMap((event) => event.caseIds ?? [])))
+function uniqueById<T extends { id: string }>(items: T[]) {
+  return Array.from(new Map(items.map((item) => [item.id, item])).values())
 }
 
-function mergeSpecialCaseIds(...caseIdGroups: string[][]) {
-  return Array.from(new Set(caseIdGroups.flat()))
-}
+function syncMarketEventsFromGameEvents({
+  activeGameEvents,
+  activeMarketEvents,
+  endedGameEvents = [],
+  marketEventHistory,
+  now,
+  upcomingGameEvents,
+  upcomingMarketEvents,
+}: {
+  activeGameEvents: ActiveGameEvent[]
+  activeMarketEvents: ActiveMarketEvent[]
+  endedGameEvents?: ActiveGameEvent[]
+  marketEventHistory: MarketEventLog[]
+  now: number
+  upcomingGameEvents: ActiveGameEvent[]
+  upcomingMarketEvents: ActiveMarketEvent[]
+}) {
+  const gameActive = gameEventsToMarketEvents(activeGameEvents)
+    .map((event) => hydrateMarketEvent(event, now))
+  const gameUpcoming = gameEventsToMarketEvents(upcomingGameEvents)
+    .map((event) => hydrateMarketEvent(event, now))
+  const gameTypes = new Set([...gameActive, ...gameUpcoming].map((event) => event.type))
+  const retainedActive = activeMarketEvents.filter((event) => (
+    !event.id.startsWith('game:') && !gameTypes.has(event.type) && (event.endTime ?? Number.POSITIVE_INFINITY) > now
+  ))
+  const retainedUpcoming = upcomingMarketEvents.filter((event) => (
+    !event.id.startsWith('game:') && !gameTypes.has(event.type) && (event.endTime ?? Number.POSITIVE_INFINITY) > now
+  ))
+  const existingLogIds = new Set(marketEventHistory.map((event) => event.id))
+  const endedLogs: MarketEventLog[] = endedGameEvents.flatMap((event) => {
+    const marketEventType = event.effects.marketEventType
+    const id = `game:${event.id}`
 
-function mergeGeneratedMarketEvents(
-  existingEvents: GameState['activeMarketEvents'],
-  generatedEvents: GameState['activeMarketEvents'],
-) {
-  const existingManualEvents = existingEvents.filter((event) => !event.id.startsWith('game:'))
+    if (!marketEventType || existingLogIds.has(id)) {
+      return []
+    }
 
-  return [...existingManualEvents, ...generatedEvents]
-}
-
-function applyEventManagerTick(
-  state: GameState,
-  tick: EventManagerTickResult,
-  now = Date.now(),
-): GameState {
-  const generatedActiveMarketEvents = gameEventsToMarketEvents(tick.activeEvents)
-  const generatedUpcomingMarketEvents = gameEventsToMarketEvents(tick.upcomingEvents)
-  const activeMarketEvents = mergeGeneratedMarketEvents(state.activeMarketEvents, generatedActiveMarketEvents)
-  const upcomingMarketEvents = mergeGeneratedMarketEvents(state.upcomingMarketEvents, generatedUpcomingMarketEvents)
-  const eventNotifications: GameUiEvent[] = [
-    ...tick.startedEvents.map((event) => ({
-      id: nanoid(),
-      type: 'game_event_started' as const,
-      eventId: event.id,
+    return [{
+      id,
+      type: marketEventType,
+      label: event.name,
       name: event.name,
       description: event.description,
-      createdAt: now,
-    })),
-    ...tick.endedEvents.map((event) => ({
-      id: nanoid(),
-      type: 'game_event_ended' as const,
-      eventId: event.id,
-      name: event.name,
-      createdAt: now,
-    })),
-  ]
+      startTime: event.startTime,
+      endTime: event.endTime,
+      endedAt: now,
+      effectSummary: event.effectSummary,
+      triggeredAtCasesOpened: event.triggeredAtCasesOpened,
+    }]
+  })
 
   return {
-    ...state,
-    activeEvents: tick.activeEvents,
-    upcomingEvents: tick.upcomingEvents,
-    eventHistory: tick.eventHistory,
-    activeMarketEvents,
-    upcomingMarketEvents,
-    specialEventCaseIds: mergeSpecialCaseIds(
-      tick.specialEventCaseIds,
-      getMarketSpecialCaseIds(activeMarketEvents),
-    ),
-    uiEvents: eventNotifications.length > 0 ? appendEvents(state, eventNotifications) : state.uiEvents,
+    activeMarketEvents: uniqueById([...retainedActive, ...gameActive]),
+    marketEventHistory: [...endedLogs, ...marketEventHistory].slice(0, 30),
+    upcomingMarketEvents: uniqueById([...retainedUpcoming, ...gameUpcoming]),
   }
 }
 
-function tickGameEvents(
-  state: GameState,
-  now = Date.now(),
-  prng = Math.random,
-  autoSchedule = true,
-): GameState {
-  const tick = eventManager.tick({
-    activeEvents: state.activeEvents,
-    autoSchedule,
-    casesOpened: state.statistics.casesOpened,
-    eventChanceBonus: getSkillEventChanceBonus(state.learnedSkillNodeIds),
-    eventHistory: state.eventHistory,
-    now,
-    prng,
-    upcomingEvents: state.upcomingEvents,
-  })
+function dedupeInventoryItems(items: SkinInstance[]) {
+  const seenIds = new Set<string>()
 
-  return applyEventManagerTick(state, tick, now)
+  return items.filter((item) => {
+    if (seenIds.has(item.instanceId)) {
+      if (import.meta.env?.DEV) {
+        console.warn('Duplicate inventory instanceId removed from game state.', item.instanceId)
+      }
+
+      return false
+    }
+
+    seenIds.add(item.instanceId)
+    return true
+  })
 }
 
-function triggerGameEvent(
-  state: GameState,
-  eventType: GameEventType,
-  now = Date.now(),
-  durationMs?: number,
-) {
-  const event = eventManager.createEvent({
-    casesOpened: state.statistics.casesOpened,
-    durationMs,
-    now,
-    startTime: now,
-    type: eventType,
-  })
-  const tick = eventManager.tick({
-    activeEvents: [...state.activeEvents, event],
-    autoSchedule: false,
-    casesOpened: state.statistics.casesOpened,
-    eventHistory: state.eventHistory,
-    now,
-    upcomingEvents: state.upcomingEvents,
-  })
-  const startedEvents = tick.activeEvents.some((activeEvent) => activeEvent.id === event.id) ? [event] : []
+function validateGameState(state: GameState): GameState {
+  const money = normalizeMoney(state.money, defaultGameState.money)
+  const inventory = dedupeInventoryItems(state.inventory)
 
-  return applyEventManagerTick(
-    state,
-    {
-      ...tick,
-      startedEvents,
+  if (money === state.money && inventory.length === state.inventory.length) {
+    return state
+  }
+
+  return withInventoryValuation({
+    ...state,
+    money,
+    inventory,
+  }, state.lastSaved || Date.now())
+}
+
+function completeWorkMiniGame(state: GameState, gameId: WorkMiniGameId, now = Date.now()): GameState {
+  const definition = workMiniGamesById.get(gameId)
+
+  if (!definition) {
+    return {
+      ...state,
+      lastError: 'Work mini-game not found.',
+    }
+  }
+
+  if (getWorkMiniGameCooldownRemaining(gameId, now, state.workMiniGameCooldowns) > 0) {
+    return {
+      ...state,
+      lastError: `${definition.name} is still on cooldown.`,
+    }
+  }
+
+  const reward = roundCurrency(
+    definition.reward *
+    getClickIncomeMultiplier(state.upgrades) *
+    getSkillMinigameRewardMultiplier(state.learnedSkillNodeIds),
+  )
+  const event: GameUiEvent = {
+    id: nanoid(),
+    type: 'minigame_completed',
+    name: definition.name,
+    reward,
+    createdAt: now,
+  }
+  const workMiniGameCooldowns = {
+    ...state.workMiniGameCooldowns,
+    [gameId]: now,
+  }
+
+  return {
+    ...state,
+    money: roundCurrency(clampNumber(state.money) + reward),
+    lastPoopCleaningAt: gameId === 'poopCleaning' ? now : state.lastPoopCleaningAt,
+    workMiniGameCooldowns,
+    lastError: undefined,
+    statistics: {
+      ...state.statistics,
+      moneyEarned: roundCurrency(state.statistics.moneyEarned + reward),
     },
+    uiEvents: appendEvents(state, [event]),
+  }
+}
+
+function getEventScheduleChanceBonus(state: GameState) {
+  return Math.min(
+    0.2,
+    getSkillEventChanceBonus(state.learnedSkillNodeIds) +
+    getSkillMarketKnowledgeBonus(state.learnedSkillNodeIds) +
+    getTrendPredictionBonus(state.upgrades) +
+    getPrestigeMarketKnowledgeBonus(state.prestigeBonuses),
+  )
+}
+
+function completePoopCleaning(state: GameState, now = Date.now()): GameState {
+  if (getPoopCleanupCooldownRemaining(now, state.lastPoopCleaningAt) > 0) {
+    return {
+      ...state,
+      lastError: 'Poop Cleaning is still on cooldown.',
+    }
+  }
+
+  return completeWorkMiniGame(
+    {
+      ...state,
+      workMiniGameCooldowns: {
+        ...state.workMiniGameCooldowns,
+        poopCleaning: state.lastPoopCleaningAt,
+      },
+    },
+    'poopCleaning',
     now,
   )
 }
@@ -327,6 +419,42 @@ function getFallbackSkinForCase(dropTable: { skinId: string }[]) {
   return firstCatalogSkin
 }
 
+function filterDropTableByRarity(
+  dropTable: { skinId: string; weight: number }[],
+  predicate: (skin: SkinBase) => boolean,
+) {
+  return dropTable.filter((drop) => {
+    const skin = skinDefinitionsById.get(drop.skinId)
+
+    return skin ? predicate(skin) : false
+  })
+}
+
+function pickDropFromTable(dropTable: { skinId: string; weight: number }[]) {
+  return dropTable.length > 0 ? pickDrop(dropTable) : undefined
+}
+
+function getFirstCaseHookDrop(
+  dropTable: { skinId: string; weight: number }[],
+  hookRoll: number,
+) {
+  const specialDropTable = filterDropTableByRarity(dropTable, (skin) => skin.rarity === Rarity.SpecialItem)
+  const normalDropTable = filterDropTableByRarity(dropTable, (skin) => skin.rarity !== Rarity.SpecialItem)
+  const wantsForcedGold = hookRoll >= 0.8
+
+  if (wantsForcedGold && specialDropTable.length > 0) {
+    return {
+      hook: 'forcedGold' as const,
+      skinId: pickDropFromTable(specialDropTable),
+    }
+  }
+
+  return {
+    hook: 'nearMissGold' as const,
+    skinId: pickDropFromTable(normalDropTable) ?? pickDropFromTable(dropTable),
+  }
+}
+
 function withDailyChallengeProgress(
   state: GameState,
   progressEvent: DailyChallengeProgressEvent,
@@ -379,7 +507,7 @@ function canOpenCase(caseDef: (typeof CASE_DEFINITIONS)[number], state: GameStat
   }
 
   if (caseDef.status === CaseStatus.Retired) {
-    return state.specialEventCaseIds.includes(caseDef.id)
+    return false
   }
 
   if (requiresCaseLicense(caseDef)) {
@@ -402,8 +530,12 @@ function createSkinInstance(
   skin: SkinBase,
   state: GameState,
   discoveredAt: number,
+  forcedFloatValue?: number,
+  prng: () => number = Math.random,
 ): SkinInstance {
-  const floatValue = randomFloatForSkin(skin)
+  const floatValue = typeof forcedFloatValue === 'number'
+    ? Number(Math.min(1, Math.max(0, forcedFloatValue)).toFixed(6))
+    : randomFloatForSkin(skin, prng)
   const wear = getWearConditionForFloat(skin, floatValue)
   const marketBaseValue = clampNumber(state.marketValues[skin.id] ?? skin.baseValue)
   const hasStatTrak = 'hasStatTrak' in skin
@@ -412,21 +544,56 @@ function createSkinInstance(
   const hasSouvenir = 'hasSouvenir' in skin
     ? Boolean(skin.hasSouvenir)
     : Boolean(skin.souvenir)
-  const isStatTrak = hasStatTrak && Math.random() < 0.1
-  const isSouvenir = !isStatTrak && hasSouvenir && Math.random() < 0.01
+  const isStatTrak = hasStatTrak && prng() < 0.1
+  const isSouvenir = !isStatTrak && hasSouvenir && prng() < 0.01
+  const fallbackMarketValue = roundCurrency(applyWearMultiplier(marketBaseValue, wear, floatValue))
+  const realMarketValue = getMarketAdjustedSkinConditionPrice({
+    fallbackValue: fallbackMarketValue,
+    isStatTrak,
+    marketValues: state.marketValues,
+    skin,
+    wear,
+  }) ?? fallbackMarketValue
 
   return {
     ...skin,
     instanceId: nanoid(),
     wear,
     floatValue,
-    marketValue: roundCurrency(applyWearMultiplier(marketBaseValue, wear, floatValue)),
+    marketValue: roundCurrency(realMarketValue),
     statTrak: isStatTrak,
     souvenir: isSouvenir,
     isLocked: false,
     isFavorited: false,
     discoveredAt,
   }
+}
+
+function getEffectiveCaseDefinition(
+  state: GameState,
+  caseDef: (typeof CASE_DEFINITIONS)[number],
+  now: number,
+) {
+  const collectionCaseDef = applyCollectionRewardsToCase(
+    caseDef,
+    state.collectionRewards,
+    SKIN_DEFINITIONS,
+    getGameEventCollectionRewardMultiplier(state.activeEvents),
+  )
+  const upgradeCaseDef = applyUpgradeEffectsToCase(collectionCaseDef, state.upgrades, skinDefinitionsById)
+  const prestigeCaseDef = applyPrestigeEffectsToCase(upgradeCaseDef, state.prestigeBonuses, skinDefinitionsById)
+  const skillCaseDef = applySkillEffectsToCase(
+    prestigeCaseDef,
+    state.learnedSkillNodeIds,
+    skinDefinitionsById,
+  )
+  const eventCaseDef = applyGameEventEffectsToCase(
+    skillCaseDef,
+    state.activeEvents,
+    skinDefinitionsById,
+  )
+
+  return applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, now)
 }
 
 function updateCollectionBook(
@@ -496,9 +663,14 @@ function getUnlockedCaseIdsAfterOpening(state: GameState, casesOpened: number) {
   )
 }
 
-function failOpenCase(state: GameState, caseId: string, message: string): GameState {
+function failOpenCase(
+  state: GameState,
+  caseId: string,
+  message: string,
+  openingEventId?: string,
+): GameState {
   const event: GameUiEvent = {
-    id: nanoid(),
+    id: openingEventId ?? nanoid(),
     type: 'case_opening_failed',
     caseId,
     message,
@@ -601,11 +773,13 @@ function openCase(
   caseId: string,
   requestedQuantity = 1,
   openedAt = Date.now(),
+  firstCaseHookRoll?: number,
+  openingEventId?: string,
 ): GameState {
   const baseCaseDef = CASE_DEFINITIONS.find((definition) => definition.id === caseId)
 
   if (!baseCaseDef) {
-    return failOpenCase(state, caseId, 'Case not found.')
+    return failOpenCase(state, caseId, 'Case not found.', openingEventId)
   }
 
   if (!canOpenCase(baseCaseDef, state)) {
@@ -615,31 +789,31 @@ function openCase(
       requiresCaseLicense(baseCaseDef)
         ? `Case license required. Buy access for $${getCaseLicenseCost(baseCaseDef).toFixed(2)}.`
         : 'Case is locked or unavailable.',
+      openingEventId,
     )
   }
 
-  const collectionCaseDef = applyCollectionRewardsToCase(baseCaseDef, state.collectionRewards)
-  const upgradeCaseDef = applyUpgradeEffectsToCase(collectionCaseDef, state.upgrades, skinDefinitionsById)
-  const prestigeCaseDef = applyPrestigeEffectsToCase(upgradeCaseDef, state.prestigeBonuses, skinDefinitionsById)
-  const caseDef = applySkillEffectsToCase(
-    prestigeCaseDef,
-    state.learnedSkillNodeIds,
-    skinDefinitionsById,
-  )
-  const eventCaseDef = applyGameEventEffectsToCase(caseDef, state.activeEvents, skinDefinitionsById)
-  const dailyCaseDef = applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, openedAt)
+  const dailyCaseDef = getEffectiveCaseDefinition(state, baseCaseDef, openedAt)
   const quantity = normalizeOpenQuantity(requestedQuantity)
 
   if (!Number.isFinite(dailyCaseDef.cost) || dailyCaseDef.cost <= 0) {
-    return failOpenCase(state, caseId, 'Case price is invalid.')
+    return failOpenCase(state, caseId, 'Case price is invalid.', openingEventId)
   }
 
   const currentMoney = clampNumber(state.money)
   const affordableQuantity = Math.floor(currentMoney / dailyCaseDef.cost)
-  const actualQuantity = Math.min(quantity, affordableQuantity)
+  const freeSlots = getInventoryFreeSlots(state)
+  const actualQuantity = Math.min(quantity, affordableQuantity, freeSlots)
 
   if (actualQuantity <= 0) {
-    return failOpenCase(state, caseId, 'Not enough money to open this case.')
+    return failOpenCase(
+      state,
+      caseId,
+      freeSlots <= 0
+        ? 'Inventory is full. Sell items or expand the Warehouse before opening another case.'
+        : 'Not enough money to open this case.',
+      openingEventId,
+    )
   }
 
   const discoveredAt = openedAt
@@ -647,14 +821,22 @@ function openCase(
   const autoSoldItems: SkinInstance[] = []
   let collectionBook = state.collectionBook
   let inventory = state.inventory
+  let firstCaseHook: 'nearMissGold' | 'forcedGold' | undefined
 
   for (let index = 0; index < actualQuantity; index += 1) {
-    const skinId = pickDrop(dailyCaseDef.dropTable)
+    const hookDrop = !state.hasUsedFirstCaseHook && index === 0
+      ? getFirstCaseHookDrop(
+          dailyCaseDef.dropTable,
+          Math.min(Math.max(firstCaseHookRoll ?? Math.random(), 0), 0.999999),
+        )
+      : undefined
+    const skinId = hookDrop?.skinId ?? pickDrop(dailyCaseDef.dropTable)
+    firstCaseHook = hookDrop?.hook ?? firstCaseHook
     const skin = skinId ? skinDefinitionsById.get(skinId) : undefined
     const fallbackSkin = skin ?? getFallbackSkinForCase(dailyCaseDef.dropTable)
 
     if (!fallbackSkin) {
-      return failOpenCase(state, caseId, 'Drop table could not be resolved.')
+      return failOpenCase(state, caseId, 'Drop table could not be resolved.', openingEventId)
     }
 
     if (!skin) {
@@ -695,10 +877,11 @@ function openCase(
     actualQuantity < quantity ? `Opened ${actualQuantity} of ${quantity} requested cases.` : undefined
   const events: GameUiEvent[] = [
     {
-      id: nanoid(),
+      id: openingEventId ?? nanoid(),
       type: 'case_opening_started',
       caseId,
       quantity: actualQuantity,
+      firstCaseHook,
       createdAt: discoveredAt,
     },
     ...openedItems.map((item) => ({
@@ -729,6 +912,7 @@ function openCase(
     collectionBook,
     recentDrops: [...openedItems, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: openedItems,
+    hasUsedFirstCaseHook: state.hasUsedFirstCaseHook || Boolean(firstCaseHook),
     lastError: partialOpenMessage,
     uiEvents: appendEvents(state, events),
     casesUnlocked: getUnlockedCaseIdsAfterOpening(state, casesOpened),
@@ -853,6 +1037,11 @@ function purchaseAutomationModule(
   }
 
   const nextLevel = moduleState.level + 1
+  const consumesSlot = moduleId !== AutomationModuleId.WarehouseSystem
+  const activeModuleCount = Object.values(state.automation.modules).filter((candidate) => (
+    candidate.id !== AutomationModuleId.WarehouseSystem && candidate.level > 0 && candidate.isEnabled
+  )).length
+  const hasOpenSlot = !consumesSlot || moduleState.isEnabled || activeModuleCount < getAutomationModuleCapacity(state.upgrades)
 
   return {
     ...state,
@@ -863,13 +1052,15 @@ function purchaseAutomationModule(
         ...state.automation.modules,
         [moduleId]: {
           ...moduleState,
-          isEnabled: true,
+          isEnabled: hasOpenSlot,
           lastRunTime: moduleState.level > 0 ? moduleState.lastRunTime : now,
           level: nextLevel,
         },
       },
     },
-    lastError: undefined,
+    lastError: hasOpenSlot
+      ? undefined
+      : 'Upgrade purchased. Enable it after pausing another module or expanding Module Bays.',
     statistics: {
       ...state.statistics,
       moneySpent: roundCurrency(state.statistics.moneySpent + cost),
@@ -1008,11 +1199,11 @@ function learnSkillNode(state: GameState, nodeId: SkillNodeId): GameState {
 
 function assignTrophyItem(
   state: GameState,
-  slotId: TrophySlotId,
+  slotId: string,
   itemId: string,
   now = Date.now(),
 ): GameState {
-  if (!trophySlotDefinitionsById.has(slotId)) {
+  if (!isUnlockedTrophySlot(slotId, state.learnedSkillNodeIds)) {
     return {
       ...state,
       lastError: 'Trophy slot not found.',
@@ -1034,7 +1225,7 @@ function assignTrophyItem(
       ...state.trophyAssignments,
       [slotId]: {
         slotId,
-        item,
+        itemId: item.instanceId,
         assignedAt: now,
       },
     },
@@ -1042,7 +1233,7 @@ function assignTrophyItem(
   }
 }
 
-function removeTrophyItem(state: GameState, slotId: TrophySlotId): GameState {
+function removeTrophyItem(state: GameState, slotId: string): GameState {
   if (!state.trophyAssignments[slotId]) {
     return state
   }
@@ -1149,6 +1340,19 @@ function toggleAutomationModule(
 
   const nextIsEnabled = typeof isEnabled === 'boolean' ? isEnabled : !moduleState.isEnabled
 
+  if (nextIsEnabled && moduleId !== AutomationModuleId.WarehouseSystem) {
+    const activeModuleCount = Object.values(state.automation.modules).filter((candidate) => (
+      candidate.id !== AutomationModuleId.WarehouseSystem && candidate.level > 0 && candidate.isEnabled
+    )).length
+
+    if (!moduleState.isEnabled && activeModuleCount >= getAutomationModuleCapacity(state.upgrades)) {
+      return {
+        ...state,
+        lastError: 'All automation slots are occupied. Pause a module or expand Module Bays.',
+      }
+    }
+  }
+
   return {
     ...state,
     automation: {
@@ -1216,21 +1420,7 @@ function tickAutoOpener(state: GameState, now = Date.now()): GameState {
     return failAutomation(state, 'Auto Opener paused: selected case is unavailable.')
   }
 
-  const effectiveCaseDef = applySkillEffectsToCase(
-    applyPrestigeEffectsToCase(
-      applyUpgradeEffectsToCase(
-        applyCollectionRewardsToCase(caseDef, state.collectionRewards),
-        state.upgrades,
-        skinDefinitionsById,
-      ),
-      state.prestigeBonuses,
-      skinDefinitionsById,
-    ),
-    state.learnedSkillNodeIds,
-    skinDefinitionsById,
-  )
-  const eventCaseDef = applyGameEventEffectsToCase(effectiveCaseDef, state.activeEvents, skinDefinitionsById)
-  const dailyCaseDef = applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, now)
+  const dailyCaseDef = getEffectiveCaseDefinition(state, caseDef, now)
 
   if (clampNumber(state.money) < dailyCaseDef.cost) {
     return failAutomation(state, 'Auto Opener paused: not enough money.')
@@ -1285,21 +1475,7 @@ function tickOpeningDesk(state: GameState, now = Date.now()): GameState {
     )
   }
 
-  const effectiveCaseDef = applySkillEffectsToCase(
-    applyPrestigeEffectsToCase(
-      applyUpgradeEffectsToCase(
-        applyCollectionRewardsToCase(caseDef, state.collectionRewards),
-        state.upgrades,
-        skinDefinitionsById,
-      ),
-      state.prestigeBonuses,
-      skinDefinitionsById,
-    ),
-    state.learnedSkillNodeIds,
-    skinDefinitionsById,
-  )
-  const eventCaseDef = applyGameEventEffectsToCase(effectiveCaseDef, state.activeEvents, skinDefinitionsById)
-  const dailyCaseDef = applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, now)
+  const dailyCaseDef = getEffectiveCaseDefinition(state, caseDef, now)
 
   if (clampNumber(state.money) < dailyCaseDef.cost) {
     return failAutomationModule(
@@ -1452,12 +1628,174 @@ function tickTradingBot(state: GameState, now = Date.now()): GameState {
   }
 }
 
-function tickAutomation(state: GameState, now = Date.now()): GameState {
+function pickAuctionSkin(state: GameState, level: number, prng: Prng) {
+  const affordableCeiling = Math.max(250, clampNumber(state.money) * 3)
+  const regularCandidates = SKIN_DEFINITIONS.filter((skin) => {
+    const value = state.marketValues[skin.id] ?? skin.baseValue
+
+    return Number.isFinite(value) && value > 0 && value <= affordableCeiling
+  })
+  const premiumCandidates = SKIN_DEFINITIONS.filter((skin) => (
+    skin.rarity === Rarity.Classified ||
+    skin.rarity === Rarity.Covert ||
+    skin.rarity === Rarity.SpecialItem ||
+    skin.rarity === Rarity.Contraband
+  ))
+  const rareDealChance = Math.min(0.06, 0.01 + level * 0.006)
+  const candidates = prng() < rareDealChance && premiumCandidates.length > 0
+    ? premiumCandidates
+    : regularCandidates.length > 0
+      ? regularCandidates
+      : SKIN_DEFINITIONS
+
+  return candidates[Math.min(candidates.length - 1, Math.floor(prng() * candidates.length))]
+}
+
+function tickAuctionHouse(state: GameState, now = Date.now(), prng: Prng = Math.random): GameState {
+  const moduleState = state.automation.modules[AutomationModuleId.AuctionHouse]
+  const existingDeals = state.automation.auctionHouse.deals.filter((deal) => deal.expiresAt > now)
+
+  if (!moduleState.isEnabled || moduleState.level <= 0) {
+    if (existingDeals.length === state.automation.auctionHouse.deals.length) {
+      return state
+    }
+
+    return {
+      ...state,
+      automation: {
+        ...state.automation,
+        auctionHouse: {
+          ...state.automation.auctionHouse,
+          deals: existingDeals,
+        },
+      },
+    }
+  }
+
+  if (state.automation.auctionHouse.nextRefreshTime > now && existingDeals.length > 0) {
+    return existingDeals.length === state.automation.auctionHouse.deals.length
+      ? state
+      : {
+          ...state,
+          automation: {
+            ...state.automation,
+            auctionHouse: {
+              ...state.automation.auctionHouse,
+              deals: existingDeals,
+            },
+          },
+        }
+  }
+
+  const dealCount = getAuctionHouseDealCount(
+    moduleState.level,
+    getSkillAuctionDealSlotBonus(state.learnedSkillNodeIds),
+  )
+  const maxDiscount = getAuctionHouseDiscount(moduleState.level)
+  const deals = Array.from({ length: dealCount }, (_, index) => {
+    const skin = pickAuctionSkin(state, moduleState.level, prng)
+    const item = createSkinInstance(skin, state, now, undefined, prng)
+    const discount = Number((maxDiscount * (0.55 + prng() * 0.45)).toFixed(3))
+    const listPrice = Math.max(0.01, item.marketValue)
+
+    return {
+      id: `auction-${now}-${index}-${Math.floor(prng() * 1_000_000)}`,
+      item,
+      listPrice,
+      price: roundCurrency(Math.max(0.01, listPrice * (1 - discount))),
+      discount,
+      createdAt: now,
+      expiresAt: now + AUCTION_HOUSE_DEAL_DURATION_MS,
+    }
+  })
+  const refreshMs = getAuctionHouseRefreshMs(moduleState.level)
+
+  return {
+    ...state,
+    automation: {
+      ...state.automation,
+      auctionHouse: {
+        deals,
+        lastRefreshTime: now,
+        nextRefreshTime: now + refreshMs,
+      },
+      modules: {
+        ...state.automation.modules,
+        [AutomationModuleId.AuctionHouse]: {
+          ...moduleState,
+          lastRunTime: now,
+          totalRuns: moduleState.totalRuns + 1,
+        },
+      },
+    },
+    lastError: undefined,
+  }
+}
+
+function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now()): GameState {
+  const deal = state.automation.auctionHouse.deals.find((candidate) => candidate.id === dealId)
+
+  if (!deal || deal.expiresAt <= now) {
+    return {
+      ...state,
+      lastError: 'This Auction House deal is no longer available.',
+      automation: {
+        ...state.automation,
+        auctionHouse: {
+          ...state.automation.auctionHouse,
+          deals: state.automation.auctionHouse.deals.filter((candidate) => candidate.expiresAt > now),
+        },
+      },
+    }
+  }
+
+  if (!hasInventorySpace(state)) {
+    return {
+      ...state,
+      lastError: 'Inventory is full. Sell items or expand the Warehouse before buying this deal.',
+    }
+  }
+
+  if (clampNumber(state.money) < deal.price) {
+    return {
+      ...state,
+      lastError: 'Not enough money to purchase this Auction House deal.',
+    }
+  }
+
+  const nextState = withInventoryValuation({
+    ...state,
+    money: roundCurrency(clampNumber(state.money) - deal.price),
+    inventory: [deal.item, ...state.inventory],
+    collectionBook: updateCollectionBook(state.collectionBook, deal.item),
+    recentDrops: [deal.item, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
+    lastOpenedItems: [deal.item],
+    automation: {
+      ...state.automation,
+      auctionHouse: {
+        ...state.automation.auctionHouse,
+        deals: state.automation.auctionHouse.deals.filter((candidate) => candidate.id !== dealId),
+      },
+    },
+    statistics: {
+      ...state.statistics,
+      auctionPurchases: state.statistics.auctionPurchases + 1,
+      auctionSavings: roundCurrency(state.statistics.auctionSavings + deal.listPrice - deal.price),
+      moneySpent: roundCurrency(state.statistics.moneySpent + deal.price),
+    },
+    lastError: undefined,
+  }, now)
+
+  return withDropChallengeProgress(nextState, [deal.item], now)
+}
+
+function tickAutomation(state: GameState, now = Date.now(), prng: Prng = Math.random): GameState {
   let nextState = tickAutoOpener(state, now)
 
   nextState = tickOpeningDesk(nextState, now)
   nextState = tickCaseFarm(nextState, now)
   nextState = tickTradingBot(nextState, now)
+  nextState = tickAuctionHouse(nextState, now, prng)
 
   return nextState
 }
@@ -1496,7 +1834,7 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
   }
 
   const completedAt = Date.now()
-  const outputItem = createSkinInstance(outputSkin, state, completedAt)
+  const outputItem = createSkinInstance(outputSkin, state, completedAt, getTradeUpOutputFloat(selectedItems, outputSkin))
   const selectedIdSet = new Set(uniqueItemIds)
   const event: GameUiEvent = {
     id: nanoid(),
@@ -1719,6 +2057,14 @@ function claimDailyReward(state: GameState, now = Date.now()): GameState {
     }
   }
 
+  if (rewardInfo.reward.kind === DailyRewardKind.RandomSkin && !hasInventorySpace(state)) {
+    return {
+      ...state,
+      dailyRewards: refreshedRewards,
+      lastError: 'Inventory is full. Make room before claiming this skin reward.',
+    }
+  }
+
   const rewardClaim = {
     claimedAt: now,
     day: rewardInfo.nextStreak,
@@ -1902,31 +2248,18 @@ function reorderAutoSellRules(autoSellRules: AutoSellRule[], ruleIds: string[]) 
   return [...orderedRules, ...missingRules]
 }
 
-export function gameReducer(state: GameState, action: GameAction): GameState {
+function reduceGameState(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'ADD_MONEY':
       return {
         ...state,
         money: roundCurrency(clampNumber(state.money) + clampNumber(action.amount)),
       }
-    case 'COMPLETE_POOP_CLEANUP_MINIGAME': {
-      const now = action.now ?? Date.now()
-      const reward = roundCurrency(Math.max(0, clampNumber(action.reward)))
-      const event: GameUiEvent = {
-        id: nanoid(),
-        type: 'minigame_completed',
-        name: 'A Clean Pooping Job',
-        reward,
-        createdAt: now,
-      }
-
-      return {
-        ...state,
-        money: roundCurrency(clampNumber(state.money) + reward),
-        lastError: undefined,
-        uiEvents: appendEvents(state, [event]),
-      }
-    }
+    case 'COMPLETE_POOP_CLEANING':
+    case 'COMPLETE_POOP_CLEANUP_MINIGAME':
+      return completePoopCleaning(state, action.now)
+    case 'COMPLETE_WORK_MINIGAME':
+      return completeWorkMiniGame(state, action.gameId, action.now)
     case 'SPEND_MONEY':
       if (!Number.isFinite(action.amount) || action.amount < 0) {
         return {
@@ -1952,6 +2285,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         return {
           ...state,
           lastError: 'Item already exists in inventory.',
+        }
+      }
+
+
+      if (!hasInventorySpace(state)) {
+        return {
+          ...state,
+          lastError: 'Inventory is full. Sell items or expand the Warehouse first.',
         }
       }
 
@@ -2056,10 +2397,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REMOVE_TROPHY_ITEM':
       return removeTrophyItem(state, action.slotId)
     case 'TICK_AUTOMATION': {
-      const nextState = tickAutomation(state, action.now)
+      const nextState = tickAutomation(state, action.now, action.prng)
 
       return nextState === state ? state : withProgressionUnlocks(nextState, action.now)
     }
+    case 'PURCHASE_AUCTION_DEAL':
+      return withProgressionUnlocks(purchaseAuctionDeal(state, action.dealId, action.now), action.now)
     case 'CLAIM_DAILY_REWARD':
       return withProgressionUnlocks(claimDailyReward(state, action.now), action.now)
     case 'CLAIM_DAILY_CHALLENGE':
@@ -2097,7 +2440,14 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         favoriteCaseIds: [...state.favoriteCaseIds, action.caseId],
       }
     case 'OPEN_CASE':
-      return withProgressionUnlocks(openCase(state, action.payload.caseId, action.payload.quantity))
+      return withProgressionUnlocks(openCase(
+        state,
+        action.payload.caseId,
+        action.payload.quantity,
+        action.payload.now ?? Date.now(),
+        action.payload.firstCaseHookRoll,
+        action.payload.openingEventId,
+      ))
     case 'UPDATE_MARKET_VALUE': {
       const updatedAt = Date.now()
       const nextValue = roundCurrency(action.value)
@@ -2173,21 +2523,137 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         marketTrends: nextMarketTrends,
       }, updatedAt), updatedAt)
     }
-    case 'TICK_EVENTS':
-      return tickGameEvents(state, action.now, action.prng)
-    case 'TRIGGER_GAME_EVENT':
-      return triggerGameEvent(state, action.eventType, action.now, action.durationMs)
+    case 'TICK_EVENTS': {
+      const now = action.now ?? Date.now()
+      const tick = eventManager.tick({
+        activeEvents: state.activeEvents,
+        casesOpened: state.statistics.casesOpened,
+        eventChanceBonus: getEventScheduleChanceBonus(state),
+        eventHistory: state.eventHistory,
+        now,
+        prng: action.prng,
+        scheduleTicks: action.scheduleTicks,
+        upcomingEvents: state.upcomingEvents,
+      })
+      const marketEvents = syncMarketEventsFromGameEvents({
+        activeGameEvents: tick.activeEvents,
+        activeMarketEvents: state.activeMarketEvents,
+        endedGameEvents: tick.endedEvents,
+        marketEventHistory: state.marketEventHistory,
+        now,
+        upcomingGameEvents: tick.upcomingEvents,
+        upcomingMarketEvents: state.upcomingMarketEvents,
+      })
+      const uiEvents: GameUiEvent[] = [
+        ...tick.startedEvents.map((event) => ({
+          id: nanoid(),
+          type: 'game_event_started' as const,
+          eventId: event.id,
+          name: event.name,
+          description: event.description,
+          createdAt: now,
+        })),
+        ...tick.endedEvents.map((event) => ({
+          id: nanoid(),
+          type: 'game_event_ended' as const,
+          eventId: event.id,
+          name: event.name,
+          createdAt: now,
+        })),
+      ]
+
+      return {
+        ...state,
+        ...marketEvents,
+        activeEvents: tick.activeEvents,
+        upcomingEvents: tick.upcomingEvents,
+        eventHistory: tick.eventHistory,
+        specialEventCaseIds: Array.from(new Set([
+          ...tick.specialEventCaseIds,
+          ...marketEvents.activeMarketEvents.flatMap((event) => event.caseIds ?? []),
+        ])),
+        lastEventTick: now,
+        uiEvents: appendEvents(state, uiEvents),
+      }
+    }
+    case 'TRIGGER_GAME_EVENT': {
+      const now = action.now ?? Date.now()
+
+      if ([...state.activeEvents, ...state.upcomingEvents].some((event) => event.type === action.eventType)) {
+        return {
+          ...state,
+          lastError: 'That event is already active or scheduled.',
+        }
+      }
+
+      const candidate = eventManager.createEvent({
+        casesOpened: state.statistics.casesOpened,
+        durationMs: action.durationMs,
+        now,
+        type: action.eventType,
+      })
+      const tick = eventManager.tick({
+        activeEvents: [...state.activeEvents, candidate],
+        autoSchedule: false,
+        casesOpened: state.statistics.casesOpened,
+        eventHistory: state.eventHistory,
+        now,
+        upcomingEvents: state.upcomingEvents,
+      })
+      const isActive = tick.activeEvents.some((event) => event.id === candidate.id)
+
+      if (!isActive) {
+        return {
+          ...state,
+          lastError: 'That event conflicts with a higher-priority active event.',
+        }
+      }
+
+      const marketEvents = syncMarketEventsFromGameEvents({
+        activeGameEvents: tick.activeEvents,
+        activeMarketEvents: state.activeMarketEvents,
+        endedGameEvents: tick.endedEvents,
+        marketEventHistory: state.marketEventHistory,
+        now,
+        upcomingGameEvents: tick.upcomingEvents,
+        upcomingMarketEvents: state.upcomingMarketEvents,
+      })
+      const startedEvent: GameUiEvent = {
+        id: nanoid(),
+        type: 'game_event_started',
+        eventId: candidate.id,
+        name: candidate.name,
+        description: candidate.description,
+        createdAt: now,
+      }
+
+      return {
+        ...state,
+        ...marketEvents,
+        activeEvents: tick.activeEvents,
+        upcomingEvents: tick.upcomingEvents,
+        eventHistory: tick.eventHistory,
+        specialEventCaseIds: Array.from(new Set([
+          ...tick.specialEventCaseIds,
+          ...marketEvents.activeMarketEvents.flatMap((event) => event.caseIds ?? []),
+        ])),
+        lastEventTick: now,
+        lastError: undefined,
+        uiEvents: appendEvents(state, [startedEvent]),
+      }
+    }
     case 'TICK_MARKET': {
       const tick = tickMarket({
         activeEvents: state.activeMarketEvents,
         casesOpened: state.statistics.casesOpened,
-        eventChanceBonus: getSkillEventChanceBonus(state.learnedSkillNodeIds),
+        eventChanceBonus: getEventScheduleChanceBonus(state),
         eventHistory: state.marketEventHistory,
         marketHistory: state.marketHistory,
         marketTrends: state.marketTrends,
         marketValues: state.marketValues,
         now: action.now,
         prng: action.prng,
+        recordHistory: action.recordHistory,
         trackedSkinIds: Array.from(new Set([
           ...state.inventory.map((item) => item.id),
           ...state.recentDrops.map((item) => item.id),
@@ -2204,10 +2670,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         activeMarketEvents: tick.activeEvents,
         upcomingMarketEvents: tick.upcomingEvents,
         marketEventHistory: tick.eventHistory,
-        specialEventCaseIds: mergeSpecialCaseIds(
-          tick.specialEventCaseIds,
-          state.activeEvents.flatMap((event) => event.effects.specialEventCaseIds ?? []),
-        ),
+        specialEventCaseIds: Array.from(new Set([
+          ...state.activeEvents.flatMap((event) => event.effects.specialEventCaseIds ?? []),
+          ...tick.specialEventCaseIds,
+        ])),
         lastMarketTick: tick.lastMarketTick,
       }, tick.lastMarketTick), tick.lastMarketTick)
     }
@@ -2220,10 +2686,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         activeMarketEvents: action.tick.activeEvents,
         upcomingMarketEvents: action.tick.upcomingEvents,
         marketEventHistory: action.tick.eventHistory,
-        specialEventCaseIds: mergeSpecialCaseIds(
-          action.tick.specialEventCaseIds,
-          state.activeEvents.flatMap((event) => event.effects.specialEventCaseIds ?? []),
-        ),
+        specialEventCaseIds: Array.from(new Set([
+          ...state.activeEvents.flatMap((event) => event.effects.specialEventCaseIds ?? []),
+          ...action.tick.specialEventCaseIds,
+        ])),
         lastMarketTick: action.tick.lastMarketTick,
       }, action.tick.lastMarketTick), action.tick.lastMarketTick)
     case 'APPLY_OFFLINE_PROGRESS':
@@ -2318,5 +2784,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     default:
       return state
   }
+}
+
+function getTradeUpOutputFloat(inputItems: SkinInstance[], outputSkin: SkinBase) {
+  const averageInputFloat = inputItems.reduce((total, item) => total + item.floatValue, 0) / inputItems.length
+  const metadata = outputSkin as SkinBase & { minFloat?: number; maxFloat?: number }
+  const minFloat = typeof metadata.minFloat === 'number' ? Math.max(0, Math.min(1, metadata.minFloat)) : 0
+  const maxFloat = typeof metadata.maxFloat === 'number' ? Math.max(minFloat, Math.min(1, metadata.maxFloat)) : 1
+
+  return Number((minFloat + averageInputFloat * (maxFloat - minFloat)).toFixed(6))
+}
+
+export function gameReducer(state: GameState, action: GameAction): GameState {
+  return validateGameState(reduceGameState(state, action))
 }
 

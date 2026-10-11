@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 
 interface AssetImportConfig {
   sourceFolder: string
@@ -115,6 +116,18 @@ interface ImportReport {
   placeholderImages: string[]
   missingSkinRefs: string[]
   imageErrors: string[]
+}
+
+interface AssetManifestEntry {
+  path: string
+  sourceUrl?: string
+  bytes: number
+  sha256: string
+}
+
+interface AssetManifest {
+  version: 1
+  assets: AssetManifestEntry[]
 }
 
 const rootDir = process.cwd()
@@ -386,6 +399,7 @@ function createGeneratedSkin(skin: ApiSkin, ungroupedWearNames: Set<string> | un
   const weapon = skin.weapon?.name ?? fallbackName.weapon
   const finish = skin.pattern?.name ?? fallbackName.finish
   const rarity = mapApiRarityToEnumName(skin.rarity, skin)
+  const isSpecialItem = rarity === 'SpecialItem'
   const imageFileName = getLocalImageFileName(skin.id, skin.name)
 
   return {
@@ -398,8 +412,8 @@ function createGeneratedSkin(skin: ApiSkin, ungroupedWearNames: Set<string> | un
     minFloat: typeof skin.min_float === 'number' ? skin.min_float : 0,
     maxFloat: typeof skin.max_float === 'number' ? skin.max_float : 1,
     rarity,
-    rarityId: skin.rarity?.id ?? 'rarity_unknown',
-    rarityColor: skin.rarity?.color ?? '#9ca3af',
+    rarityId: isSpecialItem ? 'rarity_special_item' : skin.rarity?.id ?? 'rarity_unknown',
+    rarityColor: isSpecialItem ? '#ffd700' : skin.rarity?.color ?? '#9ca3af',
     baseValue: rarityBaseValues[rarity] ?? 1,
     caseIds: skin.crates?.map((crate) => crate.id) ?? [],
     image: getPublicImagePath('skins', imageFileName),
@@ -704,6 +718,12 @@ export function pickGeneratedCaseDrop(caseId: string, prng: () => number = Math.
 }
 
 function writeGeneratedRarities(filePath: string, rarities: Map<string, ApiRarity>) {
+  rarities.set('rarity_special_item', {
+    color: '#ffd700',
+    id: 'rarity_special_item',
+    name: 'Special Item',
+  })
+
   const body = Array.from(rarities.values())
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((rarity) => {
@@ -752,6 +772,56 @@ function writeReport(filePath: string, report: ImportReport, skins: GeneratedSki
   ]
 
   fs.writeFileSync(filePath, `${lines.join('\n')}\n`)
+}
+
+function createAssetManifestEntry(
+  outputFolder: string,
+  kind: 'skins' | 'cases',
+  fileName: string,
+  sourceUrl?: string,
+): AssetManifestEntry {
+  const absolutePath = path.join(outputFolder, kind, fileName)
+
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`Cannot create asset manifest: missing ${path.relative(rootDir, absolutePath)}.`)
+  }
+
+  const contents = fs.readFileSync(absolutePath)
+
+  return {
+    path: `assets/cs2/${kind}/${fileName}`,
+    sourceUrl,
+    bytes: contents.byteLength,
+    sha256: createHash('sha256').update(contents).digest('hex'),
+  }
+}
+
+function writeAssetManifest(
+  filePath: string,
+  outputFolder: string,
+  skins: GeneratedSkin[],
+  cases: GeneratedCase[],
+) {
+  const assets = [
+    ...skins.map((skin) => createAssetManifestEntry(
+      outputFolder,
+      'skins',
+      skin.imageFileName,
+      skin.imageUrl,
+    )),
+    ...cases.map((caseDef) => createAssetManifestEntry(
+      outputFolder,
+      'cases',
+      caseDef.imageFileName,
+      caseDef.imageUrl,
+    )),
+  ].sort((left, right) => left.path.localeCompare(right.path))
+  const manifest: AssetManifest = {
+    version: 1,
+    assets,
+  }
+
+  fs.writeFileSync(filePath, `${JSON.stringify(manifest, null, 2)}\n`)
 }
 
 async function main() {
@@ -859,6 +929,12 @@ async function main() {
   writeGeneratedSkins(path.join(generatedDataFolder, 'skins.generated.ts'), generatedSkins)
   writeGeneratedCases(path.join(generatedDataFolder, 'cases.generated.ts'), generatedCases)
   writeGeneratedRarities(path.join(generatedDataFolder, 'rarities.generated.ts'), rarities)
+  writeAssetManifest(
+    path.join(generatedDataFolder, 'cs2-assets.manifest.json'),
+    outputFolder,
+    generatedSkins,
+    generatedCases,
+  )
   writeReport(path.join(generatedDataFolder, 'import-report.txt'), report, generatedSkins, generatedCases)
 
   console.log(`Imported ${generatedSkins.length} skins and ${generatedCases.length} cases.`)

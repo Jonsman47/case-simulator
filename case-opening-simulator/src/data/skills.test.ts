@@ -55,7 +55,7 @@ describe('skill tree data helpers', () => {
 
   it('improves wear rolls toward better conditions when Wear Whisperer is learned', () => {
     const skin = skinsById.get('p250_sand_dune') as SkinBase
-    const prng = () => 0.205
+    const prng = () => 0.3
 
     expect(randomWearConditionForSkinWithSkills(skin, [], prng)).toBe(WearCondition.FieldTested)
     expect(

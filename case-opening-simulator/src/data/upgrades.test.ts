@@ -100,7 +100,7 @@ describe('upgrade helpers', () => {
     }
 
     expect(randomWearConditionForSkinWithUpgrades(rareSkin, upgrades, () => 0.14)).toBe(
-      WearCondition.MinimalWear,
+      WearCondition.FactoryNew,
     )
   })
 })

@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { CheckSquare, Copy } from 'lucide-react'
+import { Boxes, CheckSquare, Copy } from 'lucide-react'
 import { Grid } from 'react-window'
 import { BulkActionsToolbar } from '../components/BulkActionsToolbar'
 import { InventoryFilterBar } from '../components/InventoryFilterBar'
@@ -24,6 +24,7 @@ import { useGame } from '../hooks/useGame'
 import { getCurrentItemMarketValue } from '../utils/inventory'
 import { selectDuplicates } from '../utils/inventoryBulk'
 import { formatCurrency } from '../utils/format'
+import { getInventoryCapacity, getInventoryFreeSlots } from '../utils/inventoryCapacity'
 
 const ItemDetailModal = lazy(() => (
   import('../components/ItemDetailModal').then((module) => ({ default: module.ItemDetailModal }))
@@ -166,6 +167,8 @@ export function InventoryView() {
   const filters = inventoryUiState.filters
   const sortCriterion = inventoryUiState.sortCriterion
   const filteredItems = useInventoryFilters(state.inventory, filters, sortCriterion)
+  const inventoryCapacity = getInventoryCapacity(state)
+  const freeSlots = getInventoryFreeSlots(state)
   const duplicateSkinIds = useMemo(() => getDuplicateSkinIds(state.inventory), [state.inventory])
   const duplicateQuickSelectIds = useMemo(
     () => selectDuplicates(state.inventory, state.marketValues, state.autoSellRules),
@@ -282,6 +285,9 @@ export function InventoryView() {
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Inventory</h2>
           <p className="mt-2 text-sm text-cs-muted">
             {filteredItems.length} of {state.inventory.length} items
+          </p>
+          <p className="mt-2 inline-flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
+            <Boxes size={14} /> {state.inventory.length}/{inventoryCapacity} slots / {freeSlots} free
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-[minmax(220px,280px)_minmax(240px,320px)]">

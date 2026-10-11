@@ -85,6 +85,7 @@ function renderCaseSelection(
     setAutoOpenerCase: voidFn,
     toggleAutoOpener: voidFn,
     purchaseAutomationModule: voidFn,
+    purchaseAuctionDeal: voidFn,
     toggleAutomationModule: voidFn,
     purchaseUpgrade: voidFn,
     prestige: voidFn,
@@ -162,7 +163,15 @@ describe('CaseSelectionView', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fracture-style Case/i }))
     fireEvent.click(screen.getByRole('button', { name: /^Open 10$/i }))
 
-    expect(openCase).toHaveBeenCalledWith('fracture_style_case', 10)
+    expect(openCase).toHaveBeenCalledWith('fracture_style_case', 10, { skipAnimations: false })
+  }, 15_000)
+
+  it('shows live per-case rarity odds with one-in chance labels', () => {
+    renderCaseSelection()
+
+    expect(screen.getByText('Live Case Odds')).toBeInTheDocument()
+    expect(screen.queryByText('Official Rarity Odds')).not.toBeInTheDocument()
+    expect(screen.getAllByText(/1 in \d/i).length).toBeGreaterThan(0)
   }, 15_000)
 
   it('prompts for a license instead of opening locked licensed cases', () => {

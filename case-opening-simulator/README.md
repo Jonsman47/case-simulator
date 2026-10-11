@@ -1,112 +1,80 @@
-# React + TypeScript + Vite
+# CS2 Case Opening Simulator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A client-side CS2 case-opening game built with React, TypeScript, and Vite. It includes 42 cases, 2,092 skins, weighted drops, roulette reveals, inventory and selling, trade-ups, collection tracking, market simulation, progression systems, local saves, and optional Supabase cloud saves.
 
-## Release Builds
+## Requirements
 
-Use `npm run verify:release` before publishing. It runs linting, tests, a production build, and PWA output checks. See [docs/release-deployment.md](docs/release-deployment.md) for GitHub Pages, Vercel, Netlify, S3, Supabase environment variables, and the post-release checklist.
+- Node.js 20.19 or newer
+- npm 11 (the repository uses `package-lock.json` as its authoritative lockfile)
+- About 220 MB of free space for generated CS2 images plus build output
 
-## Game Mechanics Notes
+## Clean installation
 
-- New saves start at `$50`. Kilowatt and Revolution are open by default; every other priced case requires a one-time license before it can be opened.
-- Case license costs are derived from the case price and discounted by applicable upgrades, prestige bonuses, and skill-tree license perks. Buying a license adds the case to the unlocked list permanently for that save.
-- The hourly side job, **A Clean Pooping Job**, pays normal game currency and stores its cooldown in a separate localStorage key so refreshing cannot replay the reward.
-- Event rewards use standard money, items, price movement, drop modifiers, or discounts. Event-token currencies are intentionally not part of the economy.
-- The Admin Panel is visible only to the `Jonsman` account/session and the `/events` route redirects non-admin sessions back home.
-- Trade-ups only block invalid contracts: wrong count, mixed rarity, locked/favorited inputs, or no possible outcome. They do not block value-negative attempts; the player decides whether the risk is worth taking.
-- Batch opening starts with Open 1 and Open 10. Bulk Loader upgrades and Opening Line skill-tree tiers progressively add Open 20, Open 30, and later buttons up to the supported cap.
-- The case-opening animation is a CS-style horizontal item ticker. It keeps a content-width reel and extra cards after the target item so the stream does not expose the dark stage before the final card lands.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-## CS2 Asset Import
-
-The simulator can import real CS2 skin and case definitions from the ByMykel CSGO-API dataset while still falling back to the placeholder seed data when generated files are absent.
-
-1. Download or update the datasets outside version control:
-   - `../CSGO-API/public/api/en` must contain `skins.json`, `skins_not_grouped.json`, and `crates.json`.
-   - `../CounterStrike2Skins/images` is optional and used only as an image fallback.
-2. Edit the ignored `asset-import.config.json` if your local paths differ.
-3. Run:
+The large generated image set is intentionally not committed. A small checksummed manifest is committed instead, so a clean checkout can reproduce the exact required files.
 
 ```bash
-npm run import:cs2-assets
+npm ci
+npm run assets:sync
+npm run dev
 ```
 
-The importer writes downloaded images to `public/assets/cs2`, generated TypeScript data to `src/data/generated`, and a validation report to `src/data/generated/import-report.txt`.
+Open the URL printed by Vite, normally `http://127.0.0.1:5173/`.
 
-Raw datasets, `asset-import.config.json`, and downloaded image output are ignored by Git. Commit generated TypeScript files when you want the app to use the imported catalog. The runtime uses Vite glob imports to detect generated files; if `skins.generated.ts` or `cases.generated.ts` are missing, the existing placeholder skins and cases remain active.
+`assets:sync` downloads only missing or corrupt files and verifies all 2,134 images against their recorded sizes and SHA-256 checksums. Development and production builds run `assets:verify` first and stop with an actionable error if the image set is incomplete.
 
-When generated modules are present, the game reads imported skin float bounds, wear ranges, rarity display names, rarity colours, drop tables, StatTrak/Souvenir availability, and image paths directly from those files. Images are served from `/assets/cs2/...` through public URLs instead of being imported into the bundle, with a shared fallback image handler for missing assets.
+## Development commands
 
-To update for new CS2 content, refresh the ByMykel API dataset, rerun `npm run import:cs2-assets`, review `src/data/generated/import-report.txt` for missing references or image fallbacks, then rebuild and test the app.
-
-The CounterStrike2Skins fallback is intentionally image-only. Its `output.jsonl` metadata is used to match a skin image by normalized name when the API image download fails; it is not used for cases, floats, prices, or drop tables.
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev                 # Verify assets, then run Vite with HMR
+npm test                    # Run the Vitest suite
+npm run lint                # Run ESLint
+npm run assets:verify       # Verify all generated case and skin images
+npm run build               # Verify assets, type-check, bundle, and generate the PWA
+npm run verify:pwa          # Inspect the completed release output
+npm run verify:release      # Lint, test, build, and verify the PWA
+npm run preview:prod        # Preview the production build locally
 ```
+
+## CS2 catalog and assets
+
+Runtime catalog data is generated into `src/data/generated/`. The corresponding binaries live in ignored `public/assets/cs2/` directories to avoid adding roughly 197 MiB of images to normal Git history.
+
+The committed `src/data/generated/cs2-assets.manifest.json` contains each public path, stable source URL, byte size, and SHA-256 checksum. This gives clean installations and deployment jobs a reproducible image step without committing thousands of binaries.
+
+To reproduce the current assets:
+
+```bash
+npm run assets:sync
+```
+
+To refresh the catalog from a newer ByMykel CSGO-API dataset:
+
+1. Place the source JSON files in `../CSGO-API/public/api/en`, or update the ignored `asset-import.config.json`.
+2. Optionally provide `../CounterStrike2Skins/images` as an image-only fallback.
+3. Run `npm run import:cs2-assets`.
+4. Review `src/data/generated/import-report.txt` and the regenerated asset manifest.
+5. Run `npm run verify:release`.
+
+The importer writes images into `public/assets/cs2`, regenerates skin/case/rarity modules, and records a manifest for later clean-checkout recovery. At runtime, the shared image component retries once and displays `public/assets/placeholder.png` if an individual image cannot load.
+
+Public image and sound URLs are resolved through Vite’s base path. Root hosting and subpath hosting such as GitHub Pages therefore use the same generated catalog safely.
+
+## Game mechanics notes
+
+- New saves start at `$100`.
+- Kilowatt and Revolution are open by default. Other priced cases require a one-time license.
+- Case opening commits its economic transaction once, then runs an independent UI animation session. Notification clearing, route changes, cloud merges, and unrelated settings updates do not interrupt the active roll.
+- The Work screen contains Poop Cleaning and Sort Boxes jobs with persisted cooldowns.
+- Trade-ups validate contract inputs but intentionally allow value-negative attempts.
+- Batch opening begins with Open 1 and Open 10; upgrades and skills unlock larger batches.
+- Optional cloud save uses Supabase when its environment variables are present and otherwise uses the local mock backend.
+
+## Optional environment variables
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+VITE_BASE_PATH=/case-opening-simulator/
+```
+
+See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks.

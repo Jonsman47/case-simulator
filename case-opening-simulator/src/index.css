@@ -45,6 +45,15 @@ body {
     #080b10;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
+img {
+  height: auto;
+  max-width: 100%;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

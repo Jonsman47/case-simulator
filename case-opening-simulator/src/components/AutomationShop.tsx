@@ -18,6 +18,7 @@ import {
   getAutomationModuleUpgradeCost,
 } from '../utils/automation'
 import { formatCurrency } from '../utils/format'
+import { getAutomationModuleCapacity } from '../data/upgrades'
 
 const moduleAccentClasses: Record<AutomationModuleId, string> = {
   [AutomationModuleId.OpeningDesk]: 'border-rarity-mil-spec text-rarity-mil-spec',
@@ -39,6 +40,12 @@ const moduleIconMap = {
 
 export function AutomationShop() {
   const { purchaseAutomationModule, state, toggleAutomationModule } = useGame()
+  const activeModuleCount = AUTOMATION_MODULE_IDS.filter((moduleId) => (
+    moduleId !== AutomationModuleId.WarehouseSystem &&
+    state.automation.modules[moduleId].level > 0 &&
+    state.automation.modules[moduleId].isEnabled
+  )).length
+  const moduleCapacity = getAutomationModuleCapacity(state.upgrades)
 
   return (
     <section className="border border-cs-border bg-cs-panel p-3">
@@ -47,7 +54,9 @@ export function AutomationShop() {
           <p className="font-mono text-xs uppercase text-rarity-special">Upgrade Paths</p>
           <h3 className="mt-1 text-xl font-semibold text-cs-text">Automation Shop</h3>
         </div>
-        <p className="text-sm text-cs-muted">Modules run only while enabled.</p>
+        <p className="text-sm text-cs-muted">
+          {activeModuleCount}/{moduleCapacity} active slots / Warehouse capacity is passive.
+        </p>
       </div>
 
       <div className="mt-4 grid gap-3 xl:grid-cols-3">
@@ -58,6 +67,8 @@ export function AutomationShop() {
           const cost = getAutomationModuleUpgradeCost(moduleId, moduleState.level)
           const isMaxLevel = moduleState.level >= definition.maxLevel
           const canPurchase = !isMaxLevel && state.money >= cost
+          const isPassive = moduleId === AutomationModuleId.WarehouseSystem
+          const isRunning = isPassive ? moduleState.level > 0 : moduleState.isEnabled
 
           return (
             <article
@@ -79,15 +90,15 @@ export function AutomationShop() {
                     <span
                       className={[
                         'border px-2 py-1 font-mono text-[10px] uppercase',
-                        moduleState.isEnabled
+                        isRunning
                           ? 'border-cs-green text-cs-green'
                           : 'border-cs-border text-cs-muted',
                       ].join(' ')}
                     >
-                      {moduleState.isEnabled ? 'Running' : 'Off'}
+                      {isPassive && moduleState.level > 0 ? 'Passive' : isRunning ? 'Running' : 'Off'}
                     </span>
                   </div>
-                  <p className="mt-2 line-clamp-2 text-sm text-cs-muted">{definition.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-cs-muted">{definition.description}</p>
                 </div>
               </div>
 
@@ -111,12 +122,12 @@ export function AutomationShop() {
                 </button>
                 <button
                   className="inline-flex flex-1 items-center justify-center gap-2 border border-cs-border px-3 py-2 text-sm font-medium text-cs-muted transition-colors hover:text-cs-text disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={moduleState.level <= 0}
+                  disabled={moduleState.level <= 0 || isPassive}
                   onClick={() => toggleAutomationModule(moduleId)}
                   type="button"
                 >
-                  {moduleState.isEnabled ? <PowerOff size={16} /> : <Power size={16} />}
-                  {moduleState.isEnabled ? 'Pause' : 'Enable'}
+                  {isPassive ? <Power size={16} /> : moduleState.isEnabled ? <PowerOff size={16} /> : <Power size={16} />}
+                  {isPassive ? 'Always On' : moduleState.isEnabled ? 'Pause' : 'Enable'}
                 </button>
               </div>
             </article>

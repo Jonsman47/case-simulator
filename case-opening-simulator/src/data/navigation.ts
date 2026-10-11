@@ -1,16 +1,33 @@
+import {
+  Backpack,
+  BadgeInfo,
+  Bot,
+  BriefcaseBusiness,
+  ChartNoAxesCombined,
+  RadioTower,
+  House,
+  PackageOpen,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react'
+
 export interface NavigationItem {
   label: string
   path: string
+  icon?: LucideIcon
   end?: boolean
   adminOnly?: boolean
+  align?: 'right'
+  tone?: 'danger'
   items?: NavigationItem[]
 }
 
 export const primaryNavigationItems: NavigationItem[] = [
-  { label: 'Home', path: '/', end: true },
+  { label: 'Home', path: '/', end: true, icon: House },
   {
     label: 'Cases',
     path: '/cases',
+    icon: PackageOpen,
     items: [
       { label: 'Case Licenses', path: '/cases' },
       { label: 'Collection Book', path: '/collection-book' },
@@ -20,6 +37,7 @@ export const primaryNavigationItems: NavigationItem[] = [
   {
     label: 'Inventory',
     path: '/inventory',
+    icon: Backpack,
     items: [
       { label: 'Inventory', path: '/inventory' },
       { label: 'Trade Ups', path: '/trade-ups' },
@@ -29,16 +47,17 @@ export const primaryNavigationItems: NavigationItem[] = [
   {
     label: 'Market',
     path: '/market',
+    icon: ChartNoAxesCombined,
     items: [
       { label: 'Market', path: '/market' },
-      // Admin Panel is intentionally a submenu item and is filtered for non-admin
-      // sessions to keep the top-level nav compact and prevent casual event access.
-      { label: 'Admin Panel', path: '/events', adminOnly: true },
+      { label: 'Events', path: '/events', icon: RadioTower },
+      { label: 'Admin Panel', path: '/admin', adminOnly: true },
     ],
   },
   {
     label: 'Automation',
     path: '/automation',
+    icon: Bot,
     items: [
       { label: 'Automation', path: '/automation' },
       { label: 'Upgrades', path: '/upgrades' },
@@ -48,7 +67,9 @@ export const primaryNavigationItems: NavigationItem[] = [
       { label: 'Stats', path: '/stats' },
     ],
   },
-  { label: 'Settings', path: '/settings' },
+  { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Work', path: '/work', icon: BriefcaseBusiness },
+  { label: 'Credits', path: '/credits', align: 'right', tone: 'danger', icon: BadgeInfo },
 ]
 
 function filterNavigationTree(items: NavigationItem[], isAdmin: boolean): NavigationItem[] {

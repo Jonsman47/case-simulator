@@ -35,11 +35,12 @@ function renderLayout(initialPath = '/') {
     <GameContext.Provider value={contextValue}>
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<div>Home screen</div>} />
-            <Route path="cases" element={<div>Cases screen</div>} />
-            <Route path="inventory" element={<div>Inventory screen</div>} />
-          </Route>
+            <Route element={<AppLayout />}>
+              <Route index element={<div>Home screen</div>} />
+              <Route path="cases" element={<div>Cases screen</div>} />
+              <Route path="inventory" element={<div>Inventory screen</div>} />
+              <Route path="poop-cleaning" element={<div>Poop Cleaning screen</div>} />
+            </Route>
         </Routes>
       </MemoryRouter>
     </GameContext.Provider>,

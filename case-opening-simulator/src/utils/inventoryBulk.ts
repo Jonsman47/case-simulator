@@ -35,6 +35,7 @@ function getItemSaleValue(
   upgrades: UpgradeLevels = {},
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
+  collectionRewardMultiplier = 1,
 ) {
   const upgradedValue =
     getCurrentItemMarketValue(item, marketValues) *
@@ -42,7 +43,12 @@ function getItemSaleValue(
     getPrestigeSellMultiplier(prestigeBonuses) *
     getSkillSellMultiplier(learnedSkillNodeIds)
 
-  return applyCollectionSellValueBonus(upgradedValue, item, collectionRewards)
+  return applyCollectionSellValueBonus(
+    upgradedValue,
+    item,
+    collectionRewards,
+    collectionRewardMultiplier,
+  )
 }
 
 function compareDuplicateKeeper(
@@ -112,6 +118,7 @@ export function getBulkSaleSummary(
   upgrades: UpgradeLevels = {},
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
+  collectionRewardMultiplier = 1,
 ): BulkSaleSummary {
   const selectedIdSet = new Set(instanceIds)
   const selectedItems = inventory.filter((item) => selectedIdSet.has(item.instanceId))
@@ -126,6 +133,7 @@ export function getBulkSaleSummary(
         upgrades,
         prestigeBonuses,
         learnedSkillNodeIds,
+        collectionRewardMultiplier,
       ),
       0,
     ),
@@ -147,6 +155,7 @@ export function getSelectedItemsValue(
   upgrades: UpgradeLevels = {},
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
+  collectionRewardMultiplier = 1,
 ) {
   return getBulkSaleSummary(
     inventory,
@@ -156,6 +165,7 @@ export function getSelectedItemsValue(
     upgrades,
     prestigeBonuses,
     learnedSkillNodeIds,
+    collectionRewardMultiplier,
   ).totalValue
 }
 

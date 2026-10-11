@@ -4,6 +4,7 @@ import {
   getWearValueMultiplier,
   type SkinBase,
 } from './models'
+import type { GeneratedSkinPriceRecord } from './generated/skinPrices.generated'
 
 type CsvRow = Record<string, string>
 
@@ -40,6 +41,10 @@ const baseWearPreference = [
   WearCondition.WellWorn,
   WearCondition.BattleScarred,
 ]
+const generatedSkinPriceModules = import.meta.glob<{
+  GENERATED_SKIN_PRICES: Record<string, GeneratedSkinPriceRecord>
+}>('./generated/skinPrices.generated.ts', { eager: true })
+const generatedSkinPrices = Object.values(generatedSkinPriceModules)[0]?.GENERATED_SKIN_PRICES ?? {}
 
 export function createSkinPriceKey(weapon: string, finish: string) {
   return `${weapon}|${finish}`
@@ -182,13 +187,88 @@ export function parseExternalSkinPrices(csv: string) {
 
 export const EXTERNAL_SKIN_PRICES_BY_KEY = parseExternalSkinPrices(pricesCsv)
 export const HAS_EXTERNAL_SKIN_PRICES = EXTERNAL_SKIN_PRICES_BY_KEY.size > 0
+export const GENERATED_SKIN_PRICES_BY_ID = generatedSkinPrices
+export const HAS_GENERATED_SKIN_PRICES = Object.keys(GENERATED_SKIN_PRICES_BY_ID).length > 0
 
 export function getExternalSkinPriceRecord(skin: Pick<SkinBase, 'finish' | 'weapon'>) {
   return EXTERNAL_SKIN_PRICES_BY_KEY.get(createSkinPriceKey(skin.weapon, skin.finish))
 }
 
+export function getGeneratedSkinPriceRecord(skin: Pick<SkinBase, 'id'>) {
+  return GENERATED_SKIN_PRICES_BY_ID[skin.id]
+}
+
+export function getSkinConditionPrice(
+  skin: Pick<SkinBase, 'baseValue' | 'id'>,
+  wear: WearCondition,
+  isStatTrak = false,
+) {
+  const generatedRecord = getGeneratedSkinPriceRecord(skin)
+  const generatedPrice = isStatTrak
+    ? generatedRecord?.statTrak[wear] ?? generatedRecord?.normal[wear]
+    : generatedRecord?.normal[wear]
+
+  if (typeof generatedPrice === 'number') {
+    return generatedPrice
+  }
+
+  return undefined
+}
+
+export function getRepresentativeSkinPrice(skin: SkinBase) {
+  const generatedRecord = getGeneratedSkinPriceRecord(skin)
+
+  if (typeof generatedRecord?.representativePrice === 'number') {
+    return generatedRecord.representativePrice
+  }
+
+  return getExternalSkinPriceRecord(skin)?.basePrice ?? skin.baseValue
+}
+
+export function getMarketAdjustedSkinConditionPrice({
+  fallbackValue,
+  isStatTrak = false,
+  marketValues,
+  skin,
+  wear,
+}: {
+  fallbackValue?: number
+  isStatTrak?: boolean
+  marketValues?: Record<string, number>
+  skin: SkinBase
+  wear: WearCondition
+}) {
+  const conditionPrice = getSkinConditionPrice(skin, wear, isStatTrak)
+
+  if (typeof conditionPrice !== 'number') {
+    return fallbackValue
+  }
+
+  const representativePrice = getRepresentativeSkinPrice(skin)
+  const marketRepresentative = marketValues?.[skin.id]
+
+  if (
+    typeof marketRepresentative === 'number' &&
+    marketRepresentative > 0 &&
+    representativePrice > 0
+  ) {
+    return Number((conditionPrice * (marketRepresentative / representativePrice)).toFixed(2))
+  }
+
+  return conditionPrice
+}
+
 export function applyExternalSkinPrices<TSkin extends SkinBase>(skins: TSkin[]) {
   return skins.map((skin) => {
+    const generatedRecord = getGeneratedSkinPriceRecord(skin)
+
+    if (generatedRecord) {
+      return {
+        ...skin,
+        baseValue: generatedRecord.representativePrice,
+      }
+    }
+
     const priceRecord = getExternalSkinPriceRecord(skin)
 
     if (!priceRecord) {
@@ -206,6 +286,12 @@ export function getExternalSkinMarketValues(skins: SkinBase[]) {
   return Object.fromEntries(
     skins
       .map((skin) => {
+        const generatedRecord = getGeneratedSkinPriceRecord(skin)
+
+        if (generatedRecord) {
+          return [skin.id, generatedRecord.representativePrice] as const
+        }
+
         const priceRecord = getExternalSkinPriceRecord(skin)
 
         return priceRecord ? [skin.id, priceRecord.basePrice] as const : undefined

@@ -221,35 +221,42 @@ export function getNewCollectionRewardUnlocks({
 export function getCollectionSellValueMultiplier(
   item: Pick<SkinInstance, 'weapon'>,
   collectionRewards: CollectionRewardProgress[],
+  rewardMultiplier = 1,
 ) {
   const sellBonus = collectionRewards
     .filter((reward) => reward.type === 'WeaponSellBonus' && reward.targetId === item.weapon)
     .reduce((total, reward) => total + reward.bonus, 0)
 
-  return 1 + sellBonus
+  return 1 + sellBonus * Math.max(0, rewardMultiplier)
 }
 
 export function applyCollectionSellValueBonus(
   value: number,
   item: Pick<SkinInstance, 'weapon'>,
   collectionRewards: CollectionRewardProgress[],
+  rewardMultiplier = 1,
 ) {
-  return value * getCollectionSellValueMultiplier(item, collectionRewards)
+  return value * getCollectionSellValueMultiplier(item, collectionRewards, rewardMultiplier)
 }
 
-export function getCollectionCaseDiscount(caseId: string, collectionRewards: CollectionRewardProgress[]) {
+export function getCollectionCaseDiscount(
+  caseId: string,
+  collectionRewards: CollectionRewardProgress[],
+  rewardMultiplier = 1,
+) {
   const discount = collectionRewards
     .filter((reward) => reward.type === 'CaseDiscount' && reward.targetId === caseId)
     .reduce((total, reward) => total + reward.bonus, 0)
 
-  return Math.min(MAX_COLLECTION_CASE_DISCOUNT, discount)
+  return Math.min(MAX_COLLECTION_CASE_DISCOUNT, discount * Math.max(0, rewardMultiplier))
 }
 
 export function getCollectionCaseCost(
   caseDef: Pick<CaseDefinition, 'cost' | 'id'>,
   collectionRewards: CollectionRewardProgress[],
+  rewardMultiplier = 1,
 ) {
-  const discount = getCollectionCaseDiscount(caseDef.id, collectionRewards)
+  const discount = getCollectionCaseDiscount(caseDef.id, collectionRewards, rewardMultiplier)
 
   return Number((caseDef.cost * (1 - discount)).toFixed(2))
 }
@@ -267,6 +274,7 @@ export function getCarryOverCollectionRewards(collectionRewards: CollectionRewar
 function getRarityLuckBonusForSkin(
   skin: SkinBase | undefined,
   collectionRewards: CollectionRewardProgress[],
+  rewardMultiplier = 1,
 ) {
   if (!skin) {
     return 0
@@ -284,19 +292,24 @@ function getRarityLuckBonusForSkin(
 
       return skinRarityIndex > rewardRarityIndex
     })
-    .reduce((total, reward) => total + reward.bonus, 0)
+    .reduce((total, reward) => total + reward.bonus, 0) * Math.max(0, rewardMultiplier)
 }
 
 export function applyCollectionLuckToDropTable(
   dropTable: DropTableEntry[],
   collectionRewards: CollectionRewardProgress[],
   skins: SkinBase[] = SKIN_DEFINITIONS,
+  rewardMultiplier = 1,
 ) {
   const skinsById = new Map(skins.map((skin) => [skin.id, skin]))
 
   return normalizeDropTable(
     dropTable.map((drop) => {
-      const luckBonus = getRarityLuckBonusForSkin(skinsById.get(drop.skinId), collectionRewards)
+      const luckBonus = getRarityLuckBonusForSkin(
+        skinsById.get(drop.skinId),
+        collectionRewards,
+        rewardMultiplier,
+      )
 
       return {
         ...drop,
@@ -310,13 +323,19 @@ export function applyCollectionRewardsToCase(
   caseDef: CaseDefinition,
   collectionRewards: CollectionRewardProgress[],
   skins: SkinBase[] = SKIN_DEFINITIONS,
+  rewardMultiplier = 1,
 ): CaseDefinition {
   // Stacking order: case discounts add together and are capped, then luck rewards
   // multiply higher-rarity weights before the drop table is normalized.
   return {
     ...caseDef,
-    cost: getCollectionCaseCost(caseDef, collectionRewards),
-    dropTable: applyCollectionLuckToDropTable(caseDef.dropTable, collectionRewards, skins),
+    cost: getCollectionCaseCost(caseDef, collectionRewards, rewardMultiplier),
+    dropTable: applyCollectionLuckToDropTable(
+      caseDef.dropTable,
+      collectionRewards,
+      skins,
+      rewardMultiplier,
+    ),
   }
 }
 
@@ -324,8 +343,9 @@ export function applyCollectionRewardsToCases(
   caseDefinitions: CaseDefinition[],
   collectionRewards: CollectionRewardProgress[],
   skins: SkinBase[] = SKIN_DEFINITIONS,
+  rewardMultiplier = 1,
 ) {
   return caseDefinitions.map((caseDef) =>
-    applyCollectionRewardsToCase(caseDef, collectionRewards, skins),
+    applyCollectionRewardsToCase(caseDef, collectionRewards, skins, rewardMultiplier),
   )
 }

@@ -147,6 +147,8 @@ describe('stats dashboard utilities', () => {
     expect(summary.totalCasesOpened).toBe(120)
     expect(summary.netProfit).toBe(15)
     expect(summary.rareDropsClassifiedPlus).toBe(6)
+    expect(summary.rarityBuckets.find((bucket) => bucket.rarity === Rarity.Covert)?.count).toBe(2)
+    expect(summary.rarityBuckets.find((bucket) => bucket.rarity === Rarity.SpecialItem)?.count).toBe(1)
     expect(summary.highestItemValue).toBe(250)
     expect(summary.automationModulesPurchased).toBe(2)
     expect(summary.automationModuleLevels).toBe(4)

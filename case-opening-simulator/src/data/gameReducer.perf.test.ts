@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defaultDropsByRarity, defaultGameState, type GameState } from './gameState'
 import { gameReducer } from './gameReducer'
+import { PrestigeBonusId } from './models'
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -44,7 +45,13 @@ describe('case opening performance', () => {
   it('handles a 1000-case stress batch without dropping count or going negative', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
 
-    const state = makeState({ money: 100_000 })
+    const state = makeState({
+      money: 100_000,
+      prestigeBonuses: {
+        ...defaultGameState.prestigeBonuses,
+        [PrestigeBonusId.InventoryCapacity]: 1,
+      },
+    })
     const start = performance.now()
     const nextState = gameReducer(state, {
       type: 'OPEN_CASE',

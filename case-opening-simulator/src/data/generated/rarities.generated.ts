@@ -11,6 +11,7 @@ export const RARITY_DEFINITIONS = {
   "rarity_mythical_weapon": { id: "rarity_mythical_weapon", name: "Restricted", color: "#8847ff" },
   "rarity_rare": { id: "rarity_rare", name: "High Grade", color: "#4b69ff" },
   "rarity_rare_weapon": { id: "rarity_rare_weapon", name: "Mil-Spec Grade", color: "#4b69ff" },
+  "rarity_special_item": { id: "rarity_special_item", name: "Special Item", color: "#ffd700" },
   "rarity_uncommon_weapon": { id: "rarity_uncommon_weapon", name: "Industrial Grade", color: "#5e98d9" },
 } satisfies Record<string, ImportedRarityDefinition>
 

@@ -1,4 +1,4 @@
-import { Bot, Clock, Pause, Play, ShoppingCart, Zap } from 'lucide-react'
+import { BadgePercent, Bot, Boxes, Clock, Pause, Play, ShoppingCart, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
 import { AutomationShop } from '../components/AutomationShop'
@@ -13,6 +13,7 @@ import {
   getAutoOpenerProgress,
   getAutoOpenerTimeRemainingMs,
   getAutoOpenerUpgradeCost,
+  getAuctionHouseRefreshMs,
   getCaseFarmIncomePerTick,
   getMarketAnalystSellBonus,
   getOpeningDeskBatchSize,
@@ -25,8 +26,10 @@ import {
   type AutomationModuleState,
   type SkinInstance,
 } from '../data/models'
-import { getUpgradeAutomationIntervalMultiplier } from '../data/upgrades'
+import { getAutomationModuleCapacity, getUpgradeAutomationIntervalMultiplier } from '../data/upgrades'
 import { getPrestigeAutomationIntervalMultiplier } from '../data/prestige'
+import { getSkillAutomationIntervalMultiplier } from '../data/skills'
+import { getInventoryCapacity, getInventoryFreeSlots } from '../utils/inventoryCapacity'
 
 function formatDuration(ms: number) {
   const seconds = Math.ceil(ms / 1_000)
@@ -55,6 +58,10 @@ function getModuleIntervalMs(moduleState: AutomationModuleState) {
     return TRADING_BOT_INTERVAL_MS
   }
 
+  if (moduleState.id === AutomationModuleId.AuctionHouse) {
+    return getAuctionHouseRefreshMs(moduleState.level)
+  }
+
   return undefined
 }
 
@@ -76,10 +83,10 @@ function getModuleTotalLabel(moduleState: AutomationModuleState) {
   }
 
   if (moduleState.id === AutomationModuleId.WarehouseSystem) {
-    return 'Capacity hooks ready'
+    return 'Capacity expansion active'
   }
 
-  return 'Deal hooks ready'
+  return `${moduleState.totalRuns} deal refreshes`
 }
 
 function getModuleDetailLabel(moduleState: AutomationModuleState, unlockedCaseCount: number) {
@@ -102,6 +109,7 @@ export function Automation() {
   const {
     availableCases,
     purchaseAutoOpener,
+    purchaseAuctionDeal,
     setAutoOpenerCase,
     state,
     toggleAutoOpener,
@@ -110,7 +118,8 @@ export function Automation() {
   const autoOpener = state.automation.autoOpener
   const automationIntervalMultiplier =
     getUpgradeAutomationIntervalMultiplier(state.upgrades) *
-    getPrestigeAutomationIntervalMultiplier(state.prestigeBonuses)
+    getPrestigeAutomationIntervalMultiplier(state.prestigeBonuses) *
+    getSkillAutomationIntervalMultiplier(state.learnedSkillNodeIds)
   const effectiveAutoOpener = useMemo(() => ({
     ...autoOpener,
     intervalMs: Math.round(autoOpener.intervalMs * automationIntervalMultiplier),
@@ -122,6 +131,10 @@ export function Automation() {
   const progress = getAutoOpenerProgress(effectiveAutoOpener, now)
   const remainingMs = getAutoOpenerTimeRemainingMs(effectiveAutoOpener, now)
   const recentAutomationDrops = useMemo(() => state.recentDrops.slice(0, 6), [state.recentDrops])
+  const inventoryCapacity = getInventoryCapacity(state)
+  const freeSlots = getInventoryFreeSlots(state)
+  const auctionModule = state.automation.modules[AutomationModuleId.AuctionHouse]
+  const auctionDeals = state.automation.auctionHouse.deals.filter((deal) => deal.expiresAt > now)
   const activeModules = useMemo(
     () =>
       AUTOMATION_MODULE_IDS.map((moduleId) => state.automation.modules[moduleId]).filter((moduleState) => {
@@ -129,6 +142,7 @@ export function Automation() {
       }),
     [state.automation.modules],
   )
+  const moduleCapacity = getAutomationModuleCapacity(state.upgrades)
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -154,7 +168,7 @@ export function Automation() {
           <StatPill label="Level" value={String(autoOpener.level)} />
           <StatPill label="Interval" value={formatDuration(effectiveAutoOpener.intervalMs)} />
           <StatPill label="Auto Opens" value={String(autoOpener.totalOpened)} />
-          <StatPill label="Modules" value={String(activeModules.length)} />
+          <StatPill label="Modules" value={`${activeModules.filter((module) => module.id !== AutomationModuleId.WarehouseSystem).length}/${moduleCapacity}`} />
         </div>
       </div>
 
@@ -244,9 +258,91 @@ export function Automation() {
           </section>
 
           <AutomationShop />
+
+          <section className="min-w-0 border border-cs-border bg-cs-panel p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special">
+                  <BadgePercent size={20} />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xl font-semibold text-cs-text">Auction House Deals</h3>
+                  <p className="mt-1 text-sm text-cs-muted">Limited simulated offers; each purchase is charged and delivered exactly once.</p>
+                </div>
+              </div>
+              <span className="shrink-0 border border-cs-border bg-cs-surface px-3 py-2 font-mono text-[10px] uppercase text-cs-muted">
+                {auctionModule.isEnabled && auctionModule.level > 0
+                  ? `Refresh ${formatDuration(Math.max(0, state.automation.auctionHouse.nextRefreshTime - now))}`
+                  : 'Module inactive'}
+              </span>
+            </div>
+
+            <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
+              {auctionDeals.map((deal) => {
+                const rarityColor = getSkinRarityColor(deal.item)
+                const canBuy = state.money >= deal.price && freeSlots > 0
+
+                return (
+                  <article className="min-w-0 border bg-cs-surface p-3" key={deal.id} style={{ borderColor: rarityColor }}>
+                    <div className="flex min-w-0 gap-3">
+                      <div className="grid h-20 w-20 shrink-0 place-items-center border border-cs-border bg-cs-panel">
+                        <AssetImage alt="" className="h-16 w-16 object-contain" src={deal.item.image} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate font-semibold text-cs-text">{deal.item.weapon} | {deal.item.finish}</h4>
+                        <p className="mt-1 font-mono text-[10px] uppercase" style={{ color: rarityColor }}>
+                          {getSkinRarityLabel(deal.item)} / {deal.item.wear}
+                        </p>
+                        <p className="mt-2 text-sm text-cs-muted">
+                          <span className="line-through">{formatCurrency(deal.listPrice)}</span>{' '}
+                          <strong className="text-cs-green">{formatCurrency(deal.price)}</strong>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-mono text-[10px] uppercase text-rarity-special">
+                        {Math.round(deal.discount * 100)}% off / {formatDuration(deal.expiresAt - now)} left
+                      </span>
+                      <button
+                        className="inline-flex items-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10 disabled:cursor-not-allowed disabled:border-cs-border disabled:text-cs-muted"
+                        disabled={!canBuy}
+                        onClick={() => purchaseAuctionDeal(deal.id)}
+                        title={freeSlots <= 0 ? 'Inventory is full' : state.money < deal.price ? 'Not enough money' : 'Purchase deal'}
+                        type="button"
+                      >
+                        <ShoppingCart size={15} /> Buy
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+              {auctionDeals.length === 0 ? (
+                <div className="grid min-h-32 place-items-center border border-cs-border bg-cs-surface p-4 text-center text-sm text-cs-muted sm:col-span-2">
+                  {auctionModule.level > 0 ? 'The Auction House is waiting for its next refresh.' : 'Purchase the Auction House module to generate offers.'}
+                </div>
+              ) : null}
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <StatPill label="Deals Purchased" value={String(state.statistics.auctionPurchases)} />
+              <StatPill label="Auction Savings" value={formatCurrency(state.statistics.auctionSavings)} />
+            </div>
+          </section>
         </div>
 
         <aside className="space-y-4">
+          <section className="border border-cs-border bg-cs-panel p-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-xl font-semibold text-cs-text">Warehouse</h3>
+              <Boxes className="text-rarity-classified" size={20} />
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+              <StatPill label="Used" value={`${state.inventory.length} / ${inventoryCapacity}`} />
+              <StatPill label="Free Slots" value={String(freeSlots)} />
+            </div>
+            <p className="mt-3 text-xs leading-5 text-cs-muted">
+              Full storage pauses item-generating purchases and automation before money is spent. Existing over-capacity saves remain intact.
+            </p>
+          </section>
           <section className="border border-cs-border bg-cs-panel p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xl font-semibold text-cs-text">Active Tasks</h3>

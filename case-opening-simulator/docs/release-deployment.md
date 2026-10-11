@@ -7,7 +7,8 @@ This guide covers production builds, PWA verification, and static hosting for Ca
 Run the full local release gate before tagging or deploying:
 
 ```bash
-npm install
+npm ci
+npm run assets:sync
 npm run verify:release
 ```
 
@@ -18,6 +19,7 @@ npm run verify:release
 - `sw.js`
 - core cached assets such as `favicon.svg`, `icons.svg`, `assets/placeholder.png`, and `sounds/case-opening.mp3`
 - runtime caches for CS2 images and sounds
+- all 2,134 generated CS2 images listed in the checksummed asset manifest
 
 For a quick production build only:
 
@@ -49,7 +51,11 @@ PWA settings live in `pwa.config.ts`.
 
 Before release:
 
-- Keep generated CS2 images in `public/assets/cs2` out of Git unless you intentionally publish them with the static host.
+- Keep generated CS2 images in `public/assets/cs2` out of normal Git history. They currently total roughly 197 MiB.
+- Run `npm run assets:sync` on a clean checkout. It downloads only missing or corrupt files from the committed `src/data/generated/cs2-assets.manifest.json` and verifies their sizes and SHA-256 checksums.
+- `npm run dev`, `npm run build`, and `npm run build:github` refuse to start when required images are missing. This prevents a release from silently shipping a text-only catalog.
+- Use `npm run assets:verify` for an offline integrity check. It never downloads files.
+- Regenerate the manifest with `npm run import:cs2-assets` when updating the upstream catalog. Review the generated import report before committing catalog changes.
 - Compress any new image/audio assets before adding them to `public`.
 - Keep sounds short and web-friendly (`mp3`, `ogg`, or compressed `wav`).
 - Run `npm run build` and watch for oversized chunks. The generated skin/case data chunks are expected to be large; split or defer them if startup becomes slow.
@@ -70,8 +76,11 @@ Current runtime dependencies are used by the app:
 - `nanoid` for IDs
 - `react`, `react-dom`, `react-router-dom`
 - `react-window` for virtualized inventory rendering
+- `workbox-window` for the PWA registration and update prompt
 
 Do not remove `ts-node`; it powers the CS2 asset importer.
+
+The project declares npm in `packageManager` and uses `package-lock.json`. Do not generate or commit a second lockfile.
 
 ## Environment Variables
 
@@ -91,6 +100,8 @@ Apply `supabase/migrations/20260625_optional_cloud_saves.sql` to your Supabase p
 2. Build and publish:
 
 ```bash
+npm ci
+npm run assets:sync
 npm run deploy
 ```
 
@@ -104,8 +115,9 @@ If your repository name is not `case-opening-simulator`, update the `build:githu
 1. Import the repository in Vercel.
 2. Build command: `npm run build`
 3. Output directory: `dist`
-4. Add optional environment variables for Supabase cloud save.
-5. Deploy and verify:
+4. Add `npm run assets:sync` before the build in the provider's install/build pipeline, or restore a verified asset cache keyed by `cs2-assets.manifest.json`.
+5. Add optional environment variables for Supabase cloud save.
+6. Deploy and verify:
    - app loads at the production URL
    - opening a case updates localStorage
    - reload keeps save progress
@@ -116,8 +128,9 @@ If your repository name is not `case-opening-simulator`, update the `build:githu
 1. Import the repository in Netlify.
 2. Build command: `npm run build`
 3. Publish directory: `dist`
-4. Add optional environment variables in Site configuration.
-5. For client-side routing, add a redirect rule if needed:
+4. Run `npm run assets:sync` before the build, or restore a verified asset cache keyed by the manifest.
+5. Add optional environment variables in Site configuration.
+6. For client-side routing, add a redirect rule if needed:
 
 ```txt
 /* /index.html 200
@@ -125,7 +138,7 @@ If your repository name is not `case-opening-simulator`, update the `build:githu
 
 ## Static S3 Bucket
 
-1. Run `npm run build`.
+1. Run `npm ci`, `npm run assets:sync`, and `npm run build`.
 2. Upload `dist` to the bucket.
 3. Configure the bucket or CDN to serve `index.html` for unknown routes.
 4. Set long cache headers for hashed assets and shorter cache headers for `index.html`, `sw.js`, and `manifest.webmanifest`.

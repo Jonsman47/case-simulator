@@ -87,11 +87,11 @@ const CORE_SKILL_TREE_NODES: SkillTreeNodeDefinition[] = [
   {
     id: SkillNodeId.BulkAutomation,
     name: 'Bulk Automation',
-    description: 'Adds future auto-open slot capacity and trims automation intervals.',
+    description: 'Adds an Auction House offer slot and trims automation intervals.',
     cost: 2,
     prerequisites: [SkillNodeId.SellSpecialist],
     position: { x: 360, y: 160 },
-    effectLabel: '+1 future auto-open slot, 5% faster automation',
+    effectLabel: '+1 Auction deal, 5% faster automation',
   },
   {
     id: SkillNodeId.TradeUpEdge,
@@ -105,11 +105,11 @@ const CORE_SKILL_TREE_NODES: SkillTreeNodeDefinition[] = [
   {
     id: SkillNodeId.MarketOracle,
     name: 'Market Oracle',
-    description: 'Improves market prediction hooks for analyst-style upgrades.',
+    description: 'Improves the chance of discovering timed gameplay and market events.',
     cost: 2,
     prerequisites: [SkillNodeId.SellSpecialist],
     position: { x: 360, y: 480 },
-    effectLabel: '+10% market prediction accuracy',
+    effectLabel: '+1% event discovery chance',
   },
   {
     id: SkillNodeId.GoldenTouch,
@@ -175,10 +175,10 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   {
     id: 'automation',
     name: 'Automation Grid',
-    description: 'Reduces automation friction and gradually expands future auto-open slots.',
+    description: 'Reduces automation friction and gradually expands Auction House offers.',
     rootPrerequisite: SkillNodeId.BulkAutomation,
     y: 165,
-    effectLabel: (tier) => `${tier * 1.2}% faster automation, slot tier ${Math.floor(tier / 4)}`,
+    effectLabel: (tier) => `${tier * 1.2}% faster automation, +${Math.floor(tier / 4)} Auction deals`,
     tierNames: branchTierNames,
   },
   {
@@ -211,10 +211,10 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   {
     id: 'market',
     name: 'Market Lab',
-    description: 'Improves trend reading and market prediction hooks.',
+    description: 'Improves timed gameplay and market event discovery.',
     rootPrerequisite: SkillNodeId.MarketOracle,
     y: 745,
-    effectLabel: (tier) => `+${tier * 3}% market read accuracy`,
+    effectLabel: (tier) => `+${(tier * 0.3).toFixed(1)}% event discovery chance`,
     tierNames: branchTierNames,
   },
   {
@@ -237,11 +237,11 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   },
   {
     id: 'inventory',
-    name: 'Vault Logistics',
-    description: 'Adds future inventory capacity and bulk-management headroom.',
+    name: 'Showcase Logistics',
+    description: 'Adds Trophy Room showcase slots and live inventory capacity.',
     rootPrerequisite: SkillNodeId.BulkAutomation,
     y: 1_180,
-    effectLabel: (tier) => `+${tier * 150} future inventory slots`,
+    effectLabel: (tier) => `+${tier * 4} Trophy Room slots, +${tier * 150} inventory slots`,
     tierNames: branchTierNames,
   },
   {
@@ -436,7 +436,7 @@ export function getSkillAutomationIntervalMultiplier(learnedSkillNodeIds: SkillN
   return 1 - Math.min(0.24, baseReduction + branchReduction)
 }
 
-export function getSkillAutoOpenSlotBonus(learnedSkillNodeIds: SkillNodeId[]) {
+export function getSkillAuctionDealSlotBonus(learnedSkillNodeIds: SkillNodeId[]) {
   const baseSlots = hasSkill(learnedSkillNodeIds, SkillNodeId.BulkAutomation) ? 1 : 0
 
   return baseSlots + Math.floor(getLearnedBranchTier(learnedSkillNodeIds, 'automation') / 4)
@@ -455,8 +455,8 @@ export function getSkillTradeUpInputCostMultiplier(learnedSkillNodeIds: SkillNod
 }
 
 export function getSkillMarketKnowledgeBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.MarketOracle) ? 0.1 : 0) +
-    getLearnedBranchTier(learnedSkillNodeIds, 'market') * 0.03
+  return (hasSkill(learnedSkillNodeIds, SkillNodeId.MarketOracle) ? 0.01 : 0) +
+    getLearnedBranchTier(learnedSkillNodeIds, 'market') * 0.003
 }
 
 export function getSkillOfflineEarningsMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
@@ -493,6 +493,10 @@ export function getSkillPassiveIncomeMultiplier(learnedSkillNodeIds: SkillNodeId
 
 export function getSkillInventoryCapacityBonus(learnedSkillNodeIds: SkillNodeId[]) {
   return getLearnedBranchTier(learnedSkillNodeIds, 'inventory') * 150
+}
+
+export function getSkillTrophySlotBonus(learnedSkillNodeIds: string[]) {
+  return getLearnedBranchTier(learnedSkillNodeIds as SkillNodeId[], 'inventory') * 4
 }
 
 export function getSkillOpeningFlowBonus(learnedSkillNodeIds: SkillNodeId[]) {

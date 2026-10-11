@@ -7,46 +7,30 @@ import { getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { getSkinRarityColor } from '../data/rarities'
 import { AssetImage } from './AssetImage'
 
-const rarityStyles: Record<Rarity, { border: string; text: string; tint: string }> = {
+const rarityStyles: Record<Rarity, { border: string }> = {
   [Rarity.Consumer]: {
     border: 'border-rarity-consumer',
-    text: 'text-rarity-consumer',
-    tint: 'bg-rarity-consumer/10',
   },
   [Rarity.Industrial]: {
     border: 'border-rarity-industrial',
-    text: 'text-rarity-industrial',
-    tint: 'bg-rarity-industrial/10',
   },
   [Rarity.MilSpec]: {
     border: 'border-rarity-mil-spec',
-    text: 'text-rarity-mil-spec',
-    tint: 'bg-rarity-mil-spec/10',
   },
   [Rarity.Restricted]: {
     border: 'border-rarity-restricted',
-    text: 'text-rarity-restricted',
-    tint: 'bg-rarity-restricted/10',
   },
   [Rarity.Classified]: {
     border: 'border-rarity-classified',
-    text: 'text-rarity-classified',
-    tint: 'bg-rarity-classified/10',
   },
   [Rarity.Covert]: {
     border: 'border-rarity-covert',
-    text: 'text-rarity-covert',
-    tint: 'bg-rarity-covert/10',
   },
   [Rarity.SpecialItem]: {
     border: 'border-rarity-special',
-    text: 'text-rarity-special',
-    tint: 'bg-rarity-special/10',
   },
   [Rarity.Contraband]: {
     border: 'border-rarity-contraband',
-    text: 'text-rarity-contraband',
-    tint: 'bg-rarity-contraband/10',
   },
 }
 
@@ -217,9 +201,8 @@ export const InventoryItemCard = memo(function InventoryItemCard({
       </div>
 
       <div
-        className={`mt-2 grid h-24 place-items-center border sm:h-28 xl:h-32 ${styles.border} ${styles.tint}`}
+        className={`mt-2 grid h-24 place-items-center border bg-cs-surface sm:h-28 xl:h-32 ${styles.border}`}
         style={{
-          backgroundColor: `${rarityColor}1a`,
           borderColor: rarityColor,
         }}
       >
@@ -235,7 +218,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
         <h3 className="truncate text-sm font-semibold text-cs-text">
           {item.weapon} | {item.finish}
         </h3>
-        <p className={`mt-1 font-mono text-xs uppercase ${styles.text}`} style={{ color: rarityColor }}>
+        <p className="mt-1 font-mono text-xs uppercase text-cs-muted">
           {getSkinRarityLabel(item)}
         </p>
       </div>

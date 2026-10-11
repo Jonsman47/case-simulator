@@ -1,6 +1,6 @@
-export const POOP_CLEANUP_REWARD = 5
-export const POOP_CLEANUP_COOLDOWN_MS = 60 * 60 * 1000
-// Stored separately from the main save so refreshing cannot replay the $5 recovery job.
+export const POOP_CLEANUP_REWARD = 10
+export const POOP_CLEANUP_COOLDOWN_MS = 3 * 60 * 1000
+// Stored separately from the main save so refreshing immediately cannot replay the recovery job.
 export const POOP_CLEANUP_LAST_COMPLETED_KEY = 'case-opening-simulator:poop-cleanup:last-completed'
 
 function getStorage(storage?: Storage | null) {

@@ -1,16 +1,18 @@
+import { resolvePublicAssetUrl } from './publicAsset'
+
 export const SOUND_ASSETS = {
-  achievementFanfare: '/sounds/achievement-fanfare.wav',
-  eventEnd: '/sounds/event-end.wav',
-  eventStart: '/sounds/event-start.wav',
-  itemFavorite: '/sounds/item-favorite.wav',
-  itemLock: '/sounds/item-lock.wav',
-  itemSell: '/sounds/item-sell.wav',
-  prestige: '/sounds/prestige.wav',
-  tradeUpResult: '/sounds/trade-up-result.wav',
-  uiClick: '/sounds/ui-click.wav',
+  achievementFanfare: resolvePublicAssetUrl('/sounds/achievement-fanfare.wav'),
+  eventEnd: resolvePublicAssetUrl('/sounds/event-end.wav'),
+  eventStart: resolvePublicAssetUrl('/sounds/event-start.wav'),
+  itemFavorite: resolvePublicAssetUrl('/sounds/item-favorite.wav'),
+  itemLock: resolvePublicAssetUrl('/sounds/item-lock.wav'),
+  itemSell: resolvePublicAssetUrl('/sounds/item-sell.wav'),
+  prestige: resolvePublicAssetUrl('/sounds/prestige.wav'),
+  tradeUpResult: resolvePublicAssetUrl('/sounds/trade-up-result.wav'),
+  uiClick: resolvePublicAssetUrl('/sounds/ui-click.wav'),
 } as const
 
-export const CASE_OPENING_SOUND_SRC = '/sounds/case-opening.mp3'
+export const CASE_OPENING_SOUND_SRC = resolvePublicAssetUrl('/sounds/case-opening.mp3')
 
 export type SoundId = keyof typeof SOUND_ASSETS
 

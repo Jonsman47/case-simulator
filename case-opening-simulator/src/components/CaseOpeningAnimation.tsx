@@ -18,10 +18,12 @@ export interface CaseOpeningAnimationProps {
   caseName?: string
   finalItem: SkinInstance
   finalItems?: SkinInstance[]
+  firstCaseHook?: 'nearMissGold' | 'forcedGold'
   onComplete: (item: SkinInstance) => void
   potentialSkins: WeightedSkinOption[]
   soundEnabled?: boolean
   speed?: AnimationSpeed
+  speedBonus?: number
   startSkipped?: boolean
 }
 
@@ -55,17 +57,8 @@ const audioRevealAtMs = 8000
 const normalRollDurationMs = audioRevealAtMs - audioRollStartMs
 const maxAnimatedBatchItems = 120
 const placeholderCaseImage = '/assets/placeholder.png'
-
-const rarityBorderClasses: Record<Rarity, string> = {
-  [Rarity.Consumer]: 'border-rarity-consumer',
-  [Rarity.Industrial]: 'border-rarity-industrial',
-  [Rarity.MilSpec]: 'border-rarity-mil-spec',
-  [Rarity.Restricted]: 'border-rarity-restricted',
-  [Rarity.Classified]: 'border-rarity-classified',
-  [Rarity.Covert]: 'border-rarity-covert',
-  [Rarity.SpecialItem]: 'border-rarity-special',
-  [Rarity.Contraband]: 'border-rarity-contraband',
-}
+const rareSpecialSuspenseImage = '/assets/GOLDGOLDGOLD.png'
+const preRevealAccentColor = 'rgb(var(--rarity-special))'
 
 function getReelLayout(batchSize: number): ReelLayout {
   if (batchSize > 25) {
@@ -182,22 +175,33 @@ function shuffleReelItems(items: ReelItem[]) {
 }
 
 function isGoldSuspenseDrop(item: Pick<SkinBase, 'rarity' | 'weapon'>) {
-  // Imported CS2 datasets can label rare knives as Covert because they share
-  // the case's ancient weapon rarity id. Treat knife/glove weapons as gold-tier
-  // for suspense so the reel hides them behind the neutral crate until reveal.
-  const weaponName = item.weapon.toLowerCase()
-  const goldWeaponTerms = ['knife', 'bayonet', 'karambit', 'dagger', 'glove', 'wrap']
+  if (item.rarity === Rarity.SpecialItem) {
+    return true
+  }
 
-  return item.rarity === Rarity.SpecialItem || goldWeaponTerms.some((term) => weaponName.includes(term))
+  const weaponName = item.weapon.toLowerCase()
+  const goldWeaponTerms = [
+    'knife',
+    'bayonet',
+    'karambit',
+    'dagger',
+    'glove',
+    'gloves',
+    'hand wrap',
+    'hand wraps',
+    'wraps',
+  ]
+
+  return goldWeaponTerms.some((term) => weaponName.includes(term))
 }
 
-function getGoldSuspenseSkin(finalItem: SkinInstance): SkinBase {
+function getGoldSuspenseSkin(finalItem: SkinBase): SkinBase {
   return {
     ...finalItem,
     id: `${finalItem.id}_gold_suspense`,
     weapon: 'Rare Special Item',
-    finish: 'Gold Crate',
-    image: placeholderCaseImage,
+    finish: 'Mystery Drop',
+    image: rareSpecialSuspenseImage,
   }
 }
 
@@ -205,6 +209,7 @@ function buildReelItems(
   potentialSkins: WeightedSkinOption[],
   finalItem: SkinInstance,
   layout: ReelLayout,
+  nearMissGold = false,
 ) {
   const safeOptions =
     potentialSkins.length > 0
@@ -214,10 +219,12 @@ function buildReelItems(
   // enough cards before and after the final target for the whole transform path.
   const fillerCount = Math.max(layout.fillerCount, layout.targetIndex + layout.afterCount + 1)
   const fillerItems = Array.from({ length: fillerCount }, (_, index) => {
-    const skin = pickWeightedSkin(safeOptions) ?? finalItem
+    const pickedSkin = pickWeightedSkin(safeOptions) ?? finalItem
+    const skin = isGoldSuspenseDrop(pickedSkin) ? getGoldSuspenseSkin(pickedSkin) : pickedSkin
 
     return {
       isFinal: false,
+      isSuspensePlaceholder: skin.id !== pickedSkin.id,
       key: `${skin.id}-${finalItem.instanceId}-${index}-${Math.random().toString(36).slice(2)}`,
       skin,
     }
@@ -226,6 +233,17 @@ function buildReelItems(
   const beforeTarget = shuffledItems.slice(0, layout.targetIndex)
   const afterTarget = shuffledItems.slice(layout.targetIndex, layout.targetIndex + layout.afterCount)
   const finalSkin = isGoldSuspenseDrop(finalItem) ? getGoldSuspenseSkin(finalItem) : finalItem
+
+  if (nearMissGold && beforeTarget.length > 0) {
+    const suspenseSkin = getGoldSuspenseSkin(finalItem)
+
+    beforeTarget[beforeTarget.length - 1] = {
+      isFinal: false,
+      isSuspensePlaceholder: true,
+      key: `${finalItem.instanceId}-near-miss-gold`,
+      skin: suspenseSkin,
+    }
+  }
 
   return [
     ...beforeTarget,
@@ -245,13 +263,13 @@ function getTrackTransform(isRolling: boolean, layout: ReelLayout) {
   return `translate3d(-${activeIndex * layout.slotPitchRem}rem, 0, 0)`
 }
 
-function getTransitionDuration(phase: ReelPhase) {
+function getTransitionDuration(phase: ReelPhase, rollDurationMs: number, quickDurationMs: number) {
   if (phase === 'spinning') {
-    return `${normalRollDurationMs}ms`
+    return `${rollDurationMs}ms`
   }
 
   if (phase === 'quickReveal') {
-    return `${quickRevealDurationMs}ms`
+    return `${quickDurationMs}ms`
   }
 
   return '180ms'
@@ -274,11 +292,23 @@ export function CaseOpeningAnimation({
   caseName = 'Case Opening',
   finalItem,
   finalItems,
+  firstCaseHook,
   onComplete,
   potentialSkins,
   soundEnabled = false,
+  speed = 'normal',
+  speedBonus = 0,
   startSkipped = false,
 }: CaseOpeningAnimationProps) {
+  const timingMultiplier = Math.max(
+    0.35,
+    (speed === 'fast' ? 0.65 : 1) / (1 + Math.max(0, speedBonus)),
+  )
+  const rollStartMs = Math.round(audioRollStartMs * timingMultiplier)
+  const revealAtMs = Math.round(audioRevealAtMs * timingMultiplier)
+  const rollDurationMs = Math.round(normalRollDurationMs * timingMultiplier)
+  const revealHoldMs = Math.round(normalRevealHoldMs * timingMultiplier)
+  const quickDurationMs = Math.round(quickRevealDurationMs * timingMultiplier)
   const items = useMemo(
     () => finalItems && finalItems.length > 0 ? finalItems : [finalItem],
     [finalItem, finalItems],
@@ -292,14 +322,20 @@ export function CaseOpeningAnimation({
   const reels = useMemo<OpeningReel[]>(
     () => animatedItems.map((item) => ({
       item,
-      reelItems: buildReelItems(potentialSkins, item, layout),
+      reelItems: buildReelItems(
+        potentialSkins,
+        item,
+        layout,
+        firstCaseHook === 'nearMissGold' && item.instanceId === items[0]?.instanceId,
+      ),
     })),
-    [animatedItems, layout, potentialSkins],
+    [animatedItems, firstCaseHook, items, layout, potentialSkins],
   )
   const [phase, setPhase] = useState<ReelPhase>(() => (startSkipped ? 'quickReveal' : 'ready'))
   const [rollStarted, setRollStarted] = useState(startSkipped)
   const audioRef = useRef<HTMLAudioElement | undefined>(undefined)
   const completedRef = useRef(false)
+  const closedRef = useRef(false)
   const completeTimerRef = useRef<number | undefined>(undefined)
   const skipTimerRef = useRef<number | undefined>(undefined)
   const rollFrameRef = useRef<number | undefined>(undefined)
@@ -308,7 +344,9 @@ export function CaseOpeningAnimation({
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
   const isRolling = rollStarted && (phase === 'spinning' || phase === 'quickReveal')
   const trackTransform = getTrackTransform(isRolling, layout)
-  const transitionDuration = isRolling ? getTransitionDuration(phase) : '0ms'
+  const transitionDuration = isRolling
+    ? getTransitionDuration(phase, rollDurationMs, quickDurationMs)
+    : '0ms'
   const transitionTimingFunction =
     phase === 'spinning' ? 'cubic-bezier(0.08, 0.72, 0.12, 1)' : 'cubic-bezier(0.2, 0.8, 0.2, 1)'
 
@@ -321,9 +359,16 @@ export function CaseOpeningAnimation({
       completedRef.current = true
       setPhase('revealed')
       stopCaseOpeningAudio(audioRef.current)
-      completeTimerRef.current = window.setTimeout(() => onComplete(primaryItem), holdMs)
+      if (!isPremiumBatch) {
+        completeTimerRef.current = window.setTimeout(() => {
+          if (!closedRef.current) {
+            closedRef.current = true
+            onComplete(primaryItem)
+          }
+        }, holdMs)
+      }
     },
-    [onComplete, primaryItem],
+    [isPremiumBatch, onComplete, primaryItem, setPhase],
   )
 
   const cancelRollFrames = useCallback(() => {
@@ -346,24 +391,25 @@ export function CaseOpeningAnimation({
         setRollStarted(true)
       })
     })
-  }, [cancelRollFrames])
+  }, [cancelRollFrames, setRollStarted])
 
   useEffect(() => {
     const timers: number[] = []
 
     completedRef.current = false
+    closedRef.current = false
     audioRef.current = undefined
     cancelRollFrames()
 
     if (startSkipped) {
-      timers.push(window.setTimeout(() => finishAnimation(0), quickRevealDurationMs))
+      timers.push(window.setTimeout(() => finishAnimation(0), quickDurationMs))
     } else {
       audioRef.current = playCaseOpeningAudio(soundEnabled)
       timers.push(window.setTimeout(() => {
         setPhase('spinning')
         startReelRoll()
-      }, audioRollStartMs))
-      timers.push(window.setTimeout(() => finishAnimation(normalRevealHoldMs), audioRevealAtMs))
+      }, rollStartMs))
+      timers.push(window.setTimeout(() => finishAnimation(revealHoldMs), revealAtMs))
     }
 
     return () => {
@@ -379,9 +425,18 @@ export function CaseOpeningAnimation({
         window.clearTimeout(skipTimerRef.current)
       }
     }
-  }, [cancelRollFrames, finishAnimation, soundEnabled, startReelRoll, startSkipped])
+  }, [cancelRollFrames, finishAnimation, quickDurationMs, revealAtMs, revealHoldMs, rollStartMs, soundEnabled, startReelRoll, startSkipped])
 
   function skipAnimation() {
+    if (phase === 'revealed') {
+      if (!closedRef.current) {
+        closedRef.current = true
+        onComplete(primaryItem)
+      }
+
+      return
+    }
+
     if (completedRef.current) {
       return
     }
@@ -389,7 +444,7 @@ export function CaseOpeningAnimation({
     if (isPremiumBatch) {
       setPhase('quickReveal')
       startReelRoll()
-      skipTimerRef.current = window.setTimeout(() => finishAnimation(0), quickRevealDurationMs)
+      skipTimerRef.current = window.setTimeout(() => finishAnimation(0), quickDurationMs)
       return
     }
 
@@ -424,7 +479,7 @@ export function CaseOpeningAnimation({
             type="button"
           >
             {phase === 'revealed' ? <X size={16} /> : <FastForward size={16} />}
-            Skip Animation
+            {phase === 'revealed' ? 'Close' : 'Skip Animation'}
           </button>
         </div>
 
@@ -454,18 +509,18 @@ export function CaseOpeningAnimation({
 
         <div
           className={[
-            // Result cards stay neutral so the reveal is the item itself, not a rarity-tinted banner.
-            'relative mt-5 overflow-hidden border border-cs-border bg-cs-panel p-4 transition-opacity',
+            'relative mt-5 overflow-hidden border bg-cs-panel p-4 transition-opacity',
+            isPremiumBatch && phase === 'revealed' ? 'border-rarity-special shadow-[0_0_44px_rgba(255,215,0,0.4)]' : 'border-cs-border',
             phase === 'revealed' || phase === 'quickReveal' ? 'opacity-100' : 'opacity-70',
           ].join(' ')}
           data-testid="opening-result"
         >
           {phase === 'revealed' ? (
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-center gap-3">
+            <div className={isPremiumBatch ? 'grid gap-4 py-4 text-center' : 'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
+              <div className={isPremiumBatch ? 'grid min-w-0 place-items-center gap-3' : 'flex min-w-0 items-center gap-3'}>
                 <AssetImage
                   alt=""
-                  className="h-16 w-16 shrink-0 object-contain"
+                  className={isPremiumBatch ? 'h-52 w-52 shrink-0 object-contain drop-shadow-2xl' : 'h-16 w-16 shrink-0 object-contain'}
                   draggable={false}
                   src={primaryItem.image}
                 />
@@ -480,7 +535,7 @@ export function CaseOpeningAnimation({
                   </h3>
                 </div>
               </div>
-              <div className="shrink-0 font-mono text-lg font-semibold text-cs-green">
+              <div className={isPremiumBatch ? 'shrink-0 font-mono text-lg font-semibold text-rarity-special' : 'shrink-0 font-mono text-lg font-semibold text-cs-green'}>
                 {batchSize === 1 ? formatCurrency(primaryItem.marketValue) : formatCurrency(totalValue)}
               </div>
             </div>
@@ -518,15 +573,12 @@ function CasePreRollGrid({
   hiddenItemCount: number
   items: SkinInstance[]
 }) {
-  const previewItem = getPrimaryItem(items) ?? items[0]
-  const previewColor = previewItem ? getSkinRarityColor(previewItem) : 'rgb(var(--rarity-special))'
-
   if (batchSize === 1) {
     return (
       <div
         className="case-preroll-stage relative grid min-h-80 place-items-center overflow-hidden border border-cs-border bg-cs-bg p-6"
         data-testid="case-pre-roll-hero"
-        style={{ '--case-accent': previewColor } as CSSProperties}
+        style={{ '--case-accent': preRevealAccentColor } as CSSProperties}
       >
         <AssetImage
           alt=""
@@ -564,11 +616,11 @@ function CasePreRollGrid({
             className={[
               'case-preroll-cell relative grid place-items-center overflow-hidden border bg-cs-panel',
               batchSize > 25 ? 'aspect-square p-1' : 'min-h-28 p-3',
-              rarityBorderClasses[item.rarity],
+              'border-rarity-special',
             ].join(' ')}
             data-testid="case-pre-roll-cell"
             key={item.instanceId}
-            style={{ '--case-accent': getSkinRarityColor(item), animationDelay: `${(index % 16) * 34}ms` } as CSSProperties}
+            style={{ '--case-accent': preRevealAccentColor, animationDelay: `${(index % 16) * 34}ms` } as CSSProperties}
           >
             <AssetImage
               alt=""
@@ -673,7 +725,7 @@ function ReelGrid({
             className={[
               'case-opening-cell relative overflow-hidden border bg-cs-panel',
               batchSize > 25 ? 'aspect-square' : 'h-28',
-              rarityBorderClasses[reel.item.rarity],
+              'border-cs-border',
             ].join(' ')}
             key={reel.item.instanceId}
           >
@@ -818,8 +870,8 @@ const ReelCard = memo(function ReelCard({
   layout: ReelLayout
   variant: 'compact' | 'mega' | 'single'
 }) {
-  const rarityColor = getSkinRarityColor(item.skin)
   const isGoldSuspense = item.isSuspensePlaceholder
+  const rarityColor = isGoldSuspense ? 'rgb(var(--rarity-covert))' : getSkinRarityColor(item.skin)
 
   return (
     <article
@@ -828,24 +880,23 @@ const ReelCard = memo(function ReelCard({
         variant === 'single' ? 'h-36 grid-rows-[1fr_auto]' : '',
         variant === 'compact' ? 'h-full grid-rows-[1fr_auto]' : '',
         variant === 'mega' ? 'h-full place-items-center' : '',
-        item.isFinal ? 'shadow-glow' : '',
-        isGoldSuspense ? 'bg-cs-bg' : '',
+        isGoldSuspense ? 'border-rarity-covert bg-cs-bg' : '',
       ].join(' ')}
       data-testid={item.isFinal ? 'case-opening-target' : undefined}
       style={{ borderColor: rarityColor, width: `${layout.cardWidthRem}rem` }}
     >
       <div className="grid place-items-center">
         {isGoldSuspense ? (
-          <div
-            aria-label="Gold crate"
+          <AssetImage
+            alt=""
             className={[
-              'grid place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special shadow-glow',
-              variant === 'mega' ? 'h-7 w-7' : 'h-16 w-16',
+              'object-contain drop-shadow-2xl',
+              variant === 'mega' ? 'h-8 w-8' : 'h-20 w-20',
             ].join(' ')}
+            draggable={false}
             data-testid="gold-suspense-placeholder"
-          >
-            <PackageOpen aria-hidden="true" size={variant === 'mega' ? 16 : 30} />
-          </div>
+            src={item.skin.image}
+          />
         ) : (
           <AssetImage
             alt=""

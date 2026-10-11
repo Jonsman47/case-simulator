@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GameContext, type GameContextValue } from '../components/GameContext'
 import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
 import { defaultDropsByRarity, defaultGameState, type GameState } from '../data/gameState'
-import { Rarity, TrophySlotId, WearCondition, type SkinInstance } from '../data/models'
+import { Rarity, WearCondition, type SkinInstance } from '../data/models'
 import { TrophyRoomView } from './TrophyRoomView'
 
 afterEach(() => {
@@ -64,8 +64,8 @@ function renderTrophyRoom(stateOverrides: Partial<GameState> = {}) {
   const caseDefinitions = CASE_DEFINITIONS
   const voidFn = vi.fn(() => undefined)
   const asyncVoidFn = vi.fn(async () => undefined)
-  const assignTrophyItem = vi.fn<(slotId: TrophySlotId, itemId: string) => void>()
-  const removeTrophyItem = vi.fn<(slotId: TrophySlotId) => void>()
+  const assignTrophyItem = vi.fn<(slotId: string, itemId: string) => void>()
+  const removeTrophyItem = vi.fn<(slotId: string) => void>()
   const value: GameContextValue = {
     state,
     caseDefinitions,
@@ -89,6 +89,7 @@ function renderTrophyRoom(stateOverrides: Partial<GameState> = {}) {
     setAutoOpenerCase: voidFn,
     toggleAutoOpener: voidFn,
     purchaseAutomationModule: voidFn,
+    purchaseAuctionDeal: voidFn,
     toggleAutomationModule: voidFn,
     purchaseUpgrade: voidFn,
     prestige: voidFn,
@@ -142,16 +143,20 @@ function renderTrophyRoom(stateOverrides: Partial<GameState> = {}) {
 }
 
 describe('TrophyRoomView', () => {
-  it('assigns inventory items to the active trophy slot', () => {
+  it('starts with 12 free-choice showcase slots and assigns inventory items to the active slot', () => {
     const item = makeItem()
     const { assignTrophyItem } = renderTrophyRoom({ inventory: [item] })
 
+    expect(screen.getByText('Filled Slots')).toBeInTheDocument()
+    expect(screen.getByText('0/12')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Choose Skin' })).toHaveLength(12)
+
     fireEvent.click(screen.getByRole('button', { name: /AK-47 \| Redline/i }))
 
-    expect(assignTrophyItem).toHaveBeenCalledWith(TrophySlotId.MostExpensiveSkin, item.instanceId)
+    expect(assignTrophyItem).toHaveBeenCalledWith('showcase_1', item.instanceId)
   })
 
-  it('displays relevant slot stats and warns when a trophy item is missing', () => {
+  it('shows compact item details and warns when a trophy item is missing', () => {
     const item = makeItem({
       floatValue: 0.001,
       instanceId: 'missing-item',
@@ -161,20 +166,46 @@ describe('TrophyRoomView', () => {
     const { removeTrophyItem } = renderTrophyRoom({
       inventory: [],
       trophyAssignments: {
-        [TrophySlotId.BestFloat]: {
-          slotId: TrophySlotId.BestFloat,
-          item,
+        showcase_1: {
+          slotId: 'showcase_1',
+          itemId: item.instanceId,
           assignedAt: 1_782_147_600_000,
         },
       },
     })
 
-    expect(screen.getAllByText('Best Float').length).toBeGreaterThan(0)
-    expect(screen.getByText('0.001')).toBeInTheDocument()
-    expect(screen.getAllByText(/No longer in inventory/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Showcase Slot 1').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Missing from inventory/i).length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByLabelText('Remove Best Float'))
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }))
 
-    expect(removeTrophyItem).toHaveBeenCalledWith(TrophySlotId.BestFloat)
+    expect(removeTrophyItem).toHaveBeenCalledWith('showcase_1')
+  })
+
+  it('replaces a filled slot with another owned skin', () => {
+    const firstItem = makeItem({ instanceId: 'item-1', finish: 'Redline' })
+    const secondItem = makeItem({ instanceId: 'item-2', finish: 'Asiimov', marketValue: 70 })
+    const { assignTrophyItem } = renderTrophyRoom({
+      inventory: [firstItem, secondItem],
+      trophyAssignments: {
+        showcase_1: {
+          slotId: 'showcase_1',
+          itemId: firstItem.instanceId,
+          assignedAt: 1_782_147_600_000,
+        },
+      },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Replace' }))
+    fireEvent.click(screen.getByRole('button', { name: /AK-47 \| Asiimov/i }))
+
+    expect(assignTrophyItem).toHaveBeenCalledWith('showcase_1', secondItem.instanceId)
+  })
+
+  it('shows upgraded trophy room slots from the skill tree inventory branch', () => {
+    renderTrophyRoom({ learnedSkillNodeIds: ['inventory_1'] as never })
+
+    expect(screen.getByText('0/16')).toBeInTheDocument()
+    expect(screen.getAllByText('Showcase Slot 16').length).toBeGreaterThan(0)
   })
 })

@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import '@testing-library/jest-dom/vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -14,7 +14,8 @@ import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
 import { defaultDropsByRarity, defaultGameState, type GameSettings, type GameState } from '../data/gameState'
 import { Rarity, WearCondition, type SkinInstance } from '../data/models'
 import { eventManager } from '../events/eventManager'
-import { serializeGameState } from '../utils/save'
+import { SAVE_STORAGE_KEY, serializeGameState } from '../utils/save'
+import { POOP_CLEANUP_LAST_COMPLETED_KEY } from '../utils/poopCleanupMinigame'
 import { Settings } from './Settings'
 
 type SettingsOverrides = Omit<Partial<GameSettings>, 'rarityColors'> & {
@@ -27,6 +28,8 @@ type StateOverrides = Omit<Partial<GameState>, 'settings' | 'statistics'> & {
 
 afterEach(() => {
   cleanup()
+  window.localStorage.removeItem(SAVE_STORAGE_KEY)
+  window.localStorage.removeItem(POOP_CLEANUP_LAST_COMPLETED_KEY)
   vi.restoreAllMocks()
 })
 
@@ -107,6 +110,7 @@ function createGameValue(
     setAutoOpenerCase: voidFn,
     toggleAutoOpener: voidFn,
     purchaseAutomationModule: voidFn,
+    purchaseAuctionDeal: voidFn,
     toggleAutomationModule: voidFn,
     purchaseUpgrade: voidFn,
     prestige: voidFn,
@@ -298,5 +302,29 @@ describe('Settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Replace Save' }))
 
     expect(replaceGameState).toHaveBeenCalledWith(expect.objectContaining({ money: 99 }))
+  })
+
+  it('resets progress after confirmation and clears local save data', () => {
+    const resetGame = vi.fn()
+    const value = createGameValue({ money: 12 }, { resetGame })
+
+    window.localStorage.setItem(SAVE_STORAGE_KEY, 'saved-game')
+    window.localStorage.setItem(POOP_CLEANUP_LAST_COMPLETED_KEY, '123')
+
+    renderWithGame(value, <Settings />)
+
+    fireEvent.click(screen.getByRole('button', { name: /reset progress/i }))
+
+    const dialog = screen.getByRole('dialog')
+
+    expect(dialog).toHaveTextContent('Reset Progress?')
+    expect(resetGame).not.toHaveBeenCalled()
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Reset Progress' }))
+
+    expect(resetGame).toHaveBeenCalledTimes(1)
+    expect(window.localStorage.getItem(SAVE_STORAGE_KEY)).toBeNull()
+    expect(window.localStorage.getItem(POOP_CLEANUP_LAST_COMPLETED_KEY)).toBeNull()
+    expect(screen.getByText('Progress reset. New run started.')).toBeInTheDocument()
   })
 })

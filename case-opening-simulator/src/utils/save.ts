@@ -17,29 +17,28 @@ import {
   createInitialMarketTrends,
   MARKET_HISTORY_MAX_TRACKED_SKINS,
   trimMarketPriceHistory,
-  type ActiveMarketEvent,
-  type MarketEventLog,
-  type MarketEventType,
   type MarketPriceHistory,
   type MarketPricePoint,
   type MarketTrendArrow,
+  type ActiveMarketEvent,
+  type MarketEventLog,
+  hydrateMarketEvent,
 } from '../market/marketSimulation'
 import {
   GAME_EVENT_TYPES,
+  eventManager,
   type ActiveGameEvent,
-  type GameEventEffects,
   type GameEventLog,
-  type GameEventType,
 } from '../events/eventManager'
 import {
   AutomationModuleId,
   AutoSellRuleType,
   Rarity,
-  TrophySlotId,
   WearCondition,
   type AchievementProgress,
   type AutomationState,
   type AutomationModuleState,
+  type AuctionHouseDeal,
   type AutoSellRule,
   type CollectionEntry,
   type CollectionRewardProgress,
@@ -76,9 +75,16 @@ import { normalizePrestigeBonusLevels } from '../data/prestige'
 import { normalizeLearnedSkillNodeIds } from '../data/skills'
 import { createDefaultTrophyAssignments } from './trophyRoom'
 import { createDefaultDailyRewardsState, refreshDailyRewardsState } from '../rewards/dailyRewards'
+import {
+  POOP_CLEANUP_LAST_COMPLETED_KEY,
+  readPoopCleanupLastCompleted,
+  writePoopCleanupLastCompleted,
+} from './poopCleanupMinigame'
+import { normalizeMoney } from './safeNumbers'
+import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 23
+export const CURRENT_SAVE_VERSION = 28
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 
 export interface SaveEnvelope {
@@ -298,229 +304,6 @@ function normalizeMarketTrends(value: unknown): Record<string, MarketTrendArrow>
   }
 }
 
-function isGameEventType(value: unknown): value is GameEventType {
-  return isEnumValue(GAME_EVENT_TYPES, value)
-}
-
-function isMarketEventType(value: unknown): value is MarketEventType {
-  return (
-    value === 'KnifeWeekend' ||
-    value === 'MarketBoom' ||
-    value === 'MarketCrash' ||
-    value === 'OperationEvent' ||
-    value === 'RetiredCaseWeek' ||
-    value === 'CollectorWeek' ||
-    value === 'TradeUpMadness' ||
-    value === 'RetiredBoost' ||
-    value === 'OverSupplyDrop'
-  )
-}
-
-function isNumberRecord(value: unknown): value is Record<string, number> {
-  return isRecord(value) && Object.values(value).every(isNumber)
-}
-
-function isRarityNumberRecord(value: unknown): value is Partial<Record<Rarity, number>> {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return Object.entries(value).every(([rarity, multiplier]) => {
-    return isEnumValue(Object.values(Rarity), rarity) && isNumber(multiplier)
-  })
-}
-
-function isGameEventEffects(value: unknown): value is GameEventEffects {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    (value.caseCostMultiplier === undefined || isNumber(value.caseCostMultiplier)) &&
-    (value.caseCostMultipliers === undefined || isNumberRecord(value.caseCostMultipliers)) &&
-    (value.collectionRewardMultiplier === undefined || isNumber(value.collectionRewardMultiplier)) &&
-    (value.dropRarityMultipliers === undefined || isRarityNumberRecord(value.dropRarityMultipliers)) &&
-    (value.limitedSkinIds === undefined || isStringArray(value.limitedSkinIds)) &&
-    (value.marketEventType === undefined || isMarketEventType(value.marketEventType)) &&
-    (value.prestigePointMultiplier === undefined || isNumber(value.prestigePointMultiplier)) &&
-    (value.specialEventCaseIds === undefined || isStringArray(value.specialEventCaseIds)) &&
-    (value.tradeUpInputCostMultiplier === undefined || isNumber(value.tradeUpInputCostMultiplier))
-  )
-}
-
-function isGameEventReward(value: unknown) {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    typeof value.label === 'string' &&
-    (value.money === undefined || isNumber(value.money)) &&
-    (value.prestigePoints === undefined || isNumber(value.prestigePoints)) &&
-    (value.skillPoints === undefined || isNumber(value.skillPoints))
-  )
-}
-
-function isActiveGameEvent(value: unknown): value is ActiveGameEvent {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    typeof value.id === 'string' &&
-    isGameEventType(value.type) &&
-    typeof value.name === 'string' &&
-    typeof value.description === 'string' &&
-    isNumber(value.startTime) &&
-    isNumber(value.endTime) &&
-    typeof value.effectSummary === 'string' &&
-    isGameEventEffects(value.effects) &&
-    (value.rewards === undefined || (Array.isArray(value.rewards) && value.rewards.every(isGameEventReward))) &&
-    (value.allowOverlap === undefined || typeof value.allowOverlap === 'boolean') &&
-    (value.exclusiveGroup === undefined || typeof value.exclusiveGroup === 'string') &&
-    isNumber(value.priority) &&
-    (value.triggeredAtCasesOpened === undefined || isNumber(value.triggeredAtCasesOpened))
-  )
-}
-
-function isGameEventLog(value: unknown): value is GameEventLog {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    typeof value.id === 'string' &&
-    isGameEventType(value.type) &&
-    typeof value.name === 'string' &&
-    typeof value.description === 'string' &&
-    isNumber(value.startTime) &&
-    isNumber(value.endTime) &&
-    isNumber(value.endedAt) &&
-    typeof value.effectSummary === 'string' &&
-    (value.rewards === undefined || (Array.isArray(value.rewards) && value.rewards.every(isGameEventReward))) &&
-    (value.triggeredAtCasesOpened === undefined || isNumber(value.triggeredAtCasesOpened))
-  )
-}
-
-function isActiveMarketEvent(value: unknown): value is ActiveMarketEvent {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    typeof value.id === 'string' &&
-    isMarketEventType(value.type) &&
-    typeof value.label === 'string' &&
-    (value.name === undefined || typeof value.name === 'string') &&
-    (value.description === undefined || typeof value.description === 'string') &&
-    (value.startTime === undefined || isNumber(value.startTime)) &&
-    (value.endTime === undefined || isNumber(value.endTime)) &&
-    (value.effectSummary === undefined || typeof value.effectSummary === 'string') &&
-    (value.affectedSkinIds === undefined || isStringArray(value.affectedSkinIds)) &&
-    (value.caseIds === undefined || isStringArray(value.caseIds)) &&
-    (value.totalImpact === undefined || isNumber(value.totalImpact)) &&
-    (value.allowOverlap === undefined || typeof value.allowOverlap === 'boolean') &&
-    (value.impactPerTick === undefined || isNumber(value.impactPerTick)) &&
-    (value.startedAt === undefined || isNumber(value.startedAt)) &&
-    (value.ticksRemaining === undefined || isNumber(value.ticksRemaining)) &&
-    (value.totalTicks === undefined || isNumber(value.totalTicks)) &&
-    (value.triggeredAtCasesOpened === undefined || isNumber(value.triggeredAtCasesOpened))
-  )
-}
-
-function isMarketEventLog(value: unknown): value is MarketEventLog {
-  if (!isRecord(value)) {
-    return false
-  }
-
-  return (
-    typeof value.id === 'string' &&
-    isMarketEventType(value.type) &&
-    typeof value.label === 'string' &&
-    (value.name === undefined || typeof value.name === 'string') &&
-    (value.description === undefined || typeof value.description === 'string') &&
-    (value.startTime === undefined || isNumber(value.startTime)) &&
-    (value.endTime === undefined || isNumber(value.endTime)) &&
-    (value.endedAt === undefined || isNumber(value.endedAt)) &&
-    (value.effectSummary === undefined || typeof value.effectSummary === 'string') &&
-    (value.triggeredAtCasesOpened === undefined || isNumber(value.triggeredAtCasesOpened))
-  )
-}
-
-function normalizeActiveMarketEvents(value: unknown) {
-  return Array.isArray(value) && value.every(isActiveMarketEvent) ? value : []
-}
-
-function normalizeUpcomingMarketEvents(value: unknown) {
-  return Array.isArray(value) && value.every(isActiveMarketEvent) ? value : []
-}
-
-function normalizeMarketEventHistory(value: unknown) {
-  return Array.isArray(value) && value.every(isMarketEventLog) ? value : []
-}
-
-function normalizeActiveGameEvents(value: unknown) {
-  return Array.isArray(value) && value.every(isActiveGameEvent) ? value : []
-}
-
-function normalizeUpcomingGameEvents(value: unknown) {
-  return Array.isArray(value) && value.every(isActiveGameEvent) ? value : []
-}
-
-function normalizeGameEventHistory(value: unknown) {
-  return Array.isArray(value) && value.every(isGameEventLog) ? value : []
-}
-
-function marketEventToGameEvent(event: ActiveMarketEvent): ActiveGameEvent | undefined {
-  if (!isGameEventType(event.type)) {
-    return undefined
-  }
-
-  const startTime = event.startTime ?? event.startedAt ?? Date.now()
-  const endTime = event.endTime ?? startTime
-
-  return {
-    id: `migrated:${event.id}`,
-    type: event.type,
-    name: event.name ?? event.label,
-    description: event.description ?? event.label,
-    startTime,
-    endTime,
-    effectSummary: event.effectSummary ?? 'Migrated market event.',
-    effects: {
-      marketEventType: event.type,
-      specialEventCaseIds: event.caseIds,
-    },
-    allowOverlap: event.allowOverlap,
-    priority: 30,
-    triggeredAtCasesOpened: event.triggeredAtCasesOpened,
-  }
-}
-
-function normalizeActiveGameEventsWithFallback(value: unknown, fallbackMarketEvents: unknown) {
-  const normalizedEvents = normalizeActiveGameEvents(value)
-
-  if (normalizedEvents.length > 0) {
-    return normalizedEvents
-  }
-
-  return normalizeActiveMarketEvents(fallbackMarketEvents)
-    .map(marketEventToGameEvent)
-    .filter((event): event is ActiveGameEvent => Boolean(event))
-}
-
-function normalizeUpcomingGameEventsWithFallback(value: unknown, fallbackMarketEvents: unknown) {
-  const normalizedEvents = normalizeUpcomingGameEvents(value)
-
-  if (normalizedEvents.length > 0) {
-    return normalizedEvents
-  }
-
-  return normalizeUpcomingMarketEvents(fallbackMarketEvents)
-    .map(marketEventToGameEvent)
-    .filter((event): event is ActiveGameEvent => Boolean(event))
-}
-
 function normalizeDropsByRarity(value: unknown) {
   const rawDropsByRarity = isRecord(value) ? value : {}
 
@@ -585,6 +368,8 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
   }
 
   return {
+    auctionPurchases: Math.max(0, Math.floor(normalizeNumber(value.auctionPurchases, 0))),
+    auctionSavings: Math.max(0, normalizeNumber(value.auctionSavings, 0)),
     casesOpened: value.casesOpened,
     moneySpent: value.moneySpent,
     moneyEarned: value.moneyEarned,
@@ -619,6 +404,10 @@ function normalizeSettings(value: unknown): GameSettings {
       typeof value.backupPromptEnabled === 'boolean'
         ? value.backupPromptEnabled
         : defaultGameState.settings.backupPromptEnabled,
+    debugMode:
+      typeof value.debugMode === 'boolean'
+        ? value.debugMode
+        : defaultGameState.settings.debugMode,
     highContrastMode:
       typeof value.highContrastMode === 'boolean'
         ? value.highContrastMode
@@ -653,6 +442,21 @@ function normalizeSettings(value: unknown): GameSettings {
         : defaultGameState.settings.simplifiedAnimations,
     theme: value.theme === 'dark' || value.theme === 'light' ? value.theme : defaultGameState.settings.theme,
   }
+}
+
+function normalizeWorkMiniGameCooldowns(value: unknown, lastPoopCleaningAt = 0): WorkMiniGameCooldowns {
+  const source = isRecord(value) ? value : {}
+
+  return WORK_MINIGAMES.reduce<WorkMiniGameCooldowns>((cooldowns, game) => {
+    const fallback = game.id === 'poopCleaning' ? lastPoopCleaningAt : 0
+    const timestamp = normalizeNumber(source[game.id], fallback)
+
+    if (timestamp > 0) {
+      cooldowns[game.id] = timestamp
+    }
+
+    return cooldowns
+  }, {})
 }
 
 function isSortCriterion(value: unknown): value is SortCriterion {
@@ -761,23 +565,47 @@ function readSkinInstances(value: unknown, fieldName: string) {
     throw new SaveGameError(`Save file has invalid ${fieldName}.`)
   }
 
-  return value
+  return dedupeSkinInstances(value)
 }
 
 function normalizeOptionalSkinInstances(value: unknown) {
-  return Array.isArray(value) && value.every(isSkinInstance) ? value : []
+  return Array.isArray(value) && value.every(isSkinInstance) ? dedupeSkinInstances(value) : []
 }
 
-function isTrophySlotId(value: unknown): value is TrophySlotId {
-  return isEnumValue(Object.values(TrophySlotId), value)
+function dedupeSkinInstances(items: SkinInstance[]) {
+  const seenIds = new Set<string>()
+
+  return items.filter((item) => {
+    if (seenIds.has(item.instanceId)) {
+      return false
+    }
+
+    seenIds.add(item.instanceId)
+    return true
+  })
 }
 
-function isTrophyAssignment(value: unknown): value is TrophyAssignment {
+function readTrophyAssignment(value: unknown, fallbackSlotId: string): TrophyAssignment | undefined {
   if (!isRecord(value)) {
-    return false
+    return undefined
   }
 
-  return isTrophySlotId(value.slotId) && isSkinInstance(value.item) && isNumber(value.assignedAt)
+  const slotId = typeof value.slotId === 'string' && value.slotId ? value.slotId : fallbackSlotId
+  const itemId = typeof value.itemId === 'string'
+    ? value.itemId
+    : isSkinInstance(value.item)
+      ? value.item.instanceId
+      : undefined
+
+  if (!itemId || !isNumber(value.assignedAt)) {
+    return undefined
+  }
+
+  return {
+    slotId,
+    itemId,
+    assignedAt: value.assignedAt,
+  }
 }
 
 function normalizeTrophyAssignments(value: unknown): TrophyAssignments {
@@ -787,15 +615,11 @@ function normalizeTrophyAssignments(value: unknown): TrophyAssignments {
     return defaults
   }
 
-  return Object.values(TrophySlotId).reduce<TrophyAssignments>((assignments, slotId) => {
-    const rawAssignment = value[slotId]
+  return Object.entries(value).reduce<TrophyAssignments>((assignments, [slotId, rawAssignment]) => {
+    const assignment = readTrophyAssignment(rawAssignment, slotId)
 
-    if (isTrophyAssignment(rawAssignment) && rawAssignment.slotId === slotId) {
-      assignments[slotId] = {
-        slotId,
-        item: rawAssignment.item,
-        assignedAt: rawAssignment.assignedAt,
-      }
+    if (assignment) {
+      assignments[assignment.slotId] = assignment
     }
 
     return assignments
@@ -1063,6 +887,106 @@ function normalizeAutomationModule(
   }
 }
 
+function normalizeAuctionDeal(value: unknown): AuctionHouseDeal | undefined {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    !isSkinInstance(value.item) ||
+    !isNumber(value.listPrice) ||
+    !isNumber(value.price) ||
+    !isNumber(value.discount) ||
+    !isNumber(value.createdAt) ||
+    !isNumber(value.expiresAt) ||
+    value.expiresAt <= value.createdAt
+  ) {
+    return undefined
+  }
+
+  return {
+    id: value.id,
+    item: value.item,
+    listPrice: Math.max(0.01, value.listPrice),
+    price: Math.max(0.01, value.price),
+    discount: Math.min(0.5, Math.max(0, value.discount)),
+    createdAt: value.createdAt,
+    expiresAt: value.expiresAt,
+  }
+}
+
+function normalizeActiveGameEvents(value: unknown, now: number) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((entry): ActiveGameEvent[] => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.id !== 'string' ||
+      !GAME_EVENT_TYPES.includes(entry.type as ActiveGameEvent['type']) ||
+      !isNumber(entry.startTime) ||
+      !isNumber(entry.endTime) ||
+      entry.endTime <= entry.startTime
+    ) {
+      return []
+    }
+
+    return [eventManager.hydrateEvent(entry as unknown as ActiveGameEvent, now)]
+  })
+}
+
+function normalizeGameEventHistory(value: unknown): GameEventLog[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter((entry): entry is GameEventLog => (
+    isRecord(entry) &&
+    typeof entry.id === 'string' &&
+    GAME_EVENT_TYPES.includes(entry.type as GameEventLog['type']) &&
+    isNumber(entry.startTime) &&
+    isNumber(entry.endTime) &&
+    isNumber(entry.endedAt)
+  )).slice(0, 50)
+}
+
+function normalizeActiveMarketEvents(value: unknown, now: number) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.flatMap((entry): ActiveMarketEvent[] => {
+    if (
+      !isRecord(entry) ||
+      typeof entry.id !== 'string' ||
+      typeof entry.type !== 'string' ||
+      !isNumber(entry.startTime) ||
+      !isNumber(entry.endTime) ||
+      entry.endTime <= entry.startTime
+    ) {
+      return []
+    }
+
+    try {
+      return [hydrateMarketEvent(entry as unknown as ActiveMarketEvent, now)]
+    } catch {
+      return []
+    }
+  })
+}
+
+function normalizeMarketEventHistory(value: unknown): MarketEventLog[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter((entry): entry is MarketEventLog => (
+    isRecord(entry) &&
+    typeof entry.id === 'string' &&
+    typeof entry.type === 'string' &&
+    typeof entry.label === 'string'
+  )).slice(0, 30)
+}
+
 function normalizeAutomation(value: unknown): AutomationState {
   const automation = isRecord(value) ? value : {}
   const autoOpener = isRecord(automation.autoOpener) ? automation.autoOpener : {}
@@ -1072,6 +996,7 @@ function normalizeAutomation(value: unknown): AutomationState {
     normalizedModules[moduleId] = normalizeAutomationModule(moduleId, rawModules[moduleId])
     return normalizedModules
   }, createDefaultAutomationModules())
+  const auctionHouse = isRecord(automation.auctionHouse) ? automation.auctionHouse : {}
 
   return {
     autoOpener: {
@@ -1081,6 +1006,17 @@ function normalizeAutomation(value: unknown): AutomationState {
       lastOpenTime: normalizeNumber(autoOpener.lastOpenTime, 0),
       level,
       totalOpened: Math.max(0, Math.floor(normalizeNumber(autoOpener.totalOpened, 0))),
+    },
+    auctionHouse: {
+      deals: Array.isArray(auctionHouse.deals)
+        ? auctionHouse.deals.flatMap((deal) => {
+            const normalizedDeal = normalizeAuctionDeal(deal)
+
+            return normalizedDeal ? [normalizedDeal] : []
+          })
+        : [],
+      lastRefreshTime: normalizeNumber(auctionHouse.lastRefreshTime, 0),
+      nextRefreshTime: normalizeNumber(auctionHouse.nextRefreshTime, 0),
     },
     modules,
   }
@@ -1115,7 +1051,7 @@ function migrateV1ToV2(value: unknown): unknown {
 
   return {
     ...value,
-    specialEventCaseIds: readStringArray(value.specialEventCaseIds),
+    specialEventCaseIds: [],
     recentDrops: Array.isArray(value.recentDrops) ? value.recentDrops : [],
     lastOpenedItems: Array.isArray(value.lastOpenedItems) ? value.lastOpenedItems : [],
     uiEvents: [],
@@ -1353,9 +1289,9 @@ function migrateV18ToV19(value: unknown): unknown {
 
   return {
     ...value,
-    activeEvents: normalizeActiveGameEventsWithFallback(value.activeEvents, value.activeMarketEvents),
-    upcomingEvents: normalizeUpcomingGameEventsWithFallback(value.upcomingEvents, value.upcomingMarketEvents),
-    eventHistory: normalizeGameEventHistory(value.eventHistory),
+    activeEvents: [],
+    upcomingEvents: [],
+    eventHistory: [],
   }
 }
 
@@ -1404,6 +1340,72 @@ function migrateV22ToV23(value: unknown): unknown {
   }
 }
 
+function migrateV23ToV24(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  return {
+    ...value,
+    lastPoopCleaningAt: normalizeNumber(value.lastPoopCleaningAt, 0),
+  }
+}
+
+function migrateV24ToV25(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  return {
+    ...value,
+    inventory: Array.isArray(value.inventory) && value.inventory.every(isSkinInstance)
+      ? dedupeSkinInstances(value.inventory)
+      : value.inventory,
+    money: normalizeMoney(value.money, defaultGameState.money),
+    trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
+  }
+}
+
+function migrateV25ToV26(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  return value
+}
+
+function migrateV26ToV27(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  return {
+    ...value,
+    hasUsedFirstCaseHook: typeof value.hasUsedFirstCaseHook === 'boolean'
+      ? value.hasUsedFirstCaseHook
+      : false,
+  }
+}
+
+function migrateV27ToV28(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  const statistics = isRecord(value.statistics) ? value.statistics : {}
+
+  return {
+    ...value,
+    automation: normalizeAutomation(value.automation),
+    lastEventTick: normalizeNumber(value.lastEventTick, 0),
+    statistics: {
+      ...statistics,
+      auctionPurchases: normalizeNumber(statistics.auctionPurchases, 0),
+      auctionSavings: normalizeNumber(statistics.auctionSavings, 0),
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1428,6 +1430,11 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   20: migrateV20ToV21,
   21: migrateV21ToV22,
   22: migrateV22ToV23,
+  23: migrateV23ToV24,
+  24: migrateV24ToV25,
+  25: migrateV25ToV26,
+  26: migrateV26ToV27,
+  27: migrateV27ToV28,
 }
 
 function getEnvelope(value: unknown) {
@@ -1487,6 +1494,9 @@ export function toPlayerState(state: GameState): PlayerState {
     dailyRewards: state.dailyRewards,
     collectionBook: state.collectionBook,
     collectionRewards: state.collectionRewards,
+    hasUsedFirstCaseHook: state.hasUsedFirstCaseHook,
+    lastPoopCleaningAt: state.lastPoopCleaningAt,
+    workMiniGameCooldowns: state.workMiniGameCooldowns,
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: state.prestigeBonuses,
@@ -1506,16 +1516,17 @@ export function toPlayerState(state: GameState): PlayerState {
 }
 
 function playerStateToGameState(state: PlayerState): GameState {
+  const inventory = dedupeSkinInstances(state.inventory)
   const marketValues = {
     ...defaultGameState.marketValues,
     ...state.marketValues,
   }
-  const inventoryValue = getInventoryValue(state.inventory, marketValues)
+  const inventoryValue = getInventoryValue(inventory, marketValues)
 
   return {
     ...defaultGameState,
-    money: state.money,
-    inventory: state.inventory,
+    money: normalizeMoney(state.money, defaultGameState.money),
+    inventory,
     inventoryValue,
     inventoryValueHistory: normalizeInventoryValueHistory(
       state.inventoryValueHistory,
@@ -1530,6 +1541,14 @@ function playerStateToGameState(state: PlayerState): GameState {
     dailyRewards: normalizeDailyRewardsState(state.dailyRewards),
     collectionBook: state.collectionBook,
     collectionRewards: state.collectionRewards,
+    hasUsedFirstCaseHook: typeof state.hasUsedFirstCaseHook === 'boolean'
+      ? state.hasUsedFirstCaseHook
+      : defaultGameState.hasUsedFirstCaseHook,
+    lastPoopCleaningAt: normalizeNumber(state.lastPoopCleaningAt, defaultGameState.lastPoopCleaningAt),
+    workMiniGameCooldowns: normalizeWorkMiniGameCooldowns(
+      state.workMiniGameCooldowns,
+      normalizeNumber(state.lastPoopCleaningAt, defaultGameState.lastPoopCleaningAt),
+    ),
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: normalizePrestigeBonusLevels(state.prestigeBonuses),
@@ -1542,9 +1561,9 @@ function playerStateToGameState(state: PlayerState): GameState {
       ...defaultGameState.marketHistory,
       ...state.marketHistory,
     },
-    activeEvents: normalizeActiveGameEvents(state.activeEvents),
-    upcomingEvents: normalizeUpcomingGameEvents(state.upcomingEvents),
-    eventHistory: normalizeGameEventHistory(state.eventHistory),
+    activeEvents: state.activeEvents,
+    upcomingEvents: state.upcomingEvents,
+    eventHistory: state.eventHistory,
     statistics: state.statistics,
     lastBackupAt: normalizeNumber(state.lastBackupAt, defaultGameState.lastBackupAt),
     lastSaved: state.lastSaved,
@@ -1558,10 +1577,6 @@ function isGameState(value: GameState | PlayerState): value is GameState {
 function normalizeGameState(value: unknown, savedAt: number): GameState {
   if (!isRecord(value)) {
     throw new SaveGameError('Save file data is not a valid object.')
-  }
-
-  if (!isNumber(value.money)) {
-    throw new SaveGameError('Save file is missing player money.')
   }
 
   const marketValues = normalizeMarketValues(value.marketValues)
@@ -1582,10 +1597,15 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
   }
   const inventoryValue = getInventoryValue(inventory, mergedMarketValues)
   const lastSaved = normalizeNumber(value.lastSaved, savedAt)
+  const lastPoopCleaningAt = normalizeNumber(value.lastPoopCleaningAt, defaultGameState.lastPoopCleaningAt)
+  const activeEvents = normalizeActiveGameEvents(value.activeEvents, lastSaved)
+  const upcomingEvents = normalizeActiveGameEvents(value.upcomingEvents, lastSaved)
+  const activeMarketEvents = normalizeActiveMarketEvents(value.activeMarketEvents, lastSaved)
+  const upcomingMarketEvents = normalizeActiveMarketEvents(value.upcomingMarketEvents, lastSaved)
 
   return {
     ...defaultGameState,
-    money: value.money,
+    money: normalizeMoney(value.money, defaultGameState.money),
     inventory,
     inventoryValue,
     inventoryValueHistory: normalizeInventoryValueHistory(
@@ -1603,6 +1623,11 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     dailyRewards: normalizeDailyRewardsState(value.dailyRewards),
     collectionBook: normalizeCollectionBook(value.collectionBook),
     collectionRewards: normalizeCollectionRewards(value.collectionRewards),
+    hasUsedFirstCaseHook: typeof value.hasUsedFirstCaseHook === 'boolean'
+      ? value.hasUsedFirstCaseHook
+      : defaultGameState.hasUsedFirstCaseHook,
+    lastPoopCleaningAt,
+    workMiniGameCooldowns: normalizeWorkMiniGameCooldowns(value.workMiniGameCooldowns, lastPoopCleaningAt),
     recentDrops: normalizeOptionalSkinInstances(value.recentDrops),
     lastOpenedItems: normalizeOptionalSkinInstances(value.lastOpenedItems),
     uiEvents: [],
@@ -1617,13 +1642,14 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     marketValues: mergedMarketValues,
     marketHistory: normalizeMarketHistory(value.marketHistory, marketValues, savedAt),
     marketTrends: normalizeMarketTrends(value.marketTrends),
-    activeEvents: normalizeActiveGameEventsWithFallback(value.activeEvents, value.activeMarketEvents),
-    upcomingEvents: normalizeUpcomingGameEventsWithFallback(value.upcomingEvents, value.upcomingMarketEvents),
+    activeEvents,
+    upcomingEvents,
     eventHistory: normalizeGameEventHistory(value.eventHistory),
-    activeMarketEvents: normalizeActiveMarketEvents(value.activeMarketEvents),
-    upcomingMarketEvents: normalizeUpcomingMarketEvents(value.upcomingMarketEvents),
+    activeMarketEvents,
+    upcomingMarketEvents,
     marketEventHistory: normalizeMarketEventHistory(value.marketEventHistory),
     lastMarketTick: normalizeNumber(value.lastMarketTick, 0),
+    lastEventTick: normalizeNumber(value.lastEventTick, 0),
     statistics,
     settings: normalizeSettings(value.settings),
     ui: normalizeUiState(value.ui),
@@ -1649,12 +1675,18 @@ export function parseGameSaveText(text: string): GameState {
 export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope {
   const currentTime = Date.now()
   const gameState = isGameState(state) ? state : playerStateToGameState(state)
+  const inventory = dedupeSkinInstances(gameState.inventory)
+  const inventoryValue = getInventoryValue(inventory, gameState.marketValues)
 
   return {
     version: CURRENT_SAVE_VERSION,
     savedAt: currentTime,
     state: {
       ...gameState,
+      money: normalizeMoney(gameState.money, defaultGameState.money),
+      inventory,
+      inventoryValue,
+      trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],
       lastError: undefined,
       lastSaved: currentTime,
@@ -1717,7 +1749,35 @@ export function saveGame(state: GameState | PlayerState): void {
     return
   }
 
+  const lastPoopCleaningAt = isGameState(state)
+    ? Math.max(state.lastPoopCleaningAt, state.workMiniGameCooldowns.poopCleaning ?? 0)
+    : Math.max(state.lastPoopCleaningAt, state.workMiniGameCooldowns?.poopCleaning ?? 0)
+
+  if (lastPoopCleaningAt > 0) {
+    writePoopCleanupLastCompleted(lastPoopCleaningAt)
+  }
+
   window.localStorage.setItem(SAVE_STORAGE_KEY, serializeGameState(state))
+}
+
+function withPersistedPoopCleaningTimestamp(state: GameState): GameState {
+  const storedTimestamp = readPoopCleanupLastCompleted()
+
+  if (
+    storedTimestamp <= state.lastPoopCleaningAt &&
+    storedTimestamp <= (state.workMiniGameCooldowns.poopCleaning ?? 0)
+  ) {
+    return state
+  }
+
+  return {
+    ...state,
+    lastPoopCleaningAt: storedTimestamp,
+    workMiniGameCooldowns: {
+      ...state.workMiniGameCooldowns,
+      poopCleaning: storedTimestamp,
+    },
+  }
 }
 
 export function loadGame(): PlayerState | null {
@@ -1738,14 +1798,14 @@ export function loadGameState(): GameState | null {
   }
 
   try {
-    return parseGameSaveText(savedState)
+    return withPersistedPoopCleaningTimestamp(parseGameSaveText(savedState))
   } catch {
     return null
   }
 }
 
 export function loadGameStateOrDefault() {
-  return loadGameState() ?? defaultGameState
+  return loadGameState() ?? withPersistedPoopCleaningTimestamp(defaultGameState)
 }
 
 export function clearSavedGame() {
@@ -1754,4 +1814,5 @@ export function clearSavedGame() {
   }
 
   window.localStorage.removeItem(SAVE_STORAGE_KEY)
+  window.localStorage.removeItem(POOP_CLEANUP_LAST_COMPLETED_KEY)
 }

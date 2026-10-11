@@ -14,11 +14,7 @@ import type { ComponentType } from 'react'
 import { SkillNodeId } from '../data/models'
 import {
   SKILL_TREE_NODES,
-  SKILL_TREE_GRAPH_HEIGHT,
-  SKILL_TREE_GRAPH_WIDTH,
-  SKILL_TREE_NODE_HEIGHT,
-  SKILL_TREE_NODE_WIDTH,
-  getSkillAutoOpenSlotBonus,
+  getSkillAuctionDealSlotBonus,
   getSkillAutomationIntervalMultiplier,
   getSkillCosmeticTier,
   getSkillEffectSummaries,
@@ -34,6 +30,7 @@ import {
   getSkillPrestigePointMultiplier,
   getSkillSellMultiplier,
   getSkillSpecialDropPressure,
+  getSkillTrophySlotBonus,
   getSkillTradeUpInputCostMultiplier,
   getSkillWearBonusWeight,
   skillTreeNodesById,
@@ -54,12 +51,7 @@ const skillIcons: Partial<Record<SkillNodeId, ComponentType<{ className?: string
   [SkillNodeId.WearWhisperer]: Sparkles,
 }
 
-const skillTreeEdges = SKILL_TREE_NODES.flatMap((node) => {
-  return node.prerequisites.map((prerequisiteId) => ({
-    from: prerequisiteId,
-    to: node.id,
-  }))
-})
+const generatedNodeIdPattern = /_\d+$/
 
 function formatPercent(value: number) {
   return `${Number((value * 100).toFixed(1))}%`
@@ -111,40 +103,6 @@ function EffectPill({ label, value }: { label: string; value: string }) {
   )
 }
 
-function SkillEdge({
-  from,
-  learnedIds,
-  to,
-}: {
-  from: SkillNodeId
-  learnedIds: Set<SkillNodeId>
-  to: SkillNodeId
-}) {
-  const fromNode = skillTreeNodesById.get(from)
-  const toNode = skillTreeNodesById.get(to)
-
-  if (!fromNode || !toNode) {
-    return null
-  }
-
-  const isActive = learnedIds.has(from) && learnedIds.has(to)
-  const startX = fromNode.position.x + SKILL_TREE_NODE_WIDTH
-  const startY = fromNode.position.y + SKILL_TREE_NODE_HEIGHT / 2
-  const endX = toNode.position.x
-  const endY = toNode.position.y + SKILL_TREE_NODE_HEIGHT / 2
-  const midpointX = (startX + endX) / 2
-
-  return (
-    <path
-      className={isActive ? 'stroke-cs-green' : 'stroke-cs-border'}
-      d={`M ${startX} ${startY} C ${midpointX} ${startY}, ${midpointX} ${endY}, ${endX} ${endY}`}
-      fill="none"
-      strokeDasharray={isActive ? undefined : '6 8'}
-      strokeWidth={isActive ? 3 : 2}
-    />
-  )
-}
-
 function SkillNodeCard({
   definition,
   onLearn,
@@ -162,37 +120,37 @@ function SkillNodeCard({
   return (
     <article
       className={[
-        'absolute flex flex-col border p-3 transition-colors',
+        'flex min-h-56 flex-col border p-4 transition-colors',
         getNodeTone(status),
       ].join(' ')}
-      style={{
-        height: SKILL_TREE_NODE_HEIGHT,
-        left: definition.position.x,
-        top: definition.position.y,
-        width: SKILL_TREE_NODE_WIDTH,
-      }}
       title={definition.description}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="grid h-9 w-9 shrink-0 place-items-center border border-current bg-cs-surface">
+          <span className="grid h-11 w-11 shrink-0 place-items-center border border-current bg-cs-surface">
             <Icon size={17} />
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[10px] uppercase text-cs-muted">Cost {definition.cost} SP</p>
-            <h3 className="truncate text-sm font-semibold text-cs-text">{definition.name}</h3>
+            {isGeneratedSkillNode(definition) && !status.isLearned ? (
+              <p className="font-mono text-[10px] uppercase text-rarity-special">Next Level</p>
+            ) : null}
+            <h3 className="text-base font-semibold leading-6 text-cs-text">{definition.name}</h3>
           </div>
         </div>
         {status.isLearned ? <CheckCircle className="shrink-0 text-cs-green" size={18} /> : <Lock className="shrink-0" size={18} />}
       </div>
 
-      <p className="mt-2 line-clamp-2 text-xs leading-5 text-cs-muted">{definition.effectLabel}</p>
+      <p className="mt-3 text-sm leading-6 text-cs-muted">{definition.description}</p>
+      <p className="mt-3 border border-cs-border bg-cs-surface px-3 py-2 text-sm font-semibold leading-5 text-cs-text">
+        {definition.effectLabel}
+      </p>
       {missingPrerequisites ? (
-        <p className="mt-1 truncate font-mono text-[10px] uppercase text-cs-muted" title={missingPrerequisites}>
+        <p className="mt-3 font-mono text-[10px] uppercase leading-5 text-cs-muted" title={missingPrerequisites}>
           Requires {missingPrerequisites}
         </p>
       ) : (
-        <p className="mt-1 font-mono text-[10px] uppercase text-cs-muted">No prerequisites</p>
+        <p className="mt-3 font-mono text-[10px] uppercase text-cs-muted">No prerequisites</p>
       )}
 
       <button
@@ -207,6 +165,43 @@ function SkillNodeCard({
     </article>
   )
 }
+
+function isGeneratedSkillNode(definition: SkillTreeNodeDefinition) {
+  return generatedNodeIdPattern.test(String(definition.id))
+}
+
+function getBranchId(definition: SkillTreeNodeDefinition) {
+  return String(definition.id).replace(generatedNodeIdPattern, '')
+}
+
+function getBranchTitle(definition: SkillTreeNodeDefinition) {
+  return definition.name.replace(/\s+\d+:.+$/, '')
+}
+
+function getBranchGroups() {
+  const groups = new Map<string, SkillTreeNodeDefinition[]>()
+
+  SKILL_TREE_NODES.filter(isGeneratedSkillNode).forEach((definition) => {
+    const branchId = getBranchId(definition)
+    const currentNodes = groups.get(branchId) ?? []
+
+    groups.set(branchId, [...currentNodes, definition])
+  })
+
+  return Array.from(groups.entries()).map(([branchId, nodes]) => ({
+    branchId,
+    description: nodes[0]?.description ?? '',
+    nodes,
+    title: nodes[0] ? getBranchTitle(nodes[0]) : branchId,
+  }))
+}
+
+function getNextBranchNode(nodes: SkillTreeNodeDefinition[], learnedIds: Set<SkillNodeId>) {
+  return nodes.find((node) => !learnedIds.has(node.id))
+}
+
+const coreSkillNodes = SKILL_TREE_NODES.filter((definition) => !isGeneratedSkillNode(definition))
+const branchGroups = getBranchGroups()
 
 export function SkillTreeView() {
   const { learnSkillNode, state } = useGame()
@@ -240,57 +235,28 @@ export function SkillTreeView() {
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-5 2xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="min-w-0 max-h-[72vh] overflow-auto border border-cs-border bg-cs-panel p-4">
-          <div className="relative" style={{ height: SKILL_TREE_GRAPH_HEIGHT, width: SKILL_TREE_GRAPH_WIDTH }}>
-            <svg
-              aria-hidden="true"
-              className="absolute inset-0"
-              height={SKILL_TREE_GRAPH_HEIGHT}
-              viewBox={`0 0 ${SKILL_TREE_GRAPH_WIDTH} ${SKILL_TREE_GRAPH_HEIGHT}`}
-              width={SKILL_TREE_GRAPH_WIDTH}
-            >
-              {skillTreeEdges.map((edge) => (
-                <SkillEdge
-                  from={edge.from}
-                  key={`${edge.from}:${edge.to}`}
-                  learnedIds={learnedIds}
-                  to={edge.to}
-                />
-              ))}
-            </svg>
-
-            {SKILL_TREE_NODES.map((definition) => (
-              <SkillNodeCard
-                definition={definition}
-                key={definition.id}
-                onLearn={learnSkillNode}
-                status={getSkillNodeStatus(definition, state)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <aside className="space-y-4">
+      <div className="mt-6 grid gap-5">
+        <aside className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
           <section className="border border-cs-border bg-cs-panel p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-xl font-semibold text-cs-text">Active Effects</h3>
               <Sparkles className="text-rarity-special" size={22} />
             </div>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               <EffectPill label="Sell Value" value={`${formatPercent(getSkillSellMultiplier(state.learnedSkillNodeIds) - 1)} bonus`} />
               <EffectPill label="Wear Rolls" value={`+${getSkillWearBonusWeight(state.learnedSkillNodeIds)} FN/MW weight`} />
               <EffectPill label="Special Pressure" value={`${formatPercent(getSkillSpecialDropPressure(state.learnedSkillNodeIds))} pressure`} />
               <EffectPill label="Automation" value={`${formatPercent(automationReduction)} faster`} />
-              <EffectPill label="Auto Slots" value={`+${getSkillAutoOpenSlotBonus(state.learnedSkillNodeIds)} future slot`} />
+              <EffectPill label="Auction Deals" value={`+${getSkillAuctionDealSlotBonus(state.learnedSkillNodeIds)} offers`} />
               <EffectPill label="Licenses" value={`${formatPercent(licenseDiscount)} discount`} />
               <EffectPill label="Side Job" value={`${formatPercent(getSkillMinigameRewardMultiplier(state.learnedSkillNodeIds) - 1)} reward`} />
               <EffectPill label="Trade Ups" value={`${formatPercent(tradeUpDiscount)} input discount`} />
-              <EffectPill label="Market Read" value={`${formatPercent(getSkillMarketKnowledgeBonus(state.learnedSkillNodeIds))} accuracy`} />
+              <EffectPill label="Market Read" value={`${formatPercent(getSkillMarketKnowledgeBonus(state.learnedSkillNodeIds))} event chance`} />
               <EffectPill label="Offline" value={`${formatPercent(getSkillOfflineEarningsMultiplier(state.learnedSkillNodeIds) - 1)} income`} />
-              <EffectPill label="Opening Flow" value={`${formatPercent(getSkillOpeningFlowBonus(state.learnedSkillNodeIds))} polish`} />
+              <EffectPill label="Opening Flow" value={`${formatPercent(getSkillOpeningFlowBonus(state.learnedSkillNodeIds))} faster`} />
               <EffectPill label="Max Batch" value={`+${getSkillMultiOpenBatchBonus(state.learnedSkillNodeIds)} cases`} />
-              <EffectPill label="Future Slots" value={`+${getSkillInventoryCapacityBonus(state.learnedSkillNodeIds)}`} />
+              <EffectPill label="Inventory Slots" value={`+${getSkillInventoryCapacityBonus(state.learnedSkillNodeIds)}`} />
+              <EffectPill label="Trophy Slots" value={`+${getSkillTrophySlotBonus(state.learnedSkillNodeIds)}`} />
               <EffectPill label="Cosmetics" value={`Tier ${getSkillCosmeticTier(state.learnedSkillNodeIds)}`} />
               <EffectPill label="Events" value={`${formatPercent(getSkillEventChanceBonus(state.learnedSkillNodeIds))} schedule chance`} />
               <EffectPill label="Prestige Yield" value={`${formatPercent(getSkillPrestigePointMultiplier(state.learnedSkillNodeIds) - 1)} bonus`} />
@@ -317,6 +283,57 @@ export function SkillTreeView() {
             </div>
           </section>
         </aside>
+
+        <section className="border border-cs-border bg-cs-panel p-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="font-mono text-xs uppercase text-rarity-special">Core Path</p>
+              <h3 className="mt-1 text-xl font-semibold text-cs-text">Foundation Skills</h3>
+            </div>
+            <p className="text-sm text-cs-muted">{coreSkillNodes.length} nodes</p>
+          </div>
+          <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]">
+            {coreSkillNodes.map((definition) => (
+              <SkillNodeCard
+                definition={definition}
+                key={definition.id}
+                onLearn={learnSkillNode}
+                status={getSkillNodeStatus(definition, state)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {branchGroups.map((branch) => (
+          <section className="border border-cs-border bg-cs-panel p-4" key={branch.branchId}>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="font-mono text-xs uppercase text-rarity-special">Branch</p>
+                <h3 className="mt-1 text-xl font-semibold text-cs-text">{branch.title}</h3>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-cs-muted">{branch.description}</p>
+              </div>
+              <p className="text-sm text-cs-muted">{branch.nodes.length} tiers</p>
+            </div>
+            <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr))]">
+              {(() => {
+                const nextNode = getNextBranchNode(branch.nodes, learnedIds)
+
+                return nextNode ? (
+                  <SkillNodeCard
+                    definition={nextNode}
+                    key={nextNode.id}
+                    onLearn={learnSkillNode}
+                    status={getSkillNodeStatus(nextNode, state)}
+                  />
+                ) : (
+                  <div className="border border-cs-green bg-cs-green/10 p-4 text-sm font-semibold text-cs-green">
+                    Max Level Reached
+                  </div>
+                )
+              })()}
+            </div>
+          </section>
+        ))}
       </div>
     </section>
   )

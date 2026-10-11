@@ -43,7 +43,7 @@ export function OfflineProgressModal({
                 Offline Progress Ready
               </h2>
               <p className="mt-2 text-sm text-cs-muted">
-                Automation ran for {formatDuration(summary.appliedDurationMs)} while you were away.
+                Gameplay and automation advanced for {formatDuration(summary.appliedDurationMs)} while you were away.
               </p>
             </div>
           </div>
@@ -73,11 +73,13 @@ export function OfflineProgressModal({
             />
           </div>
 
-          <div className="mt-4 grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-4">
+          <div className="mt-4 grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3 lg:grid-cols-6">
             <SmallMetric label="Auto-Sold" value={String(summary.autoSoldItems)} />
             <SmallMetric label="Trade-Ups" value={String(summary.tradeUpsCompleted)} />
             <SmallMetric label="Rare Drops" value={String(summary.rareDrops)} />
             <SmallMetric label="Spent" value={formatCurrency(summary.moneySpent)} />
+            <SmallMetric label="Event Ticks" value={String(summary.eventsProcessed)} />
+            <SmallMetric label="Market Ticks" value={String(summary.marketTicks)} />
           </div>
 
           {summary.wasCapped || summary.skippedTasks.length > 0 ? (

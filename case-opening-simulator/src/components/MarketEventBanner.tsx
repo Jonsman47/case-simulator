@@ -3,12 +3,17 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useEvents } from '../hooks/useEvents'
 import { useGame } from '../hooks/useGame'
+import { useMarket } from '../hooks/useMarket'
 import {
   getGameEventDescription,
   getGameEventName,
   type ActiveGameEvent,
 } from '../events/eventManager'
-import { isAdminSession } from '../utils/admin'
+import {
+  getMarketEventDescription,
+  getMarketEventName,
+  type ActiveMarketEvent,
+} from '../market/marketSimulation'
 
 const dismissedBannerStorageKey = 'case-opening-simulator-dismissed-event-banners'
 
@@ -52,24 +57,33 @@ function formatCountdown(ms: number) {
   return `${minutes}m ${seconds}s`
 }
 
-function getSoonestEvent(events: ActiveGameEvent[]) {
+function getSoonestEvent(events: (ActiveGameEvent | ActiveMarketEvent)[]) {
   return [...events].sort((left, right) => {
     return (left.startTime ?? 0) - (right.startTime ?? 0)
   })[0]
 }
 
 export function MarketEventBanner() {
-  const { cloud, state } = useGame()
+  const { state } = useGame()
   const { activeEvents, upcomingEvents } = useEvents()
+  const market = useMarket()
   const [now, setNow] = useState(() => Date.now())
   const [dismissedEventIds, setDismissedEventIds] = useState(readDismissedBannerIds)
-  const featuredEvent = activeEvents[0] ?? getSoonestEvent(upcomingEvents)
-  const isActive = Boolean(activeEvents[0])
-  const isAdminUser = isAdminSession(cloud.session)
+  const featuredEvent = activeEvents[0] ?? market.activeEvents[0] ?? getSoonestEvent([
+    ...upcomingEvents,
+    ...market.upcomingEvents,
+  ])
+  const isActive = Boolean(activeEvents[0] ?? market.activeEvents[0])
   const countdownTarget = isActive ? featuredEvent?.endTime : featuredEvent?.startTime
   const countdown = countdownTarget ? formatCountdown(countdownTarget - now) : undefined
   const description = useMemo(() => {
-    return featuredEvent ? getGameEventDescription(featuredEvent) : ''
+    if (!featuredEvent) {
+      return ''
+    }
+
+    return 'effects' in featuredEvent
+      ? getGameEventDescription(featuredEvent)
+      : getMarketEventDescription(featuredEvent)
   }, [featuredEvent])
 
   useEffect(() => {
@@ -115,7 +129,7 @@ export function MarketEventBanner() {
               {isActive ? 'Live Event' : 'Upcoming Event'}
             </p>
             <h2 className="mt-1 truncate text-base font-semibold text-cs-text">
-              {getGameEventName(featuredEvent)}
+              {'effects' in featuredEvent ? getGameEventName(featuredEvent) : getMarketEventName(featuredEvent)}
             </h2>
             <p className="mt-1 line-clamp-2 text-sm text-cs-muted">{description}</p>
           </div>
@@ -126,14 +140,12 @@ export function MarketEventBanner() {
               {isActive ? 'Ends' : 'Starts'} {countdown}
             </span>
           ) : null}
-          {isAdminUser ? (
-            <Link
-              className="border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"
-              to="/events"
-            >
-              Admin Panel
-            </Link>
-          ) : null}
+          <Link
+            className="border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"
+            to="/events"
+          >
+            View Events
+          </Link>
           <button
             aria-label="Dismiss event popup"
             className="grid h-9 w-9 place-items-center border border-cs-border text-cs-muted transition-colors hover:text-cs-text"

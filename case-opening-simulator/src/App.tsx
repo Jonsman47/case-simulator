@@ -8,9 +8,11 @@ import { useGame } from './hooks/useGame'
 import { isAdminSession } from './utils/admin'
 
 const Achievements = lazy(() => import('./views/Achievements').then((module) => ({ default: module.Achievements })))
+const AdminPanel = lazy(() => import('./views/AdminPanel').then((module) => ({ default: module.AdminPanel })))
 const Automation = lazy(() => import('./views/Automation').then((module) => ({ default: module.Automation })))
 const CaseSelectionView = lazy(() => import('./views/CaseSelectionView').then((module) => ({ default: module.CaseSelectionView })))
 const CollectionBookView = lazy(() => import('./views/CollectionBookView').then((module) => ({ default: module.CollectionBookView })))
+const CreditsView = lazy(() => import('./views/CreditsView').then((module) => ({ default: module.CreditsView })))
 const InventoryView = lazy(() => import('./views/InventoryView').then((module) => ({ default: module.InventoryView })))
 const Main = lazy(() => import('./views/Main').then((module) => ({ default: module.Main })))
 const Market = lazy(() => import('./views/Market').then((module) => ({ default: module.Market })))
@@ -23,6 +25,7 @@ const Stats = lazy(() => import('./views/Stats').then((module) => ({ default: mo
 const TradeUps = lazy(() => import('./views/TradeUps').then((module) => ({ default: module.TradeUps })))
 const TrophyRoom = lazy(() => import('./views/TrophyRoom').then((module) => ({ default: module.TrophyRoom })))
 const Upgrades = lazy(() => import('./views/Upgrades').then((module) => ({ default: module.Upgrades })))
+const WorkView = lazy(() => import('./views/WorkView').then((module) => ({ default: module.WorkView })))
 
 function RouteFallback() {
   return (
@@ -38,8 +41,7 @@ function RouteFallback() {
 function AdminOnlyRoute({ children }: { children: ReactNode }) {
   const { cloud } = useGame()
 
-  // Admin tools are protected at the route level, not just hidden in navigation,
-  // so non-admin users cannot reach event controls by typing /events directly.
+  // Admin tools are protected at the route level, not just hidden in navigation.
   if (!isAdminSession(cloud.session)) {
     return <Navigate to="/" replace />
   }
@@ -55,15 +57,17 @@ function App() {
           <Routes>
             <Route element={<AppLayout />}>
               <Route index element={<Suspense fallback={<RouteFallback />}><Main /></Suspense>} />
+              <Route path="poop-cleaning" element={<Navigate to="/work" replace />} />
               <Route path="cases" element={<Suspense fallback={<RouteFallback />}><CaseSelectionView /></Suspense>} />
               <Route path="inventory" element={<Suspense fallback={<RouteFallback />}><InventoryView /></Suspense>} />
               <Route path="collection-book" element={<Suspense fallback={<RouteFallback />}><CollectionBookView /></Suspense>} />
               <Route path="market" element={<Suspense fallback={<RouteFallback />}><Market /></Suspense>} />
+              <Route path="events" element={<Suspense fallback={<RouteFallback />}><MarketEvents /></Suspense>} />
               <Route
-                path="events"
+                path="admin"
                 element={
                   <AdminOnlyRoute>
-                    <Suspense fallback={<RouteFallback />}><MarketEvents /></Suspense>
+                    <Suspense fallback={<RouteFallback />}><AdminPanel /></Suspense>
                   </AdminOnlyRoute>
                 }
               />
@@ -75,6 +79,8 @@ function App() {
               <Route path="skill-tree" element={<Suspense fallback={<RouteFallback />}><SkillTree /></Suspense>} />
               <Route path="achievements" element={<Suspense fallback={<RouteFallback />}><Achievements /></Suspense>} />
               <Route path="stats" element={<Suspense fallback={<RouteFallback />}><Stats /></Suspense>} />
+              <Route path="work" element={<Suspense fallback={<RouteFallback />}><WorkView /></Suspense>} />
+              <Route path="credits" element={<Suspense fallback={<RouteFallback />}><CreditsView /></Suspense>} />
               <Route path="leaderboards" element={<Navigate to="/" replace />} />
               <Route path="trophy-room" element={<Suspense fallback={<RouteFallback />}><TrophyRoom /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<RouteFallback />}><Settings /></Suspense>} />

@@ -1,6 +1,7 @@
 import { CASE_DEFINITIONS } from '../data/cases'
 import { pickDrop, type DropTableEntry, type Prng } from '../data/dropLogic'
 import { Rarity, type CaseDefinition, type SkinBase, type SkinInstance } from '../data/models'
+import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { applyWearMultiplier } from './wear'
 
@@ -58,6 +59,18 @@ function getSkinMarketValue(skin: SkinBase, marketValues: Record<string, number>
 }
 
 export function getTradeUpItemValue(item: SkinInstance, marketValues: Record<string, number>) {
+  const generatedPrice = getMarketAdjustedSkinConditionPrice({
+    fallbackValue: undefined,
+    isStatTrak: Boolean(item.statTrak),
+    marketValues,
+    skin: item,
+    wear: item.wear,
+  })
+
+  if (typeof generatedPrice === 'number') {
+    return generatedPrice
+  }
+
   const currentBaseValue = marketValues[item.id]
 
   if (typeof currentBaseValue === 'number') {

@@ -31,11 +31,11 @@ function createStorageMock(): Storage {
 }
 
 describe('poopCleanupMinigame', () => {
-  it('tracks an hourly cooldown from the stored completion timestamp', () => {
+  it('tracks a three-minute cooldown from the stored completion timestamp', () => {
     const completedAt = 1_000_000
 
     expect(getPoopCleanupCooldownRemaining(completedAt, 0)).toBe(0)
-    expect(getPoopCleanupCooldownRemaining(completedAt + 30 * 60 * 1000, completedAt)).toBe(30 * 60 * 1000)
+    expect(getPoopCleanupCooldownRemaining(completedAt + 60 * 1000, completedAt)).toBe(2 * 60 * 1000)
     expect(getPoopCleanupCooldownRemaining(completedAt + POOP_CLEANUP_COOLDOWN_MS, completedAt)).toBe(0)
   })
 

@@ -91,6 +91,7 @@ export function Settings() {
     removeAutoSellRule,
     reorderAutoSellRules,
     replaceGameState,
+    resetGame,
     state,
     updateAutoSellRule,
     updateOnboardingState,
@@ -100,6 +101,7 @@ export function Settings() {
   const [message, setMessage] = useState<string | undefined>()
   const [isError, setIsError] = useState(false)
   const [pendingImportState, setPendingImportState] = useState<GameState | undefined>()
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
   const [cloudEmail, setCloudEmail] = useState('')
   const [cloudPassword, setCloudPassword] = useState('')
   const [cloudUsername, setCloudUsername] = useState('')
@@ -163,14 +165,14 @@ export function Settings() {
   }
 
   function handleReset() {
-    const confirmed = window.confirm('Reset all progress and clear the local save?')
+    setIsResetConfirmOpen(true)
+  }
 
-    if (!confirmed) {
-      return
-    }
-
+  function confirmReset() {
     clearSavedGame()
-    window.location.reload()
+    resetGame()
+    setIsResetConfirmOpen(false)
+    showMessage('Progress reset. New run started.')
   }
 
   function updateRarityColor(rarity: Rarity, color: string) {
@@ -228,7 +230,7 @@ export function Settings() {
         />
         <ActionButton
           icon={RotateCcw}
-          label="Clear Progress"
+          label="Reset Progress"
           meta="Reset"
           onClick={handleReset}
           tone="covert"
@@ -260,10 +262,10 @@ export function Settings() {
       {pendingImportState ? (
         <div
           aria-modal="true"
-          className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-0 sm:p-4"
           role="dialog"
         >
-          <div className="w-full max-w-md border border-rarity-special bg-cs-surface p-5 shadow-glow">
+          <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-rarity-special bg-cs-surface p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-md">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-1 text-rarity-special" size={22} />
               <div>
@@ -287,6 +289,42 @@ export function Settings() {
                 type="button"
               >
                 Replace Save
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isResetConfirmOpen ? (
+        <div
+          aria-modal="true"
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-0 sm:p-4"
+          role="dialog"
+        >
+          <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-rarity-covert bg-cs-surface p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-md">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-1 text-rarity-covert" size={22} />
+              <div>
+                <h3 className="text-xl font-semibold text-cs-text">Reset Progress?</h3>
+                <p className="mt-2 text-sm text-cs-muted">
+                  This clears your local save and starts a fresh run from the beginning.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                className="min-h-11 border border-cs-border px-4 py-2 text-sm font-semibold text-cs-muted transition-colors hover:text-cs-text"
+                onClick={() => setIsResetConfirmOpen(false)}
+                type="button"
+              >
+                Cancel
+              </button>
+              <button
+                className="min-h-11 border border-rarity-covert bg-rarity-covert/10 px-4 py-2 text-sm font-semibold text-rarity-covert transition-colors hover:bg-rarity-covert/20"
+                onClick={confirmReset}
+                type="button"
+              >
+                Reset Progress
               </button>
             </div>
           </div>

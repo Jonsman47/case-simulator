@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const distDir = join(scriptDir, '..', 'dist')
 const assetsDir = join(distDir, 'assets')
+const cs2AssetManifestPath = join(scriptDir, '..', 'src', 'data', 'generated', 'cs2-assets.manifest.json')
 const requiredFiles = [
   'index.html',
   'manifest.webmanifest',
@@ -26,12 +27,14 @@ function readDistFile(relativePath) {
 }
 
 assert(existsSync(distDir), 'dist folder is missing. Run npm run build first.')
+assert(existsSync(cs2AssetManifestPath), 'CS2 asset manifest is missing.')
 
 for (const file of requiredFiles) {
   assert(existsSync(join(distDir, file)), `Release build is missing ${file}.`)
 }
 
 const manifest = JSON.parse(readDistFile('manifest.webmanifest'))
+const cs2AssetManifest = JSON.parse(readFileSync(cs2AssetManifestPath, 'utf8'))
 
 assert(manifest.name === 'Case Opening Simulator', 'PWA manifest has the wrong app name.')
 assert(manifest.short_name === 'Case Sim', 'PWA manifest has the wrong short name.')
@@ -61,4 +64,16 @@ assert(serviceWorker.includes('case-opening-cs2-images-v1'), 'Service worker is 
 assert(serviceWorker.includes('case-opening-sounds-v1'), 'Service worker is missing the sound runtime cache.')
 assert(statSync(join(distDir, 'sounds/case-opening.mp3')).size > 0, 'Case opening sound is empty.')
 
-console.log('Release build verification passed.')
+assert(
+  cs2AssetManifest.version === 1 && Array.isArray(cs2AssetManifest.assets),
+  'CS2 asset manifest is invalid.',
+)
+
+for (const asset of cs2AssetManifest.assets) {
+  const releaseAssetPath = join(distDir, ...asset.path.split('/'))
+
+  assert(existsSync(releaseAssetPath), `Release build is missing ${asset.path}.`)
+  assert(statSync(releaseAssetPath).size === asset.bytes, `Release asset has the wrong size: ${asset.path}.`)
+}
+
+console.log(`Release build verification passed, including ${cs2AssetManifest.assets.length} CS2 images.`)

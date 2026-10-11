@@ -1,4 +1,5 @@
 import type { GameState, InventoryItem } from '../data/gameState'
+import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
 import { roundCurrency } from './safeNumbers'
 import { applyWearMultiplier } from './wear'
 
@@ -23,6 +24,18 @@ export function getCurrentItemMarketValue(
   item: InventoryItem,
   marketValues: GameState['marketValues'],
 ) {
+  const generatedPrice = getMarketAdjustedSkinConditionPrice({
+    fallbackValue: undefined,
+    isStatTrak: Boolean(item.statTrak),
+    marketValues,
+    skin: item,
+    wear: item.wear,
+  })
+
+  if (typeof generatedPrice === 'number') {
+    return generatedPrice
+  }
+
   const currentBaseValue = marketValues[item.id]
 
   if (typeof currentBaseValue === 'number') {

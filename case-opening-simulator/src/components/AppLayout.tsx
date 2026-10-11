@@ -5,6 +5,7 @@ import { defaultRarityColors } from '../data/gameState'
 import { getPrimaryNavigationItems, type NavigationItem } from '../data/navigation'
 import { useGame } from '../hooks/useGame'
 import { isAdminSession } from '../utils/admin'
+import { LowBalancePoopPrompt } from './LowBalancePoopPrompt'
 import { MarketEventBanner } from './MarketEventBanner'
 import { OnboardingTutorial } from './OnboardingTutorial'
 import { StatusHeader } from './StatusHeader'
@@ -184,25 +185,26 @@ export function AppLayout() {
   return (
     <div
       className={[
-        'min-h-screen bg-cs-bg text-cs-text',
+        'min-h-screen min-w-0 bg-cs-bg text-cs-text',
         state.settings.largeText ? 'text-lg' : 'text-base',
         state.settings.simplifiedAnimations ? 'simplified-motion' : '',
-      ].join(' ')}
-      data-theme={state.settings.theme}
-      style={themeStyle}
-    >
-      <div className="mx-auto flex min-h-screen w-full max-w-screen-2xl flex-col px-2 py-2 sm:px-4 sm:py-3 lg:px-6">
+        ].join(' ')}
+        data-theme={state.settings.theme}
+        style={themeStyle}
+      >
+      <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-screen-2xl flex-col px-2 py-2 sm:px-4 sm:py-3 lg:px-6">
         <StatusHeader />
-        <MarketEventBanner />
         <TopNav isAdminUser={isAdminUser} />
+        <MarketEventBanner />
         <main
-          className="flex flex-1 py-2 sm:py-4"
+          className="flex min-w-0 w-full flex-1 py-2 sm:py-4"
           onTouchEnd={handleMainTouchEnd}
           onTouchStart={handleMainTouchStart}
         >
           <Outlet />
         </main>
         <ToastNotifications />
+        <LowBalancePoopPrompt key={state.money < 3 ? 'low-balance' : 'funded'} />
         <UiEffects />
         <OnboardingTutorial />
       </div>

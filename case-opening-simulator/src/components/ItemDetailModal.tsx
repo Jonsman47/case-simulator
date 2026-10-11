@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Rarity, type SkinInstance, type TrophySlotId } from '../data/models'
+import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import type { MarketPriceHistory } from '../market/marketSimulation'
 import { formatCurrency } from '../utils/format'
@@ -21,7 +21,7 @@ export interface ItemDetailModalProps {
   item: SkinInstance | undefined
   items?: SkinInstance[]
   isOwned?: boolean
-  onAddToTrophyRoom?: (itemId: string, slotId: TrophySlotId) => void
+  onAddToTrophyRoom?: (itemId: string, slotId: string) => void
   onClose: () => void
   onItemChange?: (item: SkinInstance) => void
   onSell: (itemId: string) => void
@@ -55,7 +55,7 @@ const rarityStyles: Record<
     border: 'border-rarity-consumer',
     chart: '#9ca3af',
     glow: 'rgba(156, 163, 175, 0.24)',
-    label: 'border-rarity-consumer bg-rarity-consumer/10 text-rarity-consumer',
+    label: 'border-rarity-consumer text-cs-muted',
     text: 'text-rarity-consumer',
     tint: 'bg-rarity-consumer/10',
   },
@@ -63,7 +63,7 @@ const rarityStyles: Record<
     border: 'border-rarity-industrial',
     chart: '#5e98d9',
     glow: 'rgba(94, 152, 217, 0.28)',
-    label: 'border-rarity-industrial bg-rarity-industrial/10 text-rarity-industrial',
+    label: 'border-rarity-industrial text-cs-muted',
     text: 'text-rarity-industrial',
     tint: 'bg-rarity-industrial/10',
   },
@@ -71,7 +71,7 @@ const rarityStyles: Record<
     border: 'border-rarity-mil-spec',
     chart: '#4b69ff',
     glow: 'rgba(75, 105, 255, 0.3)',
-    label: 'border-rarity-mil-spec bg-rarity-mil-spec/10 text-rarity-mil-spec',
+    label: 'border-rarity-mil-spec text-cs-muted',
     text: 'text-rarity-mil-spec',
     tint: 'bg-rarity-mil-spec/10',
   },
@@ -79,7 +79,7 @@ const rarityStyles: Record<
     border: 'border-rarity-restricted',
     chart: '#8847ff',
     glow: 'rgba(136, 71, 255, 0.3)',
-    label: 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted',
+    label: 'border-rarity-restricted text-cs-muted',
     text: 'text-rarity-restricted',
     tint: 'bg-rarity-restricted/10',
   },
@@ -87,7 +87,7 @@ const rarityStyles: Record<
     border: 'border-rarity-classified',
     chart: '#d32ce6',
     glow: 'rgba(211, 44, 230, 0.32)',
-    label: 'border-rarity-classified bg-rarity-classified/10 text-rarity-classified',
+    label: 'border-rarity-classified text-cs-muted',
     text: 'text-rarity-classified',
     tint: 'bg-rarity-classified/10',
   },
@@ -95,7 +95,7 @@ const rarityStyles: Record<
     border: 'border-rarity-covert',
     chart: '#eb4b4b',
     glow: 'rgba(235, 75, 75, 0.32)',
-    label: 'border-rarity-covert bg-rarity-covert/10 text-rarity-covert',
+    label: 'border-rarity-covert text-cs-muted',
     text: 'text-rarity-covert',
     tint: 'bg-rarity-covert/10',
   },
@@ -103,7 +103,7 @@ const rarityStyles: Record<
     border: 'border-rarity-special',
     chart: '#ffd700',
     glow: 'rgba(255, 215, 0, 0.32)',
-    label: 'border-rarity-special bg-rarity-special/10 text-rarity-special',
+    label: 'border-rarity-special text-cs-muted',
     text: 'text-rarity-special',
     tint: 'bg-rarity-special/10',
   },
@@ -111,7 +111,7 @@ const rarityStyles: Record<
     border: 'border-rarity-contraband',
     chart: '#e4ae39',
     glow: 'rgba(228, 174, 57, 0.34)',
-    label: 'border-rarity-contraband bg-rarity-contraband/10 text-rarity-contraband',
+    label: 'border-rarity-contraband text-cs-muted',
     text: 'text-rarity-contraband',
     tint: 'bg-rarity-contraband/10',
   },
@@ -172,7 +172,7 @@ export function ItemDetailModal({
   const [confirmingSaleForItemId, setConfirmingSaleForItemId] = useState<string | undefined>()
   const [imageZoom, setImageZoom] = useState<{ itemId: string; scale: number } | undefined>()
   const [isTrophySelectorOpen, setIsTrophySelectorOpen] = useState(false)
-  const [selectedTrophySlot, setSelectedTrophySlot] = useState<TrophySlotId>(
+  const [selectedTrophySlot, setSelectedTrophySlot] = useState<string>(
     TROPHY_SLOT_DEFINITIONS[0].id,
   )
 
@@ -375,7 +375,7 @@ export function ItemDetailModal({
         aria-modal="true"
         aria-labelledby={titleId}
         className={[
-          'relative min-h-dvh w-full max-w-none overflow-y-auto border bg-cs-surface p-4 text-cs-text outline-none sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-4xl sm:p-6',
+          'relative h-dvh max-h-dvh w-full max-w-none overflow-y-auto border bg-cs-surface p-4 text-cs-text outline-none sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-4xl sm:p-6',
           styles.border,
         ].join(' ')}
         onKeyDown={handleModalKeyDown}
@@ -384,18 +384,13 @@ export function ItemDetailModal({
         style={{ boxShadow: `0 0 42px ${rarityColor}55` }}
         tabIndex={-1}
       >
-        <div className={`absolute left-0 top-0 h-1 w-full ${styles.tint}`} aria-hidden="true" />
-        <div className={`absolute bottom-0 left-0 h-1 w-full ${styles.tint}`} aria-hidden="true" />
-
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`border px-2 py-1 font-mono text-xs uppercase ${styles.label}`}
                 style={{
-                  backgroundColor: `${rarityColor}1a`,
                   borderColor: rarityColor,
-                  color: rarityColor,
                 }}
               >
                 {getSkinRarityLabel(item)}
@@ -469,7 +464,8 @@ export function ItemDetailModal({
         <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div>
             <div
-              className={`grid aspect-[16/10] touch-none place-items-center overflow-hidden border ${styles.border} ${styles.tint}`}
+              className={`grid aspect-[16/10] touch-none place-items-center overflow-hidden border bg-cs-surface ${styles.border}`}
+              style={{ borderColor: rarityColor }}
               data-swipe-ignore="true"
               onTouchCancel={handleImageTouchEnd}
               onTouchEnd={handleImageTouchEnd}
@@ -493,7 +489,6 @@ export function ItemDetailModal({
                 tone="green"
                 value={formatCurrency(currentSaleValue)}
               />
-              <DetailStat label="Base Value" value={formatCurrency(item.baseValue)} />
             </div>
           </div>
 
@@ -568,7 +563,7 @@ export function ItemDetailModal({
                     Trophy slot
                     <select
                       className="mt-2 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
-                      onChange={(event) => setSelectedTrophySlot(event.target.value as TrophySlotId)}
+                      onChange={(event) => setSelectedTrophySlot(event.target.value)}
                       value={selectedTrophySlot}
                     >
                       {TROPHY_SLOT_DEFINITIONS.map((slot) => (

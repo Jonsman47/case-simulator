@@ -7,6 +7,7 @@ import {
   useReducer,
   useState,
 } from 'react'
+import { nanoid } from 'nanoid'
 import {
   CASE_DEFINITIONS,
   getAvailableCases,
@@ -26,7 +27,6 @@ import type {
   AutoSellRule,
   PrestigeBonusId,
   SkillNodeId,
-  TrophySlotId,
   UpgradeId,
 } from '../data/models'
 import { gameReducer } from '../data/gameReducer'
@@ -34,6 +34,7 @@ import { MARKET_TICK_MS } from '../market/marketSimulation'
 import {
   GAME_EVENT_TICK_MS,
   applyGameEventEffectsToCases,
+  getGameEventCollectionRewardMultiplier,
   type GameEventType,
 } from '../events/eventManager'
 import { loadGameStateOrDefault, saveGame } from '../utils/save'
@@ -42,13 +43,22 @@ import {
   type OfflineProgressResult,
 } from '../utils/offlineProgress'
 import { applyCollectionRewardsToCases } from '../utils/collectionRewards'
-import { applyUpgradeEffectsToCases } from '../data/upgrades'
+import { applyUpgradeEffectsToCases, getOpeningAnimationSpeedBonus } from '../data/upgrades'
 import { applyPrestigeEffectsToCases } from '../data/prestige'
-import { applySkillEffectsToCases } from '../data/skills'
+import { applySkillEffectsToCases, getSkillOpeningFlowBonus } from '../data/skills'
 import { getExternalSkinMarketValues, HAS_EXTERNAL_SKIN_PRICES } from '../data/skinPrices'
 import { applyDailyRewardsToCases } from '../rewards/dailyRewards'
+import {
+  getLatestCaseOpeningSummary,
+  type LatestCaseOpeningSummary,
+} from '../utils/caseOpeningSummary'
 import type { InventoryViewUiState } from '../utils/inventoryFilters'
 import { getSelectedItemsValue as calculateSelectedItemsValue } from '../utils/inventoryBulk'
+import {
+  getPotentialSkinOptions,
+  selectOpeningAnimationItem,
+  shouldPlayOpeningAnimation,
+} from '../utils/openingAnimation'
 import {
   createCloudBackend,
   createCloudSaveEnvelope,
@@ -63,11 +73,24 @@ import {
 } from '../cloud/cloudSave'
 import { GameContext } from './GameContext'
 import { OfflineProgressModal } from './OfflineProgressModal'
+import { CaseOpeningAnimation } from './CaseOpeningAnimation'
+import { BatchOpenSummaryModal } from './BatchOpenSummaryModal'
 
 const skinDefinitionsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 const externalSkinMarketValues = getExternalSkinMarketValues(SKIN_DEFINITIONS)
 const cloudBackend: CloudBackend = createCloudBackend()
 const cloudSyncDebounceMs = 2_500
+
+interface OpeningUiSession {
+  id: string
+  skipAnimations: boolean
+  items?: InventoryItem[]
+  summary?: LatestCaseOpeningSummary
+  shouldAnimate?: boolean
+  soundEnabled?: boolean
+  startSkipped?: boolean
+  completedEventId?: string
+}
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadGameStateOrDefault)
@@ -77,6 +100,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state)
   const pendingOfflineProgressRef = useRef(pendingOfflineProgress)
   const saveTimerRef = useRef<number | undefined>(undefined)
+  const firstCaseHookSavedRef = useRef(state.hasUsedFirstCaseHook)
   const cloudSyncTimerRef = useRef<number | undefined>(undefined)
   const cloudSyncInFlightRef = useRef(false)
   const cloudRevisionRef = useRef(0)
@@ -85,6 +109,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [cloudError, setCloudError] = useState<string | undefined>()
   const [lastCloudSyncedAt, setLastCloudSyncedAt] = useState<number | undefined>()
   const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('inventoryValue')
+  const [openingSession, setOpeningSession] = useState<OpeningUiSession | undefined>()
+  const openingSessionRef = useRef<OpeningUiSession | undefined>(undefined)
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test' || !HAS_EXTERNAL_SKIN_PRICES || Object.keys(externalSkinMarketValues).length === 0) {
@@ -108,7 +134,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       state.casesUnlocked,
     )
     const retiredCases = retireCasesByDate(unlockedCases)
-    const rewardedCases = applyCollectionRewardsToCases(retiredCases, state.collectionRewards)
+    const rewardedCases = applyCollectionRewardsToCases(
+      retiredCases,
+      state.collectionRewards,
+      SKIN_DEFINITIONS,
+      getGameEventCollectionRewardMultiplier(state.activeEvents),
+    )
     const upgradedCases = applyUpgradeEffectsToCases(
       rewardedCases,
       state.upgrades,
@@ -133,9 +164,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     return dailyRewardCases
   }, [
-    state.activeEvents,
     state.casesUnlocked,
     state.collectionRewards,
+    state.activeEvents,
     state.dailyRewards,
     state.learnedSkillNodeIds,
     state.prestigeBonuses,
@@ -145,17 +176,113 @@ export function GameProvider({ children }: { children: ReactNode }) {
   ])
 
   const availableCases = useMemo(() => {
-    const standardCases = getAvailableCases(caseDefinitions)
-    const standardCaseIds = new Set(standardCases.map((caseDef) => caseDef.id))
-    const specialEventCases = caseDefinitions.filter((caseDef) => {
-      return state.specialEventCaseIds.includes(caseDef.id) && !standardCaseIds.has(caseDef.id)
-    })
+    return getAvailableCases(caseDefinitions)
+  }, [caseDefinitions])
+  const latestOpeningSummary = openingSession
+    ? getLatestCaseOpeningSummary(state, openingSession.id)
+    : undefined
+  const failedOpeningEvent = openingSession
+    ? state.uiEvents.find((event) => (
+        event.type === 'case_opening_failed' && event.id === openingSession.id
+      ))
+    : undefined
+  const activeOpeningSummary = openingSession?.summary ?? latestOpeningSummary
+  const activeOpeningItems = openingSession?.items ?? state.lastOpenedItems
+  const summaryCase = activeOpeningSummary
+    ? availableCases.find((caseDef) => caseDef.id === activeOpeningSummary.startedEvent.caseId)
+    : undefined
+  const shouldAnimateOpening = openingSession?.shouldAnimate ?? (
+    openingSession !== undefined &&
+    activeOpeningSummary !== undefined &&
+    shouldPlayOpeningAnimation(
+      activeOpeningItems,
+      state.settings.animationsEnabled && !state.settings.simplifiedAnimations,
+      openingSession.skipAnimations || state.settings.animationSpeed === 'skip',
+    )
+  )
+  const openingAnimationItem =
+    shouldAnimateOpening &&
+    activeOpeningSummary &&
+    activeOpeningSummary.startedEvent.id !== openingSession?.completedEventId
+      ? selectOpeningAnimationItem(activeOpeningItems, openingSession?.skipAnimations ?? false)
+      : undefined
+  const openingAnimationItems = openingAnimationItem ? activeOpeningItems : []
+  const openingPotentialSkins = useMemo(() => {
+    return getPotentialSkinOptions(summaryCase, skinDefinitionsById)
+  }, [summaryCase])
+  const showBatchSummary =
+    openingSession !== undefined &&
+    activeOpeningSummary !== undefined &&
+    activeOpeningSummary.startedEvent.quantity > 1 &&
+    (!shouldAnimateOpening || activeOpeningSummary.startedEvent.id === openingSession.completedEventId)
 
-    return [...standardCases, ...specialEventCases]
-  }, [caseDefinitions, state.specialEventCaseIds])
+  useEffect(() => {
+    openingSessionRef.current = openingSession
+  }, [openingSession])
+
+  useEffect(() => {
+    if (!openingSession || openingSession.summary) {
+      return
+    }
+
+    const sessionId = openingSession.id
+    const openingItems = state.lastOpenedItems
+
+    setOpeningSession((currentSession) => {
+      if (currentSession?.id !== sessionId || currentSession.summary) {
+        return currentSession
+      }
+
+      if (failedOpeningEvent) {
+        openingSessionRef.current = undefined
+        return undefined
+      }
+
+      if (!latestOpeningSummary) {
+        return currentSession
+      }
+
+      const willAnimate = shouldPlayOpeningAnimation(
+        openingItems,
+        state.settings.animationsEnabled && !state.settings.simplifiedAnimations,
+        currentSession.skipAnimations || state.settings.animationSpeed === 'skip',
+      )
+
+      if (!willAnimate && latestOpeningSummary.startedEvent.quantity === 1) {
+        openingSessionRef.current = undefined
+        return undefined
+      }
+
+      const nextSession = {
+        ...currentSession,
+        items: openingItems,
+        shouldAnimate: willAnimate,
+        soundEnabled: state.settings.soundEnabled,
+        startSkipped: currentSession.skipAnimations || state.settings.animationSpeed === 'skip',
+        summary: latestOpeningSummary,
+      }
+
+      openingSessionRef.current = nextSession
+      return nextSession
+    })
+  }, [failedOpeningEvent, latestOpeningSummary, openingSession, state.lastOpenedItems, state.settings])
 
   useEffect(() => {
     stateRef.current = state
+  }, [state])
+
+  useEffect(() => {
+    if (firstCaseHookSavedRef.current || !state.hasUsedFirstCaseHook) {
+      return
+    }
+
+    firstCaseHookSavedRef.current = true
+
+    try {
+      saveGame(state)
+    } catch (error) {
+      console.error('Immediate first-case hook save failed', error)
+    }
   }, [state])
 
   useEffect(() => {
@@ -222,9 +349,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return undefined
     }
 
-    const intervalId = window.setInterval(() => {
+    const tickEvents = () => {
       dispatch({ type: 'TICK_EVENTS', now: Date.now() })
-    }, GAME_EVENT_TICK_MS)
+    }
+    const intervalId = window.setInterval(tickEvents, GAME_EVENT_TICK_MS)
+
+    tickEvents()
 
     return () => {
       window.clearInterval(intervalId)
@@ -368,6 +498,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TOGGLE_AUTOMATION_MODULE', moduleId, isEnabled, now: Date.now() })
   }, [])
 
+  const purchaseAuctionDeal = useCallback((dealId: string) => {
+    dispatch({ type: 'PURCHASE_AUCTION_DEAL', dealId, now: Date.now() })
+  }, [])
+
   const purchaseUpgrade = useCallback((upgradeId: UpgradeId) => {
     dispatch({ type: 'PURCHASE_UPGRADE', upgradeId, now: Date.now() })
   }, [])
@@ -392,11 +526,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TICK_EVENTS', now: Date.now() })
   }, [])
 
-  const assignTrophyItem = useCallback((slotId: TrophySlotId, itemId: string) => {
+  const assignTrophyItem = useCallback((slotId: string, itemId: string) => {
     dispatch({ type: 'ASSIGN_TROPHY_ITEM', slotId, itemId, now: Date.now() })
   }, [])
 
-  const removeTrophyItem = useCallback((slotId: TrophySlotId) => {
+  const removeTrophyItem = useCallback((slotId: string) => {
     dispatch({ type: 'REMOVE_TROPHY_ITEM', slotId })
   }, [])
 
@@ -409,8 +543,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
       state.upgrades,
       state.prestigeBonuses,
       state.learnedSkillNodeIds,
+      getGameEventCollectionRewardMultiplier(state.activeEvents),
     ),
     [
+      state.activeEvents,
       state.collectionRewards,
       state.inventory,
       state.learnedSkillNodeIds,
@@ -439,8 +575,65 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TOGGLE_CASE_FAVORITE', caseId })
   }, [])
 
-  const openCase = useCallback((caseId: string, quantity?: number) => {
-    dispatch({ type: 'OPEN_CASE', payload: { caseId, quantity } })
+  const openCase = useCallback((caseId: string, quantity?: number, options?: { skipAnimations?: boolean }) => {
+    if (openingSessionRef.current) {
+      return
+    }
+
+    const currentState = stateRef.current
+    const sessionId = nanoid()
+    const session = {
+      id: sessionId,
+      skipAnimations: Boolean(options?.skipAnimations),
+    }
+
+    openingSessionRef.current = session
+    setOpeningSession(session)
+    dispatch({
+      type: 'OPEN_CASE',
+      payload: {
+        caseId,
+        quantity,
+        firstCaseHookRoll: currentState.hasUsedFirstCaseHook ? undefined : Math.random(),
+        openingEventId: sessionId,
+        now: Date.now(),
+      },
+    })
+  }, [])
+
+  const completeOpeningAnimation = useCallback(() => {
+    const currentSession = openingSessionRef.current
+
+    if (!currentSession?.summary) {
+      return
+    }
+
+    const completedEventId = currentSession.summary.startedEvent.id
+
+    if (currentSession.summary.startedEvent.quantity === 1) {
+      openingSessionRef.current = undefined
+      setOpeningSession(undefined)
+      return
+    }
+
+    setOpeningSession((session) => {
+      if (session?.id !== currentSession.id) {
+        return session
+      }
+
+      const nextSession = {
+        ...session,
+        completedEventId,
+      }
+
+      openingSessionRef.current = nextSession
+      return nextSession
+    })
+  }, [])
+
+  const dismissOpeningSummary = useCallback(() => {
+    openingSessionRef.current = undefined
+    setOpeningSession(undefined)
   }, [])
 
   const updateMarketValue = useCallback((skinId: string, value: number) => {
@@ -710,6 +903,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       setAutoOpenerCase,
       toggleAutoOpener,
       purchaseAutomationModule,
+      purchaseAuctionDeal,
       toggleAutomationModule,
       purchaseUpgrade,
       prestige,
@@ -781,6 +975,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       prestige,
       purchaseAutoOpener,
       purchaseAutomationModule,
+      purchaseAuctionDeal,
       purchaseCaseLicense,
       purchasePrestigeBonus,
       purchaseUpgrade,
@@ -821,6 +1016,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
   return (
     <GameContext.Provider value={value}>
       {children}
+      {openingAnimationItem && activeOpeningSummary && openingSession ? (
+        <CaseOpeningAnimation
+          caseImage={summaryCase?.image}
+          caseName={summaryCase?.name ?? activeOpeningSummary.startedEvent.caseId}
+          finalItem={openingAnimationItem}
+          finalItems={openingAnimationItems}
+          firstCaseHook={activeOpeningSummary.startedEvent.firstCaseHook}
+          key={`${openingSession.id}:${activeOpeningSummary.startedEvent.id}`}
+          onComplete={completeOpeningAnimation}
+          potentialSkins={openingPotentialSkins}
+          soundEnabled={openingSession.soundEnabled ?? state.settings.soundEnabled}
+          speed={state.settings.animationSpeed}
+          speedBonus={
+            getOpeningAnimationSpeedBonus(state.upgrades) +
+            getSkillOpeningFlowBonus(state.learnedSkillNodeIds)
+          }
+          startSkipped={openingSession.startSkipped ?? (openingSession.skipAnimations || state.settings.animationSpeed === 'skip')}
+        />
+      ) : null}
+      {showBatchSummary && activeOpeningSummary && openingSession ? (
+        <BatchOpenSummaryModal
+          autoSoldItems={activeOpeningSummary.autoSoldEvent?.items ?? []}
+          caseName={summaryCase?.name ?? activeOpeningSummary.startedEvent.caseId}
+          items={activeOpeningItems}
+          onClose={dismissOpeningSummary}
+          openedCount={activeOpeningSummary.startedEvent.quantity}
+          saleValue={activeOpeningSummary.autoSoldEvent?.salePrice ?? 0}
+          skipAnimations={openingSession.skipAnimations}
+        />
+      ) : null}
       {pendingOfflineProgress ? (
         <OfflineProgressModal
           onApply={applyOfflineProgress}

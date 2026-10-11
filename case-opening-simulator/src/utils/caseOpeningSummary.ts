@@ -8,9 +8,15 @@ export interface LatestCaseOpeningSummary {
   startedEvent: CaseOpeningStartedEvent
 }
 
-export function getLatestCaseOpeningSummary(state: GameState): LatestCaseOpeningSummary | undefined {
+export function getLatestCaseOpeningSummary(
+  state: GameState,
+  openingEventId?: string,
+): LatestCaseOpeningSummary | undefined {
   const startedEvent = state.uiEvents.find(
-    (event): event is CaseOpeningStartedEvent => event.type === 'case_opening_started',
+    (event): event is CaseOpeningStartedEvent => (
+      event.type === 'case_opening_started' &&
+      (openingEventId === undefined || event.id === openingEventId)
+    ),
   )
 
   if (!startedEvent || state.lastOpenedItems.length === 0) {

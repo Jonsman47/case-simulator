@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { gameReducer } from './gameReducer'
 import { defaultDropsByRarity, defaultGameState, type GameState, type GameUiEvent } from './gameState'
-import { eventManager } from '../events/eventManager'
 import {
   AutomationModuleId,
   AutoSellRuleType,
@@ -9,7 +8,6 @@ import {
   PrestigeBonusId,
   Rarity,
   SkillNodeId,
-  TrophySlotId,
   UpgradeId,
   WearCondition,
   type DailyChallenge,
@@ -29,6 +27,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     collectionBook: [],
     recentDrops: [],
     lastOpenedItems: [],
+    hasUsedFirstCaseHook: true,
     uiEvents: [],
     casesUnlocked: ['starter_case', 'fracture_style_case'],
     specialEventCaseIds: [],
@@ -159,6 +158,84 @@ describe('gameReducer OPEN_CASE', () => {
       'case_opening_started',
       'drop_revealed',
     ])
+  })
+
+  it('uses a near-miss gold hook on the first fresh-run opening without adding gold', () => {
+    const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
+    const nextState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        firstCaseHookRoll: 0.2,
+      },
+    })
+    const startedEvent = nextState.uiEvents.find((event) => event.type === 'case_opening_started')
+
+    expect(nextState.hasUsedFirstCaseHook).toBe(true)
+    expect(startedEvent).toMatchObject({ firstCaseHook: 'nearMissGold' })
+    expect(nextState.inventory).toHaveLength(1)
+    expect(nextState.inventory[0].rarity).not.toBe(Rarity.SpecialItem)
+    expect(nextState.statistics.dropsByRarity[Rarity.SpecialItem]).toBe(0)
+  })
+
+  it('can force a Special Item on the first fresh-run opening', () => {
+    const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
+    const nextState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        firstCaseHookRoll: 0.95,
+      },
+    })
+    const startedEvent = nextState.uiEvents.find((event) => event.type === 'case_opening_started')
+
+    expect(nextState.hasUsedFirstCaseHook).toBe(true)
+    expect(startedEvent).toMatchObject({ firstCaseHook: 'forcedGold' })
+    expect(nextState.inventory).toHaveLength(1)
+    expect(nextState.inventory[0].rarity).toBe(Rarity.SpecialItem)
+    expect(nextState.statistics.dropsByRarity[Rarity.SpecialItem]).toBe(1)
+  })
+
+  it('uses the first-case hook only once in an Open 10 batch', () => {
+    const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
+    const nextState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        quantity: 10,
+        firstCaseHookRoll: 0.95,
+      },
+    })
+
+    expect(nextState.hasUsedFirstCaseHook).toBe(true)
+    expect(nextState.inventory).toHaveLength(10)
+    expect(nextState.inventory.filter((item) => item.rarity === Rarity.SpecialItem)).toHaveLength(1)
+    expect(nextState.lastOpenedItems[0].rarity).toBe(Rarity.SpecialItem)
+  })
+
+  it('does not repeat the first-case hook on the second opening', () => {
+    const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
+    const firstOpenState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        firstCaseHookRoll: 0.2,
+      },
+    })
+    const secondOpenState = gameReducer(firstOpenState, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        firstCaseHookRoll: 0.95,
+      },
+    })
+    const secondStartedEvent = secondOpenState.uiEvents.find((event) => (
+      event.type === 'case_opening_started' && event.createdAt === Date.now()
+    ))
+
+    expect(secondOpenState.hasUsedFirstCaseHook).toBe(true)
+    expect(secondStartedEvent).not.toMatchObject({ firstCaseHook: expect.any(String) })
+    expect(secondOpenState.lastOpenedItems[0].rarity).not.toBe(Rarity.SpecialItem)
   })
 
   it('unlocks achievements once when their conditions are met', () => {
@@ -485,33 +562,33 @@ describe('gameReducer OPEN_CASE', () => {
     const state = makeState({ inventory: [item] })
     const assignedState = gameReducer(state, {
       type: 'ASSIGN_TROPHY_ITEM',
-      slotId: TrophySlotId.MostExpensiveSkin,
+      slotId: 'showcase_1',
       itemId: item.instanceId,
       now: Date.now(),
     })
     const removedState = gameReducer(assignedState, {
       type: 'REMOVE_TROPHY_ITEM',
-      slotId: TrophySlotId.MostExpensiveSkin,
+      slotId: 'showcase_1',
     })
 
-    expect(assignedState.trophyAssignments[TrophySlotId.MostExpensiveSkin]).toEqual({
-      slotId: TrophySlotId.MostExpensiveSkin,
-      item,
+    expect(assignedState.trophyAssignments.showcase_1).toEqual({
+      slotId: 'showcase_1',
+      itemId: item.instanceId,
       assignedAt: Date.now(),
     })
-    expect(state.trophyAssignments[TrophySlotId.MostExpensiveSkin]).toBeUndefined()
-    expect(removedState.trophyAssignments[TrophySlotId.MostExpensiveSkin]).toBeUndefined()
+    expect(state.trophyAssignments.showcase_1).toBeUndefined()
+    expect(removedState.trophyAssignments.showcase_1).toBeUndefined()
   })
 
-  it('keeps trophy snapshots when displayed items leave the inventory', () => {
+  it('keeps trophy references without restoring displayed items that leave the inventory', () => {
     const item = makeItem()
     const state = makeState({
       money: 50,
       inventory: [item],
       trophyAssignments: {
-        [TrophySlotId.MostExpensiveSkin]: {
-          slotId: TrophySlotId.MostExpensiveSkin,
-          item,
+        showcase_1: {
+          slotId: 'showcase_1',
+          itemId: item.instanceId,
           assignedAt: Date.now(),
         },
       },
@@ -523,7 +600,30 @@ describe('gameReducer OPEN_CASE', () => {
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
     expect(soldState.inventory).toEqual([])
-    expect(soldState.trophyAssignments[TrophySlotId.MostExpensiveSkin]?.item).toEqual(item)
+    expect(soldState.trophyAssignments.showcase_1?.itemId).toBe(item.instanceId)
+  })
+
+  it('keeps trophy slot upgrades gated by learned skill tree tiers', () => {
+    const item = makeItem()
+    const lockedState = gameReducer(makeState({ inventory: [item] }), {
+      type: 'ASSIGN_TROPHY_ITEM',
+      slotId: 'showcase_16',
+      itemId: item.instanceId,
+      now: Date.now(),
+    })
+    const upgradedState = gameReducer(makeState({
+      inventory: [item],
+      learnedSkillNodeIds: [SkillNodeId.BulkAutomation, 'inventory_1' as SkillNodeId],
+    }), {
+      type: 'ASSIGN_TROPHY_ITEM',
+      slotId: 'showcase_16',
+      itemId: item.instanceId,
+      now: Date.now(),
+    })
+
+    expect(lockedState.trophyAssignments.showcase_16).toBeUndefined()
+    expect(lockedState.lastError).toBe('Trophy slot not found.')
+    expect(upgradedState.trophyAssignments.showcase_16?.itemId).toBe(item.instanceId)
   })
 
   it('adds, updates, and removes auto-sell rules', () => {
@@ -661,11 +761,19 @@ describe('gameReducer OPEN_CASE', () => {
 
   it('applies active event case discounts when opening cases', () => {
     const now = Date.now()
-    const winterCases = eventManager.createEvent({
-      now,
-      prng: () => 0.1,
+    const winterCases: GameState['activeEvents'][number] = {
+      id: `WinterCases-${now}`,
       type: 'WinterCases',
-    })
+      name: 'Winter Cases',
+      description: 'Legacy event from an old save.',
+      startTime: now,
+      endTime: now + 60_000,
+      effectSummary: 'Legacy event summary.',
+      effects: {
+        caseCostMultiplier: 0.9,
+      },
+      priority: 1,
+    }
     const state = makeState({
       activeEvents: [winterCases],
       money: 10,
@@ -677,34 +785,55 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.money).toBe(9.82)
     expect(nextState.statistics.moneySpent).toBe(0.18)
+    expect(nextState.activeEvents).toEqual([winterCases])
   })
 
-  it('manually triggers gameplay events and emits a start notification', () => {
+  it('prevents duplicate manual events without clearing active state', () => {
     const now = Date.now()
-    const nextState = gameReducer(makeState(), {
+    const nextState = gameReducer(makeState({
+      activeEvents: [
+        {
+          id: `RetiredCaseWeek-${now}`,
+          type: 'RetiredCaseWeek',
+          name: 'Retired Case Week',
+          description: 'Legacy event from an old save.',
+          startTime: now,
+          endTime: now + 60_000,
+          effectSummary: 'Legacy event summary.',
+          effects: {
+            specialEventCaseIds: ['ultra_legacy_case'],
+          },
+          priority: 1,
+        },
+      ],
+      specialEventCaseIds: ['ultra_legacy_case'],
+    }), {
       type: 'TRIGGER_GAME_EVENT',
       eventType: 'RetiredCaseWeek',
       now,
     })
 
-    expect(nextState.activeEvents[0]).toMatchObject({
-      type: 'RetiredCaseWeek',
-      startTime: now,
-    })
-    expect(nextState.specialEventCaseIds).toContain('ultra_legacy_case')
-    expect(findUiEvent(nextState, 'game_event_started')).toMatchObject({
-      name: 'Retired Case Week',
-    })
+    expect(nextState.activeEvents).toHaveLength(1)
+    expect(nextState.upcomingEvents).toEqual([])
+    expect(nextState.eventHistory).toEqual([])
+    expect(nextState.specialEventCaseIds).toEqual(['ultra_legacy_case'])
+    expect(findUiEvent(nextState, 'game_event_started')).toBeUndefined()
+    expect(nextState.lastError).toBe('That event is already active or scheduled.')
   })
 
-  it('ends gameplay events on schedule and records history', () => {
+  it('expires gameplay events into history and emits a notification', () => {
     const now = Date.now()
-    const event = eventManager.createEvent({
-      durationMs: 1_000,
-      now,
-      prng: () => 0.1,
+    const event: GameState['activeEvents'][number] = {
+      id: `KnifeWeekend-${now}`,
       type: 'KnifeWeekend',
-    })
+      name: 'Knife Weekend',
+      description: 'Legacy event from an old save.',
+      startTime: now,
+      endTime: now + 1_000,
+      effectSummary: 'Legacy event summary.',
+      effects: {},
+      priority: 1,
+    }
     const state = makeState({ activeEvents: [event] })
     const nextState = gameReducer(state, {
       type: 'TICK_EVENTS',
@@ -712,13 +841,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
 
     expect(nextState.activeEvents).toEqual([])
-    expect(nextState.eventHistory[0]).toMatchObject({
-      id: event.id,
-      type: 'KnifeWeekend',
-    })
-    expect(findUiEvent(nextState, 'game_event_ended')).toMatchObject({
-      name: 'Knife Weekend',
-    })
+    expect(nextState.eventHistory[0]?.id).toBe(event.id)
+    expect(findUiEvent(nextState, 'game_event_ended')).toBeDefined()
   })
 
   it('blocks locked item sales until the item is unlocked', () => {
@@ -950,6 +1074,32 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.inventoryValue).toBeGreaterThan(0)
   })
 
+  it('maps trade-up output float from the average input float into the output range', () => {
+    const inputItems = makeTradeUpItems().map((item, index) => ({
+      ...item,
+      floatValue: index % 2 === 0 ? 0.2 : 0.8,
+      wear: index % 2 === 0 ? WearCondition.FieldTested : WearCondition.BattleScarred,
+    }))
+    const state = makeState({
+      inventory: inputItems,
+      collectionBook: [],
+    })
+    const nextState = gameReducer(state, {
+      type: 'TRADE_UP',
+      itemIds: inputItems.map((item) => item.instanceId),
+    })
+    const resultItem = nextState.inventory[0]
+
+    expect(resultItem).toBeDefined()
+    if (resultItem) {
+      const outputMetadata = resultItem as SkinInstance & { minFloat?: number; maxFloat?: number }
+      const minFloat = outputMetadata.minFloat ?? 0
+      const maxFloat = outputMetadata.maxFloat ?? 1
+
+      expect(resultItem.floatValue).toBeCloseTo(minFloat + 0.5 * (maxFloat - minFloat), 6)
+    }
+  })
+
   it('requires exactly 10 selected skins for a trade-up', () => {
     const inputItems = makeTradeUpItems().slice(0, 9)
     const state = makeState({
@@ -1097,6 +1247,40 @@ describe('gameReducer OPEN_CASE', () => {
       level: 1,
     })
     expect(toggledState.automation.modules[AutomationModuleId.CaseFarm].isEnabled).toBe(false)
+  })
+
+  it('keeps newly purchased automation modules paused when every module slot is occupied', () => {
+    const now = Date.now()
+    const state = makeState({
+      money: 100_000,
+      automation: {
+        ...defaultGameState.automation,
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.OpeningDesk]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.OpeningDesk],
+            isEnabled: true,
+            level: 1,
+          },
+          [AutomationModuleId.CaseFarm]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.CaseFarm],
+            isEnabled: true,
+            level: 1,
+          },
+        },
+      },
+    })
+    const nextState = gameReducer(state, {
+      type: 'PURCHASE_AUTOMATION_MODULE',
+      moduleId: AutomationModuleId.MarketAnalyst,
+      now,
+    })
+
+    expect(nextState.automation.modules[AutomationModuleId.MarketAnalyst]).toMatchObject({
+      isEnabled: false,
+      level: 1,
+    })
+    expect(nextState.lastError).toContain('Upgrade purchased')
   })
 
   it('purchases upgrades, deducts money, and increases the level', () => {
@@ -1442,7 +1626,7 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(discountedState.money).toBe(9.81)
     expect(discountedState.statistics.moneySpent).toBe(0.19)
-    expect(prestigedState.money).toBe(4_050)
+    expect(prestigedState.money).toBe(4_100)
   })
 
   it('applies automation speed upgrades to auto opening intervals', () => {
@@ -1763,20 +1947,114 @@ describe('gameReducer OPEN_CASE', () => {
     expect(invalidState.money).toBe(10)
   })
 
-  it('awards the poop cleanup minigame reward from zero money', () => {
+  it('awards exactly ten dollars for poop cleaning from zero money', () => {
     const state = makeState({ money: 0 })
     const nextState = gameReducer(state, {
-      type: 'COMPLETE_POOP_CLEANUP_MINIGAME',
-      reward: 5,
+      type: 'COMPLETE_POOP_CLEANING',
       now: 1_782_216_000_000,
     })
 
-    expect(nextState.money).toBe(5)
+    expect(nextState.money).toBe(10)
+    expect(nextState.lastPoopCleaningAt).toBe(1_782_216_000_000)
+    expect(nextState.statistics.moneyEarned).toBe(10)
     expect(findUiEvent(nextState, 'minigame_completed')).toMatchObject({
-      name: 'A Clean Pooping Job',
-      reward: 5,
+      name: 'Poop Cleaning',
+      reward: 10,
       createdAt: 1_782_216_000_000,
     })
+  })
+
+  it('blocks repeated poop cleaning rewards during the three-minute cooldown', () => {
+    const completedAt = 1_782_216_000_000
+    const state = makeState({
+      money: 10,
+      lastPoopCleaningAt: completedAt,
+      statistics: {
+        ...defaultGameState.statistics,
+        moneyEarned: 10,
+        dropsByRarity: { ...defaultDropsByRarity },
+      },
+    })
+    const blockedState = gameReducer(state, {
+      type: 'COMPLETE_POOP_CLEANING',
+      now: completedAt + 179_000,
+    })
+    const allowedState = gameReducer(state, {
+      type: 'COMPLETE_POOP_CLEANING',
+      now: completedAt + 180_000,
+    })
+
+    expect(blockedState.money).toBe(10)
+    expect(blockedState.lastPoopCleaningAt).toBe(completedAt)
+    expect(blockedState.lastError).toBe('Poop Cleaning is still on cooldown.')
+    expect(allowedState.money).toBe(20)
+    expect(allowedState.lastPoopCleaningAt).toBe(completedAt + 180_000)
+  })
+
+  it('rewards each Work mini-game through the reducer and stores separate cooldowns', () => {
+    const completedAt = 1_782_216_000_000
+    const afterPoop = gameReducer(makeState({ money: 0 }), {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'poopCleaning',
+      now: completedAt,
+    })
+    const afterBoxes = gameReducer(afterPoop, {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'sortBoxes',
+      now: completedAt,
+    })
+
+    expect(afterBoxes.money).toBe(30)
+    expect(afterBoxes.workMiniGameCooldowns).toMatchObject({
+      poopCleaning: completedAt,
+      sortBoxes: completedAt,
+    })
+    expect(afterBoxes.lastPoopCleaningAt).toBe(completedAt)
+    expect(afterBoxes.statistics.moneyEarned).toBe(30)
+  })
+
+  it('applies active-income upgrades and side-job skills to Work rewards', () => {
+    const completedAt = 1_782_216_000_000
+    const state = makeState({
+      money: 0,
+      upgrades: {
+        ...defaultGameState.upgrades,
+        [UpgradeId.ClickIncome]: 1,
+      },
+      learnedSkillNodeIds: ['minigame_1' as SkillNodeId],
+    })
+    const nextState = gameReducer(state, {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'poopCleaning',
+      now: completedAt,
+    })
+
+    expect(nextState.money).toBe(14)
+    expect(nextState.statistics.moneyEarned).toBe(14)
+  })
+
+  it('blocks duplicate Work mini-game rewards during their own cooldown', () => {
+    const completedAt = 1_782_216_000_000
+    const state = makeState({
+      money: 20,
+      workMiniGameCooldowns: {
+        sortBoxes: completedAt,
+      },
+    })
+    const blockedState = gameReducer(state, {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'sortBoxes',
+      now: completedAt + 19 * 60 * 1_000,
+    })
+    const allowedState = gameReducer(state, {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'sortBoxes',
+      now: completedAt + 20 * 60 * 1_000,
+    })
+
+    expect(blockedState.money).toBe(20)
+    expect(blockedState.lastError).toBe('Sort Boxes is still on cooldown.')
+    expect(allowedState.money).toBe(40)
   })
 
   it('rejects duplicate inventory instance ids', () => {
@@ -1786,6 +2064,98 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.inventory).toHaveLength(1)
     expect(nextState.lastError).toBe('Item already exists in inventory.')
+  })
+
+  it('blocks paid case openings before charging when inventory is full', () => {
+    const inventory = Array.from({ length: 250 }, (_, index) => makeItem({
+      instanceId: `full-${index}`,
+    }))
+    const state = makeState({ inventory, money: 10 })
+    const nextState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: { caseId: 'starter_case', now: 1_782_216_000_000 },
+    })
+
+    expect(nextState.money).toBe(10)
+    expect(nextState.inventory).toHaveLength(250)
+    expect(nextState.statistics.casesOpened).toBe(0)
+    expect(nextState.lastError).toContain('Inventory is full')
+  })
+
+  it('generates and purchases Auction House deals exactly once', () => {
+    const now = 1_782_216_000_000
+    const state = makeState({
+      money: 10_000,
+      automation: {
+        ...defaultGameState.automation,
+        auctionHouse: {
+          deals: [],
+          lastRefreshTime: 0,
+          nextRefreshTime: 0,
+        },
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.AuctionHouse]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.AuctionHouse],
+            isEnabled: true,
+            level: 1,
+          },
+        },
+      },
+    })
+    const generated = gameReducer(state, {
+      type: 'TICK_AUTOMATION',
+      now,
+      prng: () => 0.5,
+    })
+    const deal = generated.automation.auctionHouse.deals[0]
+
+    expect(deal).toBeDefined()
+
+    const purchased = gameReducer(generated, {
+      type: 'PURCHASE_AUCTION_DEAL',
+      dealId: deal.id,
+      now: now + 1,
+    })
+    const repeated = gameReducer(purchased, {
+      type: 'PURCHASE_AUCTION_DEAL',
+      dealId: deal.id,
+      now: now + 2,
+    })
+
+    expect(purchased.inventory).toHaveLength(1)
+    expect(purchased.money).toBe(generated.money - deal.price)
+    expect(purchased.statistics.auctionPurchases).toBe(1)
+    expect(repeated.inventory).toHaveLength(1)
+    expect(repeated.money).toBe(purchased.money)
+    expect(repeated.statistics.auctionPurchases).toBe(1)
+  })
+
+  it('adds learned Auction House offer slots without duplicating transactions', () => {
+    const now = 1_782_216_000_000
+    const state = makeState({
+      money: 10_000,
+      learnedSkillNodeIds: [SkillNodeId.BulkAutomation],
+      automation: {
+        ...defaultGameState.automation,
+        auctionHouse: { deals: [], lastRefreshTime: 0, nextRefreshTime: 0 },
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.AuctionHouse]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.AuctionHouse],
+            isEnabled: true,
+            level: 1,
+          },
+        },
+      },
+    })
+    const generated = gameReducer(state, {
+      type: 'TICK_AUTOMATION',
+      now,
+      prng: () => 0.5,
+    })
+
+    expect(generated.automation.auctionHouse.deals).toHaveLength(2)
   })
 
   it('sanitizes invalid market values before storing them', () => {
@@ -1803,7 +2173,8 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.marketValues.test_skin).toBe(0)
   })
 
-  it('starts fresh saves with exactly fifty dollars', () => {
-    expect(defaultGameState.money).toBe(50)
+  it('starts fresh saves with exactly one hundred dollars', () => {
+    expect(defaultGameState.money).toBe(100)
+    expect(defaultGameState.hasUsedFirstCaseHook).toBe(false)
   })
 })

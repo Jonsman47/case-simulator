@@ -4,7 +4,6 @@ import {
   PrestigeBonusId,
   Rarity,
   SkillNodeId,
-  TrophySlotId,
   UpgradeId,
   type AchievementProgress,
   type AutomationState,
@@ -45,6 +44,7 @@ import { createDefaultPrestigeBonusLevels } from './prestige'
 import { createDefaultLearnedSkillNodeIds } from './skills'
 import { createDefaultTrophyAssignments } from '../utils/trophyRoom'
 import { createDefaultDailyRewardsState } from '../rewards/dailyRewards'
+import type { WorkMiniGameCooldowns, WorkMiniGameId } from '../utils/workMinigames'
 
 export type RarityKey =
   | 'consumer'
@@ -78,6 +78,7 @@ export interface GameSettings {
   autosaveEnabled: boolean
   autoSellNotificationsEnabled: boolean
   backupPromptEnabled: boolean
+  debugMode: boolean
   highContrastMode: boolean
   language: LanguageCode
   largeText: boolean
@@ -97,6 +98,8 @@ export type InventoryItem = SkinInstance
 export type DropRarityCounts = Record<Rarity, number>
 
 export interface GameStatistics {
+  auctionPurchases: number
+  auctionSavings: number
   casesOpened: number
   moneySpent: number
   moneyEarned: number
@@ -137,6 +140,7 @@ export type GameUiEvent =
       type: 'case_opening_started'
       caseId: string
       quantity: number
+      firstCaseHook?: 'nearMissGold' | 'forcedGold'
       createdAt: number
     }
   | {
@@ -297,6 +301,9 @@ export interface GameState {
   collectionRewards: CollectionRewardProgress[]
   recentDrops: SkinInstance[]
   lastOpenedItems: SkinInstance[]
+  hasUsedFirstCaseHook: boolean
+  lastPoopCleaningAt: number
+  workMiniGameCooldowns: WorkMiniGameCooldowns
   uiEvents: GameUiEvent[]
   lastError?: string
   prestigeLevel: number
@@ -316,6 +323,7 @@ export interface GameState {
   upcomingMarketEvents: ActiveMarketEvent[]
   marketEventHistory: MarketEventLog[]
   lastMarketTick: number
+  lastEventTick: number
   statistics: GameStatistics
   settings: GameSettings
   ui: GameUiState
@@ -325,7 +333,9 @@ export interface GameState {
 
 export type GameAction =
   | { type: 'ADD_MONEY'; amount: number }
-  | { type: 'COMPLETE_POOP_CLEANUP_MINIGAME'; reward: number; now?: number }
+  | { type: 'COMPLETE_POOP_CLEANING'; now?: number }
+  | { type: 'COMPLETE_POOP_CLEANUP_MINIGAME'; reward?: number; now?: number }
+  | { type: 'COMPLETE_WORK_MINIGAME'; gameId: WorkMiniGameId; now?: number }
   | { type: 'SPEND_MONEY'; amount: number }
   | { type: 'ADD_ITEM'; item: InventoryItem }
   | { type: 'REMOVE_ITEM'; itemId: string }
@@ -343,23 +353,33 @@ export type GameAction =
   | { type: 'PRESTIGE'; now?: number }
   | { type: 'PURCHASE_PRESTIGE_BONUS'; bonusId: PrestigeBonusId; now?: number }
   | { type: 'LEARN_SKILL_NODE'; nodeId: SkillNodeId; now?: number }
-  | { type: 'ASSIGN_TROPHY_ITEM'; slotId: TrophySlotId; itemId: string; now?: number }
-  | { type: 'REMOVE_TROPHY_ITEM'; slotId: TrophySlotId }
+  | { type: 'ASSIGN_TROPHY_ITEM'; slotId: string; itemId: string; now?: number }
+  | { type: 'REMOVE_TROPHY_ITEM'; slotId: string }
   | { type: 'CLAIM_DAILY_REWARD'; now?: number }
   | { type: 'CLAIM_DAILY_CHALLENGE'; challengeId: string; now?: number }
   | { type: 'REROLL_DAILY_CHALLENGE'; challengeId: string; now?: number }
   | { type: 'REFRESH_DAILY_REWARDS'; now?: number }
-  | { type: 'TICK_AUTOMATION'; now?: number }
+  | { type: 'TICK_AUTOMATION'; now?: number; prng?: Prng }
+  | { type: 'PURCHASE_AUCTION_DEAL'; dealId: string; now?: number }
   | { type: 'CLAIM_ACHIEVEMENT_REWARD'; achievementId: string; now?: number }
   | { type: 'UNLOCK_CASE'; caseId: string }
   | { type: 'PURCHASE_CASE_LICENSE'; caseId: string; licenseCost?: number; now?: number }
   | { type: 'TOGGLE_CASE_FAVORITE'; caseId: string }
-  | { type: 'OPEN_CASE'; payload: { caseId: string; quantity?: number } }
+  | {
+      type: 'OPEN_CASE'
+      payload: {
+        caseId: string
+        quantity?: number
+        firstCaseHookRoll?: number
+        openingEventId?: string
+        now?: number
+      }
+    }
   | { type: 'UPDATE_MARKET_VALUE'; skinId: string; value: number }
   | { type: 'APPLY_EXTERNAL_SKIN_PRICES'; marketValues: Record<string, number>; now?: number }
-  | { type: 'TICK_EVENTS'; now?: number; prng?: Prng }
+  | { type: 'TICK_EVENTS'; now?: number; prng?: Prng; scheduleTicks?: number }
   | { type: 'TRIGGER_GAME_EVENT'; eventType: GameEventType; now?: number; durationMs?: number }
-  | { type: 'TICK_MARKET'; now?: number; prng?: Prng }
+  | { type: 'TICK_MARKET'; now?: number; prng?: Prng; recordHistory?: boolean }
   | { type: 'APPLY_MARKET_TICK'; tick: MarketTickResult }
   | { type: 'APPLY_OFFLINE_PROGRESS'; state: GameState }
   | { type: 'UPDATE_SETTINGS'; settings: Partial<GameSettings> }
@@ -387,7 +407,7 @@ export const defaultDropsByRarity: DropRarityCounts = {
 }
 
 export const defaultGameState: GameState = {
-  money: 50,
+  money: 100,
   inventory: [],
   inventoryValue: 0,
   inventoryValueHistory: [],
@@ -403,6 +423,9 @@ export const defaultGameState: GameState = {
   collectionRewards: [],
   recentDrops: [],
   lastOpenedItems: [],
+  hasUsedFirstCaseHook: false,
+  lastPoopCleaningAt: 0,
+  workMiniGameCooldowns: {},
   uiEvents: [],
   prestigeLevel: 0,
   prestigePoints: 0,
@@ -421,7 +444,10 @@ export const defaultGameState: GameState = {
   upcomingMarketEvents: [],
   marketEventHistory: [],
   lastMarketTick: 0,
+  lastEventTick: 0,
   statistics: {
+    auctionPurchases: 0,
+    auctionSavings: 0,
     casesOpened: 0,
     moneySpent: 0,
     moneyEarned: 0,
@@ -437,6 +463,7 @@ export const defaultGameState: GameState = {
     autosaveEnabled: true,
     autoSellNotificationsEnabled: true,
     backupPromptEnabled: true,
+    debugMode: false,
     highContrastMode: false,
     language: 'en',
     largeText: false,

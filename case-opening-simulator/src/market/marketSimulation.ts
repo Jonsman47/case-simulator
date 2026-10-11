@@ -69,11 +69,13 @@ export interface MarketTickInput {
   casesOpened?: number
   eventChanceBonus?: number
   eventHistory?: MarketEventLog[]
+  elapsedMs?: number
   marketHistory?: MarketPriceHistory
   marketTrends?: Record<string, MarketTrendArrow>
   marketValues: Record<string, number>
   now?: number
   prng?: Prng
+  recordHistory?: boolean
   skins?: SkinBase[]
   trackedSkinIds?: string[]
   upcomingEvents?: ActiveMarketEvent[]
@@ -105,6 +107,7 @@ interface MarketEventTemplate {
 
 export const MARKET_TICK_MS = 60_000
 export const MIN_MARKET_VALUE = 0.01
+export const MAX_MARKET_VALUE = 1_000_000_000
 export const MARKET_HISTORY_MAX_POINTS = 240
 export const MARKET_HISTORY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1_000
 export const MARKET_HISTORY_MAX_TRACKED_SKINS = 320
@@ -118,7 +121,9 @@ const tradeUpResultRarities = new Set([Rarity.Restricted, Rarity.Classified, Rar
 const operationCaseIds = ['crate-4880', 'crate-4904', 'revolution_style_case', 'kilowatt_style_case']
 
 function roundMarketValue(value: number) {
-  return Number(Math.max(MIN_MARKET_VALUE, value).toFixed(2))
+  const safeValue = Number.isFinite(value) ? value : MIN_MARKET_VALUE
+
+  return Number(Math.min(MAX_MARKET_VALUE, Math.max(MIN_MARKET_VALUE, safeValue)).toFixed(2))
 }
 
 function getAllSkinIds(skins: SkinBase[]) {
@@ -455,6 +460,12 @@ function canScheduleEvent(
   activeEvents: ActiveMarketEvent[],
   upcomingEvents: ActiveMarketEvent[],
 ) {
+  if ([...activeEvents, ...upcomingEvents].some((event) => (
+    event.type === candidate.type && eventsOverlap(candidate, event)
+  ))) {
+    return false
+  }
+
   if (candidate.allowOverlap) {
     return true
   }
@@ -462,6 +473,29 @@ function canScheduleEvent(
   return [...activeEvents, ...upcomingEvents].every((event) => {
     return event.allowOverlap || !eventsOverlap(candidate, event)
   })
+}
+
+function dedupeMarketEvents(events: ActiveMarketEvent[]) {
+  const byType = new Map<MarketEventType, ActiveMarketEvent>()
+
+  for (const event of events) {
+    const existing = byType.get(event.type)
+
+    if (!existing) {
+      byType.set(event.type, event)
+      continue
+    }
+
+    const preferEvent = event.id.startsWith('game:') && !existing.id.startsWith('game:')
+      ? event
+      : (event.endTime ?? 0) > (existing.endTime ?? 0)
+        ? event
+        : existing
+
+    byType.set(event.type, preferEvent)
+  }
+
+  return Array.from(byType.values())
 }
 
 function getEligibleEventTypes(casesOpened: number): MarketEventType[] {
@@ -486,6 +520,7 @@ function maybeScheduleMarketEvent({
   now,
   prng,
   upcomingEvents,
+  scheduleTicks = 1,
 }: {
   activeEvents: ActiveMarketEvent[]
   casesOpened: number
@@ -494,6 +529,7 @@ function maybeScheduleMarketEvent({
   now: number
   prng: Prng
   upcomingEvents: ActiveMarketEvent[]
+  scheduleTicks?: number
 }) {
   if (
     casesOpened > 0 &&
@@ -531,14 +567,21 @@ function maybeScheduleMarketEvent({
     return undefined
   }
 
-  const scheduleChance = Math.min(0.25, Math.max(0, randomEventChance + eventChanceBonus))
+  const perTickChance = Math.min(0.25, Math.max(0, randomEventChance + eventChanceBonus))
+  const scheduleChance = 1 - (1 - perTickChance) ** Math.max(1, scheduleTicks)
 
   if (prng() >= scheduleChance) {
     return undefined
   }
 
   const eligibleTypes = getEligibleEventTypes(casesOpened)
-  const selectedType = eligibleTypes[Math.floor(prng() * eligibleTypes.length)] ?? 'MarketBoom'
+    .filter((type) => ![...activeEvents, ...upcomingEvents].some((event) => event.type === type))
+
+  if (eligibleTypes.length === 0) {
+    return undefined
+  }
+
+  const selectedType = eligibleTypes[Math.floor(prng() * eligibleTypes.length)] ?? eligibleTypes[0]
   const startDelay = (10 + Math.floor(prng() * 20)) * MARKET_TICK_MS
   const candidate = createMarketEvent({
     casesOpened,
@@ -551,10 +594,11 @@ function maybeScheduleMarketEvent({
   return canScheduleEvent(candidate, activeEvents, upcomingEvents) ? candidate : undefined
 }
 
-function getRandomWalkChange(skin: SkinBase, prng: Prng) {
+function getRandomWalkChange(skin: SkinBase, prng: Prng, elapsedMs = MARKET_TICK_MS) {
   const variance = stableRarities.has(skin.rarity) ? 0.01 : 0.03
+  const elapsedTickScale = Math.sqrt(Math.max(1, elapsedMs / MARKET_TICK_MS))
 
-  return (prng() * 2 - 1) * variance
+  return (prng() * 2 - 1) * Math.min(0.12, variance * elapsedTickScale)
 }
 
 function getTrend(previousValue: number, nextValue: number): MarketTrendArrow {
@@ -567,7 +611,7 @@ function getTrend(previousValue: number, nextValue: number): MarketTrendArrow {
   return difference > 0 ? '↑' : '↓'
 }
 
-function getEventTickImpact(event: ActiveMarketEvent) {
+function getEventTickImpact(event: ActiveMarketEvent, elapsedMs = MARKET_TICK_MS) {
   if (typeof event.totalImpact !== 'number') {
     return event.impactPerTick ?? 0
   }
@@ -576,20 +620,7 @@ function getEventTickImpact(event: ActiveMarketEvent) {
   const endTime = event.endTime ?? startTime + MARKET_TICK_MS
   const duration = Math.max(MARKET_TICK_MS, endTime - startTime)
 
-  return event.totalImpact * (MARKET_TICK_MS / duration)
-}
-
-function createRuntimeMarketEvent(event: ActiveMarketEvent): MarketEvent {
-  return {
-    id: event.id,
-    name: getMarketEventName(event),
-    description: getMarketEventDescription(event),
-    startTime: event.startTime ?? event.startedAt ?? 0,
-    endTime: event.endTime ?? 0,
-    effect: (prices) => {
-      applyPercentChange(prices, event.affectedSkinIds ?? [], getEventTickImpact(event))
-    },
-  }
+  return event.totalImpact * (Math.max(MARKET_TICK_MS, elapsedMs) / duration)
 }
 
 export function trimMarketPriceHistory(
@@ -689,10 +720,12 @@ export function tickMarket({
   casesOpened = 0,
   eventChanceBonus = 0,
   eventHistory = [],
+  elapsedMs = MARKET_TICK_MS,
   marketHistory = {},
   marketValues,
   now = Date.now(),
   prng = Math.random,
+  recordHistory = true,
   skins = SKIN_DEFINITIONS,
   trackedSkinIds,
   upcomingEvents = [],
@@ -706,11 +739,11 @@ export function tickMarket({
   const expiredEvents = [...hydratedActiveEvents, ...hydratedUpcomingEvents].filter((event) => {
     return (event.endTime ?? 0) <= now
   })
-  let currentEvents = [...hydratedActiveEvents, ...startedEvents]
+  let currentEvents = dedupeMarketEvents([...hydratedActiveEvents, ...startedEvents]
     .filter((event) => {
       return (event.startTime ?? 0) <= now && (event.endTime ?? 0) > now
     })
-    .map((event) => hydrateMarketEvent(event, now))
+    .map((event) => hydrateMarketEvent(event, now)))
   let nextUpcomingEvents = futureEvents
   const nextEventHistory = appendEventLog(eventHistory, expiredEvents, now)
   const previousValues: Record<string, number> = {}
@@ -719,14 +752,24 @@ export function tickMarket({
 
   for (const skin of skins) {
     const previousValue = marketValues[skin.id] ?? skin.baseValue
-    const randomWalkChange = getRandomWalkChange(skin, prng)
+    const randomWalkChange = getRandomWalkChange(skin, prng, elapsedMs)
 
     previousValues[skin.id] = previousValue
     nextValues[skin.id] = roundMarketValue(previousValue * (1 + randomWalkChange))
   }
 
+  const combinedEventImpact = new Map<string, number>()
+
   for (const event of currentEvents) {
-    createRuntimeMarketEvent(event).effect(nextValues)
+    const impact = getEventTickImpact(event, elapsedMs)
+
+    for (const skinId of event.affectedSkinIds ?? []) {
+      combinedEventImpact.set(skinId, (combinedEventImpact.get(skinId) ?? 0) + impact)
+    }
+  }
+
+  for (const [skinId, impact] of combinedEventImpact) {
+    applyPercentChange(nextValues, [skinId], Math.min(0.08, Math.max(-0.08, impact)))
   }
 
   for (const skin of skins) {
@@ -742,6 +785,7 @@ export function tickMarket({
     now,
     prng,
     upcomingEvents: nextUpcomingEvents,
+    scheduleTicks: elapsedMs / MARKET_TICK_MS,
   })
 
   if (newEvent) {
@@ -755,13 +799,15 @@ export function tickMarket({
     activeEvents: currentEvents,
     eventHistory: nextEventHistory,
     lastMarketTick: now,
-    marketHistory: appendMarketPriceHistory({
-      marketHistory,
-      marketValues: nextValues,
-      now,
-      skins,
-      trackedSkinIds,
-    }),
+    marketHistory: recordHistory
+      ? appendMarketPriceHistory({
+          marketHistory,
+          marketValues: nextValues,
+          now,
+          skins,
+          trackedSkinIds,
+        })
+      : marketHistory,
     marketTrends: nextTrends,
     marketValues: nextValues,
     specialEventCaseIds: getSpecialEventCaseIds(currentEvents),

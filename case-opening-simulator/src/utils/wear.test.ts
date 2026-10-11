@@ -2,9 +2,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ImportedSkinDefinition } from '../data/importedAssetTypes'
 import { Rarity, WearCondition, type SkinBase } from '../data/models'
 import {
+  WEAR_CONDITION_ODDS,
   WEAR_DISTRIBUTIONS_BY_RARITY,
   WEAR_FLOAT_RANGES,
   applyWearMultiplier,
+  getPossibleWearFloatRangesForSkin,
   getWearConditionForFloat,
   randomFloatForCondition,
   randomFloatForSkin,
@@ -44,14 +46,15 @@ function makeImportedSkin(): ImportedSkinDefinition {
 }
 
 describe('wear condition generation', () => {
-  it('covers every rarity distribution segment with injected randomness', () => {
+  it('uses the same exact 15-weight wear distribution for every rarity', () => {
     for (const rarity of Object.values(Rarity)) {
       const skin = makeSkin(rarity)
       const distribution = WEAR_DISTRIBUTIONS_BY_RARITY[rarity]
       const totalWeight = distribution.reduce((total, entry) => total + entry.weight, 0)
       let cumulativeWeight = 0
 
-      expect(totalWeight, rarity).toBe(100)
+      expect(distribution, rarity).toEqual(WEAR_CONDITION_ODDS)
+      expect(totalWeight, rarity).toBe(15)
 
       for (const entry of distribution) {
         const randomValueInsideSlot = (cumulativeWeight + entry.weight / 2) / totalWeight
@@ -65,27 +68,6 @@ describe('wear condition generation', () => {
     }
   })
 
-  it('makes special items slightly more worn than rifles/covert skins', () => {
-    const specialHighWearWeight = WEAR_DISTRIBUTIONS_BY_RARITY[Rarity.SpecialItem]
-      .filter((entry) => {
-        return (
-          entry.condition === WearCondition.WellWorn ||
-          entry.condition === WearCondition.BattleScarred
-        )
-      })
-      .reduce((total, entry) => total + entry.weight, 0)
-    const covertHighWearWeight = WEAR_DISTRIBUTIONS_BY_RARITY[Rarity.Covert]
-      .filter((entry) => {
-        return (
-          entry.condition === WearCondition.WellWorn ||
-          entry.condition === WearCondition.BattleScarred
-        )
-      })
-      .reduce((total, entry) => total + entry.weight, 0)
-
-    expect(specialHighWearWeight).toBeGreaterThan(covertHighWearWeight)
-  })
-
   it('uses the provided PRNG instead of Math.random', () => {
     const mathRandomSpy = vi.spyOn(Math, 'random')
 
@@ -94,6 +76,70 @@ describe('wear condition generation', () => {
     expect(mathRandomSpy).not.toHaveBeenCalled()
 
     mathRandomSpy.mockRestore()
+  })
+
+  it('matches the requested distribution over 100,000 simulated case drops', () => {
+    const skin = makeSkin(Rarity.Restricted)
+    const counts = Object.fromEntries(
+      Object.values(WearCondition).map((wear) => [wear, 0]),
+    ) as Record<WearCondition, number>
+    let seed = 123_456_789
+    const prng = () => {
+      seed = (1664525 * seed + 1013904223) % 2 ** 32
+
+      return seed / 2 ** 32
+    }
+
+    for (let index = 0; index < 100_000; index += 1) {
+      const floatValue = randomFloatForSkin(skin, prng)
+      const wear = getWearConditionForFloat(skin, floatValue)
+
+      if (floatValue < 0 || floatValue > 1) {
+        throw new Error(`Generated float outside skin range: ${floatValue}`)
+      }
+
+      counts[wear] += 1
+    }
+
+    expect(counts[WearCondition.FactoryNew] / 100_000).toBeCloseTo(1 / 15, 2)
+    expect(counts[WearCondition.MinimalWear] / 100_000).toBeCloseTo(3 / 15, 2)
+    expect(counts[WearCondition.FieldTested] / 100_000).toBeCloseTo(5 / 15, 2)
+    expect(counts[WearCondition.WellWorn] / 100_000).toBeCloseTo(2 / 15, 2)
+    expect(counts[WearCondition.BattleScarred] / 100_000).toBeCloseTo(4 / 15, 2)
+  }, 15_000)
+
+  it('redistributes impossible wear condition odds across possible imported skin wears', () => {
+    const skin = makeImportedSkin()
+    const counts = Object.fromEntries(
+      Object.values(WearCondition).map((wear) => [wear, 0]),
+    ) as Record<WearCondition, number>
+    let seed = 987_654_321
+    const prng = () => {
+      seed = (1664525 * seed + 1013904223) % 2 ** 32
+
+      return seed / 2 ** 32
+    }
+
+    expect(Object.keys(getPossibleWearFloatRangesForSkin(skin)).sort()).toEqual([
+      WearCondition.FieldTested,
+      WearCondition.MinimalWear,
+    ].sort())
+
+    for (let index = 0; index < 20_000; index += 1) {
+      const floatValue = randomFloatForSkin(skin, prng)
+      const wear = getWearConditionForFloat(skin, floatValue)
+
+      expect(floatValue).toBeGreaterThanOrEqual(skin.minFloat)
+      expect(floatValue).toBeLessThanOrEqual(skin.maxFloat)
+      expect([WearCondition.MinimalWear, WearCondition.FieldTested]).toContain(wear)
+      counts[wear] += 1
+    }
+
+    expect(counts[WearCondition.FactoryNew]).toBe(0)
+    expect(counts[WearCondition.WellWorn]).toBe(0)
+    expect(counts[WearCondition.BattleScarred]).toBe(0)
+    expect(counts[WearCondition.MinimalWear] / 20_000).toBeCloseTo(3 / 8, 2)
+    expect(counts[WearCondition.FieldTested] / 20_000).toBeCloseTo(5 / 8, 2)
   })
 })
 
@@ -113,14 +159,15 @@ describe('float generation and wear value adjustment', () => {
     const skin = makeImportedSkin()
 
     expect(randomFloatForSkin(skin, () => 0)).toBe(0.12)
-    expect(randomFloatForSkin(skin, () => 1)).toBe(0.33)
-    expect(randomFloatForSkin(skin, () => 0.5)).toBe(0.225)
+    expect(randomFloatForSkin(skin, () => 1)).toBe(0.329999)
+    expect(randomFloatForSkin(skin, () => 0.5)).toBe(0.24)
   })
 
   it('derives wear from imported skin wear ranges', () => {
     const skin = makeImportedSkin()
 
     expect(getWearConditionForFloat(skin, 0.13)).toBe(WearCondition.MinimalWear)
+    expect(getWearConditionForFloat(skin, 0.15)).toBe(WearCondition.FieldTested)
     expect(getWearConditionForFloat(skin, 0.2)).toBe(WearCondition.FieldTested)
   })
 

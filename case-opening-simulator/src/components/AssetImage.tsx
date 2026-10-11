@@ -1,6 +1,7 @@
 import { memo, useState, type ImgHTMLAttributes } from 'react'
+import { resolvePublicAssetUrl } from '../utils/publicAsset'
 
-const fallbackImage = '/assets/placeholder.png'
+const fallbackImage = resolvePublicAssetUrl('/assets/placeholder.png')
 const maxRetryCount = 1
 
 interface AssetImageState {
@@ -15,9 +16,10 @@ export const AssetImage = memo(function AssetImage({
   loading,
   onError,
   src,
+  className,
   ...props
 }: ImgHTMLAttributes<HTMLImageElement>) {
-  const normalizedSrc = src || fallbackImage
+  const normalizedSrc = resolvePublicAssetUrl(src || fallbackImage)
   const [imageState, setImageState] = useState<AssetImageState>({
     currentSrc: normalizedSrc,
     retryCount: 0,
@@ -31,6 +33,7 @@ export const AssetImage = memo(function AssetImage({
     <img
       {...props}
       alt={alt ?? ''}
+      className={['block max-w-full bg-cs-panelMuted/30', className].filter(Boolean).join(' ')}
       decoding={decoding ?? 'async'}
       loading={loading ?? 'lazy'}
       onError={(event) => {
