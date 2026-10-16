@@ -173,6 +173,37 @@ export interface SkinBase {
   image: string
   statTrak?: boolean
   souvenir?: boolean
+  /** CS paint kit id. Variants such as Doppler phases are separate paint kits. */
+  paintIndex?: number
+  /** Source-provided paint-kit variant, for example "Ruby" or "Phase 2". */
+  phase?: string
+}
+
+export type PatternFamily =
+  | 'standard'
+  | 'case_hardened'
+  | 'heat_treated'
+  | 'fade'
+  | 'doppler'
+  | 'gamma_doppler'
+  | 'marble_fade'
+  | 'crimson_web'
+  | 'slaughter'
+  | 'patterned'
+
+export type PatternTier = 'standard' | 'notable' | 'rare' | 'exceptional' | 'iconic'
+export type PatternReferenceConfidence = 'verified' | 'estimated' | 'neutral'
+
+export interface SkinPattern {
+  family: PatternFamily
+  name: string
+  tier: PatternTier
+  premiumMultiplier: number
+  referenceConfidence: PatternReferenceConfidence
+  bluePercentage?: number
+  fadePercentage?: number
+  phase?: string
+  description?: string
 }
 
 export interface SkinInstance extends SkinBase {
@@ -183,6 +214,12 @@ export interface SkinInstance extends SkinBase {
   isLocked: boolean
   isFavorited: boolean
   discoveredAt: number
+  /** Absent only on legacy items created before save schema v29. Never rerolled. */
+  paintSeed?: number
+  pattern?: SkinPattern
+  /** Condition/edition-adjusted value before the stored pattern premium. */
+  baseMarketValue?: number
+  patternPremium?: number
 }
 
 export interface TrophyAssignment {
@@ -376,6 +413,8 @@ export interface PlayerState {
     tradeUpsCompleted: number
     drops: number
     rareDrops: number
+    patternDrops: number
+    exceptionalPatternDrops: number
     dropsByRarity: Record<Rarity, number>
   }
   lastBackupAt: number

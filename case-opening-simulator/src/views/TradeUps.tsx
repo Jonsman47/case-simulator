@@ -1,6 +1,7 @@
 import { ArrowUpRight, Check, Lock, Shuffle, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
+import { PatternBadge } from '../components/PatternInfo'
 import { CASE_DEFINITIONS } from '../data/cases'
 import type { GameUiEvent } from '../data/gameState'
 import { Rarity, type SkinInstance } from '../data/models'
@@ -299,6 +300,7 @@ export function TradeUps() {
                   <p className="mt-1 text-sm text-cs-muted">
                     {getWearLabel(latestTradeUpEvent.item.wear)} / {formatCurrency(latestTradeUpEvent.item.marketValue)}
                   </p>
+                  <div className="mt-2"><PatternBadge compact item={latestTradeUpEvent.item} /></div>
                 </div>
               </div>
             </section>
@@ -370,6 +372,7 @@ function TradeUpItemButton({
           {item.isFavorited ? <Star size={13} /> : null}
           <span className="font-semibold text-cs-green">{formatCurrency(marketValue)}</span>
         </span>
+        <span className="mt-2 block"><PatternBadge compact item={item} /></span>
       </span>
     </button>
   )

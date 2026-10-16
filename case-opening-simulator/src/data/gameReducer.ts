@@ -40,6 +40,14 @@ import { analyzeTradeUp, pickTradeUpOutcome, suggestBestTradeUps } from '../util
 import { achievementsById, getNewAchievementUnlocks } from './achievements'
 import { getMarketAdjustedSkinConditionPrice } from './skinPrices'
 import {
+  applyPatternPremium,
+  classifySkinPattern,
+  generatePaintSeed,
+  getPatternPremiumValue,
+  isExceptionalPattern,
+  isSpecialPattern,
+} from '../utils/skinPatterns'
+import {
   CASE_FARM_INTERVAL_MS,
   TRADING_BOT_INTERVAL_MS,
   AUCTION_HOUSE_DEAL_DURATION_MS,
@@ -554,13 +562,21 @@ function createSkinInstance(
     skin,
     wear,
   }) ?? fallbackMarketValue
+  const paintSeed = generatePaintSeed(prng)
+  const pattern = classifySkinPattern(skin, paintSeed)
+  const baseMarketValue = roundCurrency(realMarketValue)
+  const marketValue = applyPatternPremium(baseMarketValue, pattern)
 
   return {
     ...skin,
     instanceId: nanoid(),
     wear,
     floatValue,
-    marketValue: roundCurrency(realMarketValue),
+    marketValue,
+    baseMarketValue,
+    paintSeed,
+    pattern,
+    patternPremium: getPatternPremiumValue(baseMarketValue, pattern),
     statTrak: isStatTrak,
     souvenir: isSouvenir,
     isLocked: false,
@@ -865,6 +881,8 @@ function openCase(
   )
   const money = roundCurrency(currentMoney - totalCost + autoSellValue)
   const rareDrops = openedItems.filter((item) => isRareDrop(item.rarity)).length
+  const patternDrops = openedItems.filter(isSpecialPattern).length
+  const exceptionalPatternDrops = openedItems.filter(isExceptionalPattern).length
   const dropsByRarity = openedItems.reduce(
     (counts, item) => ({
       ...counts,
@@ -921,6 +939,8 @@ function openCase(
       casesOpened,
       drops: state.statistics.drops + openedItems.length,
       rareDrops: state.statistics.rareDrops + rareDrops,
+      patternDrops: state.statistics.patternDrops + patternDrops,
+      exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + exceptionalPatternDrops,
       moneySpent: roundCurrency(state.statistics.moneySpent + totalCost),
       moneyEarned: roundCurrency(state.statistics.moneyEarned + autoSellValue),
       itemsSold: state.statistics.itemsSold + autoSoldItems.length,
@@ -1782,6 +1802,8 @@ function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now())
       auctionPurchases: state.statistics.auctionPurchases + 1,
       auctionSavings: roundCurrency(state.statistics.auctionSavings + deal.listPrice - deal.price),
       moneySpent: roundCurrency(state.statistics.moneySpent + deal.price),
+      patternDrops: state.statistics.patternDrops + (isSpecialPattern(deal.item) ? 1 : 0),
+      exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + (isExceptionalPattern(deal.item) ? 1 : 0),
     },
     lastError: undefined,
   }, now)
@@ -1858,6 +1880,8 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
     statistics: {
       ...state.statistics,
       tradeUpsCompleted: state.statistics.tradeUpsCompleted + 1,
+      patternDrops: state.statistics.patternDrops + (isSpecialPattern(outputItem) ? 1 : 0),
+      exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + (isExceptionalPattern(outputItem) ? 1 : 0),
     },
   }, completedAt)
   const tradeUpProgressState = withDailyChallengeProgress(
@@ -2116,6 +2140,11 @@ function claimDailyReward(state: GameState, now = Date.now()): GameState {
       collectionBook: updateCollectionBook(nextState.collectionBook, item),
       recentDrops: [item, ...nextState.recentDrops].slice(0, RECENT_DROPS_LIMIT),
       lastOpenedItems: [item],
+      statistics: {
+        ...nextState.statistics,
+        patternDrops: nextState.statistics.patternDrops + (isSpecialPattern(item) ? 1 : 0),
+        exceptionalPatternDrops: nextState.statistics.exceptionalPatternDrops + (isExceptionalPattern(item) ? 1 : 0),
+      },
     }, now), [item], now)
   }
 

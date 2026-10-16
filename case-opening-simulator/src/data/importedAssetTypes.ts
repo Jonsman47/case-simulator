@@ -10,6 +10,8 @@ export interface ImportedSkinDefinition extends SkinBase {
   displayName: string
   weaponId: string
   patternId: string
+  paintIndex?: number
+  phase?: string
   minFloat: number
   maxFloat: number
   rarityId: string

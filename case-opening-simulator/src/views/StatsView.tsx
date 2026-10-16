@@ -21,6 +21,7 @@ import {
   Medal,
   Package,
   Repeat2,
+  Sparkles,
   Trophy,
   Wallet,
 } from 'lucide-react'
@@ -538,6 +539,13 @@ export function StatsView() {
           subLabel="Classified and above"
           tone="amber"
           value={summary.rareDropsClassifiedPlus.toLocaleString()}
+        />
+        <MetricCard
+          icon={Sparkles}
+          label="Special Patterns"
+          subLabel={`${state.statistics.exceptionalPatternDrops.toLocaleString()} exceptional or iconic`}
+          tone="amber"
+          value={state.statistics.patternDrops.toLocaleString()}
         />
         <MetricCard
           icon={Trophy}

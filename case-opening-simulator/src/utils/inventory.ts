@@ -2,6 +2,7 @@ import type { GameState, InventoryItem } from '../data/gameState'
 import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
 import { roundCurrency } from './safeNumbers'
 import { applyWearMultiplier } from './wear'
+import { applyPatternPremium } from './skinPatterns'
 
 export const INVENTORY_VALUE_HISTORY_LIMIT = 100
 export const PRESTIGE_INVENTORY_VALUE_THRESHOLD = 1_000_000
@@ -33,13 +34,16 @@ export function getCurrentItemMarketValue(
   })
 
   if (typeof generatedPrice === 'number') {
-    return generatedPrice
+    return applyPatternPremium(generatedPrice, item.pattern)
   }
 
   const currentBaseValue = marketValues[item.id]
 
   if (typeof currentBaseValue === 'number') {
-    return applyWearMultiplier(currentBaseValue, item.wear, item.floatValue)
+    return applyPatternPremium(
+      applyWearMultiplier(currentBaseValue, item.wear, item.floatValue),
+      item.pattern,
+    )
   }
 
   return item.marketValue

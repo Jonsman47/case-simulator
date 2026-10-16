@@ -37,11 +37,13 @@ export const CaseOpenControls = memo(function CaseOpenControls({
     { length: Math.floor(normalizedMaxQuantity / batchStep) },
     (_, index) => (index + 1) * batchStep,
   )
-  const openQuantities = [1, ...batchQuantities]
+  // Small batches are always available so the adaptive 2/3/5 presentation can
+  // be used directly; progression continues to control the 10+ batch ceiling.
+  const openQuantities = [1, 2, 3, 5, ...batchQuantities]
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
         {openQuantities.map((quantity) => {
           const totalCost = caseDef.cost * quantity
           const canAffordQuantity = money >= totalCost

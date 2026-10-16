@@ -14,6 +14,7 @@ import { applyCollectionSellValueBonus } from './collectionRewards'
 import { getUpgradeSellValueMultiplier } from '../data/upgrades'
 import { getPrestigeSellMultiplier } from '../data/prestige'
 import { getSkillSellMultiplier } from '../data/skills'
+import { isExceptionalPattern } from './skinPatterns'
 
 type MarketValues = Record<string, number>
 
@@ -83,6 +84,10 @@ function isQuickSellProtected(
   }
 
   if (item.rarity === Rarity.SpecialItem || item.rarity === Rarity.Contraband) {
+    return true
+  }
+
+  if (isExceptionalPattern(item)) {
     return true
   }
 

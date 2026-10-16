@@ -36,6 +36,8 @@ interface ApiSkin {
   collections?: ApiRef[]
   crates?: ApiRef[]
   image?: string
+  paint_index?: string
+  phase?: string
 }
 
 interface ApiUngroupedSkin extends ApiSkin {
@@ -70,6 +72,8 @@ interface GeneratedSkin {
   finish: string
   weaponId: string
   patternId: string
+  paintIndex?: number
+  phase?: string
   minFloat: number
   maxFloat: number
   rarity: string
@@ -409,6 +413,8 @@ function createGeneratedSkin(skin: ApiSkin, ungroupedWearNames: Set<string> | un
     finish,
     weaponId: slugify(skin.weapon?.name ?? weapon),
     patternId: slugify(skin.pattern?.name ?? finish),
+    paintIndex: skin.paint_index === undefined ? undefined : Number(skin.paint_index),
+    phase: skin.phase,
     minFloat: typeof skin.min_float === 'number' ? skin.min_float : 0,
     maxFloat: typeof skin.max_float === 'number' ? skin.max_float : 1,
     rarity,
@@ -630,7 +636,7 @@ function writeGeneratedSkins(filePath: string, skins: GeneratedSkin[]) {
     finish: ${asTsString(skin.finish)},
     weaponId: ${asTsString(skin.weaponId)},
     patternId: ${asTsString(skin.patternId)},
-    minFloat: ${skin.minFloat},
+${skin.paintIndex === undefined ? '' : `    paintIndex: ${skin.paintIndex},\n`}${skin.phase === undefined ? '' : `    phase: ${asTsString(skin.phase)},\n`}    minFloat: ${skin.minFloat},
     maxFloat: ${skin.maxFloat},
     rarity: Rarity.${skin.rarity},
     rarityId: ${asTsString(skin.rarityId)},

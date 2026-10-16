@@ -5,6 +5,7 @@ import { getCurrentItemMarketValue } from '../utils/inventory'
 import { getSkinRarityLabel } from '../utils/itemLabels'
 import { isHighlightedRecentDrop } from '../utils/openingAnimation'
 import { AssetImage } from './AssetImage'
+import { PatternBadge } from './PatternInfo'
 
 export interface RecentDropsFeedProps {
   drops: SkinInstance[]
@@ -112,6 +113,7 @@ function RecentDropCard({
         </span>
         <span className="font-semibold text-cs-green">{formatCurrency(marketValue)}</span>
       </div>
+      <div className="mt-2"><PatternBadge compact item={item} /></div>
       {!isOwned ? (
         <p className="mt-2 border border-cs-border px-2 py-1 font-mono text-[10px] uppercase text-cs-muted">
           Sold

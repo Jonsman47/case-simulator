@@ -167,4 +167,31 @@ describe('cloud save backend', () => {
     expect(merged.money).toBe(100)
     expect(merged.prestigeLevel).toBe(2)
   })
+
+  it('preserves paint seeds and pattern valuation through cloud merge', () => {
+    const patternedItem = makeItem({
+      instanceId: 'patterned-item',
+      paintSeed: 661,
+      baseMarketValue: 100,
+      patternPremium: 9_900,
+      marketValue: 10_000,
+      pattern: {
+        family: 'case_hardened',
+        name: 'AK-47 Blue Gem · Pattern 661',
+        tier: 'iconic',
+        premiumMultiplier: 100,
+        referenceConfidence: 'estimated',
+      },
+    })
+    const merged = mergeGameStates(
+      makeState({ inventory: [patternedItem], lastSaved: 200 }),
+      makeState({ inventory: [], lastSaved: 100 }),
+    )
+
+    expect(merged.inventory[0]).toMatchObject({
+      paintSeed: 661,
+      patternPremium: 9_900,
+      pattern: { tier: 'iconic' },
+    })
+  })
 })

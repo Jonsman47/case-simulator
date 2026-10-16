@@ -1,4 +1,4 @@
-import { RotateCcw, Search } from 'lucide-react'
+import { RotateCcw, Search, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rarity, WearCondition } from '../data/models'
 import {
@@ -18,6 +18,7 @@ const sortOptions: { label: string; value: SortCriterion }[] = [
   { label: 'Wear (Worst -> Best)', value: 'wearWorst' },
   { label: 'Name (A -> Z)', value: 'nameAsc' },
   { label: 'Name (Z -> A)', value: 'nameDesc' },
+  { label: 'Pattern Premium', value: 'patternDesc' },
 ]
 
 const rarityOptions = [
@@ -58,6 +59,7 @@ function hasActiveFilters(filters: InventoryFilters, sortCriterion: SortCriterio
     filters.lockedOnly ||
     filters.favoritedOnly ||
     filters.duplicatesOnly ||
+    filters.specialPatternsOnly ||
     sortCriterion !== defaultInventoryViewUiState.sortCriterion
   )
 }
@@ -267,6 +269,21 @@ export function InventoryFilterBar({
           label="Duplicates"
           onChange={(duplicatesOnly) => onFiltersChange({ duplicatesOnly })}
         />
+        <button
+          aria-pressed={filters.specialPatternsOnly}
+          className={[
+            'inline-flex min-h-11 items-center gap-2 border px-3 py-2 text-sm transition-colors',
+            filters.specialPatternsOnly
+              ? 'border-rarity-special bg-rarity-special/10 text-rarity-special'
+              : 'border-cs-border bg-cs-panel text-cs-muted hover:text-cs-text',
+          ].join(' ')}
+          onClick={() => onFiltersChange({ specialPatternsOnly: !filters.specialPatternsOnly })}
+          title="Show only notable, rare, exceptional, or iconic paint patterns"
+          type="button"
+        >
+          <Sparkles size={15} />
+          Special Patterns
+        </button>
       </div>
 
       {filters.duplicatesOnly ? (

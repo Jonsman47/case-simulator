@@ -2,6 +2,7 @@ import { AlertTriangle, Eye, Search, Sparkles, Trophy, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
 import { ItemDetailModal } from '../components/ItemDetailModal'
+import { PatternBadge } from '../components/PatternInfo'
 import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { useGame } from '../hooks/useGame'
@@ -40,7 +41,7 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
 }
 
 function getItemSearchText(item: SkinInstance) {
-  return `${item.weapon} ${item.finish} ${getSkinRarityLabel(item)} ${getWearLabel(item.wear)}`.toLowerCase()
+  return `${item.weapon} ${item.finish} ${getSkinRarityLabel(item)} ${getWearLabel(item.wear)} ${item.pattern?.name ?? ''} ${item.paintSeed ?? ''}`.toLowerCase()
 }
 
 function TrophySlotCard({
@@ -98,6 +99,7 @@ function TrophySlotCard({
           <Trophy className="text-cs-muted" size={38} />
         )}
       </button>
+      {displayItem ? <div className="mt-2"><PatternBadge compact item={displayItem} /></div> : null}
 
       {displayItem ? (
         <div className="mt-3">

@@ -68,6 +68,25 @@ function itemIds(items: SkinInstance[]) {
 }
 
 describe('inventory filters', () => {
+  it('searches, filters, and sorts special paint patterns', () => {
+    const ordinary = makeItem({ instanceId: 'ordinary', paintSeed: 123 })
+    const blueGem = makeItem({
+      instanceId: 'blue-gem',
+      paintSeed: 661,
+      pattern: {
+        family: 'case_hardened',
+        name: 'AK-47 Blue Gem · Pattern 661',
+        tier: 'iconic',
+        premiumMultiplier: 100,
+        referenceConfidence: 'estimated',
+      },
+    })
+
+    expect(itemIds(filterAndSortInventory([ordinary, blueGem], { ...defaultInventoryFilters, search: '661' }, 'newest'))).toEqual(['blue-gem'])
+    expect(itemIds(filterAndSortInventory([ordinary, blueGem], { ...defaultInventoryFilters, specialPatternsOnly: true }, 'newest'))).toEqual(['blue-gem'])
+    expect(itemIds(sortInventory([ordinary, blueGem], 'patternDesc'))).toEqual(['blue-gem', 'ordinary'])
+  })
+
   it('searches weapon and finish case-insensitively before sorting', () => {
     const items = filterAndSortInventory(
       inventory,

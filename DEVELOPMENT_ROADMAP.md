@@ -1,8 +1,8 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-10-09
+Updated: 2026-10-16
 
-This roadmap reflects the inspected repository after Prompt 2. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
+This roadmap reflects the inspected repository after Prompt 3. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
 
 ## Stage 1 — Foundation, Critical Bugs, Production Build & Asset Reliability
 
@@ -32,18 +32,19 @@ Exit evidence: TypeScript and lint pass; full suite passes 60 files/293 tests; p
 
 ## Stage 3 — Paint Seeds, Valuable Patterns & Item Identity
 
-Status: **PLANNED**
+Status: **COMPLETE**
 
-- Add paint seeds from 0 through 1000 inclusive to every newly generated item.
-- Add skin/finish-specific pattern profiles and deterministic classifiers.
-- Implement defensible Case Hardened tiers/Blue Gems, Fade percentages, Doppler phases, and other finish-specific variants.
-- Keep most seeds near standard value while applying bounded, data-backed premiums to scarce patterns.
-- Centralize pattern valuation and integrate openings, Auction, trade-ups, inventory, selling, collection, trophies, stats, offline generation, and cloud sync.
-- Add schema v29 with stable non-rerolling legacy-item migration.
-- Add pattern details and filters to opening results, item details, Inventory, Collection, Auction/Market, and trade-up results.
-- Add known-seed fixtures, migration/round-trip tests, valuation caps, and online/offline determinism tests.
+- Added immutable paint seeds from 0 through 1000 inclusive to the centralized item-generation pipeline.
+- Added skin/finish-specific deterministic profiles instead of universal seed premiums.
+- Implemented conservative Case Hardened/Heat Treated tiers and blue coverage, model-specific Fade percentages, paint-kit-driven Doppler/Gamma phases and gems, and selected Marble Fade patterns.
+- Kept ordinary patterns neutral while applying documented, finite, bounded premiums to supported special patterns.
+- Centralized pattern valuation and integrated openings, automation/offline rewards, Auction, trade-ups, inventory, selling protection, collection, trophies, statistics, achievements, local saves, and cloud merges.
+- Added schema v29 with a non-rerolling legacy migration.
+- Added pattern details, filters, sorting, warnings, and thumbnail limitations across relevant UI surfaces.
+- Rebuilt multi-case opening presentation into adaptive single/showcase/grid/dashboard layouts for 1–10 simultaneous openings without changing transaction or drop logic.
+- Added known-seed, ordinary-seed, generation, pricing, migration, cloud, protection, filter, and 1/2/3/5/10 opening-layout tests.
 
-Exit: all item creation paths produce stable valid seeds; known valuable patterns classify correctly; save/cloud/economy/UI behavior is consistent and tested.
+Exit evidence: TypeScript and lint pass; full suite passes 61 files/310 tests; production/PWA build and `verify:release` pass. Actual browser flows verified seed persistence, 1/2/3/5/10 layouts, full natural animation, exact-once cost/rewards, images, mobile scrolling, and a clean console.
 
 ## Stage 4 — Cloud Sync, Leaderboards & Social Features
 
@@ -88,9 +89,9 @@ Exit: no clipped/overlapping/broken-image surfaces; accessibility/performance/ec
 | --- | --- |
 | 1. Foundation/build/assets/runtime/UI stability | **COMPLETE** |
 | 2. Events/market events/automation/progression | **COMPLETE** |
-| 3. Paint seeds/pattern identity | **PLANNED** |
+| 3. Paint seeds/pattern identity | **COMPLETE** |
 | 4. Cloud/leaderboards/social | **PLANNED** |
 | 5. Data/performance/browser E2E | **PLANNED** |
 | 6. Final UI/accessibility/balance/release | **PLANNED** |
 
-Estimated overall completion after Stage 2: **92%**.
+Estimated overall completion after Stage 3: **95%**.

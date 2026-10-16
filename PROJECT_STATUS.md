@@ -1,16 +1,16 @@
 # CS2 Case Opening Simulator — Project Status
 
-Audit date: 2026-10-09
+Audit date: 2026-10-16
 Application directory: `case-opening-simulator/`
-Current save schema: v28
+Current save schema: v29
 
 ## Executive summary
 
 The simulator is a substantial, playable React browser game. Its core loop is complete: choose and license a case, pay once, generate a weighted predetermined item, run the roulette to that item, add it once to inventory, inspect or sell it, and progress through collection, upgrade, skill, prestige, work, trade-up, automation, and offline systems.
 
-Prompt 2 is complete. The dormant gameplay-event and market-event engines are connected to live provider/reducer ticks, saved and restored, represented in a public Events screen, mirrored into the Market banner, and processed during offline progress. Warehouse capacity is enforced safely. Auction House deals are real simulated purchases. Automation, upgrade, skill, prestige, event, sale, and offline modifiers have been audited and connected to gameplay. Existing over-capacity saves are preserved rather than truncated.
+Prompts 1–3 are complete. Gameplay and market events, Warehouse capacity, Auction House deals, automation, upgrades, skills, prestige, selling, and offline progression are connected to live gameplay. Every newly generated item now receives a permanent paint seed from 0–1000 and a finish/weapon-specific pattern classification. Pattern-aware values, protections, UI, statistics, achievements, and v29 persistence are used consistently across item-creation and item-value paths. Existing inventory is preserved without silently inventing or rerolling legacy seeds.
 
-The catalog contains 42 cases, 2,092 skins, and 2,134 verified generated images. Development, production build, PWA generation, and the automated suite are functional. Remaining work is concentrated in the mandatory pattern/paint-seed system, remotely verified cloud/social features, price/data gaps, performance/browser E2E hardening, and final visual/accessibility/balance polish.
+The catalog contains 42 cases, 2,092 skins, and 2,134 verified generated images. Single openings retain the large original presentation, while 2–10 case openings now use adaptive near-fullscreen showcase/grid/dashboard layouts. Development, production build, PWA generation, and the automated suite are functional. Remaining work is concentrated in remotely verified cloud/social features, price/data gaps, performance/browser E2E hardening, and final visual/accessibility/balance polish.
 
 ## 1. Project overview
 
@@ -18,8 +18,8 @@ The catalog contains 42 cases, 2,092 skins, and 2,134 verified generated images.
 
 - Starts a local player with $100 and two unlocked starter cases.
 - Provides 42 real CS2 cases with unlocks, licenses, search/filter/sort tools, odds, contents, favorites, and previews.
-- Generates weighted drops with rarity, float/wear, StatTrak and Souvenir eligibility, price, and collection metadata.
-- Animates single and batch openings and stops on the predetermined reward, including gold suspense, sound, speed settings, speed upgrades, skipping, and summaries.
+- Generates weighted drops with rarity, float/wear, StatTrak and Souvenir eligibility, a permanent paint seed, pattern classification, intrinsic pattern-adjusted value, and collection metadata.
+- Animates single and batch openings and stops on each predetermined reward, including gold suspense, sound, speed settings, speed upgrades, skipping, adaptive fullscreen multi-open layouts, and summaries.
 - Tracks inventory, collection discovery, sales, market history, trophies, achievements, statistics, daily rewards/challenges, upgrades, skill branches, prestige, work mini-games, trade-ups, automation, and offline progress.
 - Runs timed gameplay events and market events with capped modifiers, countdowns, notifications, history, persistence, and offline processing.
 - Provides Auto Opener, Opening Desk, Case Farm, Trading Bot, Market Analyst, Warehouse, and Auction House progression.
@@ -33,7 +33,8 @@ The catalog contains 42 cases, 2,092 skins, and 2,134 verified generated images.
 - Vitest, Testing Library, jsdom, and ESLint.
 - `react-window` for virtualized lists; Chart.js/`react-chartjs-2` for charts; Lucide React for icons.
 - `vite-plugin-pwa`, Workbox, and `workbox-window` for PWA behavior.
-- Versioned `localStorage` saves, currently schema v28.
+- Versioned `localStorage` saves, currently schema v29.
+- `csgo-blue-gem-calculator` and `csgo-fade-percentage-calculator` provide deterministic, model-specific coverage/percentage calculations; curated finish-specific rules remain the authority for premium tiers.
 - Optional local mock or Supabase REST/RPC cloud backends; no production credentials are committed.
 - Generated TypeScript catalog/price data and locally generated/downloaded image assets verified through a tracked SHA-256 manifest.
 - npm is authoritative; `package-lock.json` is the lockfile.
@@ -63,40 +64,40 @@ npm run verify:release
 
 ### Functional state
 
-The application is functional in development and production. TypeScript, lint, the 293-test suite, asset verification, Vite bundling, and PWA generation pass. The core game is playable; the remaining planned stages are listed below.
+The application is functional in development and production. TypeScript, lint, the 310-test suite, asset verification, Vite bundling, and PWA generation pass. The core game is playable; the remaining planned stages are listed below.
 
 ## 2. Implemented features
 
 | Feature | Status | What works | Missing or limited |
 | --- | --- | --- | --- |
 | Cases and selection | **COMPLETE** | 42 cases, starter unlocks, licenses, affordability, filters/sorts, contents, odds, favorites, single/batch controls. | Long-run economy still needs human playtesting. |
-| Case opening and roulette | **COMPLETE** | Predetermined reward, target stop, single/multi reels, suspense, sound, normal/fast/skip timing, upgrade/skill speed, result and batch summary, protected UI session. | No checked-in browser E2E suite. |
+| Case opening and roulette | **COMPLETE** | Predetermined reward, target stop, suspense, sound, timing upgrades, protected UI session, and exact-once transactions. Single openings stay large; 2–3 use showcase, 4–6 grid, and 7–10 dashboard layouts with a readable final overview. | No checked-in browser E2E suite. |
 | Opening transaction safety | **COMPLETE** | One reducer transaction charges and grants exactly once; rapid clicks are blocked; unrelated renders, routes, events, cloud merges, and timer cleanup do not erase the active UI session. | No confirmed gap. |
 | Real CS2 skin database | **COMPLETE** | 2,092 skins with weapon/finish, rarity, images, cases, float range, wear, StatTrak/Souvenir flags, and prices. | Snapshot data, not a live Valve API. |
 | Rarity and probabilities | **COMPLETE** | Consumer through Contraband/Special Item, normalized odds, weighted drops, luck, event rarity modifiers, batch behavior, tests. | Balance needs long-run simulation. |
 | Knives and gloves | **COMPLETE** | Special pools, real names/images, gold suspense, catalog/collection/inventory, achievements. | A small price-import fallback group remains. |
-| Float and wear | **COMPLETE** | Skin-specific ranges, generated float, five wear conditions, pricing, filters/sorts, trade-up math, migrations. | Paint seed/pattern behavior is not implemented. |
+| Float and wear | **COMPLETE** | Skin-specific ranges, generated float, five wear conditions, pricing, filters/sorts, trade-up math, migrations. | No confirmed core gap. |
 | StatTrak and Souvenir | **COMPLETE** | Eligibility-aware generation, labels, prices, inventory/collection, rules, persistence. | Pricing remains snapshot/fallback based. |
-| Inventory management | **COMPLETE** | Virtualized responsive grid, details, locks, favorites, duplicate protection, bulk actions, trophies, filters/sorts, charts, capacity/free-slot display. | No confirmed core gap. |
+| Inventory management | **COMPLETE** | Virtualized responsive grid, details, locks, favorites, duplicate and exceptional-pattern protection, bulk actions, trophies, pattern search/filter/sort, charts, and capacity/free-slot display. | Seed-specific thumbnails are unavailable; the UI states that catalog art is representative. |
 | Warehouse capacity | **COMPLETE** | Base capacity 250; Warehouse, upgrade, prestige, and skill bonuses stack; manual/batch/auto/offline/Auction rewards honor free slots; over-cap legacy saves are grandfathered and never truncated. | Capacity values need balance playtesting. |
 | Skin selling | **COMPLETE** | Single/bulk/auto-sale, lock protection, collection/upgrade/skill/prestige/module/event multipliers, notifications, stats, exact accounting. | No player-to-player marketplace. |
 | Currency/economy | **PARTIALLY COMPLETE** | Costs, licenses, sales, rewards, work/automation income, event modifiers, prestige, finite clamps, exact-once accounting. | Formal long-run economy report and human pacing tests remain. |
-| Skin prices | **PARTIALLY COMPLETE** | Generated wear/StatTrak prices for 2,071 skins, fallbacks, adjusted instance values, history, trends, event effects. | 21 skins and 250 wear-price slots use fallbacks; data is not live. |
+| Skin prices | **PARTIALLY COMPLETE** | Generated wear/StatTrak prices for 2,071 skins, safe intrinsic instance valuation, documented pattern premiums, history, trends, and event effects without premium double-counting. | 21 skins and 250 wear-price slots use fallbacks; data and rare-pattern appraisals are snapshots/estimates, not live quotes. |
 | Market | **COMPLETE** for the intended simulated scope | Searchable virtualized 2,092-skin viewer with thumbnails, rarity, value/trends, charts, timed random walk, category events, safe finite caps, selling consistency. | It is intentionally not a real-money or player-to-player market. |
 | Gameplay events | **COMPLETE** | Random/manual generation, activation, expiration, conflict rules, three-event cap, modifiers for openings/rarity/collection/sales/trade-ups/prestige/automation, notifications, countdowns, history, admin controls, persistence, offline ticks. | Event frequency and balance need playtesting. |
 | Market events | **COMPLETE** | Autonomous and gameplay-derived price events, category targeting, affected-item counts, banner, public Events page, countdowns/history, save/load, offline processing, bounded impacts. | No live external market feed. |
-| Collection tracking | **COMPLETE** | Permanent discovery, wear completion, best float/value, pagination, filters/sorts, summaries, event-scaled rewards. | Pattern variants will require new completion rules later. |
+| Collection tracking | **COMPLETE** | Permanent discovery, wear completion, best float/value (including pattern premium), pagination, filters/sorts, summaries, and event-scaled rewards. | Pattern seeds are item attributes rather than separate collection-book completion slots. |
 | Filters and sorting | **COMPLETE** | Case, inventory, market, collection, and trophy tools. | Language selection does not localize labels. |
-| Local save/load | **COMPLETE** | Autosave, lifecycle persistence, v0–v28 migrations, event/auction hydration, normalization, JSON import/export, reset, tests. | No confirmed gap. |
-| Cloud save | **PARTIALLY COMPLETE** | Mock/Supabase providers, auth UI, revisioned saves, merge, force sync, offline state, SQL/RLS, tests. New v28 data travels in serialized state. | Real deployed multi-device/auth/conflict flows are unverified. |
+| Local save/load | **COMPLETE** | Autosave, lifecycle persistence, v0–v29 migrations, immutable pattern round trips, legacy-item no-reroll behavior, event/Auction hydration, JSON import/export, reset, and tests. | No confirmed gap. |
+| Cloud save | **PARTIALLY COMPLETE** | Mock/Supabase providers, auth UI, revisioned saves, merge, force sync, offline state, SQL/RLS, and tests. v29 item pattern identity survives serialization and merge. | Real deployed multi-device/auth/conflict flows are unverified. |
 | Settings | **PARTIALLY COMPLETE** | Save, sound, animation/skip/fast timing, motion, market, notifications, themes, accessibility, rarity colors, onboarding, cloud, auto-sell. | Background music is absent; language selection does not translate the app. |
-| Trade-ups | **COMPLETE** | Ten-item validation, outcome pools/odds, float formula, values, protections, results, stats, Trading Bot; event input modifiers apply online/offline. | Pattern inheritance/seed generation awaits the pattern stage. |
+| Trade-ups | **COMPLETE** | Ten-item validation, outcome pools/odds, float formula, centralized output seed/pattern generation, pattern-aware values/protection, results, stats, and Trading Bot; event input modifiers apply online/offline. | No confirmed core gap. |
 | Auto Opener | **COMPLETE** | Upgradeable interval, selected case, capacity/funds safety, identical opening/event/economy rules online/offline. | Balance needs playtesting. |
 | Opening Desk | **COMPLETE** | Timed batches, progression interval/batch modifiers, capacity/funds safety, online/offline parity. | Balance needs playtesting. |
 | Case Farm | **COMPLETE** | Passive income based on level/unlocks with upgrade, prestige, skill, event, and offline modifiers. | Balance needs playtesting. |
 | Trading Bot | **COMPLETE** | Finds valid profitable trade-ups, obeys thresholds, modifiers, capacity, and offline timing. | Profit model depends on snapshot prices. |
 | Market Analyst | **COMPLETE** | Improves manual, bulk, and automated selling quotes. | No separate predictive chart overlay. |
-| Auction House | **COMPLETE** | Periodic time-limited offers using real skin data/images, wear/rarity/list price/discount, upgrade and skill offer counts, exact-once purchase, funds/capacity checks, persistence, stats, achievement. | Simulated buying only; no listing/selling marketplace. |
+| Auction House | **COMPLETE** | Periodic time-limited offers using real skin data/images, permanent seed/pattern identity, intrinsic/list/discount prices, upgrade/skill offer counts, exact-once purchase, funds/capacity checks, persistence, stats, and achievements. | Simulated buying only; catalog thumbnails do not render the exact seed. |
 | Automation module slots | **COMPLETE** | Two base active slots plus Module Bay upgrades; passive Warehouse consumes no slot; existing over-slot saves remain enabled; new enabling is safely blocked with feedback. | Slot count needs balance playtesting. |
 | Offline progress | **COMPLETE** | Capped elapsed simulation for automation, capacity, auto-sell, events, market ticks, Auction refresh, event-aware timing and income; summary UI reports event/market processing. | Extreme saves/device performance need profiling. |
 | Upgrade shop | **COMPLETE** | Eleven multi-level upgrades; every advertised effect now has a runtime effect, including opening speed, Work income, event discovery, slots, capacity, sales, cost, wear, rarity, batch, and automation speed. | Balance needs playtesting. |
@@ -105,30 +106,31 @@ The application is functional in development and production. TypeScript, lint, t
 | Achievements | **COMPLETE** | Milestones, named/hidden achievements, claims, rewards, UI, Auction purchase achievement, tests. | No confirmed core gap. |
 | Daily rewards/challenges | **COMPLETE** | Seven-day cycle, varied rewards, challenge progress, claim/reroll, timers, tests. | Real midnight rollover has not been manually observed. |
 | Work mini-games | **COMPLETE** | Poop Cleaning and Sort Boxes rewards/cooldowns/persistence; upgrade and skill income multipliers; UI/error handling/tests. | Legacy redirected source view remains. |
-| Statistics | **COMPLETE** | Summary, money flow, rarity share, trends, milestones, comparisons, ranges, CSV, Auction metrics. | No external analytics. |
+| Statistics | **COMPLETE** | Summary, money flow, rarity share, trends, milestones, comparisons, ranges, CSV, Auction metrics, pattern drops, and exceptional-pattern drops. | No external analytics. |
 | Trophy room | **COMPLETE** | Unlockable slots, assign/replace/remove, search, scoring, warnings, details, tests. | Active UI is local despite cloud tables. |
 | Onboarding/notifications/sound | **PARTIALLY COMPLETE** | Tutorial, tips, toasts, event start/end alerts, celebrations, effects/opening audio, PWA notices. | Music and granular notification channels are not implemented. |
 | Leaderboards | **NOT IMPLEMENTED** in active app | Backend methods, Supabase view, and React view exist. | Route redirects home; navigation absent; backend unverified. |
 | Admin tools | **COMPLETE** for local development | Client-side guard plus economy, inventory, progression, save, real event triggers, and event ticking controls. | It is intentionally not a server-side security boundary. |
 | PWA/offline install | **COMPLETE** | Manifest, service worker, prompts, update/offline UI, shell precache, runtime caches, verification. | Images cache on use rather than precaching all 197 MiB. |
 | Asset reliability | **COMPLETE** | Tracked path/source/size/SHA-256 manifest for 2,134 images; sync/verify; build gate; base-safe URLs; fallback/aspect sizing. | Fresh setup needs network access to populate ignored generated binaries. |
-| Paint seeds and valuable patterns | **NOT IMPLEMENTED** | Existing item instances have stable IDs and a centralized creation/valuation path suitable for extension. | Seed 0–1000, Case Hardened tiers/Blue Gems, Fade %, Doppler phases, premiums, UI, trade-up/save/cloud support remain Stage 3. |
+| Paint seeds and valuable patterns | **COMPLETE** for the documented simulator scope | New items receive immutable seed 0–1000. Finish/weapon-specific rules cover Case Hardened/Heat Treated, Fade, Doppler/Gamma phases and gems, and selected Marble Fade patterns. Pricing, selling protection, UI, filters, statistics, achievements, trade-ups, Auction, local/cloud saves, and all centralized reward paths consume the same pattern metadata. | Exact per-seed rendered artwork is unavailable. Premiums are conservative simulator estimates where market evidence is incomplete; they are not appraisal guarantees. |
 | Simulation worker | **NOT IMPLEMENTED** in active app | Worker logic exists. | Nothing imports/creates it. |
 
 ## 3. Current problems
 
 ### Confirmed
 
-1. Realistic paint seeds and finish-specific pattern valuation are not implemented.
-2. Leaderboards exist in source but are not routed in the active app and the real backend is unverified.
-3. Background music and localization are not implemented even though settings infrastructure exists.
-4. Twenty-one skins and 250 wear-price slots use price fallbacks.
-5. The production build warns about large main (~621 kB), prices (~649 kB), and skins (~1.276 MB) chunks before gzip.
-6. No persistent browser E2E suite is checked in.
-7. Real Supabase multi-device/auth/conflict behavior is not verified against a deployed project.
-8. Nine development-only audit advisories remain in the Tailwind 3/tooling dependency tree; the production dependency audit was clean in Prompt 1. Removing them requires a breaking Tailwind 4 migration.
-9. The optional tracked `CounterStrike2Skins` submodule checkout is missing in the existing worktree; generated outputs are self-sufficient.
-10. The worktree contains a broad pre-existing uncommitted batch that has been preserved.
+1. Leaderboards exist in source but are not routed in the active app and the real backend is unverified.
+2. Background music and localization are not implemented even though settings infrastructure exists.
+3. Twenty-one skins and 250 wear-price slots use price fallbacks.
+4. The production build warns about large chunks. The new pattern engine bundle is about 1.01 MB before gzip because its coverage lookup data is client-side; skin, price, and main bundles are also above Vite's warning threshold.
+5. No persistent browser E2E suite is checked in.
+6. Real Supabase multi-device/auth/conflict behavior is not verified against a deployed project.
+7. Nine development-only audit advisories remain in the Tailwind 3/tooling dependency tree; the production dependency audit was clean in Prompt 1. Removing them requires a breaking Tailwind 4 migration.
+8. The optional tracked `CounterStrike2Skins` submodule checkout is missing in the existing worktree; generated outputs are self-sufficient.
+9. Catalog images are finish-level artwork, not exact renderings of a particular seed, float, or Doppler phase. Pattern-aware surfaces state this limitation.
+10. Rare-pattern premiums are documented, bounded simulator estimates rather than live cash-market appraisals.
+11. The worktree contains a broad pre-existing uncommitted batch that has been preserved.
 
 ### Fixed in Prompt 2
 
@@ -143,6 +145,19 @@ The application is functional in development and production. TypeScript, lint, t
 - Connected previously inert upgrade/skill/prestige effects: opening timing, Work income, event discovery, module slots, and Auction offer slots.
 - Fixed fresh games incorrectly receiving a synthetic 24-hour offline report and made long offline simulation batched and practical.
 - Migrated saves to v28 without dropping old inventory, events, market events, or automation progress.
+
+### Fixed in Prompt 3
+
+- Added immutable paint seeds in the real CS2 range (0–1000 inclusive) to the centralized item-creation path used by openings, automation/offline openings, daily rewards, Auction purchases, trade-ups, and admin grants.
+- Imported paint-kit indices and phases and implemented finish/weapon-specific pattern classification rather than a universal seed table.
+- Added documented Case Hardened/Heat Treated Blue Gem handling, model-specific Fade percentages, paint-kit-driven Doppler/Gamma phases and gems, and selected Marble Fade special patterns.
+- Added safe pattern-aware intrinsic valuation after condition/edition pricing, with finite nonnegative bounds and no downstream market/event double-counting.
+- Protected exceptional patterns from auto-sell, duplicate bulk-sale, and trade-up automation while preserving explicit manual sale with a warning.
+- Added seed, category, tier, base value, premium, and final estimate UI across opening results, Inventory, Auction, trade-ups, Collection, trophies, and recent drops, plus pattern filtering/sorting and representative-image disclosure.
+- Migrated saves to v29. Legacy inventory is deliberately left unseeded rather than assigned invented seeds; new pattern data round-trips through local saves and cloud merges.
+- Added pattern statistics and achievement tracking plus regression coverage for generation, known/ordinary classifications, pricing, gameplay sources, persistence, protection, and exact-once behavior.
+- Rebuilt batch opening presentation: single remains large, 2–3 use a showcase layout, 4–6 a balanced grid, and 7–10 a near-fullscreen dashboard. All reels animate and reveal their predetermined items, and the final overview remains open for review.
+- Raised active opening/summary layers above transient notifications so mobile controls cannot be intercepted.
 
 ### Suspected or not yet proven
 
@@ -159,57 +174,56 @@ The application is functional in development and production. TypeScript, lint, t
 - There is no repository prompt archive or reliable older prompt-number completion log. Previous prompts before this six-stage roadmap cannot be reconstructed honestly.
 - Stage 1 completed dependency/build/PWA/asset reliability, responsive stability, and regression coverage for the opening-session fix.
 - Stage 2 completed events, simulated market events, Warehouse capacity, Auction House deals, automation/progression effect wiring, offline parity, and schema v28.
-- The most recent implementation work is the Prompt 2 event/automation restoration and audit described above.
+- Stage 3 completed immutable paint seeds, realistic finish-specific classifications, pattern-aware valuation/gameplay/UI, schema v29, and the adaptive fullscreen multi-case opening experience.
+- The most recent implementation work is the Prompt 3 pattern and multi-opening work described above.
 
-## 5. Paint seed and valuable-pattern integration plan
+## 5. Paint seed and valuable-pattern architecture
 
-This is deliberately not implemented in Prompt 2. The safe Stage 3 design is:
+The Stage 3 implementation uses one item-identity and valuation pipeline:
 
-1. **Definition metadata:** add a pattern profile keyed by skin/finish identity, not a universal random multiplier. Profiles describe standard, Case Hardened, Fade, Doppler, Marble Fade, and any other supported finish-specific behavior.
-2. **Item identity:** extend `SkinInstance` with `paintSeed` constrained to integer 0–1000 and a versioned pattern result such as type, display label, optional phase/fade/blue percentage, rarity tier, and valuation multiplier. Store the resolved result so later ruleset changes do not silently mutate owned items.
-3. **Single generation path:** generate the seed with the same injected PRNG inside the centralized `createSkinInstance` path. Manual openings, batches, automation, offline openings, Auction deals, daily items, and trade-up outputs must all use that path.
-4. **Deterministic classifiers:** implement pure, tested finish-specific classifiers. Case Hardened must use curated seed/tier tables or defensible coverage data; Fade and Doppler must use finish-specific mappings. Do not label arbitrary seeds as valuable.
-5. **Valuation architecture:** calculate `base condition value × StatTrak/Souvenir factor × pattern premium`, with finite caps and a stored valuation-rules version. Most seeds remain near normal value; rare tiers can command large but bounded premiums. Market/event multipliers remain downstream of intrinsic instance valuation.
-6. **Save migration:** add schema v29. Existing items should receive a deterministic seed derived from stable instance identity, or remain explicitly `unseededLegacy` until inspected; the chosen policy must not reroll on load. Preserve stored historical market value during migration and recompute only through a documented valuation upgrade.
-7. **Cloud merge:** keep `instanceId` as the merge key and treat pattern fields as immutable item identity. Validate/clamp imported seeds and reject malformed pattern payloads without dropping the item.
-8. **Gameplay integration:** trade-ups generate a new output seed; selling, bulk sale, auto-sale, Auction purchase, collection best-value tracking, achievements, statistics, and trophy scoring consume the same valuation helper.
-9. **UI:** show seed and pattern details in opening results, item details, Inventory, Market/Auction, collection, and trade-up results. Add filters only after data exists; do not imply every finish has meaningful pattern variance.
-10. **Tests:** boundary seeds 0 and 1000, known premium and ordinary seeds, deterministic generation, migration stability, exact-once purchases/openings, online/offline parity, valuation caps, save/cloud round trips, and UI display.
+1. `createSkinInstance` generates one integer seed from 0–1000 with the injected game PRNG, resolves the applicable finish/weapon profile, and stores the result on the instance. All normal reward paths use this function.
+2. Standard and pattern-independent finishes keep a neutral 1.0× multiplier. A seed alone never creates a premium unless the exact finish and model have an applicable rule.
+3. Case Hardened/Heat Treated coverage is model-specific. Curated AK-47 and Five-SeveN tiers and the documented Karambit 387 example receive named tiers; otherwise conservative measured blue-coverage thresholds are used only on supported models.
+4. Fade percentages use model-specific mappings. Doppler and Gamma Doppler phases/gems come from imported paint-kit identity/phase metadata rather than pretending that the paint seed alone selects Ruby, Sapphire, Black Pearl, or Emerald.
+5. Marble Fade only classifies selected model-specific special-pattern lists. Unknown combinations remain ordinary rather than receiving an invented premium.
+6. Intrinsic value is the existing wear/edition-adjusted base value multiplied once by the stored pattern multiplier, then clamped to a finite nonnegative $1 billion ceiling. Simulated market and sale modifiers remain downstream.
+7. Save schema v29 preserves the complete immutable result. Old items remain explicitly without pattern identity; loading never rerolls them. Cloud merge continues to use `instanceId` and preserves the stored fields.
+8. Catalog images remain representative. The simulator never claims that the thumbnail is a seed-accurate render.
+
+Reference links, known-seed tables, confidence labels, valuation policy, and approximation boundaries are documented in `case-opening-simulator/docs/pattern-reference-sources.md`.
 
 ## 6. Recommended next steps
 
-Four major prompts remain in the six-stage roadmap:
+Three major prompts remain in the six-stage roadmap:
 
-1. **Prompt 3 — Paint Seeds and Pattern Identity:** implement the architecture above, valuation, migrations, all gameplay/UI integration, and known-pattern fixtures.
-2. **Prompt 4 — Cloud and Social:** verify real Supabase auth/sync/conflicts, activate leaderboards, and decide public trophy behavior.
-3. **Prompt 5 — Data, Performance, and Browser E2E:** close price gaps, split/defer large data chunks, profile large saves/inventories, and add Playwright critical-flow coverage.
-4. **Prompt 6 — Final UI, Accessibility, Balance, and Release:** comprehensive visual pass, localization/music decision, accessibility, economy simulations/human playtests, cleanup, deployment/offline/update sign-off.
+1. **Prompt 4 — Cloud and Social:** verify real Supabase auth/sync/conflicts, activate leaderboards, and decide public trophy behavior.
+2. **Prompt 5 — Data, Performance, and Browser E2E:** close price gaps, split/defer large data and pattern lookup chunks, profile large saves/inventories, and add Playwright critical-flow coverage.
+3. **Prompt 6 — Final UI, Accessibility, Balance, and Release:** comprehensive visual pass, localization/music decision, accessibility, economy simulations/human playtests, cleanup, deployment/offline/update sign-off.
 
-Estimate: **four additional major Codex prompts**, one per stage above. Small follow-up prompts may still be required for findings from real cloud credentials or human balance testing.
+Estimate: **three additional major Codex prompts**, one per stage above. Small follow-up prompts may still be required for findings from real cloud credentials or human balance testing.
 
 ## 7. Overall completion estimate
 
 | Area | Estimate | Basis |
 | --- | ---: | --- |
-| Core gameplay | **96%** | Main loops, events, automation, offline, and transaction safety work; pattern identity and final balance remain. |
-| Skin/case data | **94%** | Full catalog/assets; price fallback gaps and paint-pattern metadata remain. |
-| Inventory and economy | **94%** | Capacity, selling, Auction, event/automation modifiers, persistence, and exact accounting work; pattern valuation and balance remain. |
-| UI and animations | **91%** | Stable responsive core, opening/results, Events/Auction/Warehouse UI, images/icons; final accessibility/visual/E2E pass remains. |
-| Overall project | **92%** | Feature-rich and buildable; four focused stages remain, led by patterns and remote/cloud/performance/release proof. |
+| Core gameplay | **98%** | Main loops, patterns, events, automation, offline, and transaction safety work; final balance and remote social validation remain. |
+| Skin/case data | **96%** | Full catalog/assets and imported paint metadata; price fallback gaps and some deliberately conservative pattern estimates remain. |
+| Inventory and economy | **97%** | Capacity, selling protection, Auction, pattern/event/automation modifiers, persistence, and exact accounting work; balance remains. |
+| UI and animations | **95%** | Responsive core plus large adaptive 1/2/3/5/10-case animation/reveal layouts work; final accessibility and whole-site polish remain. |
+| Overall project | **95%** | Feature-rich and buildable; three focused stages remain for real cloud/social proof, performance/E2E, and final release polish. |
 
 ## Verification snapshot
 
 - TypeScript (`npx tsc -b --pretty false`): pass.
-- Targeted event/market/opening/reducer/offline/save tests: pass.
-- Full tests: pass — 60 files, 293 tests (bounded to two workers after a concurrent build/test run starved Windows worker processes).
+- Targeted pattern/reducer/save/cloud/filter/auto-sell/opening tests: pass — 6 files, 130 tests.
+- Full tests: pass — 61 files, 310 tests.
 - `npm run lint`: pass — zero errors.
-- `npm run build`: pass — 2,134 assets verified; TypeScript and Vite pass; PWA generates 84 precache entries.
-- `npm run verify:release`: pass — lint, all 293 tests, asset verification, TypeScript, Vite/PWA build, and release verification all completed successfully.
-- Large-chunk warnings remain informational and are tracked for Stage 5.
-- Browser smoke verification: pass in the real local UI. Two consecutive Kilowatt openings completed, the result screen showed the predetermined winner, a Revolution rapid double-click charged/granted once, skip/close completed safely, and balance/item counts persisted after reload.
-- Event browser verification: pass. Offline ticking activated Winter Cases, the banner/toast/countdown and Events screen rendered, the Kilowatt price changed from $2.65 to $2.38, and an opening during the live event completed with one discounted charge and one reward.
-- Market and Inventory thumbnails rendered with correct contain sizing; the item-detail modal scrolled inside the viewport. Explicit 390×844 and 1440×900 checks had no horizontal document overflow.
+- `npm run build`: pass — 2,134 assets verified; TypeScript and Vite pass; PWA generates 85 precache entries and its service worker/Workbox output.
+- `npm run verify:release`: pass with exit code 0 — lint, all 310 tests, asset verification, TypeScript, Vite/PWA build, and PWA release checks completed successfully.
+- Large-chunk warnings remain informational and are tracked for Stage 5; the pattern lookup bundle is currently the largest new warning.
+- Browser case-opening verification: pass in the actual local UI. Natural single opening completed after its full animation and held the result; a 10-case Kilowatt open charged exactly $26.50 and added exactly 10 rewards. A different Revolution case also completed. No opening disappeared or duplicated a transaction.
+- Adaptive-layout verification: pass for actual 1, 2, 3, 5, and 10-case selections. The browser exposed `single`, `showcase`, `grid`, and `dashboard` layouts as designed. At 1366×768 the 10-case dashboard displayed ten readable lanes; at 390×844 the 5-case grid remained readable and scrollable without horizontal page overflow. All ten final reward cards remained available in the summary.
+- Pattern UI/persistence verification: pass. Opening and Inventory surfaces showed stored seed badges/details, base value, premium, estimate, and the representative-image limitation. A seed survived reload unchanged.
+- Market and Inventory thumbnails loaded at their natural 512-pixel source width with contain sizing.
 - Browser console after the smoke flows: no warnings or errors.
-- Local development server left running at `http://127.0.0.1:5173/`; the duplicate 5174 process used during testing was stopped.
-
-The first sandboxed test attempt executed zero tests because Windows denied Vitest temporary-cache renames. A later test/build pair was mistakenly run concurrently and starved worker processes; the isolated full suite then passed 60/60 files and 293/293 tests.
+- Local development server is left running at `http://127.0.0.1:5173/`.

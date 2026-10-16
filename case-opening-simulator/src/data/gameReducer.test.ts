@@ -131,6 +131,16 @@ describe('gameReducer OPEN_CASE', () => {
       finish: 'Sand Dune',
       rarity: Rarity.Consumer,
       marketValue: 0.03,
+      baseMarketValue: 0.03,
+      paintSeed: 0,
+      pattern: {
+        family: 'standard',
+        name: 'Standard pattern',
+        premiumMultiplier: 1,
+        referenceConfidence: 'neutral',
+        tier: 'standard',
+      },
+      patternPremium: 0,
       isLocked: false,
       isFavorited: false,
       discoveredAt: Date.now(),
@@ -406,6 +416,7 @@ describe('gameReducer OPEN_CASE', () => {
   it('adds newly found wear conditions when repeat drops expand a collection entry', () => {
     vi.mocked(Math.random)
       .mockReset()
+      .mockReturnValueOnce(0)
       .mockReturnValueOnce(0)
       .mockReturnValueOnce(0)
       .mockReturnValueOnce(0)
@@ -1062,6 +1073,9 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.inventory).toHaveLength(1)
     expect(resultItem?.rarity).toBe(Rarity.Industrial)
     expect(resultItem?.caseIds).toContain('starter_case')
+    expect(resultItem?.paintSeed).toBeGreaterThanOrEqual(0)
+    expect(resultItem?.paintSeed).toBeLessThanOrEqual(1000)
+    expect(resultItem?.pattern).toBeDefined()
     expect(nextState.collectionBook[0]).toMatchObject({
       skinId: resultItem?.id,
       timesFound: 1,
@@ -1135,7 +1149,7 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.inventory).toEqual(state.inventory)
     expect(nextState.statistics.tradeUpsCompleted).toBe(0)
-    expect(nextState.lastError).toBe('Locked or favorited skins cannot be used in trade-ups.')
+    expect(nextState.lastError).toBe('Locked, favorited, or exceptional-pattern skins cannot be used in trade-ups.')
   })
 
   it('purchases Auto Opener and deducts the upgrade cost', () => {
@@ -2111,6 +2125,9 @@ describe('gameReducer OPEN_CASE', () => {
     const deal = generated.automation.auctionHouse.deals[0]
 
     expect(deal).toBeDefined()
+    expect(deal.item.paintSeed).toBeGreaterThanOrEqual(0)
+    expect(deal.item.paintSeed).toBeLessThanOrEqual(1000)
+    expect(deal.item.pattern).toBeDefined()
 
     const purchased = gameReducer(generated, {
       type: 'PURCHASE_AUCTION_DEAL',

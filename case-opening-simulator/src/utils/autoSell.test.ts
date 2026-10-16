@@ -23,6 +23,22 @@ function makeItem(overrides: Partial<SkinInstance> = {}): SkinInstance {
 }
 
 describe('shouldAutoSell', () => {
+  it('never auto-sells exceptional paint patterns', () => {
+    const item = makeItem({
+      marketValue: 10_000,
+      paintSeed: 661,
+      pattern: {
+        family: 'case_hardened',
+        name: 'AK-47 Blue Gem · Pattern 661',
+        tier: 'iconic',
+        premiumMultiplier: 100,
+        referenceConfidence: 'estimated',
+      },
+    })
+
+    expect(shouldAutoSell(item, [{ enabled: true, id: 'sell-all', type: AutoSellRuleType.MaxRarity, rarityThreshold: Rarity.Contraband }])).toBe(false)
+  })
+
   it('matches legacy value, rarity, duplicate, and wear rules', () => {
     expect(
       shouldAutoSell(makeItem({ marketValue: 0.99 }), [

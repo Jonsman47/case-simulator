@@ -1,9 +1,9 @@
 import { CASE_DEFINITIONS } from '../data/cases'
 import { pickDrop, type DropTableEntry, type Prng } from '../data/dropLogic'
 import { Rarity, type CaseDefinition, type SkinBase, type SkinInstance } from '../data/models'
-import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
 import { SKIN_DEFINITIONS } from '../data/skins'
-import { applyWearMultiplier } from './wear'
+import { getCurrentItemMarketValue } from './inventory'
+import { isExceptionalPattern } from './skinPatterns'
 
 export const TRADE_UP_INPUT_COUNT = 10
 export const PROFITABLE_TRADE_UP_EPSILON = 0.75
@@ -59,25 +59,7 @@ function getSkinMarketValue(skin: SkinBase, marketValues: Record<string, number>
 }
 
 export function getTradeUpItemValue(item: SkinInstance, marketValues: Record<string, number>) {
-  const generatedPrice = getMarketAdjustedSkinConditionPrice({
-    fallbackValue: undefined,
-    isStatTrak: Boolean(item.statTrak),
-    marketValues,
-    skin: item,
-    wear: item.wear,
-  })
-
-  if (typeof generatedPrice === 'number') {
-    return generatedPrice
-  }
-
-  const currentBaseValue = marketValues[item.id]
-
-  if (typeof currentBaseValue === 'number') {
-    return applyWearMultiplier(currentBaseValue, item.wear, item.floatValue)
-  }
-
-  return item.marketValue
+  return getCurrentItemMarketValue(item, marketValues)
 }
 
 export function getTradeUpProfitability(expectedProfit: number, canTradeUp = true): TradeUpProfitability {
@@ -107,7 +89,7 @@ export function getNextTradeUpRarity(rarity: Rarity) {
 }
 
 export function isTradeUpEligibleItem(item: SkinInstance) {
-  return Boolean(getNextTradeUpRarity(item.rarity)) && !item.isLocked && !item.isFavorited
+  return Boolean(getNextTradeUpRarity(item.rarity)) && !item.isLocked && !item.isFavorited && !isExceptionalPattern(item)
 }
 
 export function getTradeUpInputRarity(items: SkinInstance[]) {
@@ -227,7 +209,7 @@ export function analyzeTradeUp({
 }): TradeUpAnalysis {
   const inputRarity = getTradeUpInputRarity(inputItems)
   const outcomeRarity = inputRarity ? getNextTradeUpRarity(inputRarity) : undefined
-  const hasProtectedItems = inputItems.some((item) => item.isLocked || item.isFavorited)
+  const hasProtectedItems = inputItems.some((item) => item.isLocked || item.isFavorited || isExceptionalPattern(item))
   const isCorrectCount = inputItems.length === TRADE_UP_INPUT_COUNT
   const isSameRarity = Boolean(inputRarity)
   const inputValue = getTradeUpInputValue(inputItems, marketValues, inputCostMultiplier)
@@ -246,7 +228,7 @@ export function analyzeTradeUp({
   } else if (!isSameRarity) {
     message = 'All selected skins must have the same rarity.'
   } else if (hasProtectedItems) {
-    message = 'Locked or favorited skins cannot be used in trade-ups.'
+    message = 'Locked, favorited, or exceptional-pattern skins cannot be used in trade-ups.'
   } else if (!outcomeRarity) {
     message = 'This rarity cannot be traded up.'
   } else if (outcomes.length === 0) {

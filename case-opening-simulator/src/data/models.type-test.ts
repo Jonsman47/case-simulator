@@ -216,6 +216,8 @@ export const examplePlayerState: PlayerState = {
     tradeUpsCompleted: 0,
     drops: 12,
     rareDrops: 1,
+    patternDrops: 0,
+    exceptionalPatternDrops: 0,
     dropsByRarity: {
       [Rarity.Consumer]: 0,
       [Rarity.Industrial]: 0,

@@ -2,6 +2,7 @@ import { Award, CheckCircle, ChevronLeft, ChevronRight, Info, X } from 'lucide-r
 import { useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
 import { ItemDetailModal } from '../components/ItemDetailModal'
+import { PatternBadge } from '../components/PatternInfo'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { Rarity, type SkinInstance } from '../data/models'
@@ -331,6 +332,7 @@ function CollectionCard({
         <p className="mt-1 text-xs text-cs-muted">
           Found {row.entry?.timesFound ?? 0} time{row.entry?.timesFound === 1 ? '' : 's'}
         </p>
+        {previewItem ? <div className="mt-2"><PatternBadge compact item={previewItem} /></div> : null}
       </div>
 
       <div className="mt-2 flex flex-wrap gap-1">

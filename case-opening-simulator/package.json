@@ -26,6 +26,8 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1",
+    "csgo-blue-gem-calculator": "^0.0.3",
+    "csgo-fade-percentage-calculator": "^2.0.0",
     "lucide-react": "^1.21.0",
     "nanoid": "^5.1.16",
     "react": "^19.2.6",

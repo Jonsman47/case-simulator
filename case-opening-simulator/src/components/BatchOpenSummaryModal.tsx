@@ -4,6 +4,8 @@ import { getSkinRarityColor } from '../data/rarities'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel, getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { AssetImage } from './AssetImage'
+import { PatternBadge } from './PatternInfo'
+import { isSpecialPattern } from '../utils/skinPatterns'
 
 export interface BatchOpenSummaryModalProps {
   autoSoldItems: SkinInstance[]
@@ -31,6 +33,7 @@ function isExcitingDrop(item: SkinInstance) {
     item.rarity === Rarity.Covert ||
     item.rarity === Rarity.SpecialItem ||
     item.rarity === Rarity.Contraband
+    || isSpecialPattern(item)
   )
 }
 
@@ -69,7 +72,7 @@ export function BatchOpenSummaryModal({
   const revealMode = skipAnimations && excitingDrops.length === 0 ? 'Skipped' : 'Short reveal'
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-4">
       <section
         aria-label="Case opening batch summary"
         aria-modal="true"
@@ -237,6 +240,7 @@ function DropSummaryCard({
           {formatCurrency(item.marketValue)}
         </span>
       </div>
+      <div className="mt-2"><PatternBadge compact item={item} /></div>
     </article>
   )
 }

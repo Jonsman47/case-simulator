@@ -9,6 +9,7 @@ import {
 } from './models'
 import { SKIN_DEFINITIONS } from './skins'
 import { createTrophySlotDefinitions, getTrophyAssignmentsList, getTrophyRoomSlotCount } from '../utils/trophyRoom'
+import { isExceptionalPattern } from '../utils/skinPatterns'
 
 const allWearConditions = Object.values(WearCondition)
 const skinDefinitionsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
@@ -160,6 +161,15 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     category: 'Drops',
     condition: hasFactoryNewCovert,
     reward: { money: 250 },
+  },
+  {
+    id: 'first_exceptional_pattern',
+    name: 'Pattern Hunter',
+    description: 'Find an exceptional or iconic paint pattern.',
+    category: 'Drops',
+    condition: (state) =>
+      state.statistics.exceptionalPatternDrops >= 1 || state.inventory.some(isExceptionalPattern),
+    reward: { upgradePoints: 2, skillPoints: 1, badge: 'Pattern Hunter' },
   },
   {
     id: 'first_100_value_item',

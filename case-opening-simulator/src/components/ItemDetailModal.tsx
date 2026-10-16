@@ -16,6 +16,8 @@ import { getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { TROPHY_SLOT_DEFINITIONS } from '../utils/trophyRoom'
 import { AssetImage } from './AssetImage'
 import { PriceChart } from './PriceChart'
+import { PatternBadge, PatternDetails } from './PatternInfo'
+import { isExceptionalPattern } from '../utils/skinPatterns'
 
 export interface ItemDetailModalProps {
   item: SkinInstance | undefined
@@ -405,6 +407,7 @@ export function ItemDetailModal({
                   Souvenir
                 </span>
               ) : null}
+              <PatternBadge item={item} />
             </div>
             <h2 className="mt-3 truncate text-2xl font-semibold text-cs-text sm:text-3xl" id={titleId}>
               {item.weapon} | {item.finish}
@@ -500,6 +503,8 @@ export function ItemDetailModal({
               title="Price History"
             />
 
+            <PatternDetails estimatedValue={currentSaleValue} item={item} />
+
             <div className="border border-cs-border bg-cs-panel p-4">
               <h3 className="text-lg font-semibold text-cs-text">Actions</h3>
               <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
@@ -593,6 +598,11 @@ export function ItemDetailModal({
                     Sell this item for{' '}
                     <span className="font-semibold text-cs-green">{formatCurrency(currentSaleValue)}</span>?
                   </p>
+                  {isExceptionalPattern(selectedItem) ? (
+                    <p className="mt-2 border border-rarity-special bg-rarity-special/10 p-2 text-sm text-rarity-special">
+                      This is an exceptional paint pattern. Auto-sell and trade-ups protect it, but this manual sale is permanent.
+                    </p>
+                  ) : null}
                   <div className="mt-4 grid gap-2 sm:flex sm:justify-end">
                     <button
                       className="min-h-11 border border-cs-border px-3 py-2 text-sm font-medium text-cs-muted transition-colors hover:text-cs-text"

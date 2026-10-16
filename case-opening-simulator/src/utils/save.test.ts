@@ -517,6 +517,38 @@ describe('save system', () => {
     expect(loadedState.hasUsedFirstCaseHook).toBe(true)
   })
 
+  it('preserves pattern metadata and migrates legacy items without rerolling them', () => {
+    const patternedItem = makeItem({
+      paintSeed: 661,
+      baseMarketValue: 100,
+      patternPremium: 9_900,
+      marketValue: 10_000,
+      pattern: {
+        family: 'case_hardened',
+        name: 'AK-47 Blue Gem · Pattern 661',
+        tier: 'iconic',
+        premiumMultiplier: 100,
+        referenceConfidence: 'estimated',
+      },
+    })
+    const patternedState = makeState({ inventory: [patternedItem] })
+    const roundTripped = parseGameSaveText(JSON.stringify(createSaveEnvelope(patternedState)))
+
+    expect(roundTripped.inventory[0]).toMatchObject({ paintSeed: 661, pattern: { tier: 'iconic' } })
+
+    const legacyItem = makeItem()
+    const migrated = parseGameSaveText(JSON.stringify({
+      version: 28,
+      savedAt: Date.now(),
+      state: makeState({ inventory: [legacyItem] }),
+    }))
+
+    expect(migrated.inventory[0]?.paintSeed).toBeUndefined()
+    expect(migrated.inventory[0]?.pattern).toBeUndefined()
+    expect(migrated.statistics.patternDrops).toBe(0)
+    expect(migrated.statistics.exceptionalPatternDrops).toBe(0)
+  })
+
   it('migrates version 21 saves with backup and autosave defaults', () => {
     const migrated = parseGameSaveText(JSON.stringify({
       version: 21,

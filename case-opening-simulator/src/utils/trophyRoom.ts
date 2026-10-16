@@ -1,7 +1,6 @@
 import { Rarity, type SkinInstance, type TrophyAssignments } from '../data/models'
 import { getSkillTrophySlotBonus } from '../data/skills'
-import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
-import { applyWearMultiplier } from './wear'
+import { getCurrentItemMarketValue } from './inventory'
 
 export interface TrophySlotDefinition {
   id: string
@@ -47,25 +46,7 @@ export const TROPHY_SLOT_DEFINITIONS = createTrophySlotDefinitions()
 export const trophySlotDefinitionsById = new Map(TROPHY_SLOT_DEFINITIONS.map((slot) => [slot.id, slot]))
 
 function getTrophyItemValue(item: SkinInstance, marketValues?: Record<string, number>) {
-  const generatedPrice = getMarketAdjustedSkinConditionPrice({
-    fallbackValue: undefined,
-    isStatTrak: Boolean(item.statTrak),
-    marketValues,
-    skin: item,
-    wear: item.wear,
-  })
-
-  if (typeof generatedPrice === 'number') {
-    return generatedPrice
-  }
-
-  const currentBaseValue = marketValues?.[item.id]
-
-  if (typeof currentBaseValue === 'number') {
-    return applyWearMultiplier(currentBaseValue, item.wear, item.floatValue)
-  }
-
-  return item.marketValue
+  return getCurrentItemMarketValue(item, marketValues ?? {})
 }
 
 export function createDefaultTrophyAssignments(): TrophyAssignments {

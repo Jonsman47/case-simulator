@@ -12,6 +12,7 @@ import {
 } from '../utils/openingAnimation'
 import { CASE_OPENING_SOUND_SRC } from '../utils/soundManifest'
 import { AssetImage } from './AssetImage'
+import { PatternBadge } from './PatternInfo'
 
 export interface CaseOpeningAnimationProps {
   caseImage?: string
@@ -75,7 +76,7 @@ function getReelLayout(batchSize: number): ReelLayout {
     }
   }
 
-  if (batchSize > 1) {
+  if (batchSize > 10) {
     // Multi-open reels still need enough offscreen cards to keep every lane filled
     // during deceleration; this keeps the CS-style ticker continuous instead of
     // ending on a blank panel.
@@ -87,6 +88,18 @@ function getReelLayout(batchSize: number): ReelLayout {
       startIndex: 5,
       targetIndex: 28,
     }
+  }
+
+  if (batchSize > 6) {
+    return { afterCount: 20, cardWidthRem: 7.25, fillerCount: 60, slotPitchRem: 7.75, startIndex: 5, targetIndex: 28 }
+  }
+
+  if (batchSize > 3) {
+    return { afterCount: 20, cardWidthRem: 8, fillerCount: 60, slotPitchRem: 8.5, startIndex: 5, targetIndex: 28 }
+  }
+
+  if (batchSize > 1) {
+    return { afterCount: 20, cardWidthRem: 9.5, fillerCount: 60, slotPitchRem: 10, startIndex: 5, targetIndex: 28 }
   }
 
   return {
@@ -282,9 +295,12 @@ function getGridStyle(batchSize: number) {
     }
   }
 
+  const columns = batchSize <= 2 ? 2 : batchSize === 3 ? 3 : batchSize <= 4 ? 2 : batchSize <= 6 ? 3 : batchSize <= 8 ? 4 : 5
+
   return {
-    gridTemplateColumns: 'repeat(auto-fit, minmax(8.5rem, 1fr))',
-  }
+    '--opening-columns': columns,
+    '--opening-columns-sm': Math.min(2, columns),
+  } as CSSProperties
 }
 
 export function CaseOpeningAnimation({
@@ -341,6 +357,7 @@ export function CaseOpeningAnimation({
   const rollFrameRef = useRef<number | undefined>(undefined)
   const secondRollFrameRef = useRef<number | undefined>(undefined)
   const isPremiumBatch = useMemo(() => items.some(isPremiumRevealDrop), [items])
+  const keepsResultsOpen = isPremiumBatch || batchSize > 1
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
   const isRolling = rollStarted && (phase === 'spinning' || phase === 'quickReveal')
   const trackTransform = getTrackTransform(isRolling, layout)
@@ -359,7 +376,7 @@ export function CaseOpeningAnimation({
       completedRef.current = true
       setPhase('revealed')
       stopCaseOpeningAudio(audioRef.current)
-      if (!isPremiumBatch) {
+      if (!keepsResultsOpen) {
         completeTimerRef.current = window.setTimeout(() => {
           if (!closedRef.current) {
             closedRef.current = true
@@ -368,7 +385,7 @@ export function CaseOpeningAnimation({
         }, holdMs)
       }
     },
-    [isPremiumBatch, onComplete, primaryItem, setPhase],
+    [keepsResultsOpen, onComplete, primaryItem, setPhase],
   )
 
   const cancelRollFrames = useCallback(() => {
@@ -452,14 +469,17 @@ export function CaseOpeningAnimation({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/80 p-0 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/80 p-0 backdrop-blur-sm sm:p-4">
       <section
         aria-label="Case opening animation"
         aria-modal="true"
         className={[
-          'relative min-h-dvh w-full border border-cs-border bg-cs-surface p-3 text-cs-text shadow-glow sm:min-h-0 sm:p-6',
-          batchSize > 25 ? 'max-w-7xl' : 'max-w-5xl',
+          'relative w-full border border-cs-border bg-cs-surface p-3 text-cs-text shadow-glow sm:p-5',
+          batchSize === 1 ? 'min-h-dvh sm:min-h-0 sm:max-w-5xl' : '',
+          batchSize > 1 && batchSize <= 10 ? 'flex h-dvh max-h-dvh max-w-none flex-col overflow-hidden sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:max-w-[120rem]' : '',
+          batchSize > 10 ? 'min-h-dvh max-w-7xl sm:min-h-0' : '',
         ].join(' ')}
+        data-batch-layout={batchSize === 1 ? 'single' : batchSize <= 3 ? 'showcase' : batchSize <= 6 ? 'grid' : batchSize <= 10 ? 'dashboard' : 'high-volume'}
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
@@ -483,7 +503,7 @@ export function CaseOpeningAnimation({
           </button>
         </div>
 
-        <div className="mt-5" data-phase={phase} data-testid="case-opening-reel">
+        <div className={batchSize > 1 && batchSize <= 10 ? 'mt-3 min-h-0 flex-1' : 'mt-5'} data-phase={phase} data-testid="case-opening-reel">
           {phase === 'ready' ? (
             <CasePreRollGrid
               batchSize={batchSize}
@@ -509,18 +529,19 @@ export function CaseOpeningAnimation({
 
         <div
           className={[
-            'relative mt-5 overflow-hidden border bg-cs-panel p-4 transition-opacity',
+            'relative overflow-hidden border bg-cs-panel transition-opacity',
             isPremiumBatch && phase === 'revealed' ? 'border-rarity-special shadow-[0_0_44px_rgba(255,215,0,0.4)]' : 'border-cs-border',
+            batchSize > 1 && batchSize <= 10 ? 'mt-3 shrink-0 p-3' : 'mt-5 p-4',
             phase === 'revealed' || phase === 'quickReveal' ? 'opacity-100' : 'opacity-70',
           ].join(' ')}
           data-testid="opening-result"
         >
           {phase === 'revealed' ? (
-            <div className={isPremiumBatch ? 'grid gap-4 py-4 text-center' : 'flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'}>
-              <div className={isPremiumBatch ? 'grid min-w-0 place-items-center gap-3' : 'flex min-w-0 items-center gap-3'}>
+            <div className={isPremiumBatch && batchSize === 1 ? 'grid gap-4 py-4 text-center' : 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>
+              <div className={isPremiumBatch && batchSize === 1 ? 'grid min-w-0 place-items-center gap-3' : 'flex min-w-0 items-center gap-3'}>
                 <AssetImage
                   alt=""
-                  className={isPremiumBatch ? 'h-52 w-52 shrink-0 object-contain drop-shadow-2xl' : 'h-16 w-16 shrink-0 object-contain'}
+                  className={isPremiumBatch && batchSize === 1 ? 'h-52 w-52 shrink-0 object-contain drop-shadow-2xl' : 'h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16'}
                   draggable={false}
                   src={primaryItem.image}
                 />
@@ -533,6 +554,7 @@ export function CaseOpeningAnimation({
                   <h3 className="mt-1 truncate text-xl font-semibold text-cs-text">
                     {primaryItem.weapon} | {primaryItem.finish}
                   </h3>
+                  <div className="mt-2"><PatternBadge compact item={primaryItem} /></div>
                 </div>
               </div>
               <div className={isPremiumBatch ? 'shrink-0 font-mono text-lg font-semibold text-rarity-special' : 'shrink-0 font-mono text-lg font-semibold text-cs-green'}>
@@ -606,8 +628,8 @@ function CasePreRollGrid({
     <div className="relative">
       <div
         className={[
-          'grid gap-2 overflow-hidden border border-cs-border bg-cs-bg p-3',
-          batchSize > 25 ? 'max-h-[68vh]' : 'max-h-[62vh]',
+          'grid gap-2 overflow-y-auto border border-cs-border bg-cs-bg p-3',
+          batchSize > 25 ? 'max-h-[68vh]' : batchSize <= 10 ? 'opening-adaptive-grid h-full' : 'max-h-[62vh]',
         ].join(' ')}
         style={getGridStyle(batchSize)}
       >
@@ -615,7 +637,7 @@ function CasePreRollGrid({
           <div
             className={[
               'case-preroll-cell relative grid place-items-center overflow-hidden border bg-cs-panel',
-              batchSize > 25 ? 'aspect-square p-1' : 'min-h-28 p-3',
+              batchSize > 25 ? 'aspect-square p-1' : batchSize <= 10 ? 'min-h-32 p-3 sm:min-h-0' : 'min-h-28 p-3',
               'border-rarity-special',
             ].join(' ')}
             data-testid="case-pre-roll-cell"
@@ -635,7 +657,7 @@ function CasePreRollGrid({
               alt=""
               className={[
                 'case-preroll-case object-contain',
-                batchSize > 25 ? 'h-8 w-8' : 'h-14 w-14',
+                batchSize > 25 ? 'h-8 w-8' : batchSize <= 3 ? 'h-28 w-28' : batchSize <= 10 ? 'h-20 w-20' : 'h-14 w-14',
               ].join(' ')}
               draggable={false}
               src={caseImage}
@@ -715,8 +737,8 @@ function ReelGrid({
     <div className="relative">
       <div
         className={[
-          'grid gap-2 overflow-hidden border border-cs-border bg-cs-bg p-3',
-          batchSize > 25 ? 'max-h-[68vh]' : 'max-h-[62vh]',
+          'grid gap-2 overflow-y-auto border border-cs-border bg-cs-bg p-3',
+          batchSize > 25 ? 'max-h-[68vh]' : batchSize <= 10 ? 'opening-adaptive-grid h-full' : 'max-h-[62vh]',
         ].join(' ')}
         style={getGridStyle(batchSize)}
       >
@@ -724,7 +746,7 @@ function ReelGrid({
           <div
             className={[
               'case-opening-cell relative overflow-hidden border bg-cs-panel',
-              batchSize > 25 ? 'aspect-square' : 'h-28',
+              batchSize > 25 ? 'aspect-square' : batchSize <= 10 ? 'min-h-36 sm:min-h-0' : 'h-28',
               'border-cs-border',
             ].join(' ')}
             key={reel.item.instanceId}
@@ -752,7 +774,7 @@ function ReelGrid({
                   item={item}
                   key={item.key}
                   layout={layout}
-                  variant={batchSize > 25 ? 'mega' : 'compact'}
+                  variant={batchSize > 25 ? 'mega' : batchSize <= 10 ? 'large' : 'compact'}
                 />
               ))}
             </div>
@@ -787,8 +809,8 @@ function RevealGrid({
     <div className="relative">
       <div
         className={[
-          'grid gap-2 overflow-hidden border border-cs-border bg-cs-bg p-3',
-          totalCount > 25 ? 'max-h-[68vh]' : 'max-h-[62vh]',
+          'grid gap-2 overflow-y-auto border border-cs-border bg-cs-bg p-3',
+          totalCount > 25 ? 'max-h-[68vh]' : totalCount <= 10 ? 'opening-adaptive-grid h-full' : 'max-h-[62vh]',
         ].join(' ')}
         style={getGridStyle(totalCount)}
       >
@@ -797,7 +819,7 @@ function RevealGrid({
             <article
               className={[
                 'case-opening-cell grid overflow-hidden border border-cs-border bg-cs-panel cascade-reveal',
-                totalCount > 25 ? 'aspect-square place-items-center p-1' : 'min-h-28 grid-rows-[1fr_auto] p-2',
+                totalCount > 25 ? 'aspect-square place-items-center p-1' : totalCount <= 10 ? 'min-h-36 grid-rows-[1fr_auto] p-3 sm:min-h-0' : 'min-h-28 grid-rows-[1fr_auto] p-2',
               ].join(' ')}
               data-testid="case-reveal-cell"
               key={item.instanceId}
@@ -805,7 +827,7 @@ function RevealGrid({
             >
               <AssetImage
                 alt=""
-                className={totalCount > 25 ? 'h-8 w-8 object-contain' : 'mx-auto h-12 w-12 object-contain'}
+                className={totalCount > 25 ? 'h-8 w-8 object-contain' : totalCount <= 3 ? 'mx-auto h-32 w-32 object-contain' : totalCount <= 10 ? 'mx-auto h-20 w-20 object-contain' : 'mx-auto h-12 w-12 object-contain'}
                 draggable={false}
                 src={item.image}
               />
@@ -817,6 +839,7 @@ function RevealGrid({
                   <p className="mt-1 font-mono text-[10px] uppercase text-cs-green">
                     {formatCurrency(item.marketValue)}
                   </p>
+                  <div className="mt-1"><PatternBadge compact item={item} /></div>
                 </div>
               ) : null}
             </article>
@@ -868,7 +891,7 @@ const ReelCard = memo(function ReelCard({
 }: {
   item: ReelItem
   layout: ReelLayout
-  variant: 'compact' | 'mega' | 'single'
+  variant: 'compact' | 'large' | 'mega' | 'single'
 }) {
   const isGoldSuspense = item.isSuspensePlaceholder
   const rarityColor = isGoldSuspense ? 'rgb(var(--rarity-covert))' : getSkinRarityColor(item.skin)
@@ -879,6 +902,7 @@ const ReelCard = memo(function ReelCard({
         'grid shrink-0 border bg-cs-panel p-2',
         variant === 'single' ? 'h-36 grid-rows-[1fr_auto]' : '',
         variant === 'compact' ? 'h-full grid-rows-[1fr_auto]' : '',
+        variant === 'large' ? 'h-full grid-rows-[1fr_auto]' : '',
         variant === 'mega' ? 'h-full place-items-center' : '',
         isGoldSuspense ? 'border-rarity-covert bg-cs-bg' : '',
       ].join(' ')}
@@ -891,7 +915,7 @@ const ReelCard = memo(function ReelCard({
             alt=""
             className={[
               'object-contain drop-shadow-2xl',
-              variant === 'mega' ? 'h-8 w-8' : 'h-20 w-20',
+              variant === 'mega' ? 'h-8 w-8' : variant === 'large' ? 'h-28 w-28' : 'h-20 w-20',
             ].join(' ')}
             draggable={false}
             data-testid="gold-suspense-placeholder"
@@ -900,7 +924,7 @@ const ReelCard = memo(function ReelCard({
         ) : (
           <AssetImage
             alt=""
-            className={variant === 'mega' ? 'h-7 w-7 object-contain' : 'h-16 w-16 object-contain'}
+            className={variant === 'mega' ? 'h-7 w-7 object-contain' : variant === 'large' ? 'h-24 w-24 object-contain' : 'h-16 w-16 object-contain'}
             draggable={false}
             src={item.skin.image}
           />

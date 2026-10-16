@@ -107,6 +107,8 @@ export interface GameStatistics {
   tradeUpsCompleted: number
   drops: number
   rareDrops: number
+  patternDrops: number
+  exceptionalPatternDrops: number
   dropsByRarity: DropRarityCounts
 }
 
@@ -455,6 +457,8 @@ export const defaultGameState: GameState = {
     tradeUpsCompleted: 0,
     drops: 0,
     rareDrops: 0,
+    patternDrops: 0,
+    exceptionalPatternDrops: 0,
     dropsByRarity: defaultDropsByRarity,
   },
   settings: {

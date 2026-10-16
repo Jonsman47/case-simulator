@@ -1,6 +1,7 @@
 import { BadgePercent, Bot, Boxes, Clock, Pause, Play, ShoppingCart, Zap } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
+import { PatternBadge } from '../components/PatternInfo'
 import { AutomationShop } from '../components/AutomationShop'
 import { getSkinRarityColor } from '../data/rarities'
 import { useGame } from '../hooks/useGame'
@@ -293,6 +294,7 @@ export function Automation() {
                         <p className="mt-1 font-mono text-[10px] uppercase" style={{ color: rarityColor }}>
                           {getSkinRarityLabel(deal.item)} / {deal.item.wear}
                         </p>
+                        <div className="mt-2"><PatternBadge compact item={deal.item} /></div>
                         <p className="mt-2 text-sm text-cs-muted">
                           <span className="line-through">{formatCurrency(deal.listPrice)}</span>{' '}
                           <strong className="text-cs-green">{formatCurrency(deal.price)}</strong>

@@ -9,8 +9,13 @@ import { PREDEFINED_GAME_EVENTS } from '../events/eventManager'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { clearSavedGame, exportGameStateToFile, loadGameState, parseGameSaveText, saveGame } from '../utils/save'
+import { applyPatternPremium, classifySkinPattern, generatePaintSeed, getPatternPremiumValue } from '../utils/skinPatterns'
 
 function makeAdminSkin(skin: SkinBase): SkinInstance {
+  const paintSeed = generatePaintSeed()
+  const pattern = classifySkinPattern(skin, paintSeed)
+  const baseMarketValue = skin.baseValue
+
   return {
     ...skin,
     discoveredAt: Date.now(),
@@ -18,7 +23,11 @@ function makeAdminSkin(skin: SkinBase): SkinInstance {
     instanceId: nanoid(),
     isFavorited: false,
     isLocked: false,
-    marketValue: skin.baseValue,
+    baseMarketValue,
+    marketValue: applyPatternPremium(baseMarketValue, pattern),
+    paintSeed,
+    pattern,
+    patternPremium: getPatternPremiumValue(baseMarketValue, pattern),
     wear: WearCondition.FactoryNew,
   }
 }

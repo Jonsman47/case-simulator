@@ -84,7 +84,7 @@ import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 28
+export const CURRENT_SAVE_VERSION = 29
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 
 export interface SaveEnvelope {
@@ -377,6 +377,8 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
     tradeUpsCompleted: normalizeNumber(value.tradeUpsCompleted, 0),
     drops: value.drops,
     rareDrops: value.rareDrops,
+    patternDrops: Math.max(0, Math.floor(normalizeNumber(value.patternDrops, 0))),
+    exceptionalPatternDrops: Math.max(0, Math.floor(normalizeNumber(value.exceptionalPatternDrops, 0))),
     dropsByRarity: normalizeDropsByRarity(value.dropsByRarity),
   }
 }
@@ -470,7 +472,8 @@ function isSortCriterion(value: unknown): value is SortCriterion {
     value === 'wearBest' ||
     value === 'wearWorst' ||
     value === 'nameAsc' ||
-    value === 'nameDesc'
+    value === 'nameDesc' ||
+    value === 'patternDesc'
   )
 }
 
@@ -501,6 +504,10 @@ function normalizeInventoryFilters(value: unknown): InventoryFilters {
       typeof value.duplicatesOnly === 'boolean'
         ? value.duplicatesOnly
         : defaultInventoryFilters.duplicatesOnly,
+    specialPatternsOnly:
+      typeof value.specialPatternsOnly === 'boolean'
+        ? value.specialPatternsOnly
+        : defaultInventoryFilters.specialPatternsOnly,
   }
 }
 
@@ -1406,6 +1413,25 @@ function migrateV27ToV28(value: unknown): unknown {
   }
 }
 
+function migrateV28ToV29(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  const statistics = isRecord(value.statistics) ? value.statistics : {}
+
+  // Legacy inventory entries intentionally keep paintSeed/pattern absent. Assigning
+  // them during migration would silently reroll items the player already owns.
+  return {
+    ...value,
+    statistics: {
+      ...statistics,
+      patternDrops: normalizeNumber(statistics.patternDrops, 0),
+      exceptionalPatternDrops: normalizeNumber(statistics.exceptionalPatternDrops, 0),
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1435,6 +1461,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   25: migrateV25ToV26,
   26: migrateV26ToV27,
   27: migrateV27ToV28,
+  28: migrateV28ToV29,
 }
 
 function getEnvelope(value: unknown) {

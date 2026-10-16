@@ -1,4 +1,5 @@
 import { Rarity, WearCondition, type SkinInstance } from '../data/models'
+import { getPatternTierRank, isSpecialPattern } from './skinPatterns'
 
 export type SortCriterion =
   | 'valueDesc'
@@ -11,6 +12,7 @@ export type SortCriterion =
   | 'wearWorst'
   | 'nameAsc'
   | 'nameDesc'
+  | 'patternDesc'
 
 export interface InventoryFilters {
   search: string
@@ -19,6 +21,7 @@ export interface InventoryFilters {
   lockedOnly: boolean
   favoritedOnly: boolean
   duplicatesOnly: boolean
+  specialPatternsOnly: boolean
 }
 
 export interface InventoryViewUiState {
@@ -33,6 +36,7 @@ export const defaultInventoryFilters: InventoryFilters = {
   lockedOnly: false,
   favoritedOnly: false,
   duplicatesOnly: false,
+  specialPatternsOnly: false,
 }
 
 export const defaultInventoryViewUiState: InventoryViewUiState = {
@@ -98,6 +102,12 @@ function getSortComparator(criterion: SortCriterion) {
         return compareText(getItemName(left), getItemName(right))
       case 'nameDesc':
         return compareText(getItemName(right), getItemName(left))
+      case 'patternDesc':
+        return (
+          getPatternTierRank(right.pattern) - getPatternTierRank(left.pattern) ||
+          (right.pattern?.premiumMultiplier ?? 1) - (left.pattern?.premiumMultiplier ?? 1) ||
+          right.marketValue - left.marketValue
+        )
       default:
         return 0
     }
@@ -141,11 +151,15 @@ export function filterInventory(inventory: SkinInstance[], filters: InventoryFil
     if (hasSearch) {
       const weapon = item.weapon.toLowerCase()
       const finish = item.finish.toLowerCase()
+      const patternName = item.pattern?.name.toLowerCase() ?? ''
+      const seed = item.paintSeed?.toString() ?? ''
 
       if (
         !weapon.includes(search) &&
         !finish.includes(search) &&
-        !`${weapon} ${finish}`.includes(search)
+        !`${weapon} ${finish}`.includes(search) &&
+        !patternName.includes(search) &&
+        !seed.includes(search)
       ) {
         return false
       }
@@ -168,6 +182,10 @@ export function filterInventory(inventory: SkinInstance[], filters: InventoryFil
     }
 
     if (duplicateSkinIds && !duplicateSkinIds.has(item.id)) {
+      return false
+    }
+
+    if (filters.specialPatternsOnly && !isSpecialPattern(item)) {
       return false
     }
 

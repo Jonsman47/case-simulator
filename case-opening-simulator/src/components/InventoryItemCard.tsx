@@ -6,6 +6,7 @@ import { formatCurrency } from '../utils/format'
 import { getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { getSkinRarityColor } from '../data/rarities'
 import { AssetImage } from './AssetImage'
+import { PatternBadge } from './PatternInfo'
 
 const rarityStyles: Record<Rarity, { border: string }> = {
   [Rarity.Consumer]: {
@@ -221,6 +222,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
         <p className="mt-1 font-mono text-xs uppercase text-cs-muted">
           {getSkinRarityLabel(item)}
         </p>
+        <div className="mt-2"><PatternBadge compact item={item} /></div>
       </div>
 
       <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">

@@ -7,6 +7,7 @@ import {
 } from '../data/models'
 import { raritySortOrder, wearSortOrder } from './inventoryFilters'
 import { roundCurrency } from './safeNumbers'
+import { isExceptionalPattern } from './skinPatterns'
 
 export interface AutoSellDecision {
   matchedRule?: AutoSellRule
@@ -127,7 +128,7 @@ export function evaluateAutoSell(
   rules: AutoSellRule[],
   inventory: SkinInstance[] = [],
 ): AutoSellDecision {
-  if (item.isLocked || item.isFavorited || hasFactoryNewProtection(item, rules)) {
+  if (item.isLocked || item.isFavorited || isExceptionalPattern(item) || hasFactoryNewProtection(item, rules)) {
     return { shouldSell: false }
   }
 

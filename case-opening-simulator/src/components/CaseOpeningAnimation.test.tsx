@@ -100,6 +100,53 @@ describe('CaseOpeningAnimation', () => {
     vi.useRealTimers()
   })
 
+  it.each([
+    [1, 'single'],
+    [2, 'showcase'],
+    [3, 'showcase'],
+    [5, 'grid'],
+    [10, 'dashboard'],
+  ] as const)('uses the adaptive %i-case %s layout', (count, layout) => {
+    const finalItems = makeBatchItems(count)
+
+    render(
+      <CaseOpeningAnimation
+        finalItem={finalItems[0]}
+        finalItems={finalItems}
+        onComplete={vi.fn()}
+        potentialSkins={[{ skin: fillerSkin, weight: 100 }]}
+      />,
+    )
+
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-batch-layout', layout)
+    if (count > 1) {
+      expect(screen.getAllByTestId('case-pre-roll-cell')).toHaveLength(count)
+    }
+  })
+
+  it('keeps a multi-open result overview visible and completes exactly once when closed', () => {
+    const finalItems = makeBatchItems(5)
+    const onComplete = vi.fn()
+
+    render(
+      <CaseOpeningAnimation
+        finalItem={finalItems[0]}
+        finalItems={finalItems}
+        onComplete={onComplete}
+        potentialSkins={[{ skin: fillerSkin, weight: 100 }]}
+      />,
+    )
+
+    act(() => vi.advanceTimersByTime(8_000))
+    expect(screen.getAllByTestId('case-reveal-cell')).toHaveLength(5)
+    expect(onComplete).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Skip opening animation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Skip opening animation' }))
+
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  })
+
   it('starts the mp3 immediately, rolls after the lead-in, and reveals at the 8 second cue', () => {
     const finalItem = makeItem()
     const onComplete = vi.fn()
