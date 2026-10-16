@@ -2,7 +2,7 @@
 
 Updated: 2026-10-16
 
-This roadmap reflects the inspected repository after Prompt 3. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
+This roadmap reflects the inspected repository after Prompt 4. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
 
 ## Stage 1 — Foundation, Critical Bugs, Production Build & Asset Reliability
 
@@ -48,14 +48,18 @@ Exit evidence: TypeScript and lint pass; full suite passes 61 files/310 tests; p
 
 ## Stage 4 — Cloud Sync, Leaderboards & Social Features
 
-Status: **PLANNED**
+Status: **COMPLETE — REAL SUPABASE DEPLOYMENT VERIFICATION BLOCKED**
 
-- Configure and test a real Supabase environment.
-- Verify authentication, revision conflicts, stale devices, auth expiry, and offline recovery.
-- Activate leaderboards and decide public/cloud trophy behavior.
-- Harden access control where it must be a real server-side security boundary.
+- Completed guest, local-mock, and Supabase account flows with persistent/refreshable sessions, safe account switching, display-name validation, privacy controls, and sanitized errors.
+- Replaced automatic state merging with revision-aware synchronization and a visible conflict choice. Both versions are backed up before a player chooses local or cloud progress.
+- Added an atomic, owner-scoped save RPC and hardened migrations with RLS, explicit grants, security-invoker public views, and public-summary tables that never expose email or raw save data.
+- Activated seven leaderboard categories, personal ranking, pagination, public profiles, responsive trophy showcases, and account/profile navigation.
+- Kept local-only play fully functional and clearly labeled local mock rankings separately from configured global rankings.
+- Documented that rankings are client-reported and not cheat-proof without an authoritative game server.
+- Added automated coverage for accounts, privacy, stale revisions, scoped saves, item identity, leaderboards, public trophies, UI conflicts, and migration security invariants.
+- Removed a reproduced autosave quota failure by compacting persistence and bounding chart-only market history without truncating gameplay identity or economy progress.
 
-Exit: repeatable multi-device E2E passes; leaderboards work; local-only mode remains fully playable.
+Exit evidence: local/mock automation and browser UI verification pass. A real Supabase project was not configured, so deployed Auth/RLS/RPC, email delivery, and physical multi-device testing remain explicitly blocked rather than claimed.
 
 ## Stage 5 — Data, Performance & Browser E2E Hardening
 
@@ -90,8 +94,8 @@ Exit: no clipped/overlapping/broken-image surfaces; accessibility/performance/ec
 | 1. Foundation/build/assets/runtime/UI stability | **COMPLETE** |
 | 2. Events/market events/automation/progression | **COMPLETE** |
 | 3. Paint seeds/pattern identity | **COMPLETE** |
-| 4. Cloud/leaderboards/social | **PLANNED** |
+| 4. Cloud/leaderboards/social | **COMPLETE — deployment verification blocked** |
 | 5. Data/performance/browser E2E | **PLANNED** |
 | 6. Final UI/accessibility/balance/release | **PLANNED** |
 
-Estimated overall completion after Stage 3: **95%**.
+Estimated overall completion after Stage 4: **97%**.

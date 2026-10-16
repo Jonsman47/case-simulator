@@ -11,7 +11,15 @@ import type {
 } from '../data/models'
 import type { GameEventType } from '../events/eventManager'
 import type { InventoryViewUiState } from '../utils/inventoryFilters'
-import type { CloudSession, CloudSyncStatus, LeaderboardMetric } from '../cloud/cloudSave'
+import type {
+  CloudConflict,
+  CloudConflictResolution,
+  CloudProfile,
+  CloudSession,
+  CloudSyncStatus,
+  LeaderboardMetric,
+  PublicPlayerSummary,
+} from '../cloud/cloudSave'
 
 export interface GameContextValue {
   state: GameState
@@ -67,18 +75,23 @@ export interface GameContextValue {
   clearUiEvents: () => void
   resetGame: () => void
   cloud: {
+    conflict?: CloudConflict
     error?: string
     forceSync: () => Promise<void>
+    getPublicProfile: (userId: string) => Promise<PublicPlayerSummary | null>
     isConfigured: boolean
     lastSyncedAt?: number
     login: (email: string, password: string) => Promise<void>
     logout: () => Promise<void>
     metric: LeaderboardMetric
+    profile: CloudProfile | null
     requestPasswordReset: (email: string) => Promise<void>
+    resolveConflict: (resolution: CloudConflictResolution) => Promise<void>
     session: CloudSession | null
     setMetric: (metric: LeaderboardMetric) => void
     signUp: (email: string, password: string, username?: string) => Promise<void>
     status: CloudSyncStatus
+    updateProfile: (profile: Pick<CloudProfile, 'avatarKey' | 'displayName' | 'isProfilePublic' | 'isTrophyShowcasePublic'>) => Promise<void>
   }
 }
 

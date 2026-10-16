@@ -1,5 +1,6 @@
-import { AlertTriangle, Eye, Search, Sparkles, Trophy, X } from 'lucide-react'
+import { AlertTriangle, Eye, Search, Share2, Sparkles, Trophy, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { ItemDetailModal } from '../components/ItemDetailModal'
 import { PatternBadge } from '../components/PatternInfo'
@@ -224,6 +225,7 @@ function InventoryCandidateButton({
 export function TrophyRoomView() {
   const {
     assignTrophyItem,
+    cloud,
     removeTrophyItem,
     sellItem,
     state,
@@ -268,10 +270,26 @@ export function TrophyRoomView() {
             Put any owned skin into any slot. Sold or traded trophies stay visible with a missing warning.
           </p>
         </div>
-        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3">
-          <SummaryPill label="Room Score" value={String(trophyScore)} />
-          <SummaryPill label="Combined Value" value={formatCurrency(combinedValue)} />
-          <SummaryPill label="Filled Slots" value={`${filledCount}/${slotDefinitions.length}`} />
+        <div className="min-w-0 border border-cs-border bg-cs-panel p-3">
+          <div className="grid gap-2 sm:grid-cols-3">
+            <SummaryPill label="Room Score" value={String(trophyScore)} />
+            <SummaryPill label="Combined Value" value={formatCurrency(combinedValue)} />
+            <SummaryPill label="Filled Slots" value={`${filledCount}/${slotDefinitions.length}`} />
+          </div>
+          <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-cs-border pt-3">
+            <span className="min-w-0 text-xs text-cs-muted">
+              {cloud.profile?.isTrophyShowcasePublic
+                ? 'Your selected trophies are visible on your public profile.'
+                : 'Your trophy showcase is private.'}
+            </span>
+            <Link
+              className="inline-flex min-h-9 items-center gap-2 border border-rarity-special px-3 text-xs font-semibold text-rarity-special hover:bg-rarity-special/10"
+              to={cloud.profile ? '/profile' : '/settings'}
+            >
+              <Share2 size={14} />
+              {cloud.profile ? 'View Profile' : 'Set Up Sharing'}
+            </Link>
+          </div>
         </div>
       </div>
 

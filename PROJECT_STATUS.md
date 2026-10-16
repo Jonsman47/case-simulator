@@ -8,7 +8,9 @@ Current save schema: v29
 
 The simulator is a substantial, playable React browser game. Its core loop is complete: choose and license a case, pay once, generate a weighted predetermined item, run the roulette to that item, add it once to inventory, inspect or sell it, and progress through collection, upgrade, skill, prestige, work, trade-up, automation, and offline systems.
 
-Prompts 1–3 are complete. Gameplay and market events, Warehouse capacity, Auction House deals, automation, upgrades, skills, prestige, selling, and offline progression are connected to live gameplay. Every newly generated item now receives a permanent paint seed from 0–1000 and a finish/weapon-specific pattern classification. Pattern-aware values, protections, UI, statistics, achievements, and v29 persistence are used consistently across item-creation and item-value paths. Existing inventory is preserved without silently inventing or rerolling legacy seeds.
+Prompts 1–4 are complete in the repository. Gameplay and market events, Warehouse capacity, Auction House deals, automation, upgrades, skills, prestige, selling, and offline progression are connected to live gameplay. Every newly generated item receives a permanent paint seed from 0–1000 and a finish/weapon-specific pattern classification. Pattern-aware values, protections, UI, statistics, achievements, and v29 persistence are used consistently across item-creation and item-value paths. Existing inventory is preserved without silently inventing or rerolling legacy seeds.
+
+Prompt 4 completes the account/social architecture: optional Supabase Auth, persistent refreshable sessions, account-scoped local fallbacks, atomic revision-checked cloud writes, explicit conflict resolution with backups, privacy-controlled public profiles and selected trophies, and seven active leaderboard categories. Local guest play remains the default when Supabase is not configured. The complete local/mock implementation and browser surfaces are verified; a real Supabase project was unavailable, so deployed Auth/RLS/RPC, email delivery, and physical multi-device verification remain blocked and are not presented as passed.
 
 The catalog contains 42 cases, 2,092 skins, and 2,134 verified generated images. Single openings retain the large original presentation, while 2–10 case openings now use adaptive near-fullscreen showcase/grid/dashboard layouts. Development, production build, PWA generation, and the automated suite are functional. Remaining work is concentrated in remotely verified cloud/social features, price/data gaps, performance/browser E2E hardening, and final visual/accessibility/balance polish.
 
@@ -64,7 +66,7 @@ npm run verify:release
 
 ### Functional state
 
-The application is functional in development and production. TypeScript, lint, the 310-test suite, asset verification, Vite bundling, and PWA generation pass. The core game is playable; the remaining planned stages are listed below.
+The application is functional in development and production. TypeScript, lint, asset verification, Vite bundling, and PWA generation pass. The core game is playable; exact current test totals are recorded in the verification snapshot. The remaining planned stages are listed below.
 
 ## 2. Implemented features
 
@@ -89,7 +91,7 @@ The application is functional in development and production. TypeScript, lint, t
 | Collection tracking | **COMPLETE** | Permanent discovery, wear completion, best float/value (including pattern premium), pagination, filters/sorts, summaries, and event-scaled rewards. | Pattern seeds are item attributes rather than separate collection-book completion slots. |
 | Filters and sorting | **COMPLETE** | Case, inventory, market, collection, and trophy tools. | Language selection does not localize labels. |
 | Local save/load | **COMPLETE** | Autosave, lifecycle persistence, v0–v29 migrations, immutable pattern round trips, legacy-item no-reroll behavior, event/Auction hydration, JSON import/export, reset, and tests. | No confirmed gap. |
-| Cloud save | **PARTIALLY COMPLETE** | Mock/Supabase providers, auth UI, revisioned saves, merge, force sync, offline state, SQL/RLS, and tests. v29 item pattern identity survives serialization and merge. | Real deployed multi-device/auth/conflict flows are unverified. |
+| Cloud save | **COMPLETE** for implemented/local scope; deployed verification blocked | Guest mode; local mock and Supabase providers; persistent/refreshable auth; account-scoped local snapshots; automatic/manual sync; atomic optimistic revisions; visible local/cloud conflict choice; backups; corrupt-save rejection; status UI; v29 IDs, floats, wear, seeds, patterns, prices, economy, progression, automation, Auction, events, collection, statistics, and settings preserved. | A configured real Supabase project was unavailable, so deployed Auth/RLS/RPC, email delivery, offline recovery across physical devices, and production rate-limit behavior remain unverified. |
 | Settings | **PARTIALLY COMPLETE** | Save, sound, animation/skip/fast timing, motion, market, notifications, themes, accessibility, rarity colors, onboarding, cloud, auto-sell. | Background music is absent; language selection does not translate the app. |
 | Trade-ups | **COMPLETE** | Ten-item validation, outcome pools/odds, float formula, centralized output seed/pattern generation, pattern-aware values/protection, results, stats, and Trading Bot; event input modifiers apply online/offline. | No confirmed core gap. |
 | Auto Opener | **COMPLETE** | Upgradeable interval, selected case, capacity/funds safety, identical opening/event/economy rules online/offline. | Balance needs playtesting. |
@@ -107,9 +109,10 @@ The application is functional in development and production. TypeScript, lint, t
 | Daily rewards/challenges | **COMPLETE** | Seven-day cycle, varied rewards, challenge progress, claim/reroll, timers, tests. | Real midnight rollover has not been manually observed. |
 | Work mini-games | **COMPLETE** | Poop Cleaning and Sort Boxes rewards/cooldowns/persistence; upgrade and skill income multipliers; UI/error handling/tests. | Legacy redirected source view remains. |
 | Statistics | **COMPLETE** | Summary, money flow, rarity share, trends, milestones, comparisons, ranges, CSV, Auction metrics, pattern drops, and exceptional-pattern drops. | No external analytics. |
-| Trophy room | **COMPLETE** | Unlockable slots, assign/replace/remove, search, scoring, warnings, details, tests. | Active UI is local despite cloud tables. |
+| Trophy room | **COMPLETE** | Unlockable slots, assign/replace/remove, search, scoring, warnings, details, tests, cloud preservation, public/private status, and a link to the selected-trophy profile showcase. Sold/missing assignments retain a safe snapshot warning. | Catalog art is representative rather than seed-rendered. |
 | Onboarding/notifications/sound | **PARTIALLY COMPLETE** | Tutorial, tips, toasts, event start/end alerts, celebrations, effects/opening audio, PWA notices. | Music and granular notification channels are not implemented. |
-| Leaderboards | **NOT IMPLEMENTED** in active app | Backend methods, Supabase view, and React view exist. | Route redirects home; navigation absent; backend unverified. |
+| Leaderboards | **COMPLETE** for client-reported scope | Active navigation/route; seven deterministic pattern-aware categories; personal rank; pagination; responsive table/cards; loading/error/empty states; opt-in public names; separate labels for local mock and configured community rankings. | Values are client-reported and not cheat-proof; real global backend is unverified. |
+| Player accounts and profiles | **COMPLETE** for implemented/local scope; deployed verification blocked | Registration/login/logout/reset interfaces, session persistence/refresh, display-name/avatar management, duplicate-name handling, account status/dropdown, safe switching, privacy controls, responsive public profiles, selected trophy images/details, and older unseeded item support. | Real Supabase email/reset delivery and live cross-account access tests require credentials. |
 | Admin tools | **COMPLETE** for local development | Client-side guard plus economy, inventory, progression, save, real event triggers, and event ticking controls. | It is intentionally not a server-side security boundary. |
 | PWA/offline install | **COMPLETE** | Manifest, service worker, prompts, update/offline UI, shell precache, runtime caches, verification. | Images cache on use rather than precaching all 197 MiB. |
 | Asset reliability | **COMPLETE** | Tracked path/source/size/SHA-256 manifest for 2,134 images; sync/verify; build gate; base-safe URLs; fallback/aspect sizing. | Fresh setup needs network access to populate ignored generated binaries. |
@@ -120,17 +123,16 @@ The application is functional in development and production. TypeScript, lint, t
 
 ### Confirmed
 
-1. Leaderboards exist in source but are not routed in the active app and the real backend is unverified.
-2. Background music and localization are not implemented even though settings infrastructure exists.
-3. Twenty-one skins and 250 wear-price slots use price fallbacks.
-4. The production build warns about large chunks. The new pattern engine bundle is about 1.01 MB before gzip because its coverage lookup data is client-side; skin, price, and main bundles are also above Vite's warning threshold.
-5. No persistent browser E2E suite is checked in.
-6. Real Supabase multi-device/auth/conflict behavior is not verified against a deployed project.
+1. Real Supabase multi-device/auth/conflict behavior is not verified against a deployed project because no test credentials were available.
+2. Public rankings are client-reported. RLS protects row ownership/privacy but cannot prove that a client-generated score is legitimate.
+3. Background music and localization are not implemented even though settings infrastructure exists.
+4. Twenty-one skins and 250 wear-price slots use price fallbacks.
+5. The production build warns about large chunks. The pattern engine bundle is about 1.01 MB before gzip because its coverage lookup data is client-side; skin, price, and main bundles are also above Vite's warning threshold.
+6. No persistent browser E2E suite is checked in.
 7. Nine development-only audit advisories remain in the Tailwind 3/tooling dependency tree; the production dependency audit was clean in Prompt 1. Removing them requires a breaking Tailwind 4 migration.
 8. The optional tracked `CounterStrike2Skins` submodule checkout is missing in the existing worktree; generated outputs are self-sufficient.
 9. Catalog images are finish-level artwork, not exact renderings of a particular seed, float, or Doppler phase. Pattern-aware surfaces state this limitation.
 10. Rare-pattern premiums are documented, bounded simulator estimates rather than live cash-market appraisals.
-11. The worktree contains a broad pre-existing uncommitted batch that has been preserved.
 
 ### Fixed in Prompt 2
 
@@ -159,11 +161,23 @@ The application is functional in development and production. TypeScript, lint, t
 - Rebuilt batch opening presentation: single remains large, 2–3 use a showcase layout, 4–6 a balanced grid, and 7–10 a near-fullscreen dashboard. All reels animate and reveal their predetermined items, and the final overview remains open for review.
 - Raised active opening/summary layers above transient notifications so mobile controls cannot be intercepted.
 
+### Fixed in Prompt 4
+
+- Activated optional accounts without making login mandatory and added persistent session refresh, secure logout cleanup, validated display names, avatar selection, privacy controls, and account-scoped guest/account progress.
+- Removed the unsafe automatic cloud merge that could arbitrarily select money/inventory. Sync now uses a remembered baseline plus expected remote revision; genuine divergence pauses writes and shows a local-versus-cloud choice.
+- Added recoverable local backups before applying a conflict choice and ensured the chosen local state is written only against the latest verified revision.
+- Added owner-authorized atomic save RPC, RLS/grants, security-invoker public views, sanitized signup profile trigger, opt-in public summary/trophy tables, and no browser service-role dependency.
+- Activated Leaderboards and Player Profile routes/navigation with seven ranking categories, pagination, personal ranking, local/global source labels, and explicit client-reported trust limits.
+- Added public profile/trophy snapshots containing only intentionally selected fields. Raw saves, full inventory, email, and private account identifiers are not exposed.
+- Connected Trophy Room sharing state to profiles and preserved seed/pattern/value identity for selected trophies, including sold/missing snapshots and legacy unseeded items.
+- Fixed a reproduced localStorage quota failure by compacting autosave JSON and bounding persisted chart-only market history to 160 skins × 120 recent points. Trophy, recent-drop, last-opened, and high-value owned-skin histories are prioritized; critical inventory/economy/progression identity is not truncated. A worst-case save-size regression test keeps the compact payload below 2 MB.
+- Added account, revision, privacy, identity, sorting, conflict UI, profile UI, and SQL security regression coverage plus deployment/setup documentation.
+
 ### Suspected or not yet proven
 
 - End-game economy and event frequency may need balance changes after human playtesting.
 - Very large saves and long-running low-end mobile sessions may reveal performance pressure.
-- Real Supabase auth expiry, stale-device conflicts, public leaderboards, and public trophies may expose integration issues.
+- Real Supabase auth expiry, stale-device conflicts, public leaderboards, and public trophies may expose deployment-specific integration issues once credentials are supplied.
 - A true cold offline launch with only a partially warmed image runtime cache needs broader device testing.
 
 ## 4. Development progress and history
@@ -175,7 +189,8 @@ The application is functional in development and production. TypeScript, lint, t
 - Stage 1 completed dependency/build/PWA/asset reliability, responsive stability, and regression coverage for the opening-session fix.
 - Stage 2 completed events, simulated market events, Warehouse capacity, Auction House deals, automation/progression effect wiring, offline parity, and schema v28.
 - Stage 3 completed immutable paint seeds, realistic finish-specific classifications, pattern-aware valuation/gameplay/UI, schema v29, and the adaptive fullscreen multi-case opening experience.
-- The most recent implementation work is the Prompt 3 pattern and multi-opening work described above.
+- Stage 4 completed accounts, revision-conflict-safe cloud architecture, privacy-controlled public profiles/trophies, active leaderboards, backend policy hardening, and local/mock verification.
+- The most recent implementation work is the Prompt 4 account, cloud, leaderboard, and social work described above.
 
 ## 5. Paint seed and valuable-pattern architecture
 
@@ -194,36 +209,36 @@ Reference links, known-seed tables, confidence labels, valuation policy, and app
 
 ## 6. Recommended next steps
 
-Three major prompts remain in the six-stage roadmap:
+Two major prompts remain in the six-stage roadmap:
 
-1. **Prompt 4 — Cloud and Social:** verify real Supabase auth/sync/conflicts, activate leaderboards, and decide public trophy behavior.
-2. **Prompt 5 — Data, Performance, and Browser E2E:** close price gaps, split/defer large data and pattern lookup chunks, profile large saves/inventories, and add Playwright critical-flow coverage.
-3. **Prompt 6 — Final UI, Accessibility, Balance, and Release:** comprehensive visual pass, localization/music decision, accessibility, economy simulations/human playtests, cleanup, deployment/offline/update sign-off.
+1. **Prompt 5 — Data, Performance, and Browser E2E:** close price gaps, split/defer large data and pattern lookup chunks, profile large saves/inventories, and add Playwright critical-flow coverage. Include a configured Supabase E2E run if test credentials become available.
+2. **Prompt 6 — Final UI, Accessibility, Balance, and Release:** comprehensive visual pass, localization/music decision, accessibility, economy simulations/human playtests, cleanup, deployment/offline/update sign-off.
 
-Estimate: **three additional major Codex prompts**, one per stage above. Small follow-up prompts may still be required for findings from real cloud credentials or human balance testing.
+Estimate: **two additional major Codex prompts**, one per stage above. A focused deployment follow-up will be needed if real Supabase credentials are supplied separately.
 
 ## 7. Overall completion estimate
 
 | Area | Estimate | Basis |
 | --- | ---: | --- |
-| Core gameplay | **98%** | Main loops, patterns, events, automation, offline, and transaction safety work; final balance and remote social validation remain. |
+| Core gameplay | **98%** | Main loops, patterns, events, automation, offline, and transaction safety work; final balance remains. |
 | Skin/case data | **96%** | Full catalog/assets and imported paint metadata; price fallback gaps and some deliberately conservative pattern estimates remain. |
 | Inventory and economy | **97%** | Capacity, selling protection, Auction, pattern/event/automation modifiers, persistence, and exact accounting work; balance remains. |
-| UI and animations | **95%** | Responsive core plus large adaptive 1/2/3/5/10-case animation/reveal layouts work; final accessibility and whole-site polish remain. |
-| Overall project | **95%** | Feature-rich and buildable; three focused stages remain for real cloud/social proof, performance/E2E, and final release polish. |
+| Cloud and social | **90%** | Account/sync/conflict/profile/trophy/leaderboard code and local/mock tests work; real Supabase deployment and cross-device proof are blocked on credentials. |
+| UI and animations | **96%** | Responsive core, social pages, and large adaptive 1/2/3/5/10-case animation/reveal layouts work; final accessibility and whole-site polish remain. |
+| Overall project | **97%** | Feature-rich and buildable; performance/E2E and final release polish remain, plus credential-dependent cloud deployment proof. |
 
 ## Verification snapshot
 
-- TypeScript (`npx tsc -b --pretty false`): pass.
-- Targeted pattern/reducer/save/cloud/filter/auto-sell/opening tests: pass — 6 files, 130 tests.
-- Full tests: pass — 61 files, 310 tests.
-- `npm run lint`: pass — zero errors.
-- `npm run build`: pass — 2,134 assets verified; TypeScript and Vite pass; PWA generates 85 precache entries and its service worker/Workbox output.
-- `npm run verify:release`: pass with exit code 0 — lint, all 310 tests, asset verification, TypeScript, Vite/PWA build, and PWA release checks completed successfully.
-- Large-chunk warnings remain informational and are tracked for Stage 5; the pattern lookup bundle is currently the largest new warning.
-- Browser case-opening verification: pass in the actual local UI. Natural single opening completed after its full animation and held the result; a 10-case Kilowatt open charged exactly $26.50 and added exactly 10 rewards. A different Revolution case also completed. No opening disappeared or duplicated a transaction.
-- Adaptive-layout verification: pass for actual 1, 2, 3, 5, and 10-case selections. The browser exposed `single`, `showcase`, `grid`, and `dashboard` layouts as designed. At 1366×768 the 10-case dashboard displayed ten readable lanes; at 390×844 the 5-case grid remained readable and scrollable without horizontal page overflow. All ten final reward cards remained available in the summary.
-- Pattern UI/persistence verification: pass. Opening and Inventory surfaces showed stored seed badges/details, base value, premium, estimate, and the representative-image limitation. A seed survived reload unchanged.
-- Market and Inventory thumbnails loaded at their natural 512-pixel source width with contain sizing.
-- Browser console after the smoke flows: no warnings or errors.
+- TypeScript (`npx tsc --noEmit` and the build's `tsc -b`): pass.
+- Targeted Prompt 4 cloud/profile/privacy/save/security/UI tests: pass — 6 files, 38 tests.
+- `npm test`: pass — 63 files, 322 tests.
+- `npm run lint`: pass — zero errors or warnings.
+- `npm run build`: pass — 2,134 assets verified; TypeScript and Vite pass; PWA generates 91 precache entries plus `sw.js` and Workbox output.
+- `npm run verify:release`: pass with exit code 0 — lint, all 322 tests, asset verification, TypeScript, Vite/PWA build, and release checks completed successfully.
+- Local/mock behavior verified by automation: registration/login/logout/reset response, display-name validation/uniqueness, account-scoped guest and account saves, stale revision rejection, explicit conflict UI/actions, privacy filtering, leaderboard sorting, trophy pattern identity, corrupted/network failure handling, and SQL security invariants.
+- Browser account/social verification: pass for guest profile, Settings account/privacy UI, active seven-category Leaderboards, Trophy Room sharing status/link, profile/trophy empty states, and navigation. At 390×844, Profile and Trophy Room had no horizontal overflow; desktop was rechecked at 1366×768.
+- Autosave quota reproduction and fix: pass. Before the fix the live browser logged `QuotaExceededError`; the corrected manual export was about 459 KB, subsequent autosave/reload succeeded, and no new browser warnings/errors appeared.
+- Real Supabase verification: **blocked** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` were not configured. No deployed signup/email/reset, RLS/RPC, or physical multi-device claims are made.
+- Large-chunk warnings remain informational and are tracked for Stage 5; the pattern lookup bundle is still the largest warning.
+- Prompt 3 browser opening evidence remains valid: actual 1, 2, 3, 5, and 10-case layouts completed with exact-once costs/rewards and preserved seed identity.
 - Local development server is left running at `http://127.0.0.1:5173/`.

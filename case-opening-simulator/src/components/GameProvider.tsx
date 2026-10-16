@@ -61,12 +61,22 @@ import {
 } from '../utils/openingAnimation'
 import {
   createCloudBackend,
+  createPublicPlayerSummary,
   createCloudSaveEnvelope,
+  CloudRevisionConflictError,
+  haveSameCloudState,
   isOfflineError,
   LocalCloudBackend,
-  mergeGameStates,
+  loadAccountSave,
+  loadGuestSave,
   parseCloudSaveEnvelope,
+  storeAccountSave,
+  storeCloudConflictBackup,
+  storeGuestSave,
   type CloudBackend,
+  type CloudConflict,
+  type CloudConflictResolution,
+  type CloudProfile,
   type CloudSession,
   type CloudSyncStatus,
   type LeaderboardMetric,
@@ -104,7 +114,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const cloudSyncTimerRef = useRef<number | undefined>(undefined)
   const cloudSyncInFlightRef = useRef(false)
   const cloudRevisionRef = useRef(0)
+  const cloudBaselineStateRef = useRef<GameState | null>(null)
   const [cloudSession, setCloudSession] = useState<CloudSession | null>(null)
+  const [cloudProfile, setCloudProfile] = useState<CloudProfile | null>(null)
+  const [cloudConflict, setCloudConflict] = useState<CloudConflict | undefined>()
   const [cloudStatus, setCloudStatus] = useState<CloudSyncStatus>('idle')
   const [cloudError, setCloudError] = useState<string | undefined>()
   const [lastCloudSyncedAt, setLastCloudSyncedAt] = useState<number | undefined>()
@@ -706,14 +719,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CLEAR_UI_EVENTS' })
   }, [])
 
-  const applyCloudRecord = useCallback((cloudState: GameState) => {
-    const mergedState = mergeGameStates(stateRef.current, cloudState)
-
-    dispatch({ type: 'REPLACE_GAME_STATE', state: mergedState })
-
-    return mergedState
-  }, [])
-
   const syncCloudNow = useCallback(async (sessionOverride?: CloudSession | null) => {
     const activeSession = sessionOverride ?? cloudSession
 
@@ -732,40 +737,92 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return
     }
 
+    if (cloudConflict) {
+      setCloudStatus('conflict')
+      return
+    }
+
     cloudSyncInFlightRef.current = true
     setCloudStatus('syncing')
     setCloudError(undefined)
 
     try {
       const remoteRecord = await cloudBackend.loadSave(activeSession)
-      const stateToUpload = remoteRecord
-        ? applyCloudRecord(parseCloudSaveEnvelope(remoteRecord.envelope))
-        : stateRef.current
+      const localState = stateRef.current
+
+      if (remoteRecord) {
+        const remoteState = parseCloudSaveEnvelope(remoteRecord.envelope)
+        const hasUnknownBase = cloudRevisionRef.current === 0
+        const remoteChanged = !hasUnknownBase && remoteRecord.revision !== cloudRevisionRef.current
+
+        if ((hasUnknownBase || remoteChanged) && !haveSameCloudState(localState, remoteState)) {
+          setCloudConflict({ localState, remoteRecord, remoteState })
+          setCloudStatus('conflict')
+          setCloudError('Cloud and local progress differ. Choose a version; neither will be combined automatically.')
+          return
+        }
+
+        cloudRevisionRef.current = remoteRecord.revision
+        if (hasUnknownBase || remoteChanged) {
+          cloudBaselineStateRef.current = remoteState
+          storeAccountSave(activeSession.user.id, remoteState)
+          setLastCloudSyncedAt(remoteRecord.updatedAt)
+          setCloudStatus('synced')
+          return
+        }
+
+        if (cloudBaselineStateRef.current && haveSameCloudState(localState, cloudBaselineStateRef.current)) {
+          setLastCloudSyncedAt(remoteRecord.updatedAt)
+          setCloudStatus('synced')
+          return
+        }
+      }
+
       const savedRecord = await cloudBackend.saveSave(
         activeSession,
-        createCloudSaveEnvelope(stateToUpload),
-        remoteRecord?.revision ?? cloudRevisionRef.current,
+        createCloudSaveEnvelope(localState),
+        remoteRecord?.revision ?? 0,
       )
 
       cloudRevisionRef.current = savedRecord.revision
+      cloudBaselineStateRef.current = localState
+      storeAccountSave(activeSession.user.id, localState)
+      if (cloudProfile) {
+        await cloudBackend.publishPlayerSummary(activeSession, createPublicPlayerSummary(localState, cloudProfile))
+      }
       setLastCloudSyncedAt(savedRecord.updatedAt)
       setCloudStatus('synced')
     } catch (error) {
+      if (error instanceof CloudRevisionConflictError && error.remoteRecord) {
+        const remoteState = parseCloudSaveEnvelope(error.remoteRecord.envelope)
+
+        setCloudConflict({ localState: stateRef.current, remoteRecord: error.remoteRecord, remoteState })
+        setCloudStatus('conflict')
+        setCloudError(error.message)
+        return
+      }
+
       setCloudStatus(isOfflineError(error) ? 'offline' : 'error')
       setCloudError(error instanceof Error ? error.message : 'Cloud sync failed.')
     } finally {
       cloudSyncInFlightRef.current = false
     }
-  }, [applyCloudRecord, cloudSession])
+  }, [cloudConflict, cloudProfile, cloudSession])
 
   const signUpCloud = useCallback(async (email: string, password: string, username?: string) => {
     setCloudStatus('syncing')
     setCloudError(undefined)
 
     try {
+      storeGuestSave(stateRef.current)
       const session = await cloudBackend.signUp(email, password, username)
+      const profile = await cloudBackend.getProfile(session)
 
+      cloudRevisionRef.current = 0
+      cloudBaselineStateRef.current = null
       setCloudSession(session)
+      setCloudProfile(profile)
+      setCloudConflict(undefined)
       await syncCloudNow(session)
     } catch (error) {
       setCloudStatus(isOfflineError(error) ? 'offline' : 'error')
@@ -778,9 +835,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setCloudError(undefined)
 
     try {
+      storeGuestSave(stateRef.current)
       const session = await cloudBackend.login(email, password)
+      const profile = await cloudBackend.getProfile(session)
+      const accountState = loadAccountSave(session.user.id)
 
+      cloudRevisionRef.current = 0
+      cloudBaselineStateRef.current = null
       setCloudSession(session)
+      setCloudProfile(profile)
+      setCloudConflict(undefined)
+      if (accountState) {
+        stateRef.current = accountState
+        dispatch({ type: 'REPLACE_GAME_STATE', state: accountState })
+      }
       await syncCloudNow(session)
     } catch (error) {
       setCloudStatus(isOfflineError(error) ? 'offline' : 'error')
@@ -793,10 +861,115 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    await cloudBackend.logout(cloudSession)
-    setCloudSession(null)
-    setCloudStatus('idle')
+    storeAccountSave(cloudSession.user.id, stateRef.current)
+
+    try {
+      await cloudBackend.logout(cloudSession)
+    } finally {
+      const guestState = loadGuestSave()
+
+      if (guestState) {
+        stateRef.current = guestState
+        dispatch({ type: 'REPLACE_GAME_STATE', state: guestState })
+      }
+      cloudRevisionRef.current = 0
+      cloudBaselineStateRef.current = null
+      setCloudConflict(undefined)
+      setCloudProfile(null)
+      setCloudSession(null)
+      setCloudStatus('idle')
+      setCloudError(undefined)
+    }
+  }, [cloudSession])
+
+  const resolveCloudConflict = useCallback(async (resolution: CloudConflictResolution) => {
+    if (!cloudSession || !cloudConflict) {
+      return
+    }
+
+    setCloudStatus('syncing')
     setCloudError(undefined)
+
+    try {
+      if (resolution === 'use-cloud') {
+        storeCloudConflictBackup(cloudSession.user.id, 'local', cloudConflict.localState)
+        stateRef.current = cloudConflict.remoteState
+        dispatch({ type: 'REPLACE_GAME_STATE', state: cloudConflict.remoteState })
+        storeAccountSave(cloudSession.user.id, cloudConflict.remoteState)
+        cloudRevisionRef.current = cloudConflict.remoteRecord.revision
+        cloudBaselineStateRef.current = cloudConflict.remoteState
+        setLastCloudSyncedAt(cloudConflict.remoteRecord.updatedAt)
+      } else {
+        storeCloudConflictBackup(cloudSession.user.id, 'remote', cloudConflict.remoteState)
+        const latestRemote = await cloudBackend.loadSave(cloudSession)
+        const expectedRevision = latestRemote?.revision ?? 0
+        const savedRecord = await cloudBackend.saveSave(
+          cloudSession,
+          createCloudSaveEnvelope(cloudConflict.localState),
+          expectedRevision,
+        )
+
+        cloudRevisionRef.current = savedRecord.revision
+        cloudBaselineStateRef.current = cloudConflict.localState
+        storeAccountSave(cloudSession.user.id, cloudConflict.localState)
+        setLastCloudSyncedAt(savedRecord.updatedAt)
+        if (cloudProfile) {
+          await cloudBackend.publishPlayerSummary(
+            cloudSession,
+            createPublicPlayerSummary(cloudConflict.localState, cloudProfile),
+          )
+        }
+      }
+
+      setCloudConflict(undefined)
+      setCloudStatus('synced')
+    } catch (error) {
+      if (error instanceof CloudRevisionConflictError && error.remoteRecord) {
+        setCloudConflict({
+          localState: cloudConflict.localState,
+          remoteRecord: error.remoteRecord,
+          remoteState: parseCloudSaveEnvelope(error.remoteRecord.envelope),
+        })
+        setCloudStatus('conflict')
+        setCloudError('The cloud version changed again. Review the updated conflict before choosing.')
+        return
+      }
+
+      setCloudStatus(isOfflineError(error) ? 'offline' : 'error')
+      setCloudError(error instanceof Error ? error.message : 'Conflict resolution failed.')
+    }
+  }, [cloudConflict, cloudProfile, cloudSession])
+
+  const updateCloudProfile = useCallback(async (
+    profile: Pick<CloudProfile, 'avatarKey' | 'displayName' | 'isProfilePublic' | 'isTrophyShowcasePublic'>,
+  ) => {
+    if (!cloudSession) {
+      throw new Error('Sign in before updating your public profile.')
+    }
+
+    setCloudStatus('syncing')
+    setCloudError(undefined)
+
+    try {
+      const nextProfile = await cloudBackend.updateProfile(cloudSession, profile)
+      const nextSession = {
+        ...cloudSession,
+        user: { ...cloudSession.user, username: nextProfile.displayName },
+      }
+
+      setCloudProfile(nextProfile)
+      setCloudSession(nextSession)
+      await cloudBackend.publishPlayerSummary(nextSession, createPublicPlayerSummary(stateRef.current, nextProfile))
+      setCloudStatus('synced')
+    } catch (error) {
+      setCloudStatus(isOfflineError(error) ? 'offline' : 'error')
+      setCloudError(error instanceof Error ? error.message : 'Profile update failed.')
+      throw error
+    }
+  }, [cloudSession])
+
+  const getPublicProfile = useCallback(async (userId: string) => {
+    return cloudBackend.getPublicProfile(userId, cloudSession)
   }, [cloudSession])
 
   const requestCloudPasswordReset = useCallback(async (email: string) => {
@@ -815,10 +988,25 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isCancelled = false
 
-    void cloudBackend.getSession().then((session) => {
+    void cloudBackend.getSession().then(async (session) => {
+      if (isCancelled || !session) {
+        if (!isCancelled) {
+          setCloudStatus('idle')
+        }
+        return
+      }
+
+      const profile = await cloudBackend.getProfile(session)
+      const accountState = loadAccountSave(session.user.id)
+
       if (!isCancelled) {
+        if (accountState) {
+          stateRef.current = accountState
+          dispatch({ type: 'REPLACE_GAME_STATE', state: accountState })
+        }
+        setCloudProfile(profile)
         setCloudSession(session)
-        setCloudStatus(session ? 'synced' : 'idle')
+        setCloudStatus('idle')
       }
     }).catch((error) => {
       if (!isCancelled) {
@@ -934,18 +1122,23 @@ export function GameProvider({ children }: { children: ReactNode }) {
       clearUiEvents,
       resetGame,
       cloud: {
+        conflict: cloudConflict,
         error: cloudError,
         forceSync: syncCloudNow,
+        getPublicProfile,
         isConfigured: cloudBackend instanceof LocalCloudBackend === false,
         lastSyncedAt: lastCloudSyncedAt,
         login: loginCloud,
         logout: logoutCloud,
         metric: leaderboardMetric,
+        profile: cloudProfile,
         requestPasswordReset: requestCloudPasswordReset,
+        resolveConflict: resolveCloudConflict,
         session: cloudSession,
         setMetric: setLeaderboardMetric,
         signUp: signUpCloud,
         status: cloudStatus,
+        updateProfile: updateCloudProfile,
       },
     }),
     [
@@ -961,9 +1154,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       clearGameError,
       clearUiEvents,
       cloudError,
+      cloudConflict,
+      cloudProfile,
       cloudSession,
       cloudStatus,
       getDropOddsForCase,
+      getPublicProfile,
       getSelectedItemsValue,
       learnSkillNode,
       lastCloudSyncedAt,
@@ -980,6 +1176,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       purchasePrestigeBonus,
       purchaseUpgrade,
       requestCloudPasswordReset,
+      resolveCloudConflict,
       replaceGameState,
       removeItem,
       removeAutoSellRule,
@@ -1009,6 +1206,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       updateAutoSellRule,
       updateInventoryViewState,
       updateOnboardingState,
+      updateCloudProfile,
       updateSettings,
     ],
   )

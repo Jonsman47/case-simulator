@@ -92,7 +92,12 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 VITE_BASE_PATH=/case-opening-simulator/
 ```
 
-Apply `supabase/migrations/20260625_optional_cloud_saves.sql` to your Supabase project before enabling cloud save in production.
+Apply both migrations, in order, before enabling cloud save in production:
+
+1. `supabase/migrations/20260625_optional_cloud_saves.sql`
+2. `supabase/migrations/20261016_social_cloud_v29.sql`
+
+The second migration adds private profiles, opt-in public summaries and trophies, security-invoker public views, and the atomic revision-checked save RPC. Never place a Supabase service-role key in a Vite environment variable; the browser must use only the public anon key. See `docs/supabase-cloud-setup.md` for the complete authentication, policy, rate-limit, and verification checklist.
 
 ## GitHub Pages
 
@@ -158,6 +163,9 @@ git push origin v0.1.0
 - Open the deployed app on desktop and mobile.
 - Confirm localStorage save/load still works after reload.
 - Confirm cloud save login/sync works if Supabase env vars are configured.
+- Confirm a stale second device produces a conflict choice instead of merging money or inventories.
+- Confirm private profiles and trophy showcases cannot be read from another account.
+- Treat published rankings as client-reported until game results are validated by an authoritative server.
 - Confirm the service worker installs and update prompts appear on a later deployment.
 - Monitor hosting logs, browser console reports, and user feedback.
 - Track performance on the main case opening flow, inventory, and collection book.

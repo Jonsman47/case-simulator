@@ -17,6 +17,8 @@ import {
 import {
   BACKUP_INTERVAL_MS,
   CURRENT_SAVE_VERSION,
+  PERSISTED_MARKET_HISTORY_MAX_POINTS,
+  PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS,
   SAVE_STORAGE_KEY,
   SaveGameError,
   createSaveEnvelope,
@@ -26,6 +28,7 @@ import {
   loadGameStateOrDefault,
   parseGameSaveText,
   saveGame,
+  serializeGameState,
   shouldPromptForBackup,
 } from './save'
 import { getInventoryValue } from './inventory'
@@ -446,6 +449,35 @@ describe('save system', () => {
     saveGame(makeState({ inventory: [item, duplicate] }))
 
     expect(loadGameState()?.inventory.map((inventoryItem) => inventoryItem.instanceId)).toEqual(['duplicate-item'])
+  })
+
+  it('bounds persisted market history and keeps compact autosaves below browser quota pressure', () => {
+    const now = 1_782_147_700_000
+    const importantItem = makeItem({ id: 'important-skin', instanceId: 'important-instance', marketValue: 10_000 })
+    const marketHistory = Object.fromEntries(
+      Array.from({ length: 240 }, (_, skinIndex) => [
+        `skin-${skinIndex}`,
+        Array.from({ length: 180 }, (_, pointIndex) => ({
+          timestamp: now - (180 - pointIndex) * 60_000,
+          value: skinIndex + pointIndex / 100,
+        })),
+      ]),
+    )
+    marketHistory[importantItem.id] = Array.from({ length: 180 }, (_, pointIndex) => ({
+      timestamp: now - (180 - pointIndex) * 60_000,
+      value: 10_000 + pointIndex,
+    }))
+
+    const envelope = createSaveEnvelope(makeState({
+      inventory: [importantItem],
+      marketHistory,
+    }))
+    const serialized = serializeGameState(envelope.state)
+
+    expect(Object.keys(envelope.state.marketHistory)).toHaveLength(PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS)
+    expect(envelope.state.marketHistory[importantItem.id]).toHaveLength(PERSISTED_MARKET_HISTORY_MAX_POINTS)
+    expect(serialized).not.toContain('\n')
+    expect(serialized.length).toBeLessThan(2_000_000)
   })
 
   it('repairs invalid saved money without restoring a corrupted value', () => {

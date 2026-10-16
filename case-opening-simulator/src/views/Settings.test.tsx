@@ -142,15 +142,19 @@ function createGameValue(
     resetGame: voidFn,
     cloud: {
       forceSync: asyncVoidFn,
+      getPublicProfile: vi.fn(async () => null),
       isConfigured: false,
       login: asyncVoidFn,
       logout: asyncVoidFn,
       metric: 'inventoryValue',
+      profile: null,
       requestPasswordReset: asyncVoidFn,
+      resolveConflict: asyncVoidFn,
       session: null,
       setMetric: voidFn,
       signUp: asyncVoidFn,
       status: 'idle',
+      updateProfile: asyncVoidFn,
     },
     ...overrides,
   }
@@ -165,6 +169,65 @@ function renderWithGame(value: GameContextValue, children: ReactNode) {
 }
 
 describe('Settings', () => {
+  it('updates validated public profile and trophy privacy controls', async () => {
+    const value = createGameValue()
+    const updateProfile = vi.fn(async () => undefined)
+
+    value.cloud = {
+      ...value.cloud,
+      profile: {
+        avatarKey: 'crosshair',
+        createdAt: 1,
+        displayName: 'CaseAce',
+        isProfilePublic: false,
+        isTrophyShowcasePublic: false,
+        updatedAt: 1,
+        userId: 'user-1',
+      },
+      session: { accessToken: 'test', user: { email: 'hidden@example.com', id: 'user-1', username: 'CaseAce' } },
+      updateProfile,
+    }
+
+    renderWithGame(value, <Settings />)
+
+    fireEvent.change(screen.getByLabelText('Display name'), { target: { value: 'Pattern Ace' } })
+    fireEvent.click(screen.getByLabelText('Show my summary on profiles and leaderboards'))
+    fireEvent.click(screen.getByLabelText('Share selected Trophy Room items'))
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
+
+    expect(updateProfile).toHaveBeenCalledWith({
+      avatarKey: 'crosshair',
+      displayName: 'Pattern Ace',
+      isProfilePublic: true,
+      isTrophyShowcasePublic: true,
+    })
+  })
+
+  it('shows divergent cloud versions and resolves only the explicit player choice', () => {
+    const value = createGameValue()
+    const resolveConflict = vi.fn(async () => undefined)
+    const localState = makeState({ inventory: [makeItem()], money: 150 })
+    const remoteState = makeState({ inventory: [], money: 400 })
+
+    value.cloud = {
+      ...value.cloud,
+      conflict: {
+        localState,
+        remoteRecord: { envelope: JSON.parse(serializeGameState(remoteState)), revision: 2, updatedAt: 2 },
+        remoteState,
+      },
+      resolveConflict,
+      session: { accessToken: 'test', user: { email: 'hidden@example.com', id: 'user-1', username: 'CaseAce' } },
+      status: 'conflict',
+    }
+
+    renderWithGame(value, <Settings />)
+
+    expect(screen.getByText('Cloud conflict needs your choice')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Use cloud version' }))
+    expect(resolveConflict).toHaveBeenCalledWith('use-cloud')
+  })
+
   it('dispatches preference changes immediately from controls', () => {
     const updateSettings = vi.fn()
     const value = createGameValue({}, { updateSettings })

@@ -14,10 +14,12 @@ const CaseSelectionView = lazy(() => import('./views/CaseSelectionView').then((m
 const CollectionBookView = lazy(() => import('./views/CollectionBookView').then((module) => ({ default: module.CollectionBookView })))
 const CreditsView = lazy(() => import('./views/CreditsView').then((module) => ({ default: module.CreditsView })))
 const InventoryView = lazy(() => import('./views/InventoryView').then((module) => ({ default: module.InventoryView })))
+const LeaderboardView = lazy(() => import('./views/LeaderboardView').then((module) => ({ default: module.LeaderboardView })))
 const Main = lazy(() => import('./views/Main').then((module) => ({ default: module.Main })))
 const Market = lazy(() => import('./views/Market').then((module) => ({ default: module.Market })))
 const MarketEvents = lazy(() => import('./views/MarketEvents').then((module) => ({ default: module.MarketEvents })))
 const Prestige = lazy(() => import('./views/Prestige').then((module) => ({ default: module.Prestige })))
+const PlayerProfileView = lazy(() => import('./views/PlayerProfileView').then((module) => ({ default: module.PlayerProfileView })))
 const RewardsView = lazy(() => import('./views/RewardsView').then((module) => ({ default: module.RewardsView })))
 const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
 const SkillTree = lazy(() => import('./views/SkillTree').then((module) => ({ default: module.SkillTree })))
@@ -81,7 +83,9 @@ function App() {
               <Route path="stats" element={<Suspense fallback={<RouteFallback />}><Stats /></Suspense>} />
               <Route path="work" element={<Suspense fallback={<RouteFallback />}><WorkView /></Suspense>} />
               <Route path="credits" element={<Suspense fallback={<RouteFallback />}><CreditsView /></Suspense>} />
-              <Route path="leaderboards" element={<Navigate to="/" replace />} />
+              <Route path="leaderboards" element={<Suspense fallback={<RouteFallback />}><LeaderboardView /></Suspense>} />
+              <Route path="profile" element={<Suspense fallback={<RouteFallback />}><PlayerProfileView /></Suspense>} />
+              <Route path="profile/:userId" element={<Suspense fallback={<RouteFallback />}><PlayerProfileView /></Suspense>} />
               <Route path="trophy-room" element={<Suspense fallback={<RouteFallback />}><TrophyRoom /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<RouteFallback />}><Settings /></Suspense>} />
               <Route path="*" element={<Navigate to="/" replace />} />

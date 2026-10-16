@@ -86,6 +86,8 @@ import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
 export const CURRENT_SAVE_VERSION = 29
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
+export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
+export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
 
 export interface SaveEnvelope {
   version: number
@@ -1704,6 +1706,48 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
   const gameState = isGameState(state) ? state : playerStateToGameState(state)
   const inventory = dedupeSkinInstances(gameState.inventory)
   const inventoryValue = getInventoryValue(inventory, gameState.marketValues)
+  const itemByInstanceId = new Map(inventory.map((item) => [item.instanceId, item]))
+  const prioritizedMarketSkinIds = [
+    ...Object.values(gameState.trophyAssignments)
+      .flatMap((assignment) => {
+        const item = assignment ? itemByInstanceId.get(assignment.itemId) : undefined
+        return item ? [item.id] : []
+      }),
+    ...gameState.lastOpenedItems.map((item) => item.id),
+    ...gameState.recentDrops.map((item) => item.id),
+    ...[...inventory]
+      .sort((left, right) => right.marketValue - left.marketValue)
+      .map((item) => item.id),
+  ]
+  const priorityOrder = new Map<string, number>()
+
+  prioritizedMarketSkinIds.forEach((skinId) => {
+    if (!priorityOrder.has(skinId)) {
+      priorityOrder.set(skinId, priorityOrder.size)
+    }
+  })
+
+  const marketHistory = Object.fromEntries(
+    Object.entries(gameState.marketHistory)
+      .filter(([, points]) => points.length > 0)
+      .sort(([leftId, leftPoints], [rightId, rightPoints]) => {
+        const leftPriority = priorityOrder.get(leftId)
+        const rightPriority = priorityOrder.get(rightId)
+
+        if (leftPriority !== undefined || rightPriority !== undefined) {
+          if (leftPriority === undefined) return 1
+          if (rightPriority === undefined) return -1
+          return leftPriority - rightPriority
+        }
+
+        return (rightPoints.at(-1)?.timestamp ?? 0) - (leftPoints.at(-1)?.timestamp ?? 0)
+      })
+      .slice(0, PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS)
+      .map(([skinId, points]) => [
+        skinId,
+        points.slice(-PERSISTED_MARKET_HISTORY_MAX_POINTS),
+      ]),
+  )
 
   return {
     version: CURRENT_SAVE_VERSION,
@@ -1713,6 +1757,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       money: normalizeMoney(gameState.money, defaultGameState.money),
       inventory,
       inventoryValue,
+      marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],
       lastError: undefined,
@@ -1722,7 +1767,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
 }
 
 export function serializeGameState(state: GameState | PlayerState) {
-  return JSON.stringify(createSaveEnvelope(state), null, 2)
+  return JSON.stringify(createSaveEnvelope(state))
 }
 
 export function getSaveFileTimestamp(now = Date.now()) {
@@ -1761,7 +1806,7 @@ export function exportGameStateToFile(
     download?: (json: string, fileName: string) => void
   } = {},
 ) {
-  const json = serializeGameState(state)
+  const json = JSON.stringify(createSaveEnvelope(state), null, 2)
 
   download(json, fileName)
 

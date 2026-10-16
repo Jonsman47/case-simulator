@@ -131,15 +131,19 @@ function renderStatsView(stateOverrides: Partial<GameState> = {}) {
     resetGame: voidFn,
     cloud: {
       forceSync: asyncVoidFn,
+      getPublicProfile: vi.fn(async () => null),
       isConfigured: false,
       login: asyncVoidFn,
       logout: asyncVoidFn,
       metric: 'inventoryValue',
+      profile: null,
       requestPasswordReset: asyncVoidFn,
+      resolveConflict: asyncVoidFn,
       session: null,
       setMetric: voidFn,
       signUp: asyncVoidFn,
       status: 'idle',
+      updateProfile: asyncVoidFn,
     },
   }
 

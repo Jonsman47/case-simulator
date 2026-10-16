@@ -3,7 +3,9 @@ import type { SkinInstance } from '../data/models'
 import { formatCurrency } from '../utils/format'
 import { getPatternTierLabel, isSpecialPattern } from '../utils/skinPatterns'
 
-function tierClasses(item: SkinInstance) {
+type PatternBadgeItem = Pick<SkinInstance, 'paintSeed' | 'pattern'>
+
+function tierClasses(item: PatternBadgeItem) {
   if (item.pattern?.tier === 'iconic') {
     return 'border-rarity-special bg-rarity-special/15 text-rarity-special shadow-glow'
   }
@@ -19,7 +21,7 @@ function tierClasses(item: SkinInstance) {
   return 'border-cs-border bg-cs-surface text-cs-muted'
 }
 
-export function PatternBadge({ compact = false, item }: { compact?: boolean; item: SkinInstance }) {
+export function PatternBadge({ compact = false, item }: { compact?: boolean; item: PatternBadgeItem }) {
   if (item.paintSeed === undefined) {
     return compact ? null : (
       <span className="inline-flex items-center gap-1 border border-cs-border px-2 py-1 font-mono text-[10px] uppercase text-cs-muted" title="This item predates paint-seed tracking and was not rerolled during migration.">

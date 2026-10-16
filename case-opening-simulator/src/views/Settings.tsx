@@ -2,6 +2,8 @@ import {
   AlertTriangle,
   Bell,
   CalendarClock,
+  CloudDownload,
+  CloudUpload,
   Compass,
   Contrast,
   Download,
@@ -15,11 +17,13 @@ import {
   Save,
   Sparkles,
   Upload,
+  ShieldCheck,
   User,
   Volume2,
   VolumeX,
 } from 'lucide-react'
 import { type ChangeEvent, type ComponentType, type FormEvent, type ReactNode, useRef, useState } from 'react'
+import { CLOUD_AVATAR_KEYS, type CloudProfile } from '../cloud/cloudSave'
 import { AutoSellRulesPanel } from '../components/AutoSellRulesPanel'
 import {
   defaultRarityColors,
@@ -31,6 +35,7 @@ import {
 import { Rarity } from '../data/models'
 import { useGame } from '../hooks/useGame'
 import { getRarityLabel } from '../utils/itemLabels'
+import { formatCurrency } from '../utils/format'
 import {
   SaveGameError,
   clearSavedGame,
@@ -80,6 +85,47 @@ function hasRunningAutomation(state: GameState) {
     Object.values(state.automation.modules).some((moduleState) => (
       moduleState.isEnabled && moduleState.level > 0
     ))
+  )
+}
+
+type ProfileUpdate = Pick<CloudProfile, 'avatarKey' | 'displayName' | 'isProfilePublic' | 'isTrophyShowcasePublic'>
+
+function ProfileSettingsForm({
+  disabled,
+  onSave,
+  profile,
+}: {
+  disabled: boolean
+  onSave: (profile: ProfileUpdate) => Promise<void>
+  profile: CloudProfile
+}) {
+  const [avatarKey, setAvatarKey] = useState(profile.avatarKey)
+  const [displayName, setDisplayName] = useState(profile.displayName)
+  const [isProfilePublic, setIsProfilePublic] = useState(profile.isProfilePublic)
+  const [isTrophyShowcasePublic, setIsTrophyShowcasePublic] = useState(profile.isTrophyShowcasePublic)
+
+  return (
+    <form
+      className="grid gap-3 border border-cs-border bg-cs-surface p-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        void onSave({ avatarKey, displayName, isProfilePublic, isTrophyShowcasePublic })
+      }}
+    >
+      <div className="flex items-center gap-2 text-sm font-semibold text-cs-text"><ShieldCheck size={17} /> Public profile and privacy</div>
+      <label className="grid gap-2 text-sm text-cs-muted">Display name
+        <input className="min-h-11 border border-cs-border bg-cs-panel px-3 text-cs-text outline-none focus:border-rarity-special" maxLength={24} minLength={3} onChange={(event) => setDisplayName(event.target.value)} required value={displayName} />
+      </label>
+      <label className="grid gap-2 text-sm text-cs-muted">Profile icon
+        <select className="min-h-11 border border-cs-border bg-cs-panel px-3 text-cs-text" onChange={(event) => setAvatarKey(event.target.value)} value={avatarKey}>
+          {CLOUD_AVATAR_KEYS.map((avatar) => <option key={avatar} value={avatar}>{avatar}</option>)}
+        </select>
+      </label>
+      <label className="flex min-h-11 items-center gap-3 border border-cs-border bg-cs-panel px-3 text-sm text-cs-text"><input checked={isProfilePublic} onChange={(event) => setIsProfilePublic(event.target.checked)} type="checkbox" /> Show my summary on profiles and leaderboards</label>
+      <label className="flex min-h-11 items-center gap-3 border border-cs-border bg-cs-panel px-3 text-sm text-cs-text"><input checked={isTrophyShowcasePublic} disabled={!isProfilePublic} onChange={(event) => setIsTrophyShowcasePublic(event.target.checked)} type="checkbox" /> Share selected Trophy Room items</label>
+      <p className="text-xs text-cs-muted">Email, raw save data, complete inventory, and account identifiers are never shown on public profile cards. Rankings remain client-reported.</p>
+      <button className="min-h-11 border border-rarity-special px-3 text-sm font-semibold text-rarity-special" disabled={disabled} type="submit">Save profile</button>
+    </form>
   )
 }
 
@@ -196,6 +242,15 @@ export function Settings() {
   async function handleCloudReset() {
     await cloud.requestPasswordReset(cloudEmail)
     showMessage('Password reset requested. Check your email if this is a real backend account.')
+  }
+
+  async function handleProfileSave(profile: ProfileUpdate) {
+    try {
+      await cloud.updateProfile(profile)
+      showMessage('Profile and privacy settings saved.')
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : 'Profile could not be updated.', true)
+    }
   }
 
   return (
@@ -408,8 +463,33 @@ export function Settings() {
             </div>
           ) : null}
 
+          {cloud.conflict ? (
+            <div className="mt-4 border border-rarity-covert bg-rarity-covert/10 p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 shrink-0 text-rarity-covert" size={19} />
+                <div>
+                  <p className="font-semibold text-cs-text">Cloud conflict needs your choice</p>
+                  <p className="mt-1 text-xs leading-relaxed text-cs-muted">Local: {formatCurrency(cloud.conflict.localState.money)} and {cloud.conflict.localState.inventory.length} items. Cloud: {formatCurrency(cloud.conflict.remoteState.money)} and {cloud.conflict.remoteState.inventory.length} items. The simulator will not add balances or blindly combine inventories. A local backup is created before either version is replaced.</p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <button className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 text-sm font-semibold text-rarity-special" onClick={() => void cloud.resolveConflict('keep-local')} type="button"><CloudUpload size={16} /> Keep local version</button>
+                <button className="inline-flex min-h-11 items-center justify-center gap-2 border border-cs-border px-3 text-sm font-semibold text-cs-text" onClick={() => void cloud.resolveConflict('use-cloud')} type="button"><CloudDownload size={16} /> Use cloud version</button>
+              </div>
+            </div>
+          ) : null}
+
           {cloud.session ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4">
+              {cloud.profile ? (
+                <ProfileSettingsForm
+                  disabled={cloud.status === 'syncing'}
+                  key={`${cloud.profile.userId}:${cloud.profile.updatedAt}`}
+                  onSave={handleProfileSave}
+                  profile={cloud.profile}
+                />
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
               <button
                 className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"
                 disabled={cloud.status === 'syncing'}
@@ -426,6 +506,7 @@ export function Settings() {
               >
                 Logout
               </button>
+              </div>
             </div>
           ) : (
             <form className="mt-4 grid gap-3" onSubmit={handleCloudLogin}>

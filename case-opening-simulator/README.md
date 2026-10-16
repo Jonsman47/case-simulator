@@ -77,4 +77,4 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 VITE_BASE_PATH=/case-opening-simulator/
 ```
 
-See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks.
+See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.

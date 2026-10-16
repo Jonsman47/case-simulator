@@ -3,6 +3,7 @@
  */
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { GameContext, type GameContextValue } from '../components/GameContext'
 import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
@@ -121,22 +122,28 @@ function renderTrophyRoom(stateOverrides: Partial<GameState> = {}) {
     resetGame: voidFn,
     cloud: {
       forceSync: asyncVoidFn,
+      getPublicProfile: vi.fn(async () => null),
       isConfigured: false,
       login: asyncVoidFn,
       logout: asyncVoidFn,
       metric: 'inventoryValue',
+      profile: null,
       requestPasswordReset: asyncVoidFn,
+      resolveConflict: asyncVoidFn,
       session: null,
       setMetric: voidFn,
       signUp: asyncVoidFn,
       status: 'idle',
+      updateProfile: asyncVoidFn,
     },
   }
 
   render(
-    <GameContext.Provider value={value}>
-      <TrophyRoomView />
-    </GameContext.Provider>,
+    <MemoryRouter>
+      <GameContext.Provider value={value}>
+        <TrophyRoomView />
+      </GameContext.Provider>
+    </MemoryRouter>,
   )
 
   return { assignTrophyItem, removeTrophyItem }
