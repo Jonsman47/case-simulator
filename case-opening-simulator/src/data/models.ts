@@ -415,6 +415,9 @@ export interface PlayerState {
     rareDrops: number
     patternDrops: number
     exceptionalPatternDrops: number
+    workJobsCompleted: number
+    bestPrecisionScore: number
+    bestMemoryScore: number
     dropsByRarity: Record<Rarity, number>
   }
   lastBackupAt: number

@@ -218,6 +218,9 @@ export const examplePlayerState: PlayerState = {
     rareDrops: 1,
     patternDrops: 0,
     exceptionalPatternDrops: 0,
+    workJobsCompleted: 0,
+    bestPrecisionScore: 0,
+    bestMemoryScore: 0,
     dropsByRarity: {
       [Rarity.Consumer]: 0,
       [Rarity.Industrial]: 0,

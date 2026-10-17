@@ -149,7 +149,7 @@ export function PlayerProfileView() {
                   <PatternBadge compact item={item} />
                   <span className="font-mono text-sm font-semibold text-cs-green">{formatCurrency(item.marketValue)}</span>
                 </div>
-                <p className="mt-3 border-t border-cs-border pt-3 text-[11px] text-cs-muted">Catalog artwork represents the finish, not this exact seed.</p>
+                <p className="mt-3 border-t border-cs-border pt-3 text-[11px] text-cs-muted">Catalog artwork represents the finish, not this exact numeric pattern.</p>
               </article>
             ))}
           </div>

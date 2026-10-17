@@ -230,7 +230,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'collection_catalog_complete',
     name: 'Catalog Complete',
-    description: 'Discover every seeded skin at least once.',
+    description: 'Discover every catalog skin at least once.',
     category: 'Collection',
     condition: isCatalogComplete,
     reward: { upgradePoints: 3, skillPoints: 2, badge: 'Catalog Complete' },
@@ -238,7 +238,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'collection_wear_master',
     name: 'Wear Master',
-    description: 'Discover every seeded skin in every wear condition.',
+    description: 'Discover every catalog skin in every wear condition.',
     category: 'Collection',
     condition: isWearCatalogComplete,
     reward: { upgradePoints: 8, badge: 'Wear Master' },
@@ -405,7 +405,7 @@ const rarityDiscoveryAchievements: Achievement[] = Object.values(Rarity).flatMap
     {
       id: `discover_${rarity.toLowerCase()}_all`,
       name: `${label} Catalog`,
-      description: `Discover every seeded ${label} item.`,
+      description: `Discover every catalog ${label} item.`,
       category: 'Collection',
       condition: (state) => hasDiscoveredEverySkinOfRarity(state, rarity),
       reward: { upgradePoints: 2, skillPoints: rarity === Rarity.Covert || rarity === Rarity.SpecialItem ? 2 : 1 },
@@ -480,7 +480,7 @@ const prestigeAchievements: Achievement[] = prestigeMilestones.map((target) => (
 const collectionPercentAchievements: Achievement[] = collectionMilestones.map((ratio) => ({
   id: `collection_${Math.round(ratio * 100)}_percent`,
   name: `${Math.round(ratio * 100)}% Collection`,
-  description: `Discover ${Math.round(ratio * 100)}% of the seeded catalog.`,
+  description: `Discover ${Math.round(ratio * 100)}% of the catalog.`,
   category: 'Collection',
   condition: (state) => getCollectionCompletionRatio(state) >= ratio,
   reward: ratio >= 0.75 ? { skillPoints: 2, badge: `${Math.round(ratio * 100)}% Collection` } : { upgradePoints: 1 },
@@ -526,7 +526,7 @@ const hiddenAchievements: Achievement[] = [
   {
     id: 'hidden_all_red_gold',
     name: 'Red And Gold Archive',
-    description: 'Discover every seeded Covert and Special Item.',
+    description: 'Discover every catalog Covert and Special Item.',
     category: 'Collection',
     isHidden: true,
     condition: hasDiscoveredAllCovertAndSpecial,

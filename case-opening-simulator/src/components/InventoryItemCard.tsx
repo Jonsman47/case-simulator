@@ -5,6 +5,7 @@ import { Rarity } from '../data/models'
 import { formatCurrency } from '../utils/format'
 import { getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { getSkinRarityColor } from '../data/rarities'
+import { getSkinPriceConfidence } from '../data/skinPrices'
 import { AssetImage } from './AssetImage'
 import { PatternBadge } from './PatternInfo'
 
@@ -237,7 +238,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
       </dl>
 
       <div className="mt-2 border border-cs-border bg-cs-surface px-2 py-1.5">
-        <p className="font-mono text-[10px] uppercase text-cs-muted">Market Value</p>
+        <p className="font-mono text-[10px] uppercase text-cs-muted">Estimated Value · {getSkinPriceConfidence(item, item.wear, Boolean(item.statTrak), Boolean(item.souvenir)) === 'market' ? 'Market' : 'Fallback'}</p>
         <p className="mt-1 text-base font-semibold text-cs-green">{formatCurrency(item.marketValue)}</p>
       </div>
     </article>

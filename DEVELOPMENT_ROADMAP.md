@@ -1,8 +1,8 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-10-16
+Updated: 2026-10-18
 
-This roadmap reflects the inspected repository after Prompt 4. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
+This roadmap reflects the inspected repository after Prompt 5. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
 
 ## Stage 1 — Foundation, Critical Bugs, Production Build & Asset Reliability
 
@@ -63,15 +63,17 @@ Exit evidence: local/mock automation and browser UI verification pass. A real Su
 
 ## Stage 5 — Data, Performance & Browser E2E Hardening
 
-Status: **PLANNED**
+Status: **COMPLETE**
 
-- Resolve remaining price gaps and document snapshot freshness.
-- Split/defer large skin/price data and establish performance budgets.
-- Profile startup, large inventories, long saves, offline catch-up, and low-end mobile use.
-- Add Playwright coverage for openings, rapid clicks, case switching, exact economy deltas, events, Auction, capacity, selling, persistence, assets, PWA behavior, and responsive layouts.
-- Add clean-checkout CI that syncs/verifies assets before test/build/release verification.
+- Changed player-facing Seed terminology to Pattern without changing the v29 `paintSeed` identity field.
+- Added separated, numbered multi-open roulette/reveal containers and repaired non-wrapping opening quantity controls and tall-summary scrolling.
+- Rebuilt the Work page and existing jobs; added Precision Strike and Memory Circuit with skill scoring, persistent cooldowns, exact-once rewards, and schema v30 statistics.
+- Improved price coverage from 2,071 to 2,087 of 2,092 skins and reduced condition fallbacks from 250 to 75, with explicit market/fallback/estimate labels.
+- Generated pattern coverage at build time and compacted price data. Pattern transfer size fell about 321 kB gzip and price data about 44 kB gzip; budgets are documented in `case-opening-simulator/docs/performance-budget.md`.
+- Added Playwright Chromium coverage and visual baselines for opening quantities, exact deductions/inventory additions, Work jobs, selling/reload, images, core navigation/console errors, and responsive overflow at 1920×1080, 1366×768, and 390×844.
+- Added root-level GitHub Actions CI for clean install, asset sync, generated-data verification, browser installation, typecheck, lint, unit tests, build, E2E, and PWA verification.
 
-Exit: critical production journeys run automatically and clean checkout → sync → test → build → verify is reproducible.
+Exit evidence: recorded in `PROJECT_STATUS.md`. Five source-rate-limited price entries, deeper deployed-cloud E2E, and controlled low-end device profiling remain documented limitations rather than hidden failures.
 
 ## Stage 6 — Final UI Polish, Accessibility, Balance & Release
 
@@ -95,7 +97,7 @@ Exit: no clipped/overlapping/broken-image surfaces; accessibility/performance/ec
 | 2. Events/market events/automation/progression | **COMPLETE** |
 | 3. Paint seeds/pattern identity | **COMPLETE** |
 | 4. Cloud/leaderboards/social | **COMPLETE — deployment verification blocked** |
-| 5. Data/performance/browser E2E | **PLANNED** |
+| 5. Data/performance/browser E2E | **COMPLETE** |
 | 6. Final UI/accessibility/balance/release | **PLANNED** |
 
-Estimated overall completion after Stage 4: **97%**.
+Estimated overall completion after Stage 5: **98%**.

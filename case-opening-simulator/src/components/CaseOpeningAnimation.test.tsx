@@ -139,6 +139,12 @@ describe('CaseOpeningAnimation', () => {
 
     act(() => vi.advanceTimersByTime(8_000))
     expect(screen.getAllByTestId('case-reveal-cell')).toHaveLength(5)
+    screen.getAllByTestId('case-reveal-cell').forEach((cell) => {
+      expect(cell).toHaveClass('border-2')
+    })
+    expect(screen.getByText('Case 01')).toBeInTheDocument()
+    expect(screen.getByText('Case 05')).toBeInTheDocument()
+    expect(screen.getAllByText('Stopped')).toHaveLength(5)
     expect(onComplete).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Skip opening animation' }))

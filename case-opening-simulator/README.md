@@ -27,8 +27,12 @@ Open the URL printed by Vite, normally `http://127.0.0.1:5173/`.
 ```bash
 npm run dev                 # Verify assets, then run Vite with HMR
 npm test                    # Run the Vitest suite
+npm run typecheck           # Run TypeScript project checks
 npm run lint                # Run ESLint
+npx playwright install chromium
+npm run test:e2e            # Run Chromium critical-flow and responsive tests
 npm run assets:verify       # Verify all generated case and skin images
+npm run generate:pattern-lookups # Rebuild compact pattern lookup data
 npm run build               # Verify assets, type-check, bundle, and generate the PWA
 npm run verify:pwa          # Inspect the completed release output
 npm run verify:release      # Lint, test, build, and verify the PWA
@@ -64,7 +68,7 @@ Public image and sound URLs are resolved through Vite’s base path. Root hostin
 - New saves start at `$100`.
 - Kilowatt and Revolution are open by default. Other priced cases require a one-time license.
 - Case opening commits its economic transaction once, then runs an independent UI animation session. Notification clearing, route changes, cloud merges, and unrelated settings updates do not interrupt the active roll.
-- The Work screen contains Poop Cleaning and Sort Boxes jobs with persisted cooldowns.
+- The Work screen contains Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit jobs with capped performance rewards and persisted cooldowns.
 - Trade-ups validate contract inputs but intentionally allow value-negative attempts.
 - Batch opening begins with Open 1 and Open 10; upgrades and skills unlock larger batches.
 - Optional cloud save uses Supabase when its environment variables are present and otherwise uses the local mock backend.
@@ -77,4 +81,4 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 VITE_BASE_PATH=/case-opening-simulator/
 ```
 
-See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.
+See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. Performance budgets and measured bundle changes are in `docs/performance-budget.md`; Work reward math is in `docs/work-economy.md`. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.

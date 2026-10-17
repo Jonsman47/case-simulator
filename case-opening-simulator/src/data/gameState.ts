@@ -109,6 +109,9 @@ export interface GameStatistics {
   rareDrops: number
   patternDrops: number
   exceptionalPatternDrops: number
+  workJobsCompleted: number
+  bestPrecisionScore: number
+  bestMemoryScore: number
   dropsByRarity: DropRarityCounts
 }
 
@@ -337,7 +340,7 @@ export type GameAction =
   | { type: 'ADD_MONEY'; amount: number }
   | { type: 'COMPLETE_POOP_CLEANING'; now?: number }
   | { type: 'COMPLETE_POOP_CLEANUP_MINIGAME'; reward?: number; now?: number }
-  | { type: 'COMPLETE_WORK_MINIGAME'; gameId: WorkMiniGameId; now?: number }
+  | { type: 'COMPLETE_WORK_MINIGAME'; gameId: WorkMiniGameId; now?: number; performance?: number }
   | { type: 'SPEND_MONEY'; amount: number }
   | { type: 'ADD_ITEM'; item: InventoryItem }
   | { type: 'REMOVE_ITEM'; itemId: string }
@@ -459,6 +462,9 @@ export const defaultGameState: GameState = {
     rareDrops: 0,
     patternDrops: 0,
     exceptionalPatternDrops: 0,
+    workJobsCompleted: 0,
+    bestPrecisionScore: 0,
+    bestMemoryScore: 0,
     dropsByRarity: defaultDropsByRarity,
   },
   settings: {

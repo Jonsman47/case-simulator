@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react'
 import { Rarity, type SkinInstance } from '../data/models'
+import { getSkinPriceConfidence } from '../data/skinPrices'
 import { getSkinRarityColor } from '../data/rarities'
 import type { MarketPriceHistory } from '../market/marketSimulation'
 import { formatCurrency } from '../utils/format'
@@ -179,6 +180,7 @@ export function ItemDetailModal({
   )
 
   const currentSaleValue = item ? saleValue ?? item.marketValue : 0
+  const priceConfidence = item ? getSkinPriceConfidence(item, item.wear, Boolean(item.statTrak), Boolean(item.souvenir)) : 'estimated'
   const imageScale = imageZoom && imageZoom.itemId === item?.instanceId ? imageZoom.scale : 1
   const styles = item ? rarityStyles[item.rarity] : rarityStyles[Rarity.Consumer]
   const rarityColor = item ? getSkinRarityColor(item) : styles.chart
@@ -488,7 +490,7 @@ export function ItemDetailModal({
               <DetailStat label="Wear Condition" value={getWearLabel(item.wear)} />
               <DetailStat label="Float Value" value={item.floatValue.toFixed(3)} />
               <DetailStat
-                label="Current Market Value"
+                label={`Estimated Value · ${priceConfidence === 'market' ? 'Market source' : priceConfidence === 'fallback' ? 'Condition fallback' : 'Catalog estimate'}`}
                 tone="green"
                 value={formatCurrency(currentSaleValue)}
               />

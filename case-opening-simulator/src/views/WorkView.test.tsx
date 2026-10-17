@@ -86,15 +86,19 @@ describe('WorkView', () => {
     vi.useRealTimers()
   })
 
-  it('only shows Poop Cleaning and Sort Boxes jobs', () => {
+  it('shows the two rescue jobs and two skill-based jobs', () => {
     renderWork()
 
     expect(screen.getByText('Poop Cleaning')).toBeInTheDocument()
     expect(screen.getByText('Sort Boxes')).toBeInTheDocument()
+    expect(screen.getByText('Precision Strike')).toBeInTheDocument()
+    expect(screen.getByText('Memory Circuit')).toBeInTheDocument()
     expect(screen.queryByText('Clean The Floor')).not.toBeInTheDocument()
     expect(screen.queryByText('Wash Skins')).not.toBeInTheDocument()
-    expect(screen.getByText('+$10.00')).toBeInTheDocument()
-    expect(screen.getByText('+$20.00')).toBeInTheDocument()
+    expect(screen.getByText('+$10')).toBeInTheDocument()
+    expect(screen.getByText('+$20')).toBeInTheDocument()
+    expect(screen.getByText('+$9.10–$18.90')).toBeInTheDocument()
+    expect(screen.getByText('+$12.60–$23.40')).toBeInTheDocument()
   })
 
   it('keeps Poop Cleaning completing through the reducer once', async () => {
@@ -113,7 +117,7 @@ describe('WorkView', () => {
       gameId: 'poopCleaning',
       now: Date.now(),
     })
-    expect(screen.getByText('Poop cleaned. +$10')).toBeInTheDocument()
+    expect(screen.getByText('Yard cleared. +$10')).toBeInTheDocument()
   })
 
   it('randomizes Sort Boxes positions each time the job starts', () => {
@@ -151,7 +155,7 @@ describe('WorkView', () => {
 
     dragBoxToContainer('Red', 'Blue')
 
-    expect(screen.getByText('Wrong container. Try the matching color.')).toBeInTheDocument()
+    expect(screen.getByText('Wrong bin — match the color label and try again.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Red box' })).toBeInTheDocument()
 
     for (const color of sortColors) {
@@ -167,8 +171,8 @@ describe('WorkView', () => {
       now: Date.now(),
     })
     expect(screen.getByText('Sorted 4/4')).toBeInTheDocument()
-    expect(screen.getByText('Sort Boxes done. +$20.00')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Red box' })).not.toBeInTheDocument()
+    expect(screen.getByText('All four boxes sorted. +$20')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Red box' })).toHaveClass('pointer-events-none')
   })
 
   it('supports click selection as a safe Sort Boxes fallback', async () => {
@@ -195,11 +199,15 @@ describe('WorkView', () => {
       workMiniGameCooldowns: {
         poopCleaning: Date.now(),
         sortBoxes: Date.now(),
+        precisionStrike: Date.now(),
+        memoryCircuit: Date.now(),
       },
     })
 
-    expect(screen.getByText('Come back in 3:00.')).toBeInTheDocument()
-    expect(screen.getByText('Come back in 20:00.')).toBeInTheDocument()
+    expect(screen.getByText('3:00')).toBeInTheDocument()
+    expect(screen.getByText('20:00')).toBeInTheDocument()
+    expect(screen.getByText('8:00')).toBeInTheDocument()
+    expect(screen.getByText('15:00')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Clean poop/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Start Sort Boxes' })).not.toBeInTheDocument()
     expect(screen.queryByText('Clean The Floor')).not.toBeInTheDocument()
@@ -259,7 +267,18 @@ describe('WorkView', () => {
 
     await act(async () => undefined)
 
-    expect(screen.getByText('Sort Boxes hit a problem. Nothing was charged or locked.')).toBeInTheDocument()
+    expect(screen.getByText('Sort Boxes hit a problem. No reward or cooldown was applied.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Clean poop 1' })).toBeInTheDocument()
+  })
+
+  it('starts both skill-based jobs with accessible controls', () => {
+    renderWork()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Precision Strike' }))
+    expect(screen.getByRole('button', { name: 'Stop precision marker' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
+    expect(screen.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
+    expect(screen.getByText('Watch the sequence')).toBeInTheDocument()
   })
 })

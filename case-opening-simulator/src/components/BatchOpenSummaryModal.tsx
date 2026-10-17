@@ -70,13 +70,14 @@ export function BatchOpenSummaryModal({
   const totalValue = items.reduce((total, item) => total + item.marketValue, 0)
   const excitingDrops = items.filter(isExcitingDrop)
   const revealMode = skipAnimations && excitingDrops.length === 0 ? 'Skipped' : 'Short reveal'
+  const openingNumbers = new Map(items.map((item, index) => [item.instanceId, index + 1]))
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[90] grid items-start justify-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:items-center sm:p-4">
       <section
         aria-label="Case opening batch summary"
         aria-modal="true"
-        className="relative min-h-dvh w-full max-w-none border border-cs-border bg-cs-surface p-3 text-cs-text shadow-glow sm:min-h-0 sm:max-w-5xl sm:p-6"
+        className="relative h-dvh max-h-dvh w-full max-w-none overflow-y-auto border border-cs-border bg-cs-surface p-3 text-cs-text shadow-glow sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:p-6"
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
@@ -128,6 +129,7 @@ export function BatchOpenSummaryModal({
                     <DropSummaryCard
                       isHighlighted={mostValuableItems.some((topItem) => topItem.instanceId === item.instanceId)}
                       item={item}
+                      openingNumber={openingNumbers.get(item.instanceId)}
                       key={item.instanceId}
                     />
                   ))}
@@ -146,7 +148,7 @@ export function BatchOpenSummaryModal({
               <h3 className="font-mono text-xs uppercase text-cs-muted">Top Value</h3>
               <div className="mt-3 space-y-2">
                 {mostValuableItems.map((item) => (
-                  <DropSummaryCard isCompact isHighlighted item={item} key={item.instanceId} />
+                  <DropSummaryCard isCompact isHighlighted item={item} key={item.instanceId} openingNumber={openingNumbers.get(item.instanceId)} />
                 ))}
               </div>
             </section>
@@ -161,7 +163,7 @@ export function BatchOpenSummaryModal({
                   </p>
                   <div className="mt-3 space-y-2">
                     {autoSoldItems.slice(0, 6).map((item) => (
-                      <DropSummaryCard isCompact item={item} key={item.instanceId} />
+                      <DropSummaryCard isCompact item={item} key={item.instanceId} openingNumber={openingNumbers.get(item.instanceId)} />
                     ))}
                   </div>
                 </>
@@ -200,10 +202,12 @@ function DropSummaryCard({
   isCompact = false,
   isHighlighted = false,
   item,
+  openingNumber,
 }: {
   isCompact?: boolean
   isHighlighted?: boolean
   item: SkinInstance
+  openingNumber?: number
 }) {
   const rarityColor = getSkinRarityColor(item)
 
@@ -215,6 +219,7 @@ function DropSummaryCard({
       ].join(' ')}
       style={{ borderColor: rarityColor }}
     >
+      {openingNumber ? <p className="mb-2 border-b border-cs-border pb-1 font-mono text-[10px] uppercase text-rarity-special">Case {String(openingNumber).padStart(2, '0')}</p> : null}
       <div className="flex items-center gap-2">
         <AssetImage
           alt=""

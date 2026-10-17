@@ -84,7 +84,7 @@ import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 29
+export const CURRENT_SAVE_VERSION = 30
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -381,6 +381,9 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
     rareDrops: value.rareDrops,
     patternDrops: Math.max(0, Math.floor(normalizeNumber(value.patternDrops, 0))),
     exceptionalPatternDrops: Math.max(0, Math.floor(normalizeNumber(value.exceptionalPatternDrops, 0))),
+    workJobsCompleted: Math.max(0, Math.floor(normalizeNumber(value.workJobsCompleted, 0))),
+    bestPrecisionScore: Math.min(1, Math.max(0, normalizeNumber(value.bestPrecisionScore, 0))),
+    bestMemoryScore: Math.min(1, Math.max(0, normalizeNumber(value.bestMemoryScore, 0))),
     dropsByRarity: normalizeDropsByRarity(value.dropsByRarity),
   }
 }
@@ -1434,6 +1437,24 @@ function migrateV28ToV29(value: unknown): unknown {
   }
 }
 
+function migrateV29ToV30(value: unknown): unknown {
+  if (!isRecord(value)) {
+    return value
+  }
+
+  const statistics = isRecord(value.statistics) ? value.statistics : {}
+
+  return {
+    ...value,
+    statistics: {
+      ...statistics,
+      workJobsCompleted: normalizeNumber(statistics.workJobsCompleted, 0),
+      bestPrecisionScore: normalizeNumber(statistics.bestPrecisionScore, 0),
+      bestMemoryScore: normalizeNumber(statistics.bestMemoryScore, 0),
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1464,6 +1485,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   26: migrateV26ToV27,
   27: migrateV27ToV28,
   28: migrateV28ToV29,
+  29: migrateV29ToV30,
 }
 
 function getEnvelope(value: unknown) {

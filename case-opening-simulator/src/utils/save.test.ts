@@ -602,6 +602,32 @@ describe('save system', () => {
     expect(migrated.settings.backupPromptEnabled).toBe(true)
   })
 
+  it('migrates version 29 work statistics without changing inventory pattern identity', () => {
+    const patternedItem = makeItem({ paintSeed: 661 })
+    const v29Statistics: Partial<typeof defaultGameState.statistics> = {
+      ...defaultGameState.statistics,
+    }
+    delete v29Statistics.workJobsCompleted
+    delete v29Statistics.bestPrecisionScore
+    delete v29Statistics.bestMemoryScore
+    const migrated = parseGameSaveText(JSON.stringify({
+      version: 29,
+      savedAt: 1_782_147_700_000,
+      state: {
+        ...makeState({ inventory: [patternedItem] }),
+        statistics: v29Statistics,
+      },
+    }))
+
+    expect(migrated.inventory[0]?.paintSeed).toBe(661)
+    expect(migrated.statistics).toMatchObject({
+      workJobsCompleted: 0,
+      bestPrecisionScore: 0,
+      bestMemoryScore: 0,
+    })
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
+  })
+
   it('detects weekly backup prompts and exports JSON through the download hook', () => {
     const now = 1_782_147_700_000
     const state = makeState({

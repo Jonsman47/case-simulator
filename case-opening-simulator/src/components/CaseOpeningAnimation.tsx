@@ -636,7 +636,7 @@ function CasePreRollGrid({
         {items.map((item, index) => (
           <div
             className={[
-              'case-preroll-cell relative grid place-items-center overflow-hidden border bg-cs-panel',
+              'case-preroll-cell relative grid grid-rows-[auto_1fr] overflow-hidden border-2 bg-cs-panel',
               batchSize > 25 ? 'aspect-square p-1' : batchSize <= 10 ? 'min-h-32 p-3 sm:min-h-0' : 'min-h-28 p-3',
               'border-rarity-special',
             ].join(' ')}
@@ -644,6 +644,9 @@ function CasePreRollGrid({
             key={item.instanceId}
             style={{ '--case-accent': preRevealAccentColor, animationDelay: `${(index % 16) * 34}ms` } as CSSProperties}
           >
+            <div className="relative z-10 flex w-full items-center justify-between border-b border-rarity-special/40 bg-cs-bg/75 px-2 py-1 font-mono text-[10px] uppercase text-rarity-special">
+              <span>{formatOpeningLabel(index)}</span><span>Priming</span>
+            </div>
             <AssetImage
               alt=""
               aria-hidden="true"
@@ -653,15 +656,7 @@ function CasePreRollGrid({
             />
             <div className="case-preroll-wash absolute inset-0" />
             <div className="absolute inset-x-2 top-2 h-px bg-rarity-special/70 animate-pulse" />
-            <AssetImage
-              alt=""
-              className={[
-                'case-preroll-case object-contain',
-                batchSize > 25 ? 'h-8 w-8' : batchSize <= 3 ? 'h-28 w-28' : batchSize <= 10 ? 'h-20 w-20' : 'h-14 w-14',
-              ].join(' ')}
-              draggable={false}
-              src={caseImage}
-            />
+            <div className="relative z-[1] grid min-h-0 place-items-center"><AssetImage alt="" className={['case-preroll-case object-contain', batchSize > 25 ? 'h-8 w-8' : batchSize <= 3 ? 'h-28 w-28' : batchSize <= 10 ? 'h-20 w-20' : 'h-14 w-14'].join(' ')} draggable={false} src={caseImage} /></div>
           </div>
         ))}
       </div>
@@ -742,17 +737,19 @@ function ReelGrid({
         ].join(' ')}
         style={getGridStyle(batchSize)}
       >
-        {reels.map((reel) => (
-          <div
+        {reels.map((reel, index) => (
+          <article
             className={[
-              'case-opening-cell relative overflow-hidden border bg-cs-panel',
+              'case-opening-cell relative grid grid-rows-[auto_minmax(0,1fr)] overflow-hidden border-2 bg-cs-panel shadow-[0_8px_24px_rgb(0_0_0_/_0.32)]',
               batchSize > 25 ? 'aspect-square' : batchSize <= 10 ? 'min-h-36 sm:min-h-0' : 'h-28',
               'border-cs-border',
             ].join(' ')}
             key={reel.item.instanceId}
           >
-            <div className="pointer-events-none absolute bottom-1 left-1/2 top-1 z-10 w-px -translate-x-1/2 bg-rarity-special/80" />
-            <div
+            <div className="z-20 flex items-center justify-between border-b border-cs-border bg-cs-bg/95 px-2 py-1 font-mono text-[10px] uppercase text-cs-muted"><span className="text-rarity-special">{formatOpeningLabel(index)}</span><span>Rolling</span></div>
+            <div className="relative min-h-0 overflow-hidden">
+              <div className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-px -translate-x-1/2 bg-rarity-special shadow-glow"><span className="absolute left-1/2 top-0 h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[7px] border-x-transparent border-t-rarity-special" /><span className="absolute bottom-0 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[5px] border-b-[7px] border-x-transparent border-b-rarity-special" /></div>
+              <div
               className="roulette-track flex h-full items-stretch gap-2 will-change-transform"
               data-after-target-count={layout.afterCount}
               data-reel-length={reel.reelItems.length}
@@ -777,8 +774,9 @@ function ReelGrid({
                   variant={batchSize > 25 ? 'mega' : batchSize <= 10 ? 'large' : 'compact'}
                 />
               ))}
+              </div>
             </div>
-          </div>
+          </article>
         ))}
       </div>
       {hiddenItemCount > 0 ? <HiddenBatchBadge count={hiddenItemCount} /> : null}
@@ -818,13 +816,14 @@ function RevealGrid({
           return (
             <article
               className={[
-                'case-opening-cell grid overflow-hidden border border-cs-border bg-cs-panel cascade-reveal',
-                totalCount > 25 ? 'aspect-square place-items-center p-1' : totalCount <= 10 ? 'min-h-36 grid-rows-[1fr_auto] p-3 sm:min-h-0' : 'min-h-28 grid-rows-[1fr_auto] p-2',
+                'case-opening-cell grid overflow-hidden border-2 bg-cs-panel cascade-reveal shadow-[0_8px_24px_rgb(0_0_0_/_0.32)]',
+                totalCount > 25 ? 'aspect-square place-items-center p-1' : totalCount <= 10 ? 'min-h-36 grid-rows-[auto_1fr_auto] p-3 sm:min-h-0' : 'min-h-28 grid-rows-[auto_1fr_auto] p-2',
               ].join(' ')}
               data-testid="case-reveal-cell"
               key={item.instanceId}
-              style={{ animationDelay: `${Math.min(index, 40) * 18}ms` }}
+              style={{ animationDelay: `${Math.min(index, 40) * 18}ms`, borderColor: getSkinRarityColor(item) }}
             >
+              {totalCount <= 25 ? <div className="mb-1 flex items-center justify-between border-b border-cs-border pb-1 font-mono text-[10px] uppercase"><span className="text-rarity-special">{formatOpeningLabel(index)}</span><span className="text-cs-green">Stopped</span></div> : null}
               <AssetImage
                 alt=""
                 className={totalCount > 25 ? 'h-8 w-8 object-contain' : totalCount <= 3 ? 'mx-auto h-32 w-32 object-contain' : totalCount <= 10 ? 'mx-auto h-20 w-20 object-contain' : 'mx-auto h-12 w-12 object-contain'}
@@ -849,6 +848,10 @@ function RevealGrid({
       {hiddenItemCount > 0 ? <HiddenBatchBadge count={hiddenItemCount} /> : null}
     </div>
   )
+}
+
+function formatOpeningLabel(index: number) {
+  return `Case ${String(index + 1).padStart(2, '0')}`
 }
 
 function playCaseOpeningAudio(enabled: boolean) {

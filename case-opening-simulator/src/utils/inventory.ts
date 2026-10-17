@@ -28,6 +28,7 @@ export function getCurrentItemMarketValue(
   const generatedPrice = getMarketAdjustedSkinConditionPrice({
     fallbackValue: undefined,
     isStatTrak: Boolean(item.statTrak),
+    isSouvenir: Boolean(item.souvenir),
     marketValues,
     skin: item,
     wear: item.wear,

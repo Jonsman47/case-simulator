@@ -24,18 +24,18 @@ function tierClasses(item: PatternBadgeItem) {
 export function PatternBadge({ compact = false, item }: { compact?: boolean; item: PatternBadgeItem }) {
   if (item.paintSeed === undefined) {
     return compact ? null : (
-      <span className="inline-flex items-center gap-1 border border-cs-border px-2 py-1 font-mono text-[10px] uppercase text-cs-muted" title="This item predates paint-seed tracking and was not rerolled during migration.">
-        <CircleHelp size={12} /> Legacy seed unavailable
+      <span className="inline-flex items-center gap-1 border border-cs-border px-2 py-1 font-mono text-[10px] uppercase text-cs-muted" title="This item predates numeric pattern tracking and was not rerolled during migration.">
+        <CircleHelp size={12} /> Legacy pattern unavailable
       </span>
     )
   }
 
-  const label = isSpecialPattern(item) ? item.pattern?.name : `Seed ${item.paintSeed}`
+  const label = isSpecialPattern(item) ? item.pattern?.name : `Pattern #${item.paintSeed}`
 
   return (
     <span
       className={`inline-flex min-w-0 items-center gap-1 border px-2 py-1 font-mono text-[10px] uppercase ${tierClasses(item)}`}
-      title={`${item.pattern?.name ?? 'Standard pattern'} · Paint seed ${item.paintSeed}. The catalog image is not seed-specific.`}
+      title={`${item.pattern?.name ?? 'Standard pattern'} · Pattern #${item.paintSeed}. The catalog image does not render the exact numeric pattern.`}
     >
       {isSpecialPattern(item) ? <Sparkles className="shrink-0" size={12} /> : <Hash className="shrink-0" size={12} />}
       <span className="truncate">{label}</span>
@@ -50,7 +50,7 @@ export function PatternDetails({ estimatedValue, item }: { estimatedValue?: numb
     return (
       <section className="border border-cs-border bg-cs-panel p-4">
         <h3 className="flex items-center gap-2 text-base font-semibold text-cs-text"><CircleHelp size={16} /> Paint pattern</h3>
-        <p className="mt-2 text-sm text-cs-muted">Legacy item: paint seed unavailable. Existing items were preserved without silently rerolling them.</p>
+        <p className="mt-2 text-sm text-cs-muted">Legacy item: numeric pattern unavailable. Existing items were preserved without silently rerolling them.</p>
       </section>
     )
   }
@@ -66,7 +66,8 @@ export function PatternDetails({ estimatedValue, item }: { estimatedValue?: numb
         <PatternBadge item={item} />
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <PatternStat label="Paint Seed" value={String(item.paintSeed)} />
+        <PatternStat label="Pattern" value={`#${item.paintSeed}`} />
+        <PatternStat label="Variant" value={item.pattern.name} />
         <PatternStat label="Tier" value={getPatternTierLabel(item.pattern)} />
         {item.pattern.phase ? <PatternStat label="Paint-kit Phase" value={item.pattern.phase} /> : null}
         {item.pattern.fadePercentage !== undefined ? <PatternStat label="Fade" value={`${item.pattern.fadePercentage.toFixed(1)}%`} /> : null}
@@ -78,7 +79,7 @@ export function PatternDetails({ estimatedValue, item }: { estimatedValue?: numb
       {item.pattern.description ? <p className="mt-3 text-xs text-cs-muted">{item.pattern.description}</p> : null}
       <p className="mt-3 flex gap-2 border-t border-cs-border pt-3 text-xs text-cs-muted">
         <CircleHelp className="mt-0.5 shrink-0" size={14} />
-        Catalog thumbnails show the finish only; they do not render this seed-specific appearance.
+        Catalog thumbnails show the finish only; they do not render this exact numeric pattern.
       </p>
     </section>
   )

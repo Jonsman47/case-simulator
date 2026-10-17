@@ -1,29 +1,14 @@
 CSGOSKINS.GG skin price update report
-Generated at: 2026-06-28T06:41:05.525Z
+Generated at: 2026-10-17T11:40:06.446Z
 
 Skins checked: 2092
-Skins updated: 2071
-Missing skins: 21
-StatTrak prices found: 5215
-Fallback prices kept: 250
+Skins updated: 2087
+Missing skins: 5
+StatTrak prices found: 5290
+Souvenir prices found: 3
+Fallback prices kept: 75
 
 Missing skins:
-- MP5-SD | Lab Rats (https://csgoskins.gg/items/mp5-sd-lab-rats)
-- Bayonet | ★ Bayonet (https://csgoskins.gg/items/bayonet-vanilla)
-- Classic Knife | ★ Classic Knife (https://csgoskins.gg/items/classic-knife-vanilla)
-- Flip Knife | ★ Flip Knife (https://csgoskins.gg/items/flip-knife-vanilla)
-- Gut Knife | ★ Gut Knife (https://csgoskins.gg/items/gut-knife-vanilla)
-- Karambit | ★ Karambit (https://csgoskins.gg/items/karambit-vanilla)
-- M9 Bayonet | ★ M9 Bayonet (https://csgoskins.gg/items/m9-bayonet-vanilla)
-- Huntsman Knife | ★ Huntsman Knife (https://csgoskins.gg/items/huntsman-knife-vanilla)
-- Falchion Knife | ★ Falchion Knife (https://csgoskins.gg/items/falchion-knife-vanilla)
-- Bowie Knife | ★ Bowie Knife (https://csgoskins.gg/items/bowie-knife-vanilla)
-- Butterfly Knife | ★ Butterfly Knife (https://csgoskins.gg/items/butterfly-knife-vanilla)
-- Shadow Daggers | ★ Shadow Daggers (https://csgoskins.gg/items/shadow-daggers-vanilla)
-- Paracord Knife | ★ Paracord Knife (https://csgoskins.gg/items/paracord-knife-vanilla)
-- Survival Knife | ★ Survival Knife (https://csgoskins.gg/items/survival-knife-vanilla)
-- Ursus Knife | ★ Ursus Knife (https://csgoskins.gg/items/ursus-knife-vanilla)
-- Navaja Knife | ★ Navaja Knife (https://csgoskins.gg/items/navaja-knife-vanilla)
 - Nomad Knife | ★ Nomad Knife (https://csgoskins.gg/items/nomad-knife-vanilla)
 - Stiletto Knife | ★ Stiletto Knife (https://csgoskins.gg/items/stiletto-knife-vanilla)
 - Talon Knife | ★ Talon Knife (https://csgoskins.gg/items/talon-knife-vanilla)
@@ -34,21 +19,6 @@ Missing wear condition prices:
 - Bowie Knife | Safari Mesh: Factory New
 - MP5-SD | Lab Rats: Factory New, Minimal Wear, Field-Tested
 - Negev | Mjölnir: Battle-Scarred
-- Bayonet | ★ Bayonet: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Classic Knife | ★ Classic Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Flip Knife | ★ Flip Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Gut Knife | ★ Gut Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Karambit | ★ Karambit: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- M9 Bayonet | ★ M9 Bayonet: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Huntsman Knife | ★ Huntsman Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Falchion Knife | ★ Falchion Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Bowie Knife | ★ Bowie Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Butterfly Knife | ★ Butterfly Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Shadow Daggers | ★ Shadow Daggers: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Paracord Knife | ★ Paracord Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Survival Knife | ★ Survival Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Ursus Knife | ★ Ursus Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Navaja Knife | ★ Navaja Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Nomad Knife | ★ Nomad Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Stiletto Knife | ★ Stiletto Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Talon Knife | ★ Talon Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
@@ -101,26 +71,14 @@ Missing StatTrak wear condition prices:
 - Ursus Knife | Forest DDPAT: Factory New
 - Ursus Knife | Boreal Forest: Factory New
 - Ursus Knife | Night Stripe: Factory New
-- Bayonet | ★ Bayonet: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Classic Knife | ★ Classic Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Flip Knife | ★ Flip Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Gut Knife | ★ Gut Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Karambit | ★ Karambit: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- M9 Bayonet | ★ M9 Bayonet: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Huntsman Knife | ★ Huntsman Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Falchion Knife | ★ Falchion Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Bowie Knife | ★ Bowie Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Butterfly Knife | ★ Butterfly Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Shadow Daggers | ★ Shadow Daggers: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Paracord Knife | ★ Paracord Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Survival Knife | ★ Survival Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Ursus Knife | ★ Ursus Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
-- Navaja Knife | ★ Navaja Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Nomad Knife | ★ Nomad Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Stiletto Knife | ★ Stiletto Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Talon Knife | ★ Talon Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Skeleton Knife | ★ Skeleton Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
 - Kukri Knife | ★ Kukri Knife: Factory New, Minimal Wear, Field-Tested, Well-Worn, Battle-Scarred
+
+Missing Souvenir wear condition prices:
+- None
 
 Updated skins:
 - Hand Wraps | Spruce DDPAT: 5 price(s)
@@ -1562,6 +1520,7 @@ Updated skins:
 - MP5-SD | Kitbash: 10 price(s)
 - MP5-SD | Savannah Halftone: 3 price(s)
 - MP5-SD | Bamboo Garden: 5 price(s)
+- MP5-SD | Lab Rats: 3 price(s)
 - MP5-SD | Autumn Twilly: 5 price(s)
 - MP5-SD | Gold Leaf: 5 price(s)
 - MP5-SD | Snow Splash: 5 price(s)
@@ -2194,3 +2153,18 @@ Updated skins:
 - XM1014 | Run Run Run: 5 price(s)
 - XM1014 | Irezumi: 10 price(s)
 - XM1014 | Mockingbird: 10 price(s)
+- Bayonet | ★ Bayonet: 10 price(s)
+- Classic Knife | ★ Classic Knife: 10 price(s)
+- Flip Knife | ★ Flip Knife: 10 price(s)
+- Gut Knife | ★ Gut Knife: 10 price(s)
+- Karambit | ★ Karambit: 10 price(s)
+- M9 Bayonet | ★ M9 Bayonet: 10 price(s)
+- Huntsman Knife | ★ Huntsman Knife: 10 price(s)
+- Falchion Knife | ★ Falchion Knife: 10 price(s)
+- Bowie Knife | ★ Bowie Knife: 10 price(s)
+- Butterfly Knife | ★ Butterfly Knife: 10 price(s)
+- Shadow Daggers | ★ Shadow Daggers: 10 price(s)
+- Paracord Knife | ★ Paracord Knife: 10 price(s)
+- Survival Knife | ★ Survival Knife: 10 price(s)
+- Ursus Knife | ★ Ursus Knife: 10 price(s)
+- Navaja Knife | ★ Navaja Knife: 10 price(s)

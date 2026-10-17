@@ -63,8 +63,8 @@ export function Main() {
 
   return (
     <PlaceholderView accent="special" title="Main">
-      <div className="grid gap-5 xl:grid-cols-[14rem_1fr]">
-        <div className="border border-cs-border bg-cs-surface p-4">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(19rem,22rem)_minmax(0,1fr)]">
+        <div className="min-w-0 border border-cs-border bg-cs-surface p-4">
           <div className="grid min-h-44 place-items-center border border-cs-border bg-cs-panel">
             <AssetImage alt="" className="h-32 w-32 object-contain" src={selectedCase?.image} />
           </div>

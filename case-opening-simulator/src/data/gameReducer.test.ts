@@ -2071,6 +2071,29 @@ describe('gameReducer OPEN_CASE', () => {
     expect(allowedState.money).toBe(40)
   })
 
+  it('caps skill-job performance rewards and records best scores exactly once', () => {
+    const completedAt = 1_782_216_000_000
+    const first = gameReducer(makeState({ money: 0 }), {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'precisionStrike',
+      now: completedAt,
+      performance: 100,
+    })
+    const duplicate = gameReducer(first, {
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'precisionStrike',
+      now: completedAt + 1,
+      performance: 100,
+    })
+
+    expect(first.money).toBe(18.9)
+    expect(first.statistics.workJobsCompleted).toBe(1)
+    expect(first.statistics.bestPrecisionScore).toBe(1)
+    expect(duplicate.money).toBe(18.9)
+    expect(duplicate.statistics.workJobsCompleted).toBe(1)
+    expect(duplicate.lastError).toBe('Precision Strike is still on cooldown.')
+  })
+
   it('rejects duplicate inventory instance ids', () => {
     const item = makeItem({ instanceId: 'duplicate-item' })
     const state = makeState({ inventory: [item] })

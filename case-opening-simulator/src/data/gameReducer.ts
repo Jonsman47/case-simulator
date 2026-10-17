@@ -130,7 +130,9 @@ import {
   getPoopCleanupCooldownRemaining,
 } from '../utils/poopCleanupMinigame'
 import {
+  getWorkBaseReward,
   getWorkMiniGameCooldownRemaining,
+  normalizeWorkPerformance,
   workMiniGamesById,
   type WorkMiniGameId,
 } from '../utils/workMinigames'
@@ -261,7 +263,12 @@ function validateGameState(state: GameState): GameState {
   }, state.lastSaved || Date.now())
 }
 
-function completeWorkMiniGame(state: GameState, gameId: WorkMiniGameId, now = Date.now()): GameState {
+function completeWorkMiniGame(
+  state: GameState,
+  gameId: WorkMiniGameId,
+  now = Date.now(),
+  performance?: number,
+): GameState {
   const definition = workMiniGamesById.get(gameId)
 
   if (!definition) {
@@ -279,7 +286,7 @@ function completeWorkMiniGame(state: GameState, gameId: WorkMiniGameId, now = Da
   }
 
   const reward = roundCurrency(
-    definition.reward *
+    getWorkBaseReward(gameId, performance) *
     getClickIncomeMultiplier(state.upgrades) *
     getSkillMinigameRewardMultiplier(state.learnedSkillNodeIds),
   )
@@ -294,6 +301,7 @@ function completeWorkMiniGame(state: GameState, gameId: WorkMiniGameId, now = Da
     ...state.workMiniGameCooldowns,
     [gameId]: now,
   }
+  const normalizedPerformance = normalizeWorkPerformance(performance)
 
   return {
     ...state,
@@ -304,6 +312,13 @@ function completeWorkMiniGame(state: GameState, gameId: WorkMiniGameId, now = Da
     statistics: {
       ...state.statistics,
       moneyEarned: roundCurrency(state.statistics.moneyEarned + reward),
+      workJobsCompleted: state.statistics.workJobsCompleted + 1,
+      bestPrecisionScore: gameId === 'precisionStrike'
+        ? Math.max(state.statistics.bestPrecisionScore, normalizedPerformance)
+        : state.statistics.bestPrecisionScore,
+      bestMemoryScore: gameId === 'memoryCircuit'
+        ? Math.max(state.statistics.bestMemoryScore, normalizedPerformance)
+        : state.statistics.bestMemoryScore,
     },
     uiEvents: appendEvents(state, [event]),
   }
@@ -558,6 +573,7 @@ function createSkinInstance(
   const realMarketValue = getMarketAdjustedSkinConditionPrice({
     fallbackValue: fallbackMarketValue,
     isStatTrak,
+    isSouvenir,
     marketValues: state.marketValues,
     skin,
     wear,
@@ -2288,7 +2304,7 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
     case 'COMPLETE_POOP_CLEANUP_MINIGAME':
       return completePoopCleaning(state, action.now)
     case 'COMPLETE_WORK_MINIGAME':
-      return completeWorkMiniGame(state, action.gameId, action.now)
+      return completeWorkMiniGame(state, action.gameId, action.now, action.performance)
     case 'SPEND_MONEY':
       if (!Number.isFinite(action.amount) || action.amount < 0) {
         return {

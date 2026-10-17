@@ -17,6 +17,8 @@ asset-import.config.json
 CSGO-API/
 CounterStrike2Skins/
 public/assets/cs2/
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*

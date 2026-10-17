@@ -43,7 +43,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
         {openQuantities.map((quantity) => {
           const totalCost = caseDef.cost * quantity
           const canAffordQuantity = money >= totalCost
@@ -51,14 +51,14 @@ export const CaseOpenControls = memo(function CaseOpenControls({
 
           return (
             <button
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60"
+              className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap border border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-rarity-special transition hover:-translate-y-px hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special active:translate-y-0 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60 disabled:hover:translate-y-0"
               disabled={disabled}
               key={quantity}
               onClick={() => onOpen(quantity, { skipAnimations: quantity >= 10 && skipAnimations })}
               title={disabled && (canOpen || requiresLicense) ? `Need ${formatCurrency(totalCost)}` : undefined}
               type="button"
             >
-              {disabled || requiresLicense ? <Lock size={16} /> : <PackageOpen size={16} />}
+              {disabled || requiresLicense ? <Lock className="shrink-0" size={16} /> : <PackageOpen className="shrink-0" size={16} />}
               Open {quantity}
             </button>
           )

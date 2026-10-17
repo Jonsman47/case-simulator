@@ -17,13 +17,14 @@ const caseDef: CaseDefinition = {
 }
 
 describe('CaseOpenControls', () => {
-  it('shows only the aligned Open 1 and Open 10 actions', () => {
+  it('shows all compact quantities with non-wrapping labels', () => {
     const onOpen = vi.fn()
 
     render(<CaseOpenControls canOpen caseDef={caseDef} money={100} onOpen={onOpen} />)
 
     expect(screen.getByRole('button', { name: /^open 1$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^open 10$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^open 5$/i })).toHaveClass('whitespace-nowrap')
     expect(screen.queryByRole('button', { name: /open 100/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /^open 10$/i }))

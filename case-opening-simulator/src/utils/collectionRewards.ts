@@ -71,7 +71,7 @@ export function getCollectionRewardDefinitions(
     type: 'WeaponSellBonus' as const,
     targetId: weapon,
     title: `${weapon} Specialist`,
-    description: `Discover every seeded ${weapon} finish.`,
+    description: `Discover every catalog ${weapon} finish.`,
     effectLabel: '+1% sell value',
     bonus: WEAPON_SELL_BONUS,
   }))
@@ -89,7 +89,7 @@ export function getCollectionRewardDefinitions(
     type: 'RarityLuck' as const,
     targetId: rarity,
     title: `${rarity} Tier Complete`,
-    description: `Discover every seeded ${rarity} skin.`,
+    description: `Discover every catalog ${rarity} skin.`,
     effectLabel: '+2% higher-tier luck',
     bonus: RARITY_LUCK_BONUS,
   }))
@@ -98,7 +98,7 @@ export function getCollectionRewardDefinitions(
     type: 'FullGamePrestigeBonus' as const,
     targetId: 'all-skins-all-wears',
     title: 'Full Wear Archive',
-    description: 'Discover every seeded skin in every wear condition.',
+    description: 'Discover every catalog skin in every wear condition.',
     effectLabel: '+1 permanent prestige bonus',
     bonus: FULL_GAME_PRESTIGE_BONUS,
     carriesOver: true,

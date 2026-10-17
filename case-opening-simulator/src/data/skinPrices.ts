@@ -4,7 +4,7 @@ import {
   getWearValueMultiplier,
   type SkinBase,
 } from './models'
-import type { GeneratedSkinPriceRecord } from './generated/skinPrices.generated'
+import type { GeneratedSkinPriceTuple } from './generated/skinPrices.generated'
 
 type CsvRow = Record<string, string>
 
@@ -42,7 +42,7 @@ const baseWearPreference = [
   WearCondition.BattleScarred,
 ]
 const generatedSkinPriceModules = import.meta.glob<{
-  GENERATED_SKIN_PRICES: Record<string, GeneratedSkinPriceRecord>
+  GENERATED_SKIN_PRICES: Record<string, GeneratedSkinPriceTuple>
 }>('./generated/skinPrices.generated.ts', { eager: true })
 const generatedSkinPrices = Object.values(generatedSkinPriceModules)[0]?.GENERATED_SKIN_PRICES ?? {}
 
@@ -190,29 +190,87 @@ export const HAS_EXTERNAL_SKIN_PRICES = EXTERNAL_SKIN_PRICES_BY_KEY.size > 0
 export const GENERATED_SKIN_PRICES_BY_ID = generatedSkinPrices
 export const HAS_GENERATED_SKIN_PRICES = Object.keys(GENERATED_SKIN_PRICES_BY_ID).length > 0
 
+type DecodedGeneratedSkinPriceRecord = {
+  normal: WearPriceMap
+  representativePrice: number
+  souvenir: WearPriceMap
+  statTrak: WearPriceMap
+}
+
+const decodedGeneratedPriceCache = new Map<string, DecodedGeneratedSkinPriceRecord>()
+
 export function getExternalSkinPriceRecord(skin: Pick<SkinBase, 'finish' | 'weapon'>) {
   return EXTERNAL_SKIN_PRICES_BY_KEY.get(createSkinPriceKey(skin.weapon, skin.finish))
 }
 
 export function getGeneratedSkinPriceRecord(skin: Pick<SkinBase, 'id'>) {
-  return GENERATED_SKIN_PRICES_BY_ID[skin.id]
+  const cached = decodedGeneratedPriceCache.get(skin.id)
+
+  if (cached) return cached
+
+  const tuple = GENERATED_SKIN_PRICES_BY_ID[skin.id]
+
+  if (!tuple) return undefined
+
+  const decoded = {
+    normal: readTuplePrices(tuple, 1),
+    representativePrice: tuple[0],
+    souvenir: readTuplePrices(tuple, 11),
+    statTrak: readTuplePrices(tuple, 6),
+  }
+
+  decodedGeneratedPriceCache.set(skin.id, decoded)
+  return decoded
+}
+
+const tupleWearOrder = [
+  WearCondition.FactoryNew,
+  WearCondition.MinimalWear,
+  WearCondition.FieldTested,
+  WearCondition.WellWorn,
+  WearCondition.BattleScarred,
+] as const
+
+function readTuplePrices(tuple: GeneratedSkinPriceTuple, offset: number) {
+  return Object.fromEntries(tupleWearOrder.flatMap((wear, index) => {
+    const value = tuple[offset + index]
+    return typeof value === 'number' ? [[wear, value]] : []
+  })) as WearPriceMap
 }
 
 export function getSkinConditionPrice(
   skin: Pick<SkinBase, 'baseValue' | 'id'>,
   wear: WearCondition,
   isStatTrak = false,
+  isSouvenir = false,
 ) {
   const generatedRecord = getGeneratedSkinPriceRecord(skin)
-  const generatedPrice = isStatTrak
-    ? generatedRecord?.statTrak[wear] ?? generatedRecord?.normal[wear]
-    : generatedRecord?.normal[wear]
+  const generatedPrice = isSouvenir
+    ? generatedRecord?.souvenir[wear] ?? generatedRecord?.normal[wear]
+    : isStatTrak
+      ? generatedRecord?.statTrak[wear] ?? generatedRecord?.normal[wear]
+      : generatedRecord?.normal[wear]
 
   if (typeof generatedPrice === 'number') {
     return generatedPrice
   }
 
   return undefined
+}
+
+export function getSkinPriceConfidence(
+  skin: Pick<SkinBase, 'id'>,
+  wear: WearCondition,
+  isStatTrak = false,
+  isSouvenir = false,
+) {
+  const record = getGeneratedSkinPriceRecord(skin)
+
+  if (!record) return 'estimated' as const
+  if (isSouvenir && typeof record.souvenir[wear] === 'number') return 'market' as const
+  if (isStatTrak && typeof record.statTrak[wear] === 'number') return 'market' as const
+  if (!isStatTrak && !isSouvenir && typeof record.normal[wear] === 'number') return 'market' as const
+  return 'fallback' as const
 }
 
 export function getRepresentativeSkinPrice(skin: SkinBase) {
@@ -228,17 +286,19 @@ export function getRepresentativeSkinPrice(skin: SkinBase) {
 export function getMarketAdjustedSkinConditionPrice({
   fallbackValue,
   isStatTrak = false,
+  isSouvenir = false,
   marketValues,
   skin,
   wear,
 }: {
   fallbackValue?: number
   isStatTrak?: boolean
+  isSouvenir?: boolean
   marketValues?: Record<string, number>
   skin: SkinBase
   wear: WearCondition
 }) {
-  const conditionPrice = getSkinConditionPrice(skin, wear, isStatTrak)
+  const conditionPrice = getSkinConditionPrice(skin, wear, isStatTrak, isSouvenir)
 
   if (typeof conditionPrice !== 'number') {
     return fallbackValue

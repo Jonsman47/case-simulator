@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { Rarity, type SkinBase } from './models'
+import { Rarity, WearCondition, type SkinBase } from './models'
 import {
   applyExternalSkinPrices,
   createSkinPriceKey,
+  getGeneratedSkinPriceRecord,
+  getSkinConditionPrice,
+  getSkinPriceConfidence,
   parseCsvRows,
   parseExternalSkinPrices,
 } from './skinPrices'
@@ -50,5 +53,17 @@ describe('external skin price CSV', () => {
 
     expect(pricedRedline?.baseValue).toBeGreaterThan(redline.baseValue)
     expect(fallbackSkin?.baseValue).toBe(7)
+  })
+
+  it('keeps verified Souvenir condition prices separate from normal prices', () => {
+    const labRats = { id: 'skin-e73d6e7e9004', baseValue: 2.75 }
+
+    expect(getSkinConditionPrice(labRats, WearCondition.FactoryNew, false, true)).toBe(0.3)
+    expect(getSkinPriceConfidence(labRats, WearCondition.FactoryNew, false, true)).toBe('market')
+    expect(getGeneratedSkinPriceRecord(labRats)?.souvenir).toMatchObject({
+      [WearCondition.FactoryNew]: 0.3,
+      [WearCondition.MinimalWear]: 0.23,
+      [WearCondition.FieldTested]: 0.24,
+    })
   })
 })

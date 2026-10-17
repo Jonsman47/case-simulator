@@ -1,11 +1,9 @@
-import BlueGemCalculator, { type BlueGemPercentages } from 'csgo-blue-gem-calculator'
-import { FadeCalculator } from 'csgo-fade-percentage-calculator'
 import type { SkinBase, SkinInstance, SkinPattern } from '../data/models'
+import { BLUE_PATTERN_PERCENTAGES, FADE_PATTERN_PERCENTAGES } from '../data/generated/patternPercentages.generated'
 import { roundCurrency } from './safeNumbers'
 
 export const MAX_PATTERN_ADJUSTED_VALUE = 1_000_000_000
 
-const blueGemCalculator = new BlueGemCalculator()
 const akTierOneSeeds = new Set([151, 179, 321, 387, 661, 670, 955])
 const akTierTwoSeeds = new Set([4, 13, 168, 429, 592, 905])
 const fiveSevenTierOneSeeds = new Set([278, 363, 670, 690, 768, 868])
@@ -59,22 +57,11 @@ export function generatePaintSeed(prng: () => number = Math.random) {
   return Math.floor(normalizedRoll * 1001)
 }
 
-function getBluePercentage(percentages: BlueGemPercentages) {
-  return percentages.top?.blue ?? percentages.playside?.blue
-}
-
 function getBlueGemPercentage(skin: SkinBase, seed: number) {
   const finish = skin.finish === 'Heat Treated' ? 'Heat Treated' : 'Case Hardened'
+  const percentage = BLUE_PATTERN_PERCENTAGES[`${finish}|${skin.weapon}`]?.[seed]
 
-  try {
-    if (!blueGemCalculator.getSupportedItems(finish).includes(skin.weapon)) {
-      return undefined
-    }
-
-    return getBluePercentage(blueGemCalculator.getPercentages(finish, skin.weapon, seed))
-  } catch {
-    return undefined
-  }
+  return typeof percentage === 'number' ? percentage : undefined
 }
 
 function classifyAkCaseHardened(seed: number, bluePercentage?: number): SkinPattern {
@@ -196,15 +183,8 @@ function classifyCaseHardened(skin: SkinBase, seed: number): SkinPattern {
 }
 
 function classifyFade(skin: SkinBase, seed: number): SkinPattern {
-  let fadePercentage: number | undefined
-
-  try {
-    if (FadeCalculator.getSupportedWeapons().includes(skin.weapon)) {
-      fadePercentage = FadeCalculator.getFadePercentage(skin.weapon, seed).percentage
-    }
-  } catch {
-    fadePercentage = undefined
-  }
+  const percentage = FADE_PATTERN_PERCENTAGES[skin.weapon]?.[seed]
+  const fadePercentage = typeof percentage === 'number' ? percentage : undefined
 
   if (fadePercentage === undefined) {
     return standardPattern('fade', 'Fade')
@@ -259,7 +239,7 @@ function classifyPaintKitPhase(family: 'doppler' | 'gamma_doppler', skin: SkinBa
     premiumMultiplier: multiplier,
     referenceConfidence: phase ? 'verified' : 'neutral',
     phase,
-    description: 'Doppler variants are paint-kit phases; the paint seed is stored but does not choose the phase.',
+    description: 'Doppler variants are paint-kit phases; the numeric pattern ID is stored but does not choose the phase.',
   }
 }
 
