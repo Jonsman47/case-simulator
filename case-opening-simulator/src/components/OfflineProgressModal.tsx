@@ -1,7 +1,8 @@
 import { Banknote, Clock, PackageCheck, ShieldAlert, Sparkles } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import type { OfflineProgressSummary } from '../utils/offlineProgress'
 import { formatCurrency } from '../utils/format'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 
 function formatDuration(ms: number) {
   const totalMinutes = Math.floor(ms / 60_000)
@@ -24,13 +25,19 @@ export function OfflineProgressModal({
   onDismiss: () => void
   summary: OfflineProgressSummary
 }) {
+  const modalRef = useRef<HTMLElement>(null)
+  const dismissButtonRef = useRef<HTMLButtonElement>(null)
+  useDialogFocus({ containerRef: modalRef, initialFocusRef: dismissButtonRef, onEscape: onDismiss })
+
   return (
     <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 backdrop-blur-sm sm:p-4">
       <section
         aria-labelledby="offline-progress-title"
         aria-modal="true"
         className="flex min-h-dvh w-full max-w-none flex-col overflow-y-auto border border-rarity-special bg-cs-surface shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl"
+        ref={modalRef}
         role="dialog"
+        tabIndex={-1}
       >
         <div className="border-b border-cs-border bg-cs-panel p-4 sm:p-5">
           <div className="flex items-start gap-3">
@@ -102,6 +109,7 @@ export function OfflineProgressModal({
             <button
               className="inline-flex min-h-11 items-center justify-center border border-cs-border px-4 py-2 text-sm font-medium text-cs-muted transition-colors hover:text-cs-text"
               onClick={onDismiss}
+              ref={dismissButtonRef}
               type="button"
             >
               Dismiss

@@ -4,6 +4,7 @@ import type { AnimationSpeed } from '../data/gameState'
 import { Rarity, type SkinBase, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { formatCurrency } from '../utils/format'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 import { getSkinRarityLabel } from '../utils/itemLabels'
 import {
   isPremiumRevealDrop,
@@ -356,6 +357,8 @@ export function CaseOpeningAnimation({
   const skipTimerRef = useRef<number | undefined>(undefined)
   const rollFrameRef = useRef<number | undefined>(undefined)
   const secondRollFrameRef = useRef<number | undefined>(undefined)
+  const modalRef = useRef<HTMLElement>(null)
+  const skipButtonRef = useRef<HTMLButtonElement>(null)
   const isPremiumBatch = useMemo(() => items.some(isPremiumRevealDrop), [items])
   const keepsResultsOpen = isPremiumBatch || batchSize > 1
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
@@ -413,9 +416,13 @@ export function CaseOpeningAnimation({
   useEffect(() => {
     const timers: number[] = []
 
-    completedRef.current = false
-    closedRef.current = false
-    audioRef.current = undefined
+    // A fast user (or a busy browser) can activate Skip after the dialog paints
+    // but before this passive effect runs. Never reset that completed session or
+    // schedule a second roll after the UI has already committed its reveal.
+    if (completedRef.current || closedRef.current) {
+      return
+    }
+
     cancelRollFrames()
 
     if (startSkipped) {
@@ -423,6 +430,7 @@ export function CaseOpeningAnimation({
     } else {
       audioRef.current = playCaseOpeningAudio(soundEnabled)
       timers.push(window.setTimeout(() => {
+        if (completedRef.current || closedRef.current) return
         setPhase('spinning')
         startReelRoll()
       }, rollStartMs))
@@ -468,6 +476,8 @@ export function CaseOpeningAnimation({
     finishAnimation(0)
   }
 
+  useDialogFocus({ containerRef: modalRef, initialFocusRef: skipButtonRef, onEscape: skipAnimation })
+
   return (
     <div className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-black/80 p-0 backdrop-blur-sm sm:p-4">
       <section
@@ -480,7 +490,9 @@ export function CaseOpeningAnimation({
           batchSize > 10 ? 'min-h-dvh max-w-7xl sm:min-h-0' : '',
         ].join(' ')}
         data-batch-layout={batchSize === 1 ? 'single' : batchSize <= 3 ? 'showcase' : batchSize <= 6 ? 'grid' : batchSize <= 10 ? 'dashboard' : 'high-volume'}
+        ref={modalRef}
         role="dialog"
+        tabIndex={-1}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -496,6 +508,7 @@ export function CaseOpeningAnimation({
             aria-label="Skip opening animation"
             className="inline-flex min-h-11 items-center gap-2 border border-cs-border px-3 py-2 text-sm font-semibold text-cs-muted transition-colors hover:text-cs-text"
             onClick={skipAnimation}
+            ref={skipButtonRef}
             type="button"
           >
             {phase === 'revealed' ? <X size={16} /> : <FastForward size={16} />}

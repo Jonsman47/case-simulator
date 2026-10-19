@@ -9,8 +9,6 @@ import {
   Download,
   Eye,
   Gauge,
-  Languages,
-  Music,
   Palette,
   RadioTower,
   RotateCcw,
@@ -29,7 +27,6 @@ import {
   defaultRarityColors,
   type AnimationSpeed,
   type GameState,
-  type LanguageCode,
   type ThemeMode,
 } from '../data/gameState'
 import { Rarity } from '../data/models'
@@ -54,14 +51,6 @@ const animationSpeeds: { label: string; value: AnimationSpeed }[] = [
 const themeOptions: { label: string; value: ThemeMode }[] = [
   { label: 'Dark', value: 'dark' },
   { label: 'Light', value: 'light' },
-]
-
-const languageOptions: { label: string; value: LanguageCode }[] = [
-  { label: 'English', value: 'en' },
-  { label: 'Czech', value: 'cs' },
-  { label: 'German', value: 'de' },
-  { label: 'Spanish', value: 'es' },
-  { label: 'French', value: 'fr' },
 ]
 
 const rarityOrder = [
@@ -260,9 +249,8 @@ export function Settings() {
           <p className="font-mono text-xs uppercase text-rarity-industrial">Preferences</p>
           <h2 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Settings</h2>
         </div>
-        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3">
           <SummaryPill label="Theme" value={state.settings.theme} />
-          <SummaryPill label="Language" value={state.settings.language.toUpperCase()} />
           <SummaryPill label="Animation" value={state.settings.animationSpeed} />
           <SummaryPill label="Autosave" value={state.settings.autosaveEnabled ? 'On' : 'Off'} />
         </div>
@@ -582,12 +570,6 @@ export function Settings() {
               onChange={(checked) => updateSettings({ soundEnabled: checked })}
             />
             <ToggleControl
-              checked={state.settings.musicEnabled}
-              icon={Music}
-              label="Music"
-              onChange={(checked) => updateSettings({ musicEnabled: checked })}
-            />
-            <ToggleControl
               checked={state.settings.animationsEnabled}
               icon={Sparkles}
               label="Opening Animations"
@@ -679,23 +661,6 @@ export function Settings() {
             options={themeOptions}
             value={state.settings.theme}
           />
-          <label className="mt-4 block border border-cs-border bg-cs-surface p-4">
-            <span className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
-              <Languages size={15} />
-              Language
-            </span>
-            <select
-              className="mt-3 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
-              onChange={(event) => updateSettings({ language: event.target.value as LanguageCode })}
-              value={state.settings.language}
-            >
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
         </SettingsPanel>
 
         <SettingsPanel icon={Palette} title="Rarity Colours">

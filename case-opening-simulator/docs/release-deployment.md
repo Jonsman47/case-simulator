@@ -37,6 +37,7 @@ Production config lives in `vite.config.ts`.
 - GitHub Pages uses `npm run build:github`, which builds with `/case-opening-simulator/`.
 - Vite emits hashed JS/CSS/assets for cache busting.
 - `vite-plugin-pwa` generates the PWA manifest and service worker.
+- Chart.js is dynamically imported only when a chart is mounted. Generated catalog, price, pattern, React, icon, and virtualization code uses stable cacheable chunks; current measurements and accepted limits are in `performance-budget.md`.
 
 ## PWA Behavior
 
@@ -59,6 +60,7 @@ Before release:
 - Compress any new image/audio assets before adding them to `public`.
 - Keep sounds short and web-friendly (`mp3`, `ogg`, or compressed `wav`).
 - Run `npm run build` and watch for oversized chunks. The generated skin/case data chunks are expected to be large; split or defer them if startup becomes slow.
+- Run `npx playwright test` after the release gate. It covers the focused Work games, 1/2/3/5/10 openings, exact-once transactions, persistence, all player routes, console errors, and 1920×1080, 1366×768, 1280×720, and 390×844 layouts.
 
 ## Dependency Audit
 
@@ -82,6 +84,10 @@ Do not remove `ts-node`; it powers the CS2 asset importer.
 
 The project declares npm in `packageManager` and uses `package-lock.json`. Do not generate or commit a second lockfile.
 
+## Settings scope
+
+The release provides sound effects and case-opening audio but no background-music library. The interface is English-only. Misleading Music and Language controls were removed while their legacy serialized fields remain readable for save compatibility.
+
 ## Environment Variables
 
 Optional cloud save uses Supabase. If unset, the app falls back to local mock cloud storage.
@@ -98,6 +104,8 @@ Apply both migrations, in order, before enabling cloud save in production:
 2. `supabase/migrations/20261016_social_cloud_v29.sql`
 
 The second migration adds private profiles, opt-in public summaries and trophies, security-invoker public views, and the atomic revision-checked save RPC. Never place a Supabase service-role key in a Vite environment variable; the browser must use only the public anon key. See `docs/supabase-cloud-setup.md` for the complete authentication, policy, rate-limit, and verification checklist.
+
+The local/mock cloud path is covered by automated tests. Live Supabase signup, email delivery, RLS/RPC, cross-device conflicts, and production rate limits still require a configured project and must not be described as verified until that checklist is completed with real credentials.
 
 ## GitHub Pages
 

@@ -47,7 +47,7 @@ describe('PriceChart', () => {
       />,
     )
 
-    expect(screen.getByRole('img', { name: 'Price History chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Price History chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([40, 50, 60, 80]),
     )
@@ -56,7 +56,7 @@ describe('PriceChart', () => {
 
     await user.click(screen.getByRole('button', { name: '24H' }))
 
-    expect(screen.getByRole('img', { name: 'Price History chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Price History chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([60, 80]),
     )

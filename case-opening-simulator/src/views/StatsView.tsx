@@ -1,16 +1,4 @@
-import {
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-  type ChartOptions,
-} from 'chart.js'
+import type { ChartOptions } from 'chart.js'
 import {
   BarChart3,
   Bot,
@@ -26,7 +14,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
-import { Bar, Line, Pie } from 'react-chartjs-2'
+import { DeferredBarChart, DeferredLineChart, DeferredPieChart } from '../components/DeferredChart'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel } from '../utils/itemLabels'
@@ -41,18 +29,6 @@ import {
   type StatsDashboardSummary,
   type StatsTimeRange,
 } from '../utils/statsDashboard'
-
-ChartJS.register(
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-)
 
 const rangeOptions: { label: string; value: StatsTimeRange }[] = [
   { label: 'Session', value: 'session' },
@@ -589,7 +565,7 @@ export function StatsView() {
           >
             {hasDropData ? (
               <div className="h-64">
-                <Bar aria-label="Drop rarity distribution chart" data={rarityBarData} options={chartOptions} />
+                <DeferredBarChart aria-label="Drop rarity distribution chart" data={rarityBarData} options={chartOptions} />
               </div>
             ) : (
               <EmptyChart label="Open cases to populate rarity distribution." />
@@ -598,14 +574,14 @@ export function StatsView() {
 
           <ChartPanel subtitle="Spent / earned / net" title="Money Flow">
             <div className="h-64">
-              <Bar aria-label="Money flow chart" data={moneyFlowData} options={currencyBarOptions} />
+              <DeferredBarChart aria-label="Money flow chart" data={moneyFlowData} options={currencyBarOptions} />
             </div>
           </ChartPanel>
 
           <ChartPanel subtitle={`${range.toUpperCase()} scope`} title="Inventory Value Trend">
             {hasInventoryHistory ? (
               <div className="h-64">
-                <Line aria-label="Stats inventory value chart" data={inventoryLineData} options={lineOptions} />
+                <DeferredLineChart aria-label="Stats inventory value chart" data={inventoryLineData} options={lineOptions} />
               </div>
             ) : (
               <EmptyChart label="Inventory trend appears after value changes in this range." />
@@ -615,7 +591,7 @@ export function StatsView() {
           <ChartPanel subtitle="Held drop share" title="Rarity Share">
             {hasDropData ? (
               <div className="h-64">
-                <Pie aria-label="Drop rarity share chart" data={rarityPieData} options={pieOptions} />
+                <DeferredPieChart aria-label="Drop rarity share chart" data={rarityPieData} options={pieOptions} />
               </div>
             ) : (
               <EmptyChart label="Rarity share appears after your first drop." />

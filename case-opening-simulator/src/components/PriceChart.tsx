@@ -1,16 +1,6 @@
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-  type ChartData,
-  type ChartOptions,
-} from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import { useMemo, useState } from 'react'
-import { Line } from 'react-chartjs-2'
+import { DeferredLineChart } from './DeferredChart'
 import type { MarketPriceHistory, MarketPricePoint } from '../market/marketSimulation'
 import { formatCurrency } from '../utils/format'
 import {
@@ -20,8 +10,6 @@ import {
   summarizePriceHistory,
   type PriceHistoryScale,
 } from '../utils/priceHistory'
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
 
 export interface PriceChartProps {
   accentColor?: string
@@ -144,7 +132,7 @@ export function PriceChart({
 
       {hasUsableHistory ? (
         <div className="mt-4 h-44">
-          <Line aria-label={`${title} chart`} data={chartData} options={chartOptions} />
+          <DeferredLineChart aria-label={`${title} chart`} data={chartData} options={chartOptions} />
         </div>
       ) : (
         <div className="mt-4 grid min-h-44 place-items-center border border-cs-border bg-cs-surface p-4 text-center text-sm text-cs-muted">

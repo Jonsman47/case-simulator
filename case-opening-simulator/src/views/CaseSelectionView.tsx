@@ -1,17 +1,10 @@
-import {
-  ArcElement,
-  Chart as ChartJS,
-  Legend,
-  Tooltip,
-  type ChartData,
-  type ChartOptions,
-} from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import { History, Lock, Star } from 'lucide-react'
 import { type TouchEvent, useMemo, useRef, useState } from 'react'
-import { Pie } from 'react-chartjs-2'
 import { AssetImage } from '../components/AssetImage'
 import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenControls'
 import { PriceChart } from '../components/PriceChart'
+import { DeferredPieChart } from '../components/DeferredChart'
 import { getCaseLicenseCost, requiresCaseLicense } from '../data/casePricing'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import type { GameState } from '../data/gameState'
@@ -33,8 +26,6 @@ import { calculateCaseStats, type CaseRarityStat } from '../utils/caseStats'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel, getSkinRarityLabel } from '../utils/itemLabels'
 import { getMaxMultiOpenBatch } from '../data/upgrades'
-
-ChartJS.register(ArcElement, Legend, Tooltip)
 
 const skinsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 
@@ -228,7 +219,7 @@ function RarityDistributionChart({ rarityStats }: { rarityStats: CaseRarityStat[
     <div className="border border-cs-border bg-cs-surface p-3">
       <h4 className="text-sm font-semibold text-cs-text">Rarity Distribution</h4>
       <div className="mt-3 h-56">
-        <Pie aria-label="Rarity distribution chart" data={data} options={options} />
+        <DeferredPieChart aria-label="Rarity distribution chart" data={data} options={options} />
       </div>
     </div>
   )

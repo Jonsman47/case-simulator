@@ -155,7 +155,7 @@ function renderStatsView(stateOverrides: Partial<GameState> = {}) {
 }
 
 describe('StatsView', () => {
-  it('renders aggregate stats and passes correct datasets to charts', () => {
+  it('renders aggregate stats and passes correct datasets to charts', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(now)
 
     renderStatsView({
@@ -189,19 +189,19 @@ describe('StatsView', () => {
 
     expect(screen.getByText('Stats')).toBeInTheDocument()
     expect(screen.getByText('$10.00')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Drop rarity distribution chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Drop rarity distribution chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([2, 0, 0, 0, 0, 1, 0, 0]),
     )
-    expect(screen.getByRole('img', { name: 'Money flow chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Money flow chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([20, 30, 10]),
     )
-    expect(screen.getByRole('img', { name: 'Stats inventory value chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Stats inventory value chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([100, 125]),
     )
-    expect(screen.getByRole('img', { name: 'Drop rarity share chart' })).toHaveAttribute(
+    expect(await screen.findByRole('img', { name: 'Drop rarity share chart' })).toHaveAttribute(
       'data-values',
       JSON.stringify([2, 1]),
     )

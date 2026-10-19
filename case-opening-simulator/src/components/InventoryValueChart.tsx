@@ -1,25 +1,13 @@
-import {
-  CategoryScale,
-  Chart as ChartJS,
-  Filler,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-  type ChartData,
-  type ChartOptions,
-} from 'chart.js'
+import type { ChartData, ChartOptions } from 'chart.js'
 import { Info } from 'lucide-react'
 import { useMemo } from 'react'
-import { Line } from 'react-chartjs-2'
+import { DeferredLineChart } from './DeferredChart'
 import { formatCurrency } from '../utils/format'
 import {
   summarizeInventoryValueHistory,
   trimInventoryValueHistory,
   type InventoryValuePoint,
 } from '../utils/inventory'
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip)
 
 interface InventoryValueChartProps {
   className?: string
@@ -130,7 +118,7 @@ export function InventoryValueChart({
 
       {hasUsableHistory ? (
         <div className={compact ? 'mt-3 h-12' : 'mt-4 h-24'}>
-          <Line aria-label={`${title} chart`} data={chartData} options={chartOptions} />
+          <DeferredLineChart aria-label={`${title} chart`} data={chartData} options={chartOptions} />
         </div>
       ) : (
         <div className={[

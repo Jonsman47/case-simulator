@@ -60,7 +60,12 @@ function createDataTransfer(value: string) {
 }
 
 function startSortBoxes() {
+  fireEvent.click(screen.getByRole('button', { name: 'Play Sort Boxes' }))
   fireEvent.click(screen.getByRole('button', { name: 'Start Sort Boxes' }))
+}
+
+function openJob(name: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Play ${name}` }))
 }
 
 function dragBoxToContainer(boxName: string, containerName: string) {
@@ -104,6 +109,7 @@ describe('WorkView', () => {
   it('keeps Poop Cleaning completing through the reducer once', async () => {
     const { dispatch } = renderWork()
 
+    openJob('Poop Cleaning')
     fireEvent.click(screen.getByRole('button', { name: 'Clean poop 1' }))
     fireEvent.click(screen.getByRole('button', { name: 'Clean poop 2' }))
     fireEvent.click(screen.getByRole('button', { name: 'Clean poop 3' }))
@@ -133,7 +139,7 @@ describe('WorkView', () => {
       .getByRole('button', { name: 'Red container' })
       .getAttribute('data-position-key')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Close job' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close Sort Boxes' }))
 
     randomSpy.mockImplementation(() => 0.99)
     startSortBoxes()
@@ -208,7 +214,8 @@ describe('WorkView', () => {
     expect(screen.getByText('20:00')).toBeInTheDocument()
     expect(screen.getByText('8:00')).toBeInTheDocument()
     expect(screen.getByText('15:00')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Clean poop/i })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'On cooldown' })).toHaveLength(4)
+    for (const button of screen.getAllByRole('button', { name: 'On cooldown' })) expect(button).toBeDisabled()
     expect(screen.queryByRole('button', { name: 'Start Sort Boxes' })).not.toBeInTheDocument()
     expect(screen.queryByText('Clean The Floor')).not.toBeInTheDocument()
     expect(screen.queryByText('Wash Skins')).not.toBeInTheDocument()
@@ -219,9 +226,9 @@ describe('WorkView', () => {
 
     startSortBoxes()
     fireEvent.click(screen.getByRole('button', { name: 'Red box' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Close job' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Close Sort Boxes' }))
 
-    expect(screen.getByRole('button', { name: 'Start Sort Boxes' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play Sort Boxes' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Red box' })).not.toBeInTheDocument()
   })
 
@@ -249,6 +256,7 @@ describe('WorkView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Inventory action' }))
 
     expect(screen.getByRole('button', { name: 'Inventory action' })).toBeInTheDocument()
+    act(() => { vi.runOnlyPendingTimers() })
     expect(vi.getTimerCount()).toBe(0)
   })
 
@@ -268,17 +276,71 @@ describe('WorkView', () => {
     await act(async () => undefined)
 
     expect(screen.getByText('Sort Boxes hit a problem. No reward or cooldown was applied.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Clean poop 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Play Poop Cleaning' })).toBeInTheDocument()
   })
 
   it('starts both skill-based jobs with accessible controls', () => {
     renderWork()
 
+    openJob('Precision Strike')
     fireEvent.click(screen.getByRole('button', { name: 'Start Precision Strike' }))
     expect(screen.getByRole('button', { name: 'Stop precision marker' })).toBeInTheDocument()
 
+    fireEvent.click(screen.getByRole('button', { name: 'Close Precision Strike' }))
+    openJob('Memory Circuit')
     fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
     expect(screen.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
     expect(screen.getByText('Watch the sequence')).toBeInTheDocument()
+  })
+
+  it('separates repeated Memory Circuit flashes and rewards a completed game once', async () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+    const { dispatch } = renderWork()
+
+    openJob('Memory Circuit')
+    fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
+
+    const watchSequence = async (length: number) => {
+      for (let index = 0; index < length; index += 1) {
+        await act(async () => { vi.advanceTimersByTime(360) })
+        await act(async () => { vi.advanceTimersByTime(180) })
+      }
+    }
+
+    await watchSequence(3)
+    expect(screen.getByText('Your turn — repeat the sequence')).toBeInTheDocument()
+    for (let index = 0; index < 3; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+
+    await act(async () => { vi.advanceTimersByTime(450) })
+    await watchSequence(4)
+    for (let index = 0; index < 4; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+
+    await act(async () => { vi.advanceTimersByTime(450) })
+    await watchSequence(5)
+    for (let index = 0; index < 5; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+
+    expect(dispatch).toHaveBeenCalledTimes(1)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'COMPLETE_WORK_MINIGAME',
+      gameId: 'memoryCircuit',
+      now: Date.now(),
+      performance: 1,
+    })
+    expect(screen.getByText(/Score 100%/)).toBeInTheDocument()
+    randomSpy.mockRestore()
+  })
+
+  it('traps focus in a focused job, closes with Escape, and restores the launch button', () => {
+    renderWork()
+    const launchButton = screen.getByRole('button', { name: 'Play Precision Strike' })
+    launchButton.focus()
+    fireEvent.click(launchButton)
+    expect(screen.getByRole('dialog', { name: 'Precision Strike minigame' })).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('dialog', { name: 'Precision Strike minigame' })).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(launchButton)
   })
 })

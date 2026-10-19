@@ -68,7 +68,9 @@ Public image and sound URLs are resolved through Vite’s base path. Root hostin
 - New saves start at `$100`.
 - Kilowatt and Revolution are open by default. Other priced cases require a one-time license.
 - Case opening commits its economic transaction once, then runs an independent UI animation session. Notification clearing, route changes, cloud merges, and unrelated settings updates do not interrupt the active roll.
-- The Work screen contains Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit jobs with capped performance rewards and persisted cooldowns.
+- The Work screen presents compact job cards for Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit. Each game opens in a keyboard-trapped, viewport-bounded focused dialog with capped performance rewards and persisted cooldowns.
+- Memory Circuit uses a deliberate flash/gap sequence so repeated pads remain distinguishable. Precision Strike and Memory Circuit stay fully visible at supported laptop and mobile sizes without page scrolling during active play.
+- Settings expose implemented sound effects, animation, accessibility, market, save, cloud, theme, and notification behavior. Background music and language selectors are intentionally absent; the interface is currently English-only.
 - Trade-ups validate contract inputs but intentionally allow value-negative attempts.
 - Batch opening begins with Open 1 and Open 10; upgrades and skills unlock larger batches.
 - Optional cloud save uses Supabase when its environment variables are present and otherwise uses the local mock backend.
@@ -81,4 +83,4 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 VITE_BASE_PATH=/case-opening-simulator/
 ```
 
-See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. Performance budgets and measured bundle changes are in `docs/performance-budget.md`; Work reward math is in `docs/work-economy.md`. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.
+See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. Performance budgets and measured bundle changes are in `docs/performance-budget.md`; Work reward math is in `docs/work-economy.md`, and the final economy simulation is in `docs/economy-balance.md`. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.

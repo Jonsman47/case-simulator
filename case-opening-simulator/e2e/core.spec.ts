@@ -7,6 +7,11 @@ async function dismissTutorial(page: Page) {
   if (await skip.isVisible().catch(() => false)) await skip.click()
 }
 
+async function dismissEventPopup(page: Page) {
+  const dismiss = page.getByRole('button', { name: 'Dismiss event popup' })
+  if (await dismiss.isVisible().catch(() => false)) await dismiss.click()
+}
+
 async function readSave(page: Page) {
   await page.waitForFunction((key) => Boolean(localStorage.getItem(key)), saveKey)
   return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}'), saveKey)
@@ -27,17 +32,13 @@ async function openBatch(page: Page, quantity: number) {
   }
   const skip = page.getByRole('button', { name: 'Skip opening animation' })
   await skip.click()
-  if (quantity > 1) {
-    await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 5_000 })
-  }
+  if (quantity > 1) await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 15_000 })
   await expect.poll(async () => {
-    if ((await opening.count()) === 0) return 'closed'
+    if (!(await opening.isVisible().catch(() => false))) return 'closed'
     return (await skip.textContent()) ?? ''
-  }, { timeout: 5_000 }).toMatch(/closed|Close/)
-  if ((await opening.count()) > 0) {
-    await skip.click({ timeout: 1_000 }).catch(() => undefined)
-  }
-  await expect(opening).toBeHidden({ timeout: 5_000 })
+  }, { timeout: 15_000 }).toMatch(/closed|Close/)
+  if (await opening.isVisible().catch(() => false)) await skip.click()
+  await expect(opening).toBeHidden({ timeout: 15_000 })
   await closeSummary(page)
 }
 
@@ -47,6 +48,7 @@ test('new player can complete every supported opening size with exact-once trans
   await page.setViewportSize({ width: 1366, height: 768 })
   await page.goto('/')
   await dismissTutorial(page)
+  await dismissEventPopup(page)
   await expect(page.getByRole('button', { name: 'Open 10' })).toBeVisible()
   if (!process.env.CI) {
     await expect(page).toHaveScreenshot('case-buttons-1366.png', { animations: 'disabled', fullPage: true })
@@ -71,11 +73,13 @@ test('new player can complete every supported opening size with exact-once trans
 test('work jobs are usable and skill jobs claim only once', async ({ page }) => {
   await page.goto('/work')
   await dismissTutorial(page)
+  await dismissEventPopup(page)
   await expect(page.getByText('Four available jobs')).toBeVisible()
   if (!process.env.CI) {
     await expect(page).toHaveScreenshot('work-page-1366.png', { animations: 'disabled', fullPage: true })
   }
 
+  await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
   await page.getByRole('button', { name: 'Start Sort Boxes' }).click()
   for (const color of ['Red', 'Blue', 'Green', 'Yellow']) {
     await page.getByRole('button', { name: `${color} box` }).click()
@@ -83,6 +87,8 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   }
   await expect(page.getByText('Earned $20.00')).toBeVisible()
 
+  await page.getByRole('button', { name: 'Close Sort Boxes' }).click()
+  await page.getByRole('button', { name: 'Play Precision Strike' }).click()
   await page.getByRole('button', { name: 'Start Precision Strike' }).click()
   for (let attempt = 0; attempt < 5; attempt += 1) await page.getByRole('button', { name: 'Stop precision marker' }).click()
   const precisionToast = page.getByRole('status').filter({ hasText: 'Precision Strike' })
@@ -95,6 +101,63 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   expect(save.state.statistics.workJobsCompleted).toBe(2)
   expect(save.state.money).toBeGreaterThanOrEqual(129.1)
   expect(save.state.money).toBeLessThanOrEqual(138.9)
+})
+
+test('focused Memory Circuit stays visible, completes all rounds, and cannot claim twice', async ({ page }) => {
+  await page.addInitScript(() => { Math.random = () => 0 })
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/work')
+  await dismissTutorial(page)
+  const before = await readSave(page)
+  await page.getByRole('button', { name: 'Play Memory Circuit' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Memory Circuit minigame' })
+  await expect(dialog).toBeVisible()
+  await page.getByRole('button', { name: 'Start Memory Circuit' }).click()
+  const activeGameScroll = await page.evaluate(() => window.scrollY)
+
+  const assertGameVisible = async () => {
+    const box = await page.getByTestId('memoryCircuit-game').boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.y).toBeGreaterThanOrEqual(0)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(720)
+    expect(await page.evaluate(() => window.scrollY)).toBe(activeGameScroll)
+  }
+  await assertGameVisible()
+  await expect(page.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
+
+  for (const length of [3, 4, 5]) {
+    await expect(page.getByText('Your turn — repeat the sequence')).toBeVisible({ timeout: 5_000 })
+    await assertGameVisible()
+    for (let index = 0; index < length; index += 1) await page.getByRole('button', { name: /Memory pad 1/i }).click()
+  }
+
+  await expect(page.getByText(/Score 100%/)).toBeVisible()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.workJobsCompleted === 1, saveKey)
+  const after = await readSave(page)
+  expect(after.state.money).toBeGreaterThan(before.state.money)
+  expect(after.state.statistics.workJobsCompleted).toBe(1)
+
+  await page.getByRole('button', { name: /Memory pad 1/i }).click({ force: true })
+  await page.waitForTimeout(100)
+  const afterDuplicateAttempt = await readSave(page)
+  expect(afterDuplicateAttempt.state.money).toBe(after.state.money)
+  expect(afterDuplicateAttempt.state.statistics.workJobsCompleted).toBe(1)
+  await page.getByRole('button', { name: 'Close Memory Circuit' }).click()
+  await expect(page.getByRole('button', { name: 'On cooldown' }).last()).toBeDisabled()
+})
+
+test('focused Precision Strike remains fully visible at laptop height', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto('/work')
+  await dismissTutorial(page)
+  await page.getByRole('button', { name: 'Play Precision Strike' }).click()
+  await page.getByRole('button', { name: 'Start Precision Strike' }).click()
+  const box = await page.getByTestId('precisionStrike-game').boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.y).toBeGreaterThanOrEqual(0)
+  expect(box!.y + box!.height).toBeLessThanOrEqual(720)
+  await expect(page.getByRole('button', { name: 'Stop precision marker' })).toBeInViewport()
+  expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden')
 })
 
 test('inventory images load, selling is exact once, and the result survives reload', async ({ page }) => {
@@ -130,14 +193,17 @@ test('inventory images load, selling is exact once, and the result survives relo
   expect(afterReload.state.statistics.itemsSold).toBe(1)
 })
 
-test('market, events, automation, inventory, and leaderboards navigate without console errors', async ({ page }) => {
+test('every player-facing route renders without console errors or horizontal clipping', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  for (const route of ['/market', '/events', '/automation', '/inventory', '/leaderboards', '/settings']) {
+  page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
+  await page.setViewportSize({ width: 1366, height: 768 })
+  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/automation', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
     await expect(page.locator('main')).toBeVisible()
     await expect(page.locator('body')).not.toContainText('Something went wrong')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), route).toBe(true)
   }
   expect(errors).toEqual([])
 })

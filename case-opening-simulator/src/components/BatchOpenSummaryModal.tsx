@@ -1,4 +1,5 @@
 import { Star, X, Zap } from 'lucide-react'
+import { useRef } from 'react'
 import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { formatCurrency } from '../utils/format'
@@ -6,6 +7,7 @@ import { getRarityLabel, getSkinRarityLabel, getWearLabel } from '../utils/itemL
 import { AssetImage } from './AssetImage'
 import { PatternBadge } from './PatternInfo'
 import { isSpecialPattern } from '../utils/skinPatterns'
+import { useDialogFocus } from '../hooks/useDialogFocus'
 
 export interface BatchOpenSummaryModalProps {
   autoSoldItems: SkinInstance[]
@@ -61,6 +63,10 @@ export function BatchOpenSummaryModal({
   saleValue,
   skipAnimations,
 }: BatchOpenSummaryModalProps) {
+  const modalRef = useRef<HTMLElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+  useDialogFocus({ containerRef: modalRef, initialFocusRef: closeButtonRef, isActive: items.length > 0, onEscape: onClose })
+
   if (items.length === 0) {
     return null
   }
@@ -78,7 +84,9 @@ export function BatchOpenSummaryModal({
         aria-label="Case opening batch summary"
         aria-modal="true"
         className="relative h-dvh max-h-dvh w-full max-w-none overflow-y-auto border border-cs-border bg-cs-surface p-3 text-cs-text shadow-glow sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:p-6"
+        ref={modalRef}
         role="dialog"
+        tabIndex={-1}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -95,6 +103,7 @@ export function BatchOpenSummaryModal({
             aria-label="Close opening summary"
             className="grid h-11 w-11 shrink-0 place-items-center border border-cs-border text-cs-muted transition-colors hover:text-cs-text"
             onClick={onClose}
+            ref={closeButtonRef}
             title="Close"
             type="button"
           >

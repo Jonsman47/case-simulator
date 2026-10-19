@@ -264,10 +264,8 @@ describe('Settings', () => {
       },
     })
 
-    fireEvent.change(screen.getByDisplayValue('English'), {
-      target: { value: 'cs' },
-    })
-    expect(updateSettings).toHaveBeenCalledWith({ language: 'cs' })
+    expect(screen.queryByLabelText('Music')).not.toBeInTheDocument()
+    expect(screen.queryByText('Language')).not.toBeInTheDocument()
   })
 
   it('applies theme, large text, simplified animation and rarity colours in the layout', () => {

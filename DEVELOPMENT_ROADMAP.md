@@ -1,8 +1,8 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-10-18
+Updated: 2026-10-19
 
-This roadmap reflects the inspected repository after Prompt 5. Every later stage must revalidate the code and `PROJECT_STATUS.md` before implementation.
+This roadmap reflects the inspected repository after completion of all six planned prompts. Any future maintenance task should still revalidate the code and `PROJECT_STATUS.md` before implementation.
 
 ## Stage 1 — Foundation, Critical Bugs, Production Build & Asset Reliability
 
@@ -77,17 +77,17 @@ Exit evidence: recorded in `PROJECT_STATUS.md`. Five source-rate-limited price e
 
 ## Stage 6 — Final UI Polish, Accessibility, Balance & Release
 
-Status: **PLANNED**
+Status: **COMPLETE**
 
-- Complete the full-site visual pass without changing the dark identity.
-- Remove clipping/overlap, normalize spacing/icons/tooltips/states, and finish desktop/mobile layout polish.
-- Audit keyboard/focus, reduced motion, contrast, text scaling, and screen-reader labels.
-- Decide and implement or remove unfulfilled music/localization settings.
-- Run economy simulations and human progression/event/Auction playtests.
-- Remove or route dead views/workers, reconcile documentation, and complete deployment/offline/update sign-off.
-- Organize the accumulated working tree into reviewable commits without losing user work.
+- Preserved the dark visual identity while replacing the scrolling Work stack with compact job cards and viewport-bounded focused games.
+- Kept Memory Circuit demonstration, feedback, and input controls visible together; added unambiguous flash/gap timing and transition input locks. Kept Precision Strike's timing bar, attempts, and score together.
+- Added shared focus trapping/restoration, safe Escape behavior, background scroll locking, visible focus, touch affordances, and reduced-motion support to critical overlays.
+- Removed misleading Music and Language controls while retaining old save fields for compatibility.
+- Deferred charts and split stable vendor/generated-data chunks. Startup app/framework transfer fell from 623.85 kB raw/194.90 kB gzip to 461.73 kB raw/138.08 kB gzip.
+- Added repeatable early/mid/late economy bounds and 100,000-opening simulations. No speculative balance change was made without supporting evidence.
+- Removed the confirmed-unused case simulation worker, refreshed setup/deployment/performance/economy documentation, and expanded Playwright to 10 release journeys and four target viewport sizes.
 
-Exit: no clipped/overlapping/broken-image surfaces; accessibility/performance/economy targets have evidence; deployment passes the release checklist.
+Exit evidence: 66 unit files/335 tests, lint, TypeScript, production/PWA build, release verification, and 10 Chromium E2E tests pass. Live Supabase deployment remains explicitly blocked on credentials and is not claimed as verified.
 
 ## Current snapshot
 
@@ -98,6 +98,6 @@ Exit: no clipped/overlapping/broken-image surfaces; accessibility/performance/ec
 | 3. Paint seeds/pattern identity | **COMPLETE** |
 | 4. Cloud/leaderboards/social | **COMPLETE — deployment verification blocked** |
 | 5. Data/performance/browser E2E | **COMPLETE** |
-| 6. Final UI/accessibility/balance/release | **PLANNED** |
+| 6. Final UI/accessibility/balance/release | **COMPLETE** |
 
-Estimated overall completion after Stage 5: **98%**.
+Estimated overall completion after Stage 6: **99%**. The remaining 1% is credential-dependent Supabase proof, five source-rate-limited price matches, exact seed-specific artwork limitations, and controlled physical-device profiling—not unfinished core gameplay.

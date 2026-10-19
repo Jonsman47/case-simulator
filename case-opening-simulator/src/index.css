@@ -59,6 +59,15 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--rarity-special));
+  outline-offset: 2px;
+}
+
+:where(button, [role='button']) {
+  touch-action: manipulation;
+}
+
 .simplified-motion *,
 .simplified-motion *::before,
 .simplified-motion *::after {
@@ -66,6 +75,17 @@ a {
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
   transition-duration: 1ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 @keyframes roulette-motion-blur {
