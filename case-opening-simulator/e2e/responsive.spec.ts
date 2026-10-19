@@ -16,7 +16,7 @@ for (const viewport of [
     await page.goto('/')
     await expect(page.getByRole('button', { name: 'Open 10' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-    if (viewport.name === 'mobile-390') {
+    if (viewport.name === 'mobile-390' && !process.env.CI) {
       await expect(page.locator('main')).toHaveScreenshot('main-mobile-390.png', { animations: 'disabled' })
     }
   })

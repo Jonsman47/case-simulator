@@ -21,4 +21,4 @@ The pattern calculators now run only in `npm run generate:pattern-lookups`; prod
 - No page may create horizontal document overflow at 1920×1080, 1366×768, or 390×844.
 - The generated skin catalog is allowed above Vite's 500 kB warning while it remains a lazy shared data chunk. Prompt 6 should investigate indexed/static-data delivery rather than deleting catalog detail.
 
-Browser tests verify responsive overflow and critical journeys. Precise cold-load timing and memory numbers are intentionally not claimed because this development machine and local Vite server are not a controlled performance lab; Prompt 6 should add repeatable Lighthouse/device profiling.
+Browser tests verify responsive overflow and critical journeys. Windows baselines provide local pixel comparisons; cross-platform CI uses the same semantic/layout assertions but does not compare Windows-rendered pixels against Linux Chromium. Precise cold-load timing and memory numbers are intentionally not claimed because this development machine and local Vite server are not a controlled performance lab; Prompt 6 should add repeatable Lighthouse/device profiling.
