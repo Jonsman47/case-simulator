@@ -33,11 +33,18 @@ async function openBatch(page: Page, quantity: number) {
   const skip = page.getByRole('button', { name: 'Skip opening animation' })
   await skip.click()
   if (quantity > 1) await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 15_000 })
-  await expect.poll(async () => {
-    if (!(await opening.isVisible().catch(() => false))) return 'closed'
-    return (await skip.textContent()) ?? ''
-  }, { timeout: 15_000 }).toMatch(/closed|Close/)
-  if (await opening.isVisible().catch(() => false)) await skip.click()
+  const completionState = await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"][aria-label="Case opening animation"]')
+    if (!dialog) return 'closed'
+    const action = dialog.querySelector<HTMLButtonElement>('button[aria-label="Skip opening animation"]')
+    return action?.textContent?.includes('Close') ? 'close' : false
+  }, undefined, { timeout: 15_000 }).then((handle) => handle.jsonValue())
+  if (completionState === 'close') {
+    // A normal single opening may auto-close between the completion check and
+    // this optional click. Premium and batch results remain open and are closed
+    // here; a detached button therefore means the intended state already won.
+    await skip.click({ timeout: 2_000 }).catch(() => undefined)
+  }
   await expect(opening).toBeHidden({ timeout: 15_000 })
   await closeSummary(page)
 }
