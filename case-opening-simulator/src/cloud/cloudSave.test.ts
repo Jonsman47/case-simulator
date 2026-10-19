@@ -243,6 +243,10 @@ describe('cloud save backend', () => {
   })
 
   it('compares cloud states without treating save timestamps as gameplay conflicts', () => {
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(1_782_147_700_000)
+      .mockReturnValueOnce(1_782_147_700_100)
+
     expect(haveSameCloudState(makeState({ lastSaved: 10 }), makeState({ lastSaved: 20 }))).toBe(true)
     expect(haveSameCloudState(makeState({ money: 10 }), makeState({ money: 11 }))).toBe(false)
   })

@@ -929,11 +929,18 @@ export function createCloudSaveEnvelope(state: GameState) {
 }
 
 export function haveSameCloudState(left: GameState, right: GameState) {
-  const normalize = (state: GameState) => createCloudSaveEnvelope({
-    ...state,
-    lastSaved: 0,
-    uiEvents: [],
-  })
+  const normalize = (state: GameState) => {
+    const normalizedState = createCloudSaveEnvelope({
+      ...state,
+      lastSaved: 0,
+      uiEvents: [],
+    }).state
+
+    return {
+      ...normalizedState,
+      lastSaved: 0,
+    }
+  }
 
   return JSON.stringify(normalize(left)) === JSON.stringify(normalize(right))
 }
