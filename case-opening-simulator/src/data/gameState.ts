@@ -115,7 +115,15 @@ export interface GameStatistics {
   dropsByRarity: DropRarityCounts
 }
 
-export type OnboardingStepId = 'open_case' | 'view_inventory' | 'sell_item' | 'enable_auto_sell'
+export type OnboardingStepId =
+  | 'open_case'
+  | 'understand_drops'
+  | 'view_inventory'
+  | 'sell_item'
+  | 'check_market'
+  | 'build_collection'
+  | 'earn_and_upgrade'
+  | 'enable_auto_sell'
 export type OnboardingTipId = 'collection_book_after_drop' | 'trade_up_ready' | 'auto_sell_ready'
 
 export interface OnboardingUiState {
@@ -367,6 +375,7 @@ export type GameAction =
   | { type: 'TICK_AUTOMATION'; now?: number; prng?: Prng }
   | { type: 'PURCHASE_AUCTION_DEAL'; dealId: string; now?: number }
   | { type: 'CLAIM_ACHIEVEMENT_REWARD'; achievementId: string; now?: number }
+  | { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS'; now?: number }
   | { type: 'UNLOCK_CASE'; caseId: string }
   | { type: 'PURCHASE_CASE_LICENSE'; caseId: string; licenseCost?: number; now?: number }
   | { type: 'TOGGLE_CASE_FAVORITE'; caseId: string }

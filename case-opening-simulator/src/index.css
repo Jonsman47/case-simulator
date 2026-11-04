@@ -68,6 +68,34 @@ a {
   touch-action: manipulation;
 }
 
+[data-theme='light'] {
+  background:
+    radial-gradient(circle at top left, rgb(var(--cs-amber) / 0.08), transparent 30rem),
+    linear-gradient(135deg, rgb(var(--rarity-industrial) / 0.06), transparent 34rem),
+    rgb(var(--cs-bg));
+}
+
+[data-theme='light'] .shadow-glow {
+  box-shadow: 0 12px 32px rgb(15 23 42 / 0.14);
+}
+
+[data-theme='light'] :where(input, select, textarea) {
+  color-scheme: light;
+}
+
+/* Large Text deliberately scales concrete utility sizes instead of zooming the
+   entire app. Containers can reflow while icons, images, and viewport math stay stable. */
+[data-large-text='true'] .text-\[10px\] { font-size: 0.75rem; line-height: 1rem; }
+[data-large-text='true'] .text-xs { font-size: 0.9rem; line-height: 1.3rem; }
+[data-large-text='true'] .text-sm { font-size: 1.05rem; line-height: 1.55rem; }
+[data-large-text='true'] .text-base { font-size: 1.2rem; line-height: 1.7rem; }
+[data-large-text='true'] .text-lg { font-size: 1.35rem; line-height: 1.85rem; }
+[data-large-text='true'] .text-xl { font-size: 1.5rem; line-height: 2rem; }
+[data-large-text='true'] .text-2xl { font-size: 1.85rem; line-height: 2.25rem; }
+[data-large-text='true'] .text-3xl { font-size: 2.2rem; line-height: 2.55rem; }
+[data-large-text='true'] :where(button, input, select, textarea) { line-height: 1.35; }
+[data-large-text='true'] :where(p, span, label, button, a) { overflow-wrap: anywhere; }
+
 .simplified-motion *,
 .simplified-motion *::before,
 .simplified-motion *::after {

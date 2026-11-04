@@ -516,7 +516,16 @@ function normalizeInventoryFilters(value: unknown): InventoryFilters {
   }
 }
 
-const onboardingStepIds: OnboardingStepId[] = ['open_case', 'view_inventory', 'sell_item', 'enable_auto_sell']
+const onboardingStepIds: OnboardingStepId[] = [
+  'open_case',
+  'understand_drops',
+  'view_inventory',
+  'sell_item',
+  'check_market',
+  'build_collection',
+  'earn_and_upgrade',
+  'enable_auto_sell',
+]
 const onboardingTipIds: OnboardingTipId[] = ['collection_book_after_drop', 'trade_up_ready', 'auto_sell_ready']
 
 function isOnboardingStepId(value: unknown): value is OnboardingStepId {

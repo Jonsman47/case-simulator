@@ -475,6 +475,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'CLAIM_ACHIEVEMENT_REWARD', achievementId, now: Date.now() })
   }, [])
 
+  const claimAllAchievementRewards = useCallback(() => {
+    dispatch({ type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS', now: Date.now() })
+  }, [])
+
   const claimDailyReward = useCallback(() => {
     dispatch({ type: 'CLAIM_DAILY_REWARD', now: Date.now() })
   }, [])
@@ -1083,6 +1087,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       sellItems,
       tradeUpItems,
       claimAchievementReward,
+      claimAllAchievementRewards,
       claimDailyReward,
       claimDailyChallenge,
       rerollDailyChallenge,
@@ -1149,6 +1154,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       availableCases,
       caseDefinitions,
       claimAchievementReward,
+      claimAllAchievementRewards,
       claimDailyChallenge,
       claimDailyReward,
       clearGameError,

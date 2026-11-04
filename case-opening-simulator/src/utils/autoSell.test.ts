@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AutoSellRuleType, Rarity, WearCondition, type SkinInstance } from '../data/models'
-import { shouldAutoSell, simulateAutoSell } from './autoSell'
+import { getKeepBestDuplicateSaleCandidates, shouldAutoSell, simulateAutoSell } from './autoSell'
 
 function makeItem(overrides: Partial<SkinInstance> = {}): SkinInstance {
   return {
@@ -210,5 +210,29 @@ describe('shouldAutoSell', () => {
 
     expect(simulation.items.map((item) => item.instanceId)).toEqual(['sell'])
     expect(simulation.totalValue).toBe(2)
+  })
+
+  it('keeps the best deterministic duplicate and never sells protected or exceptional copies', () => {
+    const rule = { enabled: true, id: 'keep-best', type: AutoSellRuleType.SellDuplicatesKeepOne }
+    const protectedCopy = makeItem({ instanceId: 'locked', isLocked: true, marketValue: 5 })
+    const ordinary = makeItem({ instanceId: 'ordinary', marketValue: 20 })
+    const best = makeItem({ instanceId: 'best', marketValue: 50, paintSeed: 10 })
+    const exceptional = makeItem({
+      instanceId: 'blue-gem',
+      marketValue: 10_000,
+      pattern: { family: 'case_hardened', name: 'Blue Gem', premiumMultiplier: 20, referenceConfidence: 'estimated', tier: 'exceptional' },
+    })
+
+    expect(getKeepBestDuplicateSaleCandidates([protectedCopy, ordinary, best, exceptional], [rule]))
+      .toEqual([ordinary])
+  })
+
+  it('uses stable instance ids to break equal-value duplicate ties', () => {
+    const rule = { enabled: true, id: 'keep-best', type: AutoSellRuleType.SellDuplicatesKeepOne }
+    const laterId = makeItem({ instanceId: 'z-copy', marketValue: 30, discoveredAt: 10 })
+    const earlierId = makeItem({ instanceId: 'a-copy', marketValue: 30, discoveredAt: 10 })
+
+    expect(getKeepBestDuplicateSaleCandidates([laterId, earlierId], [rule]).map((item) => item.instanceId))
+      .toEqual(['z-copy'])
   })
 })

@@ -34,6 +34,7 @@ function makeContextValue(state: GameState): GameContextValue {
     sellItems: voidFn,
     tradeUpItems: voidFn,
     claimAchievementReward: voidFn,
+    claimAllAchievementRewards: voidFn,
     claimDailyReward: voidFn,
     claimDailyChallenge: voidFn,
     rerollDailyChallenge: voidFn,
@@ -121,5 +122,20 @@ describe('Market', () => {
     await waitFor(() => {
       expect(screen.getByText(`${targetSkin.weapon} | ${targetSkin.finish}`)).toBeInTheDocument()
     })
+  })
+
+  it('opens a detailed wear and pattern explorer without rendering 1,001 rows', async () => {
+    const targetSkin = SKIN_DEFINITIONS.find((skin) => skin.finish === 'Case Hardened')
+      ?? SKIN_DEFINITIONS.find((skin) => skin.finish === 'Fade')!
+    renderMarket()
+    fireEvent.change(screen.getByRole('searchbox', { name: /search market skins/i }), { target: { value: `${targetSkin.weapon} ${targetSkin.finish}` } })
+    const skinLabel = await screen.findByText(`${targetSkin.weapon} | ${targetSkin.finish}`)
+    fireEvent.click(skinLabel.closest('button')!)
+
+    expect(screen.getByRole('dialog', { name: new RegExp(`${targetSkin.weapon} ${targetSkin.finish} price details`, 'i') })).toBeInTheDocument()
+    expect(screen.getByText('Wear price table')).toBeInTheDocument()
+    expect(screen.getByText('Pattern price explorer')).toBeInTheDocument()
+    expect(screen.getByText('Top 10 patterns')).toBeInTheDocument()
+    expect(screen.getAllByRole('row').length).toBeLessThan(40)
   })
 })

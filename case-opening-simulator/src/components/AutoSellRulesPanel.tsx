@@ -91,7 +91,7 @@ const ruleTypeLabels: Record<AutoSellRuleType, string> = {
   [AutoSellRuleType.SellBelowValuePerRarity]: 'Sell Below Value Per Rarity',
   [AutoSellRuleType.SellWearBelow]: 'Sell Wear Below',
   [AutoSellRuleType.SellNonFavoritedBelow]: 'Sell Non-Favorited Below',
-  [AutoSellRuleType.SellDuplicatesKeepOne]: 'Sell Duplicates, Keep One',
+  [AutoSellRuleType.SellDuplicatesKeepOne]: 'Sell Duplicates — Keep Best',
   [AutoSellRuleType.SellNonKnifeUnderValue]: 'Sell Non-Knife Under Value',
   [AutoSellRuleType.KeepFactoryNew]: 'Keep Factory New',
   [AutoSellRuleType.ExcludedIds]: 'Excluded IDs',
@@ -180,7 +180,7 @@ function getRuleThresholdLabel(rule: AutoSellRule) {
     case AutoSellRuleType.SellNonFavoritedBelow:
       return `Non-favorited below ${formatCurrency(rule.valueThreshold ?? 0)}`
     case AutoSellRuleType.SellDuplicatesKeepOne:
-      return 'Keep the strongest copy of each skin'
+      return 'Keep the highest-value eligible copy; protected items are never sold'
     case AutoSellRuleType.SellNonKnifeUnderValue:
       return `Non-knife below ${formatCurrency(rule.valueThreshold ?? 0)}`
     case AutoSellRuleType.KeepFactoryNew:
@@ -363,6 +363,12 @@ export function AutoSellRulesPanel({
           ) : null}
         </div>
       </div>
+
+      {draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? (
+        <p className="mt-3 border-l-2 border-cs-green bg-cs-green/10 px-3 py-2 text-sm text-cs-muted">
+          Automatically sell extra copies of each skin while keeping your most valuable eligible copy. Locked, favorited, Factory New-protected, and exceptional-pattern items are never sold.
+        </p>
+      ) : null}
 
       <div className="mt-5 grid gap-2">
         {rules.length > 0 ? (

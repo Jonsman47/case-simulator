@@ -110,10 +110,11 @@ describe('WorkView', () => {
     const { dispatch } = renderWork()
 
     openJob('Poop Cleaning')
-    fireEvent.click(screen.getByRole('button', { name: 'Clean poop 1' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Clean poop 2' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Clean poop 3' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Clean poop 3' }))
+    for (let index = 1; index <= 3; index += 1) {
+      fireEvent.click(screen.getByRole('button', { name: `Pick up poop ${index}` }))
+      fireEvent.click(screen.getByRole('button', { name: 'Dispose selected poop in trash can' }))
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Poop 3 disposed' }))
 
     await act(async () => undefined)
 
@@ -290,7 +291,7 @@ describe('WorkView', () => {
     openJob('Memory Circuit')
     fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
     expect(screen.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
-    expect(screen.getByText('Watch the sequence')).toBeInTheDocument()
+    expect(screen.getByText('Starting in 3')).toBeInTheDocument()
   })
 
   it('separates repeated Memory Circuit flashes and rewards a completed game once', async () => {
@@ -301,21 +302,26 @@ describe('WorkView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
 
     const watchSequence = async (length: number) => {
+      for (let count = 0; count < 3; count += 1) {
+        await act(async () => { vi.advanceTimersByTime(650) })
+      }
       for (let index = 0; index < length; index += 1) {
-        await act(async () => { vi.advanceTimersByTime(360) })
-        await act(async () => { vi.advanceTimersByTime(180) })
+        expect(screen.getByRole('button', { name: /Memory pad 1/i })).toHaveAttribute('data-active', 'true')
+        await act(async () => { vi.advanceTimersByTime(480) })
+        expect(screen.getByRole('button', { name: /Memory pad 1/i })).toHaveAttribute('data-active', 'false')
+        await act(async () => { vi.advanceTimersByTime(260) })
       }
     }
 
     await watchSequence(3)
-    expect(screen.getByText('Your turn — repeat the sequence')).toBeInTheDocument()
+    expect(screen.getByText('YOUR TURN')).toBeInTheDocument()
     for (let index = 0; index < 3; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
 
-    await act(async () => { vi.advanceTimersByTime(450) })
+    await act(async () => { vi.advanceTimersByTime(700) })
     await watchSequence(4)
     for (let index = 0; index < 4; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
 
-    await act(async () => { vi.advanceTimersByTime(450) })
+    await act(async () => { vi.advanceTimersByTime(700) })
     await watchSequence(5)
     for (let index = 0; index < 5; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
     fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))

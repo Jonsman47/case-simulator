@@ -1,0 +1,442 @@
+{
+  "generatedAt": "2026-11-04T14:23:10.776Z",
+  "observations": [
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:11:57.709218Z",
+      "price": 65000,
+      "sampleSize": 1,
+      "seed": 661,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:12:21.878862Z",
+      "price": 7700,
+      "sampleSize": 3,
+      "seed": 670,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:04:14.680568Z",
+      "price": 5270,
+      "sampleSize": 3,
+      "seed": 151,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:07:55.463738Z",
+      "price": 5261.73,
+      "sampleSize": 1,
+      "seed": 321,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:17:11.863547Z",
+      "price": 4395,
+      "sampleSize": 3,
+      "seed": 955,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:11:09.37451Z",
+      "price": 4000,
+      "sampleSize": 2,
+      "seed": 592,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:05:27.186088Z",
+      "price": 3897.71,
+      "sampleSize": 3,
+      "seed": 179,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:10:44.658706Z",
+      "price": 2128.48,
+      "sampleSize": 5,
+      "seed": 555,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-03T07:52:28.818782Z",
+      "price": 2000,
+      "sampleSize": 1,
+      "seed": 189,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:14:22.708922Z",
+      "price": 1900,
+      "sampleSize": 5,
+      "seed": 809,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:13:58.548496Z",
+      "price": 1650,
+      "sampleSize": 8,
+      "seed": 760,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:04:38.847125Z",
+      "price": 1634.94,
+      "sampleSize": 2,
+      "seed": 168,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:16:47.706301Z",
+      "price": 1428.88,
+      "sampleSize": 1,
+      "seed": 905,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:03:02.006355Z",
+      "price": 995.64,
+      "sampleSize": 2,
+      "seed": 103,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:15:35.208834Z",
+      "price": 833.75,
+      "sampleSize": 3,
+      "seed": 868,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:10:20.469034Z",
+      "price": 746.25,
+      "sampleSize": 2,
+      "seed": 512,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:13:10.219069Z",
+      "price": 703.95,
+      "sampleSize": 1,
+      "seed": 733,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:09:32.084053Z",
+      "price": 699,
+      "sampleSize": 2,
+      "seed": 429,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:02:37.836694Z",
+      "price": 684.63,
+      "sampleSize": 4,
+      "seed": 65,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:16:23.542017Z",
+      "price": 640.82,
+      "sampleSize": 1,
+      "seed": 892,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-10-31T14:37:11.211349Z",
+      "price": 619,
+      "sampleSize": 1,
+      "seed": 381,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:07:07.030903Z",
+      "price": 616.51,
+      "sampleSize": 3,
+      "seed": 310,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:09:07.919199Z",
+      "price": 610,
+      "sampleSize": 2,
+      "seed": 426,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:06:16.516264Z",
+      "price": 600,
+      "sampleSize": 1,
+      "seed": 205,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:02:13.440121Z",
+      "price": 599.7,
+      "sampleSize": 7,
+      "seed": 13,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:13:34.384275Z",
+      "price": 598.77,
+      "sampleSize": 2,
+      "seed": 752,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-09-04T15:11:54.211587Z",
+      "price": 584.62,
+      "sampleSize": 1,
+      "seed": 844,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:05:03.013008Z",
+      "price": 570,
+      "sampleSize": 3,
+      "seed": 172,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:12:46.063323Z",
+      "price": 536.94,
+      "sampleSize": 2,
+      "seed": 690,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:03:26.178031Z",
+      "price": 525,
+      "sampleSize": 3,
+      "seed": 112,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:17:36.015689Z",
+      "price": 523.55,
+      "sampleSize": 4,
+      "seed": 996,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:09:56.231922Z",
+      "price": 477.37,
+      "sampleSize": 2,
+      "seed": 450,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-10-09T14:54:06.545491Z",
+      "price": 420,
+      "sampleSize": 2,
+      "seed": 278,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:15:59.388319Z",
+      "price": 414.12,
+      "sampleSize": 2,
+      "seed": 888,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:07:31.3136Z",
+      "price": 400.07,
+      "sampleSize": 6,
+      "seed": 312,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:15:11.034679Z",
+      "price": 369.98,
+      "sampleSize": 1,
+      "seed": 862,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T00:11:33.554106Z",
+      "price": 351.74,
+      "sampleSize": 2,
+      "seed": 627,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T06:14:35.586098Z",
+      "price": 197.8,
+      "sampleSize": 4,
+      "seed": 150,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    },
+    {
+      "confidence": "market-listing",
+      "edition": "normal",
+      "observedAt": "2026-11-04T06:14:35.586098Z",
+      "price": 179.99,
+      "sampleSize": 96,
+      "seed": 925,
+      "skinId": "skin-5fd3ee42a6c4",
+      "source": "OpenSkin / CSFloat asking price",
+      "wear": "FieldTested"
+    }
+  ],
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "openskin-v1",
+      "label": "OpenSkin public Pricing API",
+      "url": "https://openskin.dev/"
+    }
+  ]
+}

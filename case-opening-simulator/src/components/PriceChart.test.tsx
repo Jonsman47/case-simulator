@@ -8,8 +8,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChartData } from 'chart.js'
 import { PriceChart } from './PriceChart'
 
-vi.mock('react-chartjs-2', () => ({
-  Line: ({ data, ...props }: { data: ChartData<'line'>; 'aria-label': string }) => (
+vi.mock('./DeferredChart', () => ({
+  DeferredLineChart: ({ data, ...props }: { data: ChartData<'line'>; 'aria-label': string }) => (
     <div
       aria-label={props['aria-label']}
       data-labels={JSON.stringify(data.labels)}

@@ -8,7 +8,7 @@ import type { AchievementCategory } from '../data/models'
 import { useGame } from './useGame'
 
 export function useAchievements() {
-  const { claimAchievementReward, state } = useGame()
+  const { claimAchievementReward, claimAllAchievementRewards, state } = useGame()
   const groupedAchievements = useMemo(() => {
     return ACHIEVEMENT_CATEGORIES.reduce(
       (groups, category) => {
@@ -29,6 +29,7 @@ export function useAchievements() {
     achievements: ACHIEVEMENTS,
     categories: ACHIEVEMENT_CATEGORIES,
     claimAchievementReward,
+    claimAllAchievementRewards,
     claimableCount,
     getProgress: (achievementId: string) => getAchievementProgress(state.achievements, achievementId),
     groupedAchievements,

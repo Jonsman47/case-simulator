@@ -101,3 +101,17 @@ Exit evidence: 66 unit files/335 tests, lint, TypeScript, production/PWA build, 
 | 6. Final UI/accessibility/balance/release | **COMPLETE** |
 
 Estimated overall completion after Stage 6: **99%**. The remaining 1% is credential-dependent Supabase proof, five source-rate-limited price matches, exact seed-specific artwork limitations, and controlled physical-device profiling—not unfinished core gameplay.
+
+## Post-release Playtest Fixes — Batch 1
+
+Status: **COMPLETE**
+
+- Expanded the persistent onboarding coach from four terse hints to eight guided, replayable steps covering opening costs, rarity/wear/float/patterns, inventory/selling, Market, Collection, Work/progression, and conservative auto-sell setup.
+- Reworked Large Text as a 20–30% utility-scale accessibility mode and added a coherent Light Mode palette with light-safe rarity contrast.
+- Added Memory Circuit round countdowns, high-contrast pad activation, deliberate repeated-pad gaps, locked demonstration input, and clearer progress. Added actual-precision Bullseye scoring while retaining the existing reward cap.
+- Added the trash-can disposal interaction to Poop Cleaning with drag/drop plus select-and-activate keyboard/touch fallback.
+- Added an atomic Achievements Claim All transaction and a deterministic Sell Duplicates — Keep Best policy with locked/favorite/Factory New/exceptional-pattern protection.
+- Added a clickable Market wear/edition table and efficient Pattern ID explorer, an offline provider cache, explicit confidence/source/freshness fields, and a documented OpenSkin refresh script. Active asking prices are never labeled as sales.
+- Expanded unit and Playwright coverage for the playtest flows.
+
+Exit evidence: 67 unit files/341 tests, lint, TypeScript, production/PWA build, release verification, 2,134 asset validation, and 15 serial Chromium E2E journeys pass. Browser coverage includes tutorial replay/persistence, Light/Large Text responsive checks, Poop Cleaning drag and accessible disposal, Memory/Precision visibility, detailed Market inspection, atomic Claim All, exact-once opening/selling transactions, and four target viewport sizes. Live Supabase proof and exact seed-specific artwork remain documented limitations.

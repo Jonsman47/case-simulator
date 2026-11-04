@@ -28,7 +28,7 @@ import {
   getInventoryValue,
 } from '../utils/inventory'
 import { getBulkSaleSummary } from '../utils/inventoryBulk'
-import { shouldAutoSell } from '../utils/autoSell'
+import { getKeepBestDuplicateSaleCandidates, shouldAutoSell } from '../utils/autoSell'
 import {
   appendMarketPriceHistory,
   hydrateMarketEvent,
@@ -880,14 +880,19 @@ function openCase(
     collectionBook = updateCollectionBook(collectionBook, item)
     inventory = [item, ...inventory]
 
-    if (shouldAutoSell(item, state.autoSellRules, inventory)) {
-      const soldItem = {
-        ...item,
-        marketValue: getAutomationSaleValue(state, item),
-      }
+    const directSaleItems = shouldAutoSell(item, state.autoSellRules, inventory) ? [item] : []
+    const duplicateSaleItems = getKeepBestDuplicateSaleCandidates(inventory, state.autoSellRules)
+    const saleItemsById = new Map(
+      [...directSaleItems, ...duplicateSaleItems].map((saleItem) => [saleItem.instanceId, saleItem]),
+    )
 
-      autoSoldItems.push(soldItem)
-      inventory = inventory.filter((inventoryItem) => inventoryItem.instanceId !== item.instanceId)
+    if (saleItemsById.size > 0) {
+      const soldIds = new Set(saleItemsById.keys())
+      autoSoldItems.push(...[...saleItemsById.values()].map((saleItem) => ({
+        ...saleItem,
+        marketValue: getAutomationSaleValue(state, saleItem),
+      })))
+      inventory = inventory.filter((inventoryItem) => !soldIds.has(inventoryItem.instanceId))
     }
   }
 
@@ -2055,6 +2060,39 @@ function claimAchievementReward(
   }
 }
 
+function claimAllAchievementRewards(state: GameState, now = Date.now()): GameState {
+  const claimableIds = new Set(
+    state.achievements.flatMap((progress) => {
+      const reward = achievementsById.get(progress.id)?.reward
+      return !progress.isClaimed && reward ? [progress.id] : []
+    }),
+  )
+
+  if (claimableIds.size === 0) {
+    return { ...state, lastError: 'No achievement rewards are ready to claim.' }
+  }
+
+  const totals = [...claimableIds].reduce((rewardTotals, achievementId) => {
+    const reward = achievementsById.get(achievementId)?.reward
+    return {
+      money: rewardTotals.money + (reward?.money ?? 0),
+      skillPoints: rewardTotals.skillPoints + (reward?.skillPoints ?? 0),
+      upgradePoints: rewardTotals.upgradePoints + (reward?.upgradePoints ?? 0),
+    }
+  }, { money: 0, skillPoints: 0, upgradePoints: 0 })
+
+  return {
+    ...state,
+    money: roundCurrency(clampNumber(state.money) + totals.money),
+    skillPoints: state.skillPoints + totals.skillPoints,
+    upgradePoints: state.upgradePoints + totals.upgradePoints,
+    achievements: state.achievements.map((entry) => claimableIds.has(entry.id)
+      ? { ...entry, isClaimed: true, unlockedAt: entry.unlockedAt || now }
+      : entry),
+    lastError: undefined,
+  }
+}
+
 function getDailyRewardSkin(rewardRarity?: Rarity) {
   const candidates = SKIN_DEFINITIONS.filter((skin) => {
     return rewardRarity ? skin.rarity === rewardRarity : skin.rarity !== Rarity.SpecialItem
@@ -2461,6 +2499,8 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       }
     case 'CLAIM_ACHIEVEMENT_REWARD':
       return claimAchievementReward(state, action.achievementId, action.now)
+    case 'CLAIM_ALL_ACHIEVEMENT_REWARDS':
+      return claimAllAchievementRewards(state, action.now)
     case 'UNLOCK_CASE':
       if (state.casesUnlocked.includes(action.caseId)) {
         return state

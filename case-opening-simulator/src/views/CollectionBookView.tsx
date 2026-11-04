@@ -589,7 +589,7 @@ export function CollectionBookView() {
   }, [activeItem, state.marketValues])
 
   return (
-    <section className="w-full border border-cs-border bg-cs-surface p-4 sm:p-5">
+    <section className="w-full border border-cs-border bg-cs-surface p-4 sm:p-5" data-onboarding-target="collection-book">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="border-l-4 border-rarity-classified pl-4">
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Collection Book</h2>

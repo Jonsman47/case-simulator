@@ -133,7 +133,7 @@ test('focused Memory Circuit stays visible, completes all rounds, and cannot cla
   await expect(page.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
 
   for (const length of [3, 4, 5]) {
-    await expect(page.getByText('Your turn — repeat the sequence')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText('YOUR TURN')).toBeVisible({ timeout: 8_000 })
     await assertGameVisible()
     for (let index = 0; index < length; index += 1) await page.getByRole('button', { name: /Memory pad 1/i }).click()
   }
@@ -151,6 +151,99 @@ test('focused Memory Circuit stays visible, completes all rounds, and cannot cla
   expect(afterDuplicateAttempt.state.statistics.workJobsCompleted).toBe(1)
   await page.getByRole('button', { name: 'Close Memory Circuit' }).click()
   await expect(page.getByRole('button', { name: 'On cooldown' }).last()).toBeDisabled()
+})
+
+test('tutorial progress persists, completion stays dismissed, and Settings can replay it', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByTestId('onboarding-tutorial')).toBeVisible()
+  await expect(page.getByText('Open Your First Case')).toBeVisible()
+  await page.getByRole('button', { name: /Next/i }).click()
+  await expect(page.getByText('Know What Can Drop')).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('Know What Can Drop')).toBeVisible()
+  await page.getByRole('button', { name: 'Skip tutorial' }).click()
+  await page.reload()
+  await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Review Tutorial' }).click()
+  await expect(page.getByText('Open Your First Case')).toBeVisible()
+})
+
+test('Large Text and Light theme are readable, persistent, and do not create horizontal overflow', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/settings')
+  await dismissTutorial(page)
+  await page.getByRole('checkbox', { name: 'Large Text' }).check()
+  await page.getByRole('button', { name: 'Light', exact: true }).click()
+  const appShell = page.locator('[data-theme]').first()
+  await expect(appShell).toHaveAttribute('data-theme', 'light')
+  await expect(appShell).toHaveAttribute('data-large-text', 'true')
+  const sampleSize = await page.locator('.text-sm').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize))
+  expect(sampleSize).toBeGreaterThanOrEqual(16)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  await page.reload()
+  await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'light')
+  for (const route of ['/', '/inventory', '/market', '/work', '/automation', '/settings']) {
+    await page.goto(route)
+    await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'light')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+  }
+})
+
+test('Poop Cleaning requires disposal and grants its reward exactly once', async ({ page }) => {
+  await page.goto('/work')
+  await dismissTutorial(page)
+  const before = await readSave(page)
+  await page.getByRole('button', { name: 'Play Poop Cleaning' }).click()
+  await page.getByRole('button', { name: 'Pick up poop 1' }).dragTo(page.getByRole('button', { name: /Trash can/ }))
+  await expect(page.getByRole('button', { name: 'Poop 1 disposed' })).toBeDisabled()
+  for (let index = 2; index <= 3; index += 1) {
+    await page.getByRole('button', { name: `Pick up poop ${index}` }).click()
+    await page.getByRole('button', { name: 'Dispose selected poop in trash can' }).click()
+  }
+  await expect(page.getByText('Yard cleared. +$10')).toBeVisible()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.workJobsCompleted === 1, saveKey)
+  const after = await readSave(page)
+  expect(after.state.money - before.state.money).toBe(10)
+  await page.getByRole('button', { name: 'Poop 3 disposed' }).click({ force: true })
+  expect((await readSave(page)).state.money).toBe(after.state.money)
+})
+
+test('Market rows open a paginated wear and Pattern price checker', async ({ page }) => {
+  await page.goto('/market')
+  await dismissTutorial(page)
+  await page.getByRole('searchbox', { name: /search market skins/i }).fill('Fade')
+  const row = page.getByTestId('market-row').first()
+  await expect(row).toBeVisible()
+  await row.click()
+  const dialog = page.getByRole('dialog', { name: /price details/i })
+  await expect(dialog.getByText('Wear price table')).toBeVisible()
+  await expect(dialog.getByText('Pattern price explorer')).toBeVisible()
+  const topTen = dialog.getByText('Top 10 patterns')
+  if (await topTen.isVisible().catch(() => false)) {
+    await expect(dialog.getByRole('spinbutton', { name: 'Search pattern ID' })).toBeVisible()
+    expect(await dialog.getByRole('row').count()).toBeLessThan(40)
+  }
+})
+
+test('Achievements Claim All grants unlocked rewards once', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await openBatch(page, 1)
+  const before = await readSave(page)
+  await page.goto('/achievements')
+  const claimAll = page.getByRole('button', { name: /Claim All \([1-9]/ })
+  await expect(claimAll).toBeEnabled()
+  await claimAll.click()
+  await expect(page.getByRole('button', { name: 'Claim All (0)' })).toBeDisabled()
+  await page.waitForFunction(
+    ({ key, beforeMoney }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.money > beforeMoney,
+    { key: saveKey, beforeMoney: before.state.money },
+  )
+  const after = await readSave(page)
+  expect(after.state.money).toBeGreaterThan(before.state.money)
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Claim All (0)' })).toBeDisabled()
 })
 
 test('focused Precision Strike remains fully visible at laptop height', async ({ page }) => {

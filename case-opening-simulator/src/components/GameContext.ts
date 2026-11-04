@@ -36,6 +36,7 @@ export interface GameContextValue {
   sellItems: (itemIds: string[]) => void
   tradeUpItems: (itemIds: string[]) => void
   claimAchievementReward: (achievementId: string) => void
+  claimAllAchievementRewards: () => void
   claimDailyReward: () => void
   claimDailyChallenge: (challengeId: string) => void
   rerollDailyChallenge: (challengeId: string) => void

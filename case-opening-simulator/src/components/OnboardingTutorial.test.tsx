@@ -82,6 +82,46 @@ describe('OnboardingTutorial', () => {
     expect(screen.queryByTestId('onboarding-tutorial')).not.toBeInTheDocument()
   })
 
+  it('persists next and back progress through the onboarding state', () => {
+    const { updateOnboardingState } = renderTutorial()
+    fireEvent.click(screen.getByRole('button', { name: /Next/i }))
+    expect(updateOnboardingState).toHaveBeenCalledWith(expect.objectContaining({
+      activeStepId: 'understand_drops',
+      completedStepIds: ['open_case'],
+      isDismissed: false,
+    }))
+  })
+
+  it('finishes the final step without restarting the tutorial', () => {
+    const { updateOnboardingState } = renderTutorial({
+      ui: {
+        ...defaultGameState.ui,
+        onboarding: {
+          ...defaultGameState.ui.onboarding,
+          activeStepId: 'enable_auto_sell',
+          completedStepIds: [
+            'open_case',
+            'understand_drops',
+            'view_inventory',
+            'sell_item',
+            'check_market',
+            'build_collection',
+            'earn_and_upgrade',
+          ],
+        },
+      },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Finish' }))
+
+    expect(updateOnboardingState).toHaveBeenCalledWith(expect.objectContaining({
+      activeStepId: 'enable_auto_sell',
+      completedStepIds: expect.arrayContaining(['enable_auto_sell']),
+      isDismissed: true,
+      isReviewing: false,
+    }))
+  })
+
   it('shows contextual tips after the tutorial is dismissed', () => {
     const { updateOnboardingState } = renderTutorial({
       statistics: {

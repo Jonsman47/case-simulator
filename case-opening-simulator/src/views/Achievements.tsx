@@ -1,4 +1,5 @@
-import { Check, Gift, Lock, Medal, Trophy } from 'lucide-react'
+import { ArrowUpDown, Bot, Boxes, Check, Crosshair, Gem, Gift, Library, Lock, Medal, PackageCheck, TrendingUp, Trophy, type LucideIcon } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useAchievements } from '../hooks/useAchievements'
 import { useGame } from '../hooks/useGame'
 import type { Achievement, AchievementCategory } from '../data/models'
@@ -13,6 +14,17 @@ const categoryAccentClasses: Record<AchievementCategory, string> = {
   Collection: 'border-rarity-classified text-rarity-classified',
   Automation: 'border-rarity-industrial text-rarity-industrial',
   'Trophy Room': 'border-rarity-contraband text-rarity-contraband',
+}
+
+const categoryIcons: Record<AchievementCategory, LucideIcon> = {
+  Opening: Crosshair,
+  Drops: Gem,
+  Inventory: Boxes,
+  'Trade Ups': ArrowUpDown,
+  Progression: TrendingUp,
+  Collection: Library,
+  Automation: Bot,
+  'Trophy Room': Trophy,
 }
 
 function formatReward(achievement: Achievement) {
@@ -45,11 +57,22 @@ export function Achievements() {
     achievements,
     categories,
     claimAchievementReward,
+    claimAllAchievementRewards,
     claimableCount,
     getProgress,
     groupedAchievements,
     unlockedCount,
   } = useAchievements()
+  const [claimSummary, setClaimSummary] = useState<string>()
+  const claimableSummary = useMemo(() => achievements.reduce((summary, achievement) => {
+    const progress = getProgress(achievement.id)
+    if (!progress || progress.isClaimed || !achievement.reward) return summary
+    summary.money += achievement.reward.money ?? 0
+    summary.skillPoints += achievement.reward.skillPoints ?? 0
+    summary.upgradePoints += achievement.reward.upgradePoints ?? 0
+    summary.badges += achievement.reward.badge ? 1 : 0
+    return summary
+  }, { badges: 0, money: 0, skillPoints: 0, upgradePoints: 0 }), [achievements, getProgress])
   const completion = achievements.length > 0 ? Math.round((unlockedCount / achievements.length) * 100) : 0
 
   return (
@@ -71,12 +94,38 @@ export function Achievements() {
         </div>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border border-cs-border bg-cs-panel p-3">
+        <div>
+          <p className="font-mono text-[10px] uppercase text-cs-muted">Ready rewards</p>
+          <p aria-live="polite" className="mt-1 text-sm text-cs-text">{claimSummary ?? (claimableCount > 0 ? `${claimableCount} achievement rewards can be claimed together.` : 'Everything currently unlocked has been claimed.')}</p>
+        </div>
+        <button
+          className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted"
+          disabled={claimableCount === 0}
+          onClick={() => {
+            const parts = [
+              claimableSummary.money ? formatCurrency(claimableSummary.money) : '',
+              claimableSummary.upgradePoints ? `${claimableSummary.upgradePoints} upgrade points` : '',
+              claimableSummary.skillPoints ? `${claimableSummary.skillPoints} skill points` : '',
+              claimableSummary.badges ? `${claimableSummary.badges} badges` : '',
+            ].filter(Boolean)
+            claimAllAchievementRewards()
+            setClaimSummary(`Claimed ${claimableCount} rewards: ${parts.join(', ')}.`)
+          }}
+          type="button"
+        >
+          <PackageCheck size={17} />
+          Claim All ({claimableCount})
+        </button>
+      </div>
+
       <div className="mt-5 h-3 border border-cs-border bg-cs-panel">
         <div className="h-full bg-rarity-special" style={{ width: `${completion}%` }} />
       </div>
 
       <div className="mt-4 space-y-5">
         {categories.map((category) => {
+          const CategoryIcon = categoryIcons[category]
           const categoryAchievements = groupedAchievements[category]
           const unlockedInCategory = categoryAchievements.filter((achievement) =>
             getProgress(achievement.id),
@@ -85,7 +134,7 @@ export function Achievements() {
           return (
             <section key={category}>
               <div className={`flex items-center gap-2 border-l-4 pl-3 ${categoryAccentClasses[category]}`}>
-                <Trophy size={16} />
+                <CategoryIcon size={16} />
                 <h3 className="text-lg font-semibold text-cs-text">{category}</h3>
                 <span className="font-mono text-xs uppercase text-cs-muted">
                   {unlockedInCategory}/{categoryAchievements.length}

@@ -33,6 +33,7 @@ npx playwright install chromium
 npm run test:e2e            # Run Chromium critical-flow and responsive tests
 npm run assets:verify       # Verify all generated case and skin images
 npm run generate:pattern-lookups # Rebuild compact pattern lookup data
+npm run update:pattern-prices -- --item "AK-47 | Case Hardened (Field-Tested)" --skin-id skin-5fd3ee42a6c4 --wear FieldTested
 npm run build               # Verify assets, type-check, bundle, and generate the PWA
 npm run verify:pwa          # Inspect the completed release output
 npm run verify:release      # Lint, test, build, and verify the PWA
@@ -70,6 +71,7 @@ Public image and sound URLs are resolved through Vite’s base path. Root hostin
 - Case opening commits its economic transaction once, then runs an independent UI animation session. Notification clearing, route changes, cloud merges, and unrelated settings updates do not interrupt the active roll.
 - The Work screen presents compact job cards for Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit. Each game opens in a keyboard-trapped, viewport-bounded focused dialog with capped performance rewards and persisted cooldowns.
 - Memory Circuit uses a deliberate flash/gap sequence so repeated pads remain distinguishable. Precision Strike and Memory Circuit stay fully visible at supported laptop and mobile sizes without page scrolling during active play.
+- Market rows open a wear/edition price table and a paginated Pattern ID explorer. Cached provider observations are labeled as active listings; unsupported combinations remain clearly labeled simulator estimates.
 - Settings expose implemented sound effects, animation, accessibility, market, save, cloud, theme, and notification behavior. Background music and language selectors are intentionally absent; the interface is currently English-only.
 - Trade-ups validate contract inputs but intentionally allow value-negative attempts.
 - Batch opening begins with Open 1 and Open 10; upgrades and skills unlock larger batches.
@@ -83,4 +85,4 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 VITE_BASE_PATH=/case-opening-simulator/
 ```
 
-See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. Performance budgets and measured bundle changes are in `docs/performance-budget.md`; Work reward math is in `docs/work-economy.md`, and the final economy simulation is in `docs/economy-balance.md`. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.
+See `docs/release-deployment.md` for production hosting, PWA behavior, and deployment checks. Performance budgets and measured bundle changes are in `docs/performance-budget.md`; Work reward math is in `docs/work-economy.md`, pattern sources/cache policy are in `docs/pattern-reference-sources.md`, and the final economy simulation is in `docs/economy-balance.md`. See `docs/supabase-cloud-setup.md` for account, RLS, conflict-resolution, privacy, and real-backend verification instructions.

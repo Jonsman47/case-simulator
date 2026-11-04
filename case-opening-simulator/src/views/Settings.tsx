@@ -416,7 +416,7 @@ export function Settings() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-mono text-xs uppercase text-cs-muted">Onboarding</p>
-                <p className="mt-1 text-sm text-cs-muted">Review the opening, inventory, selling, and auto-sell tutorial.</p>
+                <p className="mt-1 text-sm text-cs-muted">Replay the complete guided tour of cases, rarities, inventory, Market, Collection, Work, upgrades, and auto-sell.</p>
               </div>
               <button
                 className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"

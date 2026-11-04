@@ -91,6 +91,7 @@ function renderStatsView(stateOverrides: Partial<GameState> = {}) {
     sellItems: voidFn,
     tradeUpItems: voidFn,
     claimAchievementReward: voidFn,
+    claimAllAchievementRewards: voidFn,
     claimDailyReward: voidFn,
     claimDailyChallenge: voidFn,
     rerollDailyChallenge: voidFn,

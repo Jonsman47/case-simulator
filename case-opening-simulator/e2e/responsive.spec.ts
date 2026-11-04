@@ -10,7 +10,11 @@ for (const viewport of [
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/work')
     const skip = page.getByRole('button', { name: 'Skip tutorial' })
-    if (await skip.isVisible().catch(() => false)) await skip.click()
+    if (await skip.isVisible().catch(() => false)) {
+      await skip.click()
+      await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
+      await page.waitForFunction(() => JSON.parse(localStorage.getItem('case-opening-simulator:game-state') ?? '{}').state?.ui?.onboarding?.isDismissed === true)
+    }
     await expect(page.getByRole('heading', { name: 'Precision Strike' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
     if (viewport.name === 'mobile-390') {

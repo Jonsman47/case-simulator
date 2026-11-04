@@ -1,6 +1,6 @@
 # Paint-pattern reference data and valuation policy
 
-Updated: 2026-10-16
+Updated: 2026-11-04
 
 The simulator separates facts that can be reproduced from the game data from market-value estimates. A pattern name or percentage can be reproducible while its price premium is still only an estimate.
 
@@ -37,6 +37,18 @@ The premium table is a game-economy estimate, not a live cash appraisal:
 | Karambit Case Hardened seed 387 | 250× |
 
 Measured high-blue patterns that are not in a curated weapon tier receive smaller bounded multipliers. Most seeds remain at 1.00×. Final values are finite, nonnegative, rounded to cents, and capped at $1 billion. Market simulation changes the base condition value and then reapplies the single stored intrinsic pattern multiplier; it does not compound the pattern premium on each tick.
+
+## Market price checker and observation cache
+
+The Market detail panel combines the existing wear/StatTrak/Souvenir condition cache with an offline pattern observation cache at `src/data/generated/pattern-price-cache.json`.
+
+- The base condition dataset was refreshed from CSGOSKINS.GG on 2026-10-17. The generated report records 2,087 matched skins and 75 condition fallbacks.
+- OpenSkin's published public v1 API exposes CSFloat pattern-listing endpoints for Case Hardened/Heat Treated seeds, Fade seeds/buckets, and Doppler/Gamma phases. `npm run update:pattern-prices` calls one explicitly requested item endpoint, respects response timestamps, and writes no secret to the frontend.
+- The checked-in cache currently contains 39 AK-47 Case Hardened Field-Tested observations fetched on 2026-11-04. They are active CSFloat asking prices with listing counts, not completed sales, and the UI labels them **Market listing observation**.
+- [CS2 Pattern Prices](https://cs2pattern-prices.com/how-it-works) publishes a completed-CSFloat-sale methodology using wear-matched medians and excluding asking prices. It was used to validate the evidence policy, but no documented public bulk API was found, so its tables are not scraped or copied into the app.
+- The official [CSFloat API reference](https://docs.csfloat.com/) confirms listing objects carry paint seed, paint index, float, and price. Direct credentials are not embedded or required by the browser.
+
+When no provider observation exists, the explorer evaluates all 1,001 IDs with the simulator's weapon/finish-specific classifier and labels the value **Simulator estimate**. Ordinary IDs remain at the selected wear's base value. Paint-kit variants such as Ruby or Sapphire are shown as phases rather than falsely ranked by seed. The Top 10 is therefore the best available mixture of exact cached listing evidence and clearly identified conservative model estimates; it is not represented as a verified-sale appraisal.
 
 ## UI limitation
 

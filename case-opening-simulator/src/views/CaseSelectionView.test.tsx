@@ -77,6 +77,7 @@ function renderCaseSelection(
     sellItems: voidFn,
     tradeUpItems: voidFn,
     claimAchievementReward: voidFn,
+    claimAllAchievementRewards: voidFn,
     claimDailyReward: voidFn,
     claimDailyChallenge: voidFn,
     rerollDailyChallenge: voidFn,

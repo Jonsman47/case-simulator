@@ -352,6 +352,25 @@ describe('gameReducer OPEN_CASE', () => {
     ).toMatchObject({ isClaimed: true })
   })
 
+  it('claims all available achievement rewards atomically and cannot repeat them', () => {
+    const state = makeState({
+      money: 10,
+      achievements: [
+        { id: 'first_case_opened', isClaimed: false, unlockedAt: 1 },
+        { id: 'cases_opened_100', isClaimed: false, unlockedAt: 2 },
+      ],
+    })
+    const claimed = gameReducer(state, { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS', now: 3 })
+    const repeated = gameReducer(claimed, { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS', now: 4 })
+
+    expect(claimed.money).toBe(20)
+    expect(claimed.upgradePoints).toBe(1)
+    expect(claimed.skillPoints).toBe(1)
+    expect(claimed.achievements.every((entry) => entry.isClaimed)).toBe(true)
+    expect(repeated.money).toBe(20)
+    expect(repeated.lastError).toBe('No achievement rewards are ready to claim.')
+  })
+
   it('caps multi-open quantities to the number of cases the player can afford', () => {
     const state = makeState({ money: 0.5 })
     const nextState = gameReducer(state, {

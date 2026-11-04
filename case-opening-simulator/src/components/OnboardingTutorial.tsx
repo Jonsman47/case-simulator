@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Compass, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Boxes, CheckCircle2, CircleDollarSign, Compass, Gem, ShoppingCart, Sparkles, Store, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { OnboardingStepId, OnboardingTipId } from '../data/gameState'
@@ -6,6 +6,8 @@ import { useGame } from '../hooks/useGame'
 
 interface TutorialStep {
   body: string
+  clickHint: string
+  icon: typeof Compass
   id: OnboardingStepId
   path: string
   targetId: string
@@ -21,28 +23,72 @@ interface ContextTip {
 
 const tutorialSteps: TutorialStep[] = [
   {
-    body: 'Pick a starter case and use Open 1. Cost, rarity odds, and affordability stay visible before you commit.',
+    body: 'Cases contain a random skin. Select a case, check its price and drop odds, then choose Open 1. The displayed price is deducted once when the opening begins.',
+    clickHint: 'Select a case, then press Open 1.',
+    icon: ShoppingCart,
     id: 'open_case',
     path: '/',
     targetId: 'open-case-controls',
     title: 'Open Your First Case',
   },
   {
-    body: 'Your inventory shows every skin you keep. Filters, sorting, and bulk selection help when the collection grows.',
+    body: 'Blue drops are common; purple, pink, red, knives, and gloves are increasingly rare. Wear and float describe condition. Some finishes also have valuable Pattern IDs.',
+    clickHint: 'Read the odds and item details before opening.',
+    icon: Gem,
+    id: 'understand_drops',
+    path: '/',
+    targetId: 'open-case-controls',
+    title: 'Know What Can Drop',
+  },
+  {
+    body: 'Every kept reward goes to Inventory. Use filters and sorting to find valuable wears, low floats, StatTrak items, and special patterns.',
+    clickHint: 'Open Inventory and select a skin card.',
+    icon: Boxes,
     id: 'view_inventory',
     path: '/inventory',
     targetId: 'inventory-filters',
     title: 'Check Your Inventory',
   },
   {
-    body: 'Open a skin card to sell it, lock it, or favorite it. Locked and favorited items are protected from automation.',
+    body: 'Selling turns a skin into game money. Lock or favorite anything important first; protected items are excluded from automatic selling.',
+    clickHint: 'Select an item to view Sell, Lock, and Favorite.',
+    icon: CircleDollarSign,
     id: 'sell_item',
     path: '/inventory',
     targetId: 'inventory-grid',
     title: 'Sell Or Protect Drops',
   },
   {
-    body: 'Create auto-sell rules when you are ready to clear low-value drops automatically after openings.',
+    body: 'Market prices vary by wear, edition, and pattern. Click a skin to compare condition prices and explore supported Pattern IDs before deciding what to sell.',
+    clickHint: 'Open Market and click any skin row.',
+    icon: Store,
+    id: 'check_market',
+    path: '/market',
+    targetId: 'market-catalog',
+    title: 'Check Market Prices',
+  },
+  {
+    body: 'The Collection Book records discoveries even after an item is sold. Completing sets and wear variants builds long-term progress.',
+    clickHint: 'Open Collection to review discovered skins.',
+    icon: BookOpen,
+    id: 'build_collection',
+    path: '/collection-book',
+    targetId: 'collection-book',
+    title: 'Build Your Collection',
+  },
+  {
+    body: 'Work provides early cash. Upgrades, skills, prestige, and automation improve your run later, but each purchase should fit your current budget.',
+    clickHint: 'Try a Work job, then explore Upgrades and Automation.',
+    icon: Sparkles,
+    id: 'earn_and_upgrade',
+    path: '/work',
+    targetId: 'work-jobs',
+    title: 'Earn And Progress',
+  },
+  {
+    body: 'Auto-sell can clear low-value drops after openings. Start conservatively, protect favorites, and preview the rule simulation before enabling it.',
+    clickHint: 'In Settings, add an Auto-Sell rule only when ready.',
+    icon: Compass,
     id: 'enable_auto_sell',
     path: '/settings',
     targetId: 'auto-sell-rules',
@@ -61,6 +107,7 @@ function getStepProgressLabel(stepId: OnboardingStepId, state: ReturnType<typeof
     return state.statistics.casesOpened > 0 ? 'First case opened' : 'Waiting for first open'
   }
 
+  if (stepId === 'understand_drops') return 'Odds and prices are visible before opening'
   if (stepId === 'view_inventory') {
     return state.inventory.length > 0 ? `${state.inventory.length} items stored` : 'Inventory is ready'
   }
@@ -69,6 +116,9 @@ function getStepProgressLabel(stepId: OnboardingStepId, state: ReturnType<typeof
     return state.statistics.itemsSold > 0 ? 'Sale recorded' : 'No manual sales yet'
   }
 
+  if (stepId === 'check_market') return `${Object.keys(state.marketValues).length.toLocaleString()} prices tracked`
+  if (stepId === 'build_collection') return `${state.collectionBook.length.toLocaleString()} discoveries recorded`
+  if (stepId === 'earn_and_upgrade') return `${state.statistics.workJobsCompleted} Work jobs completed`
   return state.autoSellRules.some((rule) => rule.enabled) ? 'Auto-sell active' : 'No active rules yet'
 }
 
@@ -212,8 +262,10 @@ export function OnboardingTutorial() {
   }
 
   if (isTutorialOpen) {
+    const StepIcon = activeStep.icon
     return (
       <>
+        <div aria-hidden="true" className="fixed inset-0 z-[55] bg-black/45 backdrop-blur-[1px]" />
         {highlightRect ? (
           <div
             aria-hidden="true"
@@ -228,15 +280,18 @@ export function OnboardingTutorial() {
         ) : null}
         <aside
           aria-label="Onboarding tutorial"
-          className="fixed inset-x-3 bottom-3 z-[70] border border-rarity-special bg-cs-surface p-4 shadow-glow sm:inset-x-auto sm:right-5 sm:w-[24rem]"
+          className="fixed inset-x-3 bottom-3 z-[70] max-h-[calc(100dvh-1.5rem)] overflow-y-auto border border-rarity-special bg-cs-surface p-4 shadow-glow sm:inset-x-auto sm:right-5 sm:w-[28rem]"
           data-testid="onboarding-tutorial"
         >
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special"><StepIcon size={21} /></span>
+              <div className="min-w-0">
               <p className="font-mono text-[10px] uppercase text-rarity-special">
                 Step {activeStepIndex + 1} / {tutorialSteps.length}
               </p>
               <h2 className="mt-1 text-lg font-semibold text-cs-text">{activeStep.title}</h2>
+              </div>
             </div>
             <button
               aria-label="Skip tutorial"
@@ -248,6 +303,9 @@ export function OnboardingTutorial() {
             </button>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-cs-muted">{activeStep.body}</p>
+          <div className="mt-3 border-l-2 border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-cs-text">
+            What to do: {activeStep.clickHint}
+          </div>
           <div className="mt-3 flex items-center gap-2 border border-cs-border bg-cs-panel px-3 py-2 text-xs text-cs-muted">
             {completedStepIds.has(activeStep.id) ? (
               <CheckCircle2 className="text-cs-green" size={15} />
@@ -255,6 +313,9 @@ export function OnboardingTutorial() {
               <Compass className="text-rarity-special" size={15} />
             )}
             <span>{getStepProgressLabel(activeStep.id, state)}</span>
+          </div>
+          <div aria-label="Tutorial progress" className="mt-4 grid grid-cols-8 gap-1">
+            {tutorialSteps.map((step, index) => <span className={`h-1.5 ${index <= activeStepIndex ? 'bg-rarity-special' : 'bg-cs-border'}`} key={step.id} />)}
           </div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-2">
@@ -264,6 +325,7 @@ export function OnboardingTutorial() {
                 onClick={() => setStep(activeStepIndex - 1)}
                 type="button"
               >
+                <ArrowLeft size={15} />
                 Back
               </button>
               <button
@@ -271,7 +333,7 @@ export function OnboardingTutorial() {
                 onClick={skipTutorial}
                 type="button"
               >
-                Review Later
+                Skip
               </button>
             </div>
             <div className="flex gap-2">
@@ -290,7 +352,7 @@ export function OnboardingTutorial() {
                 onClick={completeCurrentStep}
                 type="button"
               >
-                {activeStepIndex === tutorialSteps.length - 1 ? 'Finish' : 'Got It'}
+                {activeStepIndex === tutorialSteps.length - 1 ? 'Finish' : 'Next'}
                 <ArrowRight size={16} />
               </button>
             </div>

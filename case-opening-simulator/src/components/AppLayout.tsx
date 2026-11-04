@@ -24,6 +24,17 @@ const rarityCssVarNames: Record<Rarity, string> = {
   [Rarity.Contraband]: '--rarity-contraband',
 }
 
+const accessibleLightRarityColors: Record<Rarity, string> = {
+  [Rarity.Consumer]: '75 85 99',
+  [Rarity.Industrial]: '31 94 159',
+  [Rarity.MilSpec]: '37 72 199',
+  [Rarity.Restricted]: '109 40 217',
+  [Rarity.Classified]: '168 25 180',
+  [Rarity.Covert]: '190 30 45',
+  [Rarity.SpecialItem]: '161 98 7',
+  [Rarity.Contraband]: '146 64 14',
+}
+
 function hexToRgbTriplet(hexColor: string) {
   const match = /^#?([0-9a-f]{6})$/i.exec(hexColor)
 
@@ -56,15 +67,15 @@ function getThemeVariables(
         '--cs-green': '21 128 61',
       }
     : {
-        '--cs-bg': '245 247 251',
+        '--cs-bg': '239 243 248',
         '--cs-surface': '255 255 255',
-        '--cs-panel': '238 242 247',
-        '--cs-panel-muted': '226 232 240',
-        '--cs-border': '173 185 201',
-        '--cs-text': '18 24 36',
-        '--cs-muted': '83 99 122',
-        '--cs-amber': '180 83 9',
-        '--cs-green': '22 163 74',
+        '--cs-panel': '247 249 252',
+        '--cs-panel-muted': '229 234 241',
+        '--cs-border': '176 187 202',
+        '--cs-text': '17 24 39',
+        '--cs-muted': '71 85 105',
+        '--cs-amber': '161 98 7',
+        '--cs-green': '17 122 71',
       }
   const darkTheme = settings.highContrastMode
     ? {
@@ -91,7 +102,10 @@ function getThemeVariables(
       }
   const themeVariables = settings.theme === 'light' ? lightTheme : darkTheme
   const rarityVariables = Object.values(Rarity).reduce<Record<string, string>>((variables, rarity) => {
-    variables[rarityCssVarNames[rarity]] = hexToRgbTriplet(settings.rarityColors[rarity] ?? defaultRarityColors[rarity])
+    const configuredColor = settings.rarityColors[rarity] ?? defaultRarityColors[rarity]
+    variables[rarityCssVarNames[rarity]] = settings.theme === 'light' && configuredColor === defaultRarityColors[rarity]
+      ? accessibleLightRarityColors[rarity]
+      : hexToRgbTriplet(configuredColor)
     return variables
   }, {})
 
@@ -190,6 +204,7 @@ export function AppLayout() {
         state.settings.simplifiedAnimations ? 'simplified-motion' : '',
         ].join(' ')}
         data-theme={state.settings.theme}
+        data-large-text={state.settings.largeText ? 'true' : 'false'}
         style={themeStyle}
       >
       <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-screen-2xl flex-col px-2 py-2 sm:px-4 sm:py-3 lg:px-6">

@@ -1,6 +1,6 @@
 # CS2 Case Opening Simulator — Project Status
 
-Audit date: 2026-10-19
+Audit date: 2026-11-04
 Application directory: `case-opening-simulator/`
 Current save schema: v30
 
@@ -13,6 +13,8 @@ Prompts 1–6 are complete in the repository. Gameplay and market events, Wareho
 Prompt 4 completes the account/social architecture: optional Supabase Auth, persistent refreshable sessions, account-scoped local fallbacks, atomic revision-checked cloud writes, explicit conflict resolution with backups, privacy-controlled public profiles and selected trophies, and seven active leaderboard categories. Local guest play remains the default when Supabase is not configured. The complete local/mock implementation and browser surfaces are verified; a real Supabase project was unavailable, so deployed Auth/RLS/RPC, email delivery, and physical multi-device verification remain blocked and are not presented as passed.
 
 Prompt 5 added two real skill jobs, separated simultaneous roulette panels, improved price coverage and runtime data size, and introduced Playwright plus clean-checkout CI. Prompt 6 finishes the release pass without redesigning the dark interface: Work now uses compact overview cards and focused viewport-bounded games, Memory Circuit has distinguishable flash/gap timing, common dialogs trap and restore focus, reduced-motion and visible-focus behavior is shared globally, misleading Music/Language controls are removed, Chart.js is deferred out of startup, and repeatable economy simulations document bounded progression. The catalog remains 42 cases, 2,092 skins, and 2,134 verified generated images. Remaining limitations are credential-dependent Supabase proof, conservative price/pattern estimates, exact seed artwork, and controlled physical-device profiling.
+
+Playtest Fixes Batch 1 improves the same interface without redesigning it: onboarding is now an eight-step persistent guided tour; Large Text meaningfully scales concrete text utilities; Light Mode has a coherent high-contrast palette; Memory Circuit adds countdowns and unmistakable flashes; Precision Strike adds measured Bullseyes without raising its reward cap; Poop Cleaning requires disposal into a trash can; achievements can be claimed atomically; duplicate auto-sell can keep the best eligible copy; and Market rows open a wear/edition/Pattern price checker. The local pattern cache includes 39 current AK-47 Case Hardened Field-Tested CSFloat asking-price observations from OpenSkin, explicitly distinguished from estimates and completed sales. Save schema remains v30 because all persistent fields were already compatible.
 
 ## 1. Project overview
 
@@ -73,7 +75,7 @@ The application is functional in development and production. TypeScript, lint, a
 | Feature | Status | What works | Missing or limited |
 | --- | --- | --- | --- |
 | Cases and selection | **COMPLETE** | 42 cases, starter unlocks, licenses, affordability, filters/sorts, contents, odds, favorites, single/batch controls. | Long-run economy still needs human playtesting. |
-| Case opening and roulette | **COMPLETE** | Predetermined reward, target stop, suspense, sound, timing upgrades, protected UI session, and exact-once transactions. Single openings stay large; 2–3 use showcase, 4–6 grid, and 7–10 dashboard layouts. Each opening now has a numbered, bordered reel/reveal container and aligned target marker. Playwright exercises 1/2/3/5/10 openings. | Final subjective animation polish remains for Prompt 6. |
+| Case opening and roulette | **COMPLETE** | Predetermined reward, target stop, suspense, sound, timing upgrades, protected UI session, and exact-once transactions. Single openings stay large; 2–3 use showcase, 4–6 grid, and 7–10 dashboard layouts. Each opening has a numbered, bordered reel/reveal container and aligned target marker. Playwright exercises 1/2/3/5/10 openings. | Subjective animation taste can always be refined, but no known functional gap remains. |
 | Opening transaction safety | **COMPLETE** | One reducer transaction charges and grants exactly once; rapid clicks are blocked; unrelated renders, routes, events, cloud merges, and timer cleanup do not erase the active UI session. | No confirmed gap. |
 | Real CS2 skin database | **COMPLETE** | 2,092 skins with weapon/finish, rarity, images, cases, float range, wear, StatTrak/Souvenir flags, and prices. | Snapshot data, not a live Valve API. |
 | Rarity and probabilities | **COMPLETE** | Consumer through Contraband/Special Item, normalized odds, weighted drops, luck, event rarity modifiers, batch behavior, tests. | Balance needs long-run simulation. |
@@ -257,17 +259,17 @@ Estimate: **zero additional major Codex prompts** for the planned simulator. Exp
 ## Verification snapshot
 
 - TypeScript (`npm run typecheck` and the build's `tsc -b`): pass.
-- Targeted Prompt 6 Work/dialog/chart/economy tests: pass — 6 files, 35 tests during development.
-- `npm test`: pass — 66 files, 335 tests. Playwright specs are explicitly excluded from Vitest discovery.
+- Targeted Playtest Batch 1 tutorial, Work, Market, achievement, and auto-sell tests: pass during development.
+- `npm test`: pass — 67 files, 341 tests. Playwright specs are explicitly excluded from Vitest discovery.
 - `npm run lint`: pass — zero errors or warnings.
-- `npm run build`: pass — 2,134 assets (197.4 MiB) verified; TypeScript and Vite pass; PWA generates 78 precache entries (4,178.38 KiB) plus `sw.js` and Workbox output.
-- `npm run verify:release`: pass with exit code 0 — lint, all 335 unit tests, asset verification, TypeScript, Vite/PWA build, and release checks completed successfully.
-- `npx playwright test`: pass — 10 Chromium tests. Verified 1/2/3/5/10 openings, exact inventory/case/balance deltas, focused Memory Circuit completion and duplicate protection, Precision visibility, Work rewards/cooldowns, image loading, selling/reload persistence, all player-route console errors, and no horizontal overflow at 1920×1080, 1366×768, 1280×720, or 390×844. Checked-in baselines cover the opening controls, Work desktop layout, and mobile main content.
+- `npm run build`: pass — 2,134 assets (197.4 MiB) verified; TypeScript and Vite pass; PWA generates 78 precache entries (4,213.81 KiB) plus `sw.js` and Workbox output.
+- `npm run verify:release`: pass with exit code 0 — lint, all 341 unit tests, asset verification, TypeScript, Vite/PWA build, and release checks completed successfully.
+- `npx playwright test`: pass — 15 Chromium tests in a deterministic single-worker run. Verified 1/2/3/5/10 openings, exact inventory/case/balance deltas, guided tutorial persistence/replay, Large Text and Light Mode persistence/overflow, Memory Circuit completion and duplicate protection, Precision visibility, Poop Cleaning drag and accessible disposal, Market Pattern details, atomic Claim All, Work rewards/cooldowns, image loading, selling/reload persistence, all player-route console errors, and no horizontal overflow at 1920×1080, 1366×768, 1280×720, or 390×844.
 - Local/mock behavior verified by automation: registration/login/logout/reset response, display-name validation/uniqueness, account-scoped guest and account saves, stale revision rejection, explicit conflict UI/actions, privacy filtering, leaderboard sorting, trophy pattern identity, corrupted/network failure handling, and SQL security invariants.
 - Browser account/social verification: pass for guest profile, Settings account/privacy UI, active seven-category Leaderboards, Trophy Room sharing status/link, profile/trophy empty states, and navigation. At 390×844, Profile and Trophy Room had no horizontal overflow; desktop was rechecked at 1366×768.
 - Autosave quota reproduction and fix: pass. Before the fix the live browser logged `QuotaExceededError`; the corrected manual export was about 459 KB, subsequent autosave/reload succeeded, and no new browser warnings/errors appeared.
 - Real Supabase verification: **blocked** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` were not configured. No deployed signup/email/reset, RLS/RPC, or physical multi-device claims are made.
 - Production dependency audit: pass — zero vulnerabilities. Full audit still reports nine development-only Tailwind 3/gh-pages transitive advisories (two moderate, seven high); the available automatic fix requires a breaking Tailwind 4 change and was not forced.
-- The remaining large-chunk warning is the lazy 1.31 MB raw/114.27 KB gzip skin catalog. The entry is 202.52 KB raw/54.18 KB gzip; complete startup app/framework is 461.73 KB raw/138.08 KB gzip. Measured budgets are in `case-opening-simulator/docs/performance-budget.md`.
+- The remaining large-chunk warning is the lazy 1.31 MB raw/114.27 KB gzip skin catalog. The entry is 207.22 KB raw/55.64 KB gzip. Measured budgets are in `case-opening-simulator/docs/performance-budget.md`.
 - Native computer-use attachment was unavailable because the trusted RPC service was not configured; actual UI verification ran in the checked-in Playwright Chromium suite. No real Supabase credentials were available.
 - Local development server is left running at `http://127.0.0.1:5173/`.

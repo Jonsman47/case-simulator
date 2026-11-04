@@ -17,6 +17,7 @@
     "assets:sync": "node scripts/syncCs2Assets.mjs",
     "assets:verify": "node scripts/syncCs2Assets.mjs --verify",
     "update:skin-prices": "ts-node --esm ./scripts/updateSkinPricesFromCsgoskins.ts",
+    "update:pattern-prices": "node scripts/refreshPatternPrices.mjs",
     "generate:pattern-lookups": "node scripts/generatePatternLookup.mjs",
     "lint": "eslint .",
     "preview:prod": "vite preview",

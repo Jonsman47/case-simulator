@@ -38,7 +38,11 @@ function hasFactoryNewProtection(item: SkinInstance, rules: AutoSellRule[]) {
   )
 }
 
-function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
+function isProtectedFromAutoSell(item: SkinInstance, rules: AutoSellRule[]) {
+  return item.isLocked || item.isFavorited || isExceptionalPattern(item) || hasFactoryNewProtection(item, rules)
+}
+
+export function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
   const matchingItems = inventory.filter((item) => item.id === skinId)
 
   if (matchingItems.length === 0) {
@@ -58,8 +62,36 @@ function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
       return floatDifference
     }
 
-    return left.discoveredAt - right.discoveredAt
+    const discoveryDifference = left.discoveredAt - right.discoveredAt
+
+    return discoveryDifference !== 0
+      ? discoveryDifference
+      : left.instanceId.localeCompare(right.instanceId)
   })[0]
+}
+
+export function getKeepBestDuplicateSaleCandidates(inventory: SkinInstance[], rules: AutoSellRule[]) {
+  const isEnabled = rules.some((rule) => rule.enabled && rule.type === AutoSellRuleType.SellDuplicatesKeepOne)
+  if (!isEnabled) return []
+
+  const groups = new Map<string, SkinInstance[]>()
+  for (const item of inventory) groups.set(item.id, [...(groups.get(item.id) ?? []), item])
+
+  return [...groups.values()].flatMap((copies) => {
+    if (copies.length <= 1) return []
+    const protectedCopies = copies.filter((item) => isProtectedFromAutoSell(item, rules))
+    const eligibleCopies = copies.filter((item) => !isProtectedFromAutoSell(item, rules))
+    const eligibleKeeper = getDuplicateKeeper(eligibleCopies, copies[0].id)
+
+    // Protected copies never become sale candidates. When one exists, the best
+    // eligible copy is also retained so enabling the rule cannot discard a more
+    // valuable usable copy merely because the protected one must remain.
+    if (protectedCopies.length > 0) {
+      return eligibleCopies.filter((item) => item.instanceId !== eligibleKeeper?.instanceId)
+    }
+
+    return eligibleCopies.filter((item) => item.instanceId !== eligibleKeeper?.instanceId)
+  })
 }
 
 function isDuplicateCopyToSell(item: SkinInstance, inventory: SkinInstance[]) {
@@ -128,7 +160,7 @@ export function evaluateAutoSell(
   rules: AutoSellRule[],
   inventory: SkinInstance[] = [],
 ): AutoSellDecision {
-  if (item.isLocked || item.isFavorited || isExceptionalPattern(item) || hasFactoryNewProtection(item, rules)) {
+  if (isProtectedFromAutoSell(item, rules)) {
     return { shouldSell: false }
   }
 

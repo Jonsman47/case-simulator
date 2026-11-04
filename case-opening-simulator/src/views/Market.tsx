@@ -2,6 +2,7 @@ import { RefreshCw, Search } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
 import { AssetImage } from '../components/AssetImage'
+import { MarketSkinDetails } from '../components/MarketSkinDetails'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { useMarket } from '../hooks/useMarket'
@@ -37,12 +38,14 @@ function formatTickTime(value: number) {
 }
 
 interface MarketRowProps {
+  onSelect: (row: MarketSkinRow) => void
   rows: MarketSkinRow[]
 }
 
 function MarketRow({
   ariaAttributes,
   index,
+  onSelect,
   rows,
   style,
 }: MarketRowProps & {
@@ -64,13 +67,15 @@ function MarketRow({
 
   return (
     <div {...ariaAttributes} style={style}>
-      <div
+      <button
         className={[
-          'grid h-full items-center border-b border-cs-border text-left text-sm',
+          'grid h-full w-full items-center border-b border-cs-border text-left text-sm transition-colors hover:bg-rarity-special/10 focus-visible:relative focus-visible:z-10',
           index % 2 === 0 ? 'bg-cs-surface/60' : 'bg-cs-panel',
         ].join(' ')}
         data-testid="market-row"
+        onClick={() => onSelect(row)}
         style={{ borderColor: rarityColor, gridTemplateColumns: marketGridColumns }}
+        type="button"
       >
         <div className="flex min-w-0 items-center gap-2 border-r border-cs-border px-2 py-1.5 text-cs-text">
           <AssetImage
@@ -92,7 +97,7 @@ function MarketRow({
         <div className={`px-2 py-1.5 text-lg ${trendClasses[row.trend]}`}>
           {row.trend}
         </div>
-      </div>
+      </button>
     </div>
   )
 }
@@ -105,6 +110,7 @@ export function Market() {
     tickMarketNow,
   } = useMarket()
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedRow, setSelectedRow] = useState<MarketSkinRow>()
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(debouncedSearchQuery)
 
@@ -125,10 +131,10 @@ export function Market() {
     rows.length === 0
       ? 0
       : Math.min(MARKET_LIST_MAX_HEIGHT, Math.max(240, rows.length * MARKET_ROW_HEIGHT))
-  const rowProps = useMemo<MarketRowProps>(() => ({ rows }), [rows])
+  const rowProps = useMemo<MarketRowProps>(() => ({ onSelect: setSelectedRow, rows }), [rows])
 
   return (
-    <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5">
+    <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5" data-onboarding-target="market-catalog">
       <div className="flex flex-col gap-4 border-l-4 border-rarity-contraband pl-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Market</h2>
@@ -198,6 +204,7 @@ export function Market() {
           </div>
         </div>
       </div>
+      {selectedRow ? <MarketSkinDetails currentMarketValue={selectedRow.marketValue} onClose={() => setSelectedRow(undefined)} skin={selectedRow.skin} /> : null}
     </section>
   )
 }

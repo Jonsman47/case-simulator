@@ -11,6 +11,14 @@ export interface WorkMiniGameDefinition {
 
 export type WorkMiniGameCooldowns = Partial<Record<WorkMiniGameId, number>>
 
+export function getPrecisionHitResult(rawDistance: number) {
+  const distance = Number.isFinite(rawDistance) ? Math.max(0, rawDistance) : 100
+  if (distance <= 0.75) return { label: 'Bullseye', score: 1, tier: 'bullseye' as const }
+  if (distance <= 3) return { label: 'Perfect', score: 0.88, tier: 'perfect' as const }
+  if (distance <= 10) return { label: 'Good', score: 0.62, tier: 'good' as const }
+  return { label: 'Miss', score: Math.max(0, 0.25 - distance / 100), tier: 'miss' as const }
+}
+
 export const WORK_MINIGAMES: WorkMiniGameDefinition[] = [
   {
     cooldownMs: 3 * 60 * 1_000,
