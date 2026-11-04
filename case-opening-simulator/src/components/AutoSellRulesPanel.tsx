@@ -272,7 +272,7 @@ export function AutoSellRulesPanel({
   }
 
   return (
-    <div className="mt-8 border border-cs-border bg-cs-panel p-5" data-onboarding-target="auto-sell-rules">
+    <div className="mt-8 min-w-0 border border-cs-border bg-cs-panel p-5" data-onboarding-target="auto-sell-rules">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -303,11 +303,11 @@ export function AutoSellRulesPanel({
         </div>
       ) : null}
 
-      <div className="mt-5 grid gap-3 lg:grid-cols-[16rem_1fr_12rem_auto]">
-        <label className="block text-sm text-cs-muted">
+      <div className="mt-5 grid min-w-0 gap-3 lg:grid-cols-[16rem_1fr_12rem_auto]">
+        <label className="min-w-0 text-sm text-cs-muted">
           Rule Type
           <select
-            className="mt-2 w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
+            className="mt-2 min-w-0 max-w-full w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
             onChange={(event) =>
               setDraft((currentDraft) => ({
                 ...currentDraft,
@@ -479,10 +479,10 @@ function ThresholdField({
 }) {
   if (draft.type === AutoSellRuleType.MaxRarity) {
     return (
-      <label className="block text-sm text-cs-muted">
+      <label className="min-w-0 text-sm text-cs-muted">
         Threshold
         <select
-          className="mt-2 w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
+          className="mt-2 min-w-0 max-w-full w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
           onChange={(event) =>
             setDraft((currentDraft) => ({
               ...currentDraft,
@@ -503,10 +503,10 @@ function ThresholdField({
 
   if (draft.type === AutoSellRuleType.MaxWear || draft.type === AutoSellRuleType.SellWearBelow) {
     return (
-      <label className="block text-sm text-cs-muted">
+      <label className="min-w-0 text-sm text-cs-muted">
         Threshold
         <select
-          className="mt-2 w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
+          className="mt-2 min-w-0 max-w-full w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
           onChange={(event) =>
             setDraft((currentDraft) => ({
               ...currentDraft,
@@ -572,10 +572,10 @@ function ThresholdField({
   }
 
   return (
-    <label className="block text-sm text-cs-muted">
+    <label className="min-w-0 text-sm text-cs-muted">
       Threshold
       <input
-        className="mt-2 w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
+        className="mt-2 min-w-0 max-w-full w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
         min="0"
         onChange={(event) =>
           setDraft((currentDraft) => ({

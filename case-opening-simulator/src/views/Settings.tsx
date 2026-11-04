@@ -243,7 +243,7 @@ export function Settings() {
   }
 
   return (
-    <section className="w-full border border-cs-border bg-cs-surface p-5 sm:p-7">
+    <section className="min-w-0 w-full border border-cs-border bg-cs-surface p-5 sm:p-7">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="border-l-4 border-rarity-industrial pl-4">
           <p className="font-mono text-xs uppercase text-rarity-industrial">Preferences</p>
@@ -732,11 +732,11 @@ function ActionButton({
 
   return (
     <button
-      className="flex min-h-28 items-center justify-between gap-4 border border-cs-border bg-cs-panel p-5 text-left transition-colors hover:bg-cs-panelMuted"
+      className="flex min-h-28 min-w-0 items-center justify-between gap-4 border border-cs-border bg-cs-panel p-5 text-left transition-colors hover:bg-cs-panelMuted"
       onClick={onClick}
       type="button"
     >
-      <span>
+      <span className="min-w-0">
         <span className="block font-mono text-xs uppercase text-cs-muted">{meta}</span>
         <span className="mt-2 block text-lg font-semibold text-cs-text">{label}</span>
       </span>
@@ -755,7 +755,7 @@ function SettingsPanel({
   title: string
 }) {
   return (
-    <section className="border border-cs-border bg-cs-panel p-5">
+    <section className="min-w-0 border border-cs-border bg-cs-panel p-5">
       <div className="flex items-center gap-3">
         <Icon className="text-rarity-special" size={22} />
         <h3 className="text-xl font-semibold text-cs-text">{title}</h3>
@@ -777,12 +777,12 @@ function ToggleControl({
   onChange: (checked: boolean) => void
 }) {
   return (
-    <label className="flex min-h-20 items-center justify-between gap-4 border border-cs-border bg-cs-surface p-4">
+    <label className="flex min-h-20 min-w-0 items-center justify-between gap-4 border border-cs-border bg-cs-surface p-4">
       <span className="flex min-w-0 items-center gap-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center border border-cs-border bg-cs-panel text-rarity-special">
           <Icon size={16} />
         </span>
-        <span className="truncate text-sm font-semibold text-cs-text">{label}</span>
+        <span className="min-w-0 text-sm font-semibold leading-snug text-cs-text">{label}</span>
       </span>
       <input
         checked={checked}
@@ -806,14 +806,14 @@ function SegmentedControl<TValue extends string>({
   value: TValue
 }) {
   return (
-    <div className="mt-4 border border-cs-border bg-cs-surface p-4">
+    <div className="mt-4 min-w-0 border border-cs-border bg-cs-surface p-4">
       <p className="font-mono text-xs uppercase text-cs-muted">{label}</p>
-      <div className="mt-3 grid border border-cs-border bg-cs-panel p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      <div className="mt-3 grid min-w-0 border border-cs-border bg-cs-panel p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
         {options.map((option) => (
           <button
             aria-pressed={value === option.value}
             className={[
-              'px-2 py-2 text-sm font-semibold transition-colors',
+              'min-w-0 px-2 py-2 text-sm font-semibold transition-colors',
               value === option.value
                 ? 'bg-rarity-special/10 text-rarity-special'
                 : 'text-cs-muted hover:text-cs-text',
@@ -832,9 +832,9 @@ function SegmentedControl<TValue extends string>({
 
 function SummaryPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-cs-border bg-cs-surface px-3 py-2">
+    <div className="min-w-0 border border-cs-border bg-cs-surface px-3 py-2">
       <p className="font-mono text-[10px] uppercase text-cs-muted">{label}</p>
-      <p className="mt-1 text-sm font-semibold capitalize text-cs-text">{value}</p>
+      <p className="mt-1 break-words text-sm font-semibold capitalize text-cs-text">{value}</p>
     </div>
   )
 }
