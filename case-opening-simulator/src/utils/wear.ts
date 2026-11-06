@@ -136,7 +136,7 @@ export function getWearConditionForFloat(skin: SkinBase, floatValue: number) {
 }
 
 export function getSkinFloatRange(skin: SkinBase): WearFloatRange {
-  if (!hasImportedSkinMetadata(skin)) {
+  if (typeof skin.minFloat !== 'number' || typeof skin.maxFloat !== 'number') {
     return { min: 0, max: 1 }
   }
 

@@ -597,9 +597,10 @@ export function ItemDetailModal({
                   role="dialog"
                 >
                   <p className="text-sm text-cs-muted">
-                    Sell this item for{' '}
+                    Instant-sell this item for{' '}
                     <span className="font-semibold text-cs-green">{formatCurrency(currentSaleValue)}</span>?
                   </p>
+                  <p className="mt-1 text-xs text-cs-muted">This is a liquidity-adjusted quote worth 85–95% of current fair market value.</p>
                   {isExceptionalPattern(selectedItem) ? (
                     <p className="mt-2 border border-rarity-special bg-rarity-special/10 p-2 text-sm text-rarity-special">
                       This is an exceptional paint pattern. Auto-sell and trade-ups protect it, but this manual sale is permanent.

@@ -1,16 +1,20 @@
-import { RefreshCw, Search } from 'lucide-react'
+import { ArrowDownWideNarrow, RefreshCw, Search, Sparkles } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
 import { AssetImage } from '../components/AssetImage'
 import { MarketSkinDetails } from '../components/MarketSkinDetails'
+import { NpcMarketplace } from '../components/NpcMarketplace'
+import { AcquisitionReveal } from '../components/AcquisitionReveal'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { useMarket } from '../hooks/useMarket'
+import { useGame } from '../hooks/useGame'
 import { type MarketTrendArrow } from '../market/marketSimulation'
 import { formatCurrency } from '../utils/format'
 import {
   createMarketSearchIndex,
   filterAndSortMarketRows,
+  type MarketSortOption,
   type MarketSkinRow,
 } from '../utils/marketRows'
 
@@ -20,11 +24,25 @@ const trendClasses: Record<MarketTrendArrow, string> = {
   '→': 'text-cs-muted',
 }
 
-const MARKET_ROW_HEIGHT = 58
+const MARKET_ROW_HEIGHT = 68
 const MARKET_LIST_MAX_HEIGHT = 640
 const marketSearchIndex = createMarketSearchIndex(SKIN_DEFINITIONS)
 const marketGridColumns =
-  'minmax(20rem,2fr) minmax(9rem,1fr) minmax(8rem,.8fr) minmax(4rem,.35fr)'
+  'minmax(20rem,2fr) minmax(9rem,1fr) minmax(13rem,1fr) minmax(4rem,.35fr)'
+
+const marketSortOptions: { label: string; value: MarketSortOption }[] = [
+  { label: 'Highest maximum price', value: 'highest-maximum' },
+  { label: 'Lowest minimum price', value: 'lowest-minimum' },
+  { label: 'Highest minimum price', value: 'highest-minimum' },
+  { label: 'Lowest maximum price', value: 'lowest-maximum' },
+  { label: 'Alphabetical', value: 'alphabetical' },
+]
+
+function maximumConfidenceLabel(row: MarketSkinRow) {
+  if (row.priceRange.maximumVariant.confidence === 'market-listing') return 'Listing-backed max'
+  if (row.priceRange.maximumVariant.confidence === 'market') return 'Market-priced max'
+  return 'Estimated max'
+}
 
 function formatTickTime(value: number) {
   if (!value) {
@@ -91,8 +109,14 @@ function MarketRow({
         >
           {row.rarityLabel}
         </div>
-        <div className="border-r border-cs-border px-2 py-1.5 font-mono text-cs-green">
-          {formatCurrency(row.marketValue)}
+        <div className="min-w-0 border-r border-cs-border px-2 py-1.5">
+          <div className="flex min-w-0 items-center gap-1.5 font-mono text-sm font-semibold text-cs-green">
+            {row.priceRange.hasExceptionalVariant ? <Sparkles aria-hidden="true" className="shrink-0 text-rarity-special" size={14} /> : null}
+            <span className="truncate">{formatCurrency(row.priceRange.minimum)} – {formatCurrency(row.priceRange.maximum)}</span>
+          </div>
+          <span className={`mt-0.5 block font-mono text-[10px] uppercase ${row.priceRange.maximumVariant.confidence === 'simulator-estimate' ? 'text-rarity-special' : 'text-cs-muted'}`}>
+            {maximumConfidenceLabel(row)}
+          </span>
         </div>
         <div className={`px-2 py-1.5 text-lg ${trendClasses[row.trend]}`}>
           {row.trend}
@@ -103,6 +127,7 @@ function MarketRow({
 }
 
 export function Market() {
+  const { claimAcquisition, state } = useGame()
   const {
     lastMarketTick,
     marketTrends,
@@ -111,6 +136,7 @@ export function Market() {
   } = useMarket()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRow, setSelectedRow] = useState<MarketSkinRow>()
+  const [sort, setSort] = useState<MarketSortOption>('highest-maximum')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const deferredSearchQuery = useDeferredValue(debouncedSearchQuery)
 
@@ -125,8 +151,8 @@ export function Market() {
   }, [searchQuery])
 
   const rows = useMemo(() => {
-    return filterAndSortMarketRows(marketSearchIndex, prices, marketTrends, deferredSearchQuery)
-  }, [deferredSearchQuery, marketTrends, prices])
+    return filterAndSortMarketRows(marketSearchIndex, prices, marketTrends, deferredSearchQuery, sort)
+  }, [deferredSearchQuery, marketTrends, prices, sort])
   const listHeight =
     rows.length === 0
       ? 0
@@ -152,30 +178,47 @@ export function Market() {
         </button>
       </div>
 
-      <label className="mt-4 flex min-h-10 min-w-0 items-center gap-3 border border-cs-border bg-cs-panel px-3 py-1.5 text-sm text-cs-muted">
-        <Search size={17} className="shrink-0 text-rarity-special" />
-        <span className="sr-only">Search market skins</span>
-        <input
-          className="min-h-8 min-w-0 flex-1 bg-transparent text-cs-text outline-none placeholder:text-cs-muted"
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search weapon, finish, or rarity"
-          type="search"
-          value={searchQuery}
-        />
-        <span className="font-mono text-[10px] uppercase">
-          {rows.length.toLocaleString()} skins
-        </span>
-      </label>
+      <NpcMarketplace />
+
+      <div className="mt-7 border-l-4 border-rarity-industrial pl-4">
+        <p className="font-mono text-xs uppercase text-rarity-industrial">Reference catalog</p>
+        <h3 className="mt-1 text-2xl font-semibold text-cs-text">Price Checker</h3>
+        <p className="mt-1 text-sm text-cs-muted">Inspect valid wear, edition, and Pattern ranges across the complete skin catalog.</p>
+      </div>
+
+      <div className="mt-4 grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <label className="flex min-h-11 min-w-0 items-center gap-3 border border-cs-border bg-cs-panel px-3 py-1.5 text-sm text-cs-muted">
+          <Search size={17} className="shrink-0 text-rarity-special" />
+          <span className="sr-only">Search market skins</span>
+          <input
+            className="min-h-8 min-w-0 flex-1 bg-transparent text-cs-text outline-none placeholder:text-cs-muted"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search weapon, finish, or rarity"
+            type="search"
+            value={searchQuery}
+          />
+          <span className="shrink-0 font-mono text-[10px] uppercase">
+            {rows.length.toLocaleString()} skins
+          </span>
+        </label>
+        <label className="flex min-h-11 min-w-0 items-center gap-2 border border-cs-border bg-cs-panel px-3 text-sm text-cs-muted">
+          <ArrowDownWideNarrow aria-hidden="true" className="shrink-0 text-rarity-special" size={16} />
+          <span className="sr-only">Sort Market skins</span>
+          <select className="min-w-0 flex-1 bg-cs-panel text-cs-text outline-none" onChange={(event) => setSort(event.target.value as MarketSortOption)} value={sort}>
+            {marketSortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </label>
+      </div>
 
       <div className="mt-4">
         <div className="overflow-hidden border border-cs-border bg-cs-panel">
           <div className="overflow-x-auto">
-            <div className="min-w-[44rem]">
+            <div className="min-w-[50rem]">
               <div
                 className="grid border-b border-cs-border bg-cs-surface text-cs-muted"
                 style={{ gridTemplateColumns: marketGridColumns }}
               >
-                {['Skin preview', 'Rarity', 'Market', 'Trend'].map((heading) => (
+                {['Skin preview', 'Rarity', 'Valid price range', 'Trend'].map((heading) => (
                   <div
                     className="border-r border-cs-border px-2 py-1.5 font-mono text-[10px] uppercase last:border-r-0"
                     key={heading}
@@ -204,7 +247,8 @@ export function Market() {
           </div>
         </div>
       </div>
-      {selectedRow ? <MarketSkinDetails currentMarketValue={selectedRow.marketValue} onClose={() => setSelectedRow(undefined)} skin={selectedRow.skin} /> : null}
+      {selectedRow ? <MarketSkinDetails currentMarketValue={selectedRow.marketValue} marketPriceRange={selectedRow.priceRange} onClose={() => setSelectedRow(undefined)} skin={selectedRow.skin} /> : null}
+      {state.marketplace.pendingAcquisition && state.marketplace.pendingAcquisition.source !== 'trade-up' ? <AcquisitionReveal acquisition={state.marketplace.pendingAcquisition} onClaim={claimAcquisition} /> : null}
     </section>
   )
 }

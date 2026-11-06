@@ -221,6 +221,8 @@ export const examplePlayerState: PlayerState = {
     workJobsCompleted: 0,
     bestPrecisionScore: 0,
     bestMemoryScore: 0,
+    marketPurchases: 0,
+    marketSales: 0,
     dropsByRarity: {
       [Rarity.Consumer]: 0,
       [Rarity.Industrial]: 0,

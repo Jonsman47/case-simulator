@@ -8,6 +8,7 @@ import {
 import { raritySortOrder, wearSortOrder } from './inventoryFilters'
 import { roundCurrency } from './safeNumbers'
 import { isExceptionalPattern } from './skinPatterns'
+import { getInstantSaleRate } from '../marketplace/marketplace'
 
 export interface AutoSellDecision {
   matchedRule?: AutoSellRule
@@ -39,16 +40,16 @@ function hasFactoryNewProtection(item: SkinInstance, rules: AutoSellRule[]) {
 }
 
 function isProtectedFromAutoSell(item: SkinInstance, rules: AutoSellRule[]) {
-  return item.isLocked || item.isFavorited || isExceptionalPattern(item) || hasFactoryNewProtection(item, rules)
+  const duplicateRule = rules.find((rule) => rule.enabled && rule.type === AutoSellRuleType.SellDuplicatesKeepOne)
+  const rarePatternProtected = duplicateRule?.protectRarePatterns !== false && isExceptionalPattern(item)
+  const specialProtected = duplicateRule?.protectSpecialItems !== false && Boolean(duplicateRule) && isSpecialOrKnife(item)
+  const statTrakProtected = Boolean(duplicateRule) && item.statTrak && duplicateRule?.includeStatTrak !== true
+  const souvenirProtected = Boolean(duplicateRule) && item.souvenir && duplicateRule?.includeSouvenir !== true
+  return item.isLocked || item.isFavorited || rarePatternProtected || specialProtected || statTrakProtected || souvenirProtected || hasFactoryNewProtection(item, rules)
 }
 
-export function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
+function sortDuplicateCopies(inventory: SkinInstance[], skinId: string) {
   const matchingItems = inventory.filter((item) => item.id === skinId)
-
-  if (matchingItems.length === 0) {
-    return undefined
-  }
-
   return [...matchingItems].sort((left, right) => {
     const valueDifference = right.marketValue - left.marketValue
 
@@ -67,7 +68,11 @@ export function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
     return discoveryDifference !== 0
       ? discoveryDifference
       : left.instanceId.localeCompare(right.instanceId)
-  })[0]
+  })
+}
+
+export function getDuplicateKeeper(inventory: SkinInstance[], skinId: string) {
+  return sortDuplicateCopies(inventory, skinId)[0]
 }
 
 export function getKeepBestDuplicateSaleCandidates(inventory: SkinInstance[], rules: AutoSellRule[]) {
@@ -79,29 +84,29 @@ export function getKeepBestDuplicateSaleCandidates(inventory: SkinInstance[], ru
 
   return [...groups.values()].flatMap((copies) => {
     if (copies.length <= 1) return []
+    const duplicateRule = rules.find((rule) => rule.enabled && rule.type === AutoSellRuleType.SellDuplicatesKeepOne)
+    const keepCount = Math.max(1, Math.floor(duplicateRule?.keepCount ?? 1))
     const protectedCopies = copies.filter((item) => isProtectedFromAutoSell(item, rules))
     const eligibleCopies = copies.filter((item) => !isProtectedFromAutoSell(item, rules))
-    const eligibleKeeper = getDuplicateKeeper(eligibleCopies, copies[0].id)
+    const keptEligibleIds = new Set(sortDuplicateCopies(eligibleCopies, copies[0].id).slice(0, keepCount).map((item) => item.instanceId))
 
-    // Protected copies never become sale candidates. When one exists, the best
-    // eligible copy is also retained so enabling the rule cannot discard a more
-    // valuable usable copy merely because the protected one must remain.
-    if (protectedCopies.length > 0) {
-      return eligibleCopies.filter((item) => item.instanceId !== eligibleKeeper?.instanceId)
-    }
-
-    return eligibleCopies.filter((item) => item.instanceId !== eligibleKeeper?.instanceId)
+    // Protected copies are retained in addition to the requested eligible keep
+    // count. This conservative behavior cannot sacrifice a valuable usable copy
+    // merely because another copy is locked or favorited.
+    void protectedCopies
+    return eligibleCopies.filter((item) => !keptEligibleIds.has(item.instanceId))
   })
 }
 
-function isDuplicateCopyToSell(item: SkinInstance, inventory: SkinInstance[]) {
+function isDuplicateCopyToSell(item: SkinInstance, inventory: SkinInstance[], keepCount = 1) {
   const matchingItems = inventory.filter((inventoryItem) => inventoryItem.id === item.id)
 
   if (matchingItems.length <= 1) {
     return false
   }
 
-  return getDuplicateKeeper(inventory, item.id)?.instanceId !== item.instanceId
+  const keepers = new Set(sortDuplicateCopies(inventory, item.id).slice(0, Math.max(1, keepCount)).map((copy) => copy.instanceId))
+  return !keepers.has(item.instanceId)
 }
 
 function evaluateRule(
@@ -149,7 +154,7 @@ function evaluateRule(
     case AutoSellRuleType.SellDuplicates:
       return isDuplicateCopyToSell(item, inventory)
     case AutoSellRuleType.SellDuplicatesKeepOne:
-      return isDuplicateCopyToSell(item, inventory) ? true : false
+      return isDuplicateCopyToSell(item, inventory, Math.floor(rule.keepCount ?? 1)) ? true : false
     default:
       return undefined
   }
@@ -195,6 +200,6 @@ export function simulateAutoSell(inventory: SkinInstance[], rules: AutoSellRule[
 
   return {
     items,
-    totalValue: roundCurrency(items.reduce((total, item) => total + item.marketValue, 0)),
+    totalValue: roundCurrency(items.reduce((total, item) => total + item.marketValue * getInstantSaleRate(item), 0)),
   }
 }

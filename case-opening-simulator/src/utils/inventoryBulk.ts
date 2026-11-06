@@ -8,13 +8,13 @@ import {
   type SkinInstance,
   type UpgradeLevels,
 } from '../data/models'
-import { getCurrentItemMarketValue } from './inventory'
 import { raritySortOrder } from './inventoryFilters'
 import { applyCollectionSellValueBonus } from './collectionRewards'
 import { getUpgradeSellValueMultiplier } from '../data/upgrades'
 import { getPrestigeSellMultiplier } from '../data/prestige'
 import { getSkillSellMultiplier } from '../data/skills'
 import { isExceptionalPattern } from './skinPatterns'
+import { getInstantSaleQuote } from '../marketplace/marketplace'
 
 type MarketValues = Record<string, number>
 
@@ -37,19 +37,20 @@ function getItemSaleValue(
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
   collectionRewardMultiplier = 1,
+  automationSellMultiplier = 1,
 ) {
-  const upgradedValue =
-    getCurrentItemMarketValue(item, marketValues) *
+  const progressionMultiplier =
     getUpgradeSellValueMultiplier(upgrades) *
     getPrestigeSellMultiplier(prestigeBonuses) *
-    getSkillSellMultiplier(learnedSkillNodeIds)
-
-  return applyCollectionSellValueBonus(
-    upgradedValue,
+    getSkillSellMultiplier(learnedSkillNodeIds) *
+    automationSellMultiplier
+  const collectionMultiplier = applyCollectionSellValueBonus(
+    1,
     item,
     collectionRewards,
     collectionRewardMultiplier,
   )
+  return getInstantSaleQuote(item, marketValues, progressionMultiplier * collectionMultiplier).value
 }
 
 function compareDuplicateKeeper(
@@ -124,6 +125,7 @@ export function getBulkSaleSummary(
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
   collectionRewardMultiplier = 1,
+  automationSellMultiplier = 1,
 ): BulkSaleSummary {
   const selectedIdSet = new Set(instanceIds)
   const selectedItems = inventory.filter((item) => selectedIdSet.has(item.instanceId))
@@ -139,6 +141,7 @@ export function getBulkSaleSummary(
         prestigeBonuses,
         learnedSkillNodeIds,
         collectionRewardMultiplier,
+        automationSellMultiplier,
       ),
       0,
     ),
@@ -161,6 +164,7 @@ export function getSelectedItemsValue(
   prestigeBonuses: PrestigeBonusLevels = {},
   learnedSkillNodeIds: SkillNodeId[] = [],
   collectionRewardMultiplier = 1,
+  automationSellMultiplier = 1,
 ) {
   return getBulkSaleSummary(
     inventory,
@@ -171,6 +175,7 @@ export function getSelectedItemsValue(
     prestigeBonuses,
     learnedSkillNodeIds,
     collectionRewardMultiplier,
+    automationSellMultiplier,
   ).totalValue
 }
 

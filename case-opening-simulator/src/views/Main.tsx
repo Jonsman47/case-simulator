@@ -9,12 +9,12 @@ import { getMaxMultiOpenBatch } from '../data/upgrades'
 import { useGame } from '../hooks/useGame'
 import { canOpenCaseFromSelection } from '../utils/caseSelection'
 import { formatCurrency } from '../utils/format'
-import { getCurrentItemMarketValue } from '../utils/inventory'
 
 export function Main() {
   const {
     assignTrophyItem,
     availableCases,
+    getSelectedItemsValue,
     openCase,
     sellItem,
     state,
@@ -51,8 +51,8 @@ export function Main() {
       return undefined
     }
 
-    return getCurrentItemMarketValue(modalItem, state.marketValues)
-  }, [modalItem, state.marketValues])
+    return getSelectedItemsValue([modalItem.instanceId])
+  }, [getSelectedItemsValue, modalItem])
   function handleOpenSelectedCase(quantity: number, options: CaseOpenOptions) {
     if (!selectedCase) {
       return

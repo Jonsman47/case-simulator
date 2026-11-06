@@ -2,6 +2,7 @@ import { ArrowUpRight, Check, Lock, Shuffle, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
 import { PatternBadge } from '../components/PatternInfo'
+import { AcquisitionReveal } from '../components/AcquisitionReveal'
 import { CASE_DEFINITIONS } from '../data/cases'
 import type { GameUiEvent } from '../data/gameState'
 import { Rarity, type SkinInstance } from '../data/models'
@@ -13,8 +14,8 @@ import { formatCurrency } from '../utils/format'
 import { getCurrentItemMarketValue } from '../utils/inventory'
 import { getRarityLabel, getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import {
-  TRADE_UP_INPUT_COUNT,
   analyzeTradeUp,
+  getTradeUpInputCount,
   getNextTradeUpRarity,
   isTradeUpEligibleItem,
   tradeUpRarityOrder,
@@ -85,7 +86,7 @@ function getResolvedSkinImage(item: Pick<SkinInstance, 'id' | 'image'>) {
 }
 
 export function TradeUps() {
-  const { state, tradeUpItems } = useGame()
+  const { claimAcquisition, state, tradeUpItems } = useGame()
   const [activeRarity, setActiveRarity] = useState<Rarity>(Rarity.Consumer)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const eligibleItems = useMemo(
@@ -131,7 +132,7 @@ export function TradeUps() {
         return new Set([item.instanceId])
       }
 
-      if (nextIds.size >= TRADE_UP_INPUT_COUNT) {
+      if (nextIds.size >= getTradeUpInputCount(item.rarity)) {
         return nextIds
       }
 
@@ -160,11 +161,11 @@ export function TradeUps() {
           <p className="font-mono text-xs uppercase text-rarity-restricted">Contracts</p>
           <h2 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Trade Ups</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">
-            Combine 10 unlocked, non-favorited skins of the same rarity into one skin from the next tier.
+            Combine 10 same-rarity skins for a normal contract, or 5 Covert skins for an eligible knife/glove contract. Current normalized floats and per-input collection odds are shown before confirmation.
           </p>
         </div>
         <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3">
-          <StatPill label="Selected" value={`${selectedItems.length}/${TRADE_UP_INPUT_COUNT}`} />
+          <StatPill label="Selected" value={`${selectedItems.length}/${analysis.inputCount}`} />
           <StatPill label="Input Value" value={formatCurrency(analysis.inputValue)} />
           <StatPill label="Possible Outcomes" value={analysis.outcomes.length.toLocaleString()} />
         </div>
@@ -211,7 +212,7 @@ export function TradeUps() {
                 <div>
                   <p className="text-lg font-semibold text-cs-text">No eligible skins</p>
                   <p className="mt-2 text-sm text-cs-muted">
-                    Locked, favorited, Covert, Special Item, and Contraband skins are excluded.
+                    Locked, favorited, exceptional-Pattern, Special Item, and Contraband skins are excluded.
                   </p>
                 </div>
               </div>
@@ -236,7 +237,7 @@ export function TradeUps() {
             <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
               <StatPill label="Input" value={formatCurrency(analysis.inputValue)} />
               <StatPill label="Outputs" value={analysis.outcomes.length.toLocaleString()} />
-              <StatPill label="Selected" value={`${selectedItems.length}/${TRADE_UP_INPUT_COUNT}`} />
+              <StatPill label="Selected" value={`${selectedItems.length}/${analysis.inputCount}`} />
             </div>
 
             {analysis.message ? (
@@ -270,7 +271,7 @@ export function TradeUps() {
                 ))
               ) : (
                 <div className="grid min-h-32 place-items-center border border-cs-border bg-cs-surface p-4 text-center text-sm text-cs-muted">
-                  Select 10 valid inputs to calculate outcome odds.
+                  Select {analysis.inputCount} valid inputs to calculate exact outcome odds and per-output floats.
                 </div>
               )}
             </div>
@@ -307,6 +308,7 @@ export function TradeUps() {
           ) : null}
         </aside>
       </div>
+      {state.marketplace.pendingAcquisition?.source === 'trade-up' ? <AcquisitionReveal acquisition={state.marketplace.pendingAcquisition} onClaim={claimAcquisition} /> : null}
     </section>
   )
 }
@@ -379,8 +381,8 @@ function TradeUpItemButton({
 }
 
 function OutcomeRow({ outcome }: { outcome: ReturnType<typeof analyzeTradeUp>['outcomes'][number] }) {
-  const sourceNames = outcome.sourceCaseIds
-    .map((caseId) => casesById.get(caseId)?.name ?? caseId)
+  const sourceNames = outcome.sourceGroups
+    .map((source) => source.startsWith('collection:') ? source.slice('collection:'.length) : casesById.get(source.replace(/^case:/, ''))?.name ?? source)
     .join(', ')
   const rarityColor = getSkinRarityColor(outcome.skin)
 
@@ -401,10 +403,11 @@ function OutcomeRow({ outcome }: { outcome: ReturnType<typeof analyzeTradeUp>['o
             <p className="mt-1 truncate font-mono text-[10px] uppercase text-cs-muted" title={sourceNames}>
               {sourceNames}
             </p>
+            <p className="mt-1 text-xs text-cs-muted">{getWearLabel(outcome.predictedWear)} · {outcome.predictedFloat.toFixed(6)}{outcome.isStatTrak ? ' · StatTrak' : ''}</p>
           </div>
         </div>
         <div className="shrink-0 text-right">
-          <p className="font-mono text-xs uppercase text-rarity-special">{outcome.probability}%</p>
+          <p className="font-mono text-xs uppercase text-rarity-special">{outcome.probability.toFixed(3)}%</p>
           <p className="mt-1 text-sm font-semibold text-cs-green">{formatCurrency(outcome.value)}</p>
         </div>
       </div>

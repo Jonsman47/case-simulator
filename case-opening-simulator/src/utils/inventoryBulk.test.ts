@@ -23,15 +23,13 @@ function makeItem(overrides: Partial<SkinInstance>): SkinInstance {
 }
 
 describe('inventory bulk helpers', () => {
-  it('sums selected unlocked items with current market values', () => {
+  it('sums selected unlocked items with the discounted instant-sale quote', () => {
     const inventory = [
       makeItem({ instanceId: 'item-1', id: 'skin-1', floatValue: 0 }),
       makeItem({ instanceId: 'item-2', id: 'skin-2', isLocked: true }),
     ]
 
-    expect(getSelectedItemsValue(inventory, { 'skin-1': 100, 'skin-2': 200 }, ['item-1', 'item-2'])).toBe(
-      105,
-    )
+    expect(getSelectedItemsValue(inventory, { 'skin-1': 100, 'skin-2': 200 }, ['item-1', 'item-2'])).toBe(92.43)
   })
 
   it('selects duplicate copies while keeping the highest-value or best-float version', () => {

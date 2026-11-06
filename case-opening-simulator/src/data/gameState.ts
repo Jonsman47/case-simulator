@@ -13,6 +13,8 @@ import {
   type DailyChallenge,
   type DailyRewardClaim,
   type DailyRewardsState,
+  type MarketplaceState,
+  type NpcMarketListing,
   type PrestigeBonusLevels,
   type SkinInstance,
   type TrophyAssignments,
@@ -45,6 +47,7 @@ import { createDefaultLearnedSkillNodeIds } from './skills'
 import { createDefaultTrophyAssignments } from '../utils/trophyRoom'
 import { createDefaultDailyRewardsState } from '../rewards/dailyRewards'
 import type { WorkMiniGameCooldowns, WorkMiniGameId } from '../utils/workMinigames'
+import { createDefaultMarketplaceState } from '../marketplace/marketplace'
 
 export type RarityKey =
   | 'consumer'
@@ -104,6 +107,8 @@ export interface GameStatistics {
   moneySpent: number
   moneyEarned: number
   itemsSold: number
+  marketPurchases: number
+  marketSales: number
   tradeUpsCompleted: number
   drops: number
   rareDrops: number
@@ -306,6 +311,7 @@ export interface GameState {
   favoriteCaseIds: string[]
   specialEventCaseIds: string[]
   autoSellRules: AutoSellRule[]
+  marketplace: MarketplaceState
   automation: AutomationState
   upgrades: UpgradeLevels
   trophyAssignments: TrophyAssignments
@@ -357,6 +363,14 @@ export type GameAction =
   | { type: 'SELL_ITEM'; itemId: string }
   | { type: 'SELL_ITEMS'; itemIds: string[] }
   | { type: 'TRADE_UP'; itemIds: string[] }
+  | { type: 'BUY_MARKET_LISTING'; listingId: string; requestId: string; listing?: NpcMarketListing; negotiatedPrice?: number; now?: number }
+  | { type: 'NEGOTIATE_MARKET_LISTING'; listingId: string; listing?: NpcMarketListing; offer: number; now?: number }
+  | { type: 'LIST_ITEM_ON_MARKET'; itemId: string; askingPrice: number; requestId: string; now?: number }
+  | { type: 'CANCEL_PLAYER_MARKET_LISTING'; listingId: string; requestId: string; now?: number }
+  | { type: 'ACCEPT_PLAYER_MARKET_OFFER'; listingId: string; requestId: string; now?: number }
+  | { type: 'DECLINE_PLAYER_MARKET_OFFER'; listingId: string; now?: number }
+  | { type: 'CLAIM_ACQUISITION'; acquisitionId: string }
+  | { type: 'TICK_MARKETPLACE'; now?: number; prng?: Prng }
   | { type: 'PURCHASE_AUTO_OPENER'; caseId?: string; now?: number }
   | { type: 'SET_AUTO_OPENER_CASE'; caseId: string }
   | { type: 'TOGGLE_AUTO_OPENER'; isEnabled?: boolean; now?: number }
@@ -429,6 +443,7 @@ export const defaultGameState: GameState = {
   favoriteCaseIds: [],
   specialEventCaseIds: [],
   autoSellRules: [],
+  marketplace: createDefaultMarketplaceState(),
   automation: defaultAutomationState,
   upgrades: createDefaultUpgradeLevels(),
   trophyAssignments: createDefaultTrophyAssignments(),
@@ -466,6 +481,8 @@ export const defaultGameState: GameState = {
     moneySpent: 0,
     moneyEarned: 0,
     itemsSold: 0,
+    marketPurchases: 0,
+    marketSales: 0,
     tradeUpsCompleted: 0,
     drops: 0,
     rareDrops: 0,

@@ -33,6 +33,13 @@ function makeContextValue(state: GameState): GameContextValue {
     sellItem: voidFn,
     sellItems: voidFn,
     tradeUpItems: voidFn,
+    buyMarketListing: voidFn,
+    negotiateMarketListing: voidFn,
+    listItemOnMarket: voidFn,
+    cancelPlayerMarketListing: voidFn,
+    acceptPlayerMarketOffer: voidFn,
+    declinePlayerMarketOffer: voidFn,
+    claimAcquisition: voidFn,
     claimAchievementReward: voidFn,
     claimAllAchievementRewards: voidFn,
     claimDailyReward: voidFn,
@@ -111,6 +118,10 @@ describe('Market', () => {
 
     renderMarket()
 
+    expect(screen.getByRole('combobox', { name: 'Sort Market skins' })).toHaveValue('highest-maximum')
+    expect(screen.getByText('Valid price range')).toBeInTheDocument()
+    expect(screen.getAllByText(/\$[\d,.]+\s+–\s+\$[\d,.]+/).length).toBeGreaterThan(0)
+
     expect(screen.getAllByTestId('market-row').length).toBeLessThanOrEqual(
       Math.min(SKIN_DEFINITIONS.length, 32),
     )
@@ -129,8 +140,10 @@ describe('Market', () => {
       ?? SKIN_DEFINITIONS.find((skin) => skin.finish === 'Fade')!
     renderMarket()
     fireEvent.change(screen.getByRole('searchbox', { name: /search market skins/i }), { target: { value: `${targetSkin.weapon} ${targetSkin.finish}` } })
-    const skinLabel = await screen.findByText(`${targetSkin.weapon} | ${targetSkin.finish}`)
-    fireEvent.click(skinLabel.closest('button')!)
+    const skinLabels = await screen.findAllByText(`${targetSkin.weapon} | ${targetSkin.finish}`)
+    const priceCheckerLabel = skinLabels.find((label) => label.closest('[data-testid="market-row"]'))
+    expect(priceCheckerLabel).toBeDefined()
+    fireEvent.click(priceCheckerLabel!.closest('button')!)
 
     expect(screen.getByRole('dialog', { name: new RegExp(`${targetSkin.weapon} ${targetSkin.finish} price details`, 'i') })).toBeInTheDocument()
     expect(screen.getByText('Wear price table')).toBeInTheDocument()

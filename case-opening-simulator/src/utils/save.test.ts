@@ -628,6 +628,42 @@ describe('save system', () => {
     expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
   })
 
+  it('migrates version 30 saves to an empty persistent marketplace without touching progress', () => {
+    const owned = makeItem({ instanceId: 'preserved-v30', paintSeed: 321 })
+    const { marketplace: _marketplace, ...legacyState } = makeState({ inventory: [owned], money: 12_345 })
+    expect(_marketplace).toBeDefined()
+    const migrated = parseGameSaveText(JSON.stringify({ version: 30, savedAt: 1_782_147_700_000, state: legacyState }))
+    expect(migrated.money).toBe(12_345)
+    expect(migrated.inventory[0]).toMatchObject({ instanceId: 'preserved-v30', paintSeed: 321 })
+    expect(migrated.marketplace).toMatchObject({ npcListings: [], playerListings: [], transactions: [] })
+    expect(migrated.statistics).toMatchObject({ marketPurchases: 0, marketSales: 0 })
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
+    expect(migrated.marketplace).toMatchObject({
+      virtualMarketEpoch: expect.any(Number),
+      virtualMarketNextEpochAt: expect.any(Number),
+      virtualMarketSeed: 0x435332,
+      removedVirtualListingIds: [],
+    })
+  })
+
+  it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {
+    const marketItem = makeItem({ instanceId: 'market-instance', paintSeed: 661 })
+    const state = makeState({
+      marketplace: {
+        ...defaultGameState.marketplace,
+        playerListings: [{ id: 'player-listing', item: marketItem, askingPrice: 120, fairMarketValue: 100, createdAt: 10, expiresAt: 20, status: 'active' }],
+        transactions: [{ id: 'transaction', type: 'instant-sale', item: marketItem, price: 90, fairMarketValue: 100, createdAt: 10 }],
+        processedRequestIds: ['request-1'],
+        pendingAcquisition: { id: 'acquisition', source: 'trade-up', item: marketItem, createdAt: 11 },
+      },
+    })
+    const restored = parseGameSaveText(serializeGameState(state))
+    expect(restored.marketplace.playerListings[0]?.item).toMatchObject({ instanceId: 'market-instance', paintSeed: 661 })
+    expect(restored.marketplace.transactions[0]).toMatchObject({ id: 'transaction', price: 90 })
+    expect(restored.marketplace.processedRequestIds).toEqual(['request-1'])
+    expect(restored.marketplace.pendingAcquisition?.id).toBe('acquisition')
+  })
+
   it('detects weekly backup prompts and exports JSON through the download hook', () => {
     const now = 1_782_147_700_000
     const state = makeState({

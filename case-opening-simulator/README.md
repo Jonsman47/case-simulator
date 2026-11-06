@@ -72,8 +72,10 @@ Public image and sound URLs are resolved through Vite’s base path. Root hostin
 - The Work screen presents compact job cards for Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit. Each game opens in a keyboard-trapped, viewport-bounded focused dialog with capped performance rewards and persisted cooldowns.
 - Memory Circuit uses a deliberate flash/gap sequence so repeated pads remain distinguishable. Precision Strike and Memory Circuit stay fully visible at supported laptop and mobile sizes without page scrolling during active play.
 - Market rows open a wear/edition price table and a paginated Pattern ID explorer. Cached provider observations are labeled as active listings; unsupported combinations remain clearly labeled simulator estimates.
+- The simulated marketplace gives every supported skin a dedicated market and models millions of skin-specific offers through deterministic on-demand generation. Only 24 listing objects are generated per page; purchased IDs, negotiations, escrow, NPC offers, history, and the shared acquisition reveal persist in v32 saves.
+- Instant selling is a visible 85–95% liquidity quote rather than guaranteed full fair value. Duplicate auto-sell can keep a custom number of highest-value copies while protected and exceptional items remain untouched.
 - Settings expose implemented sound effects, animation, accessibility, market, save, cloud, theme, and notification behavior. Background music and language selectors are intentionally absent; the interface is currently English-only.
-- Trade-ups validate contract inputs but intentionally allow value-negative attempts.
+- Trade-ups validate current ten-item ordinary contracts and October 2025 five-Covert knife/glove contracts, use normalized float mapping and source-weighted outcomes, and intentionally allow value-negative attempts.
 - Batch opening begins with Open 1 and Open 10; upgrades and skills unlock larger batches.
 - Optional cloud save uses Supabase when its environment variables are present and otherwise uses the local mock backend.
 

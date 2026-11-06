@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { Rarity, type SkinBase } from '../data/models'
+import { Rarity, WearCondition, type SkinBase } from '../data/models'
 import {
   createMarketSearchIndex,
   filterAndSortMarketRows,
 } from './marketRows'
+import type { MarketPriceRange } from './patternPriceExplorer'
 
 function makeSkin(index: number): SkinBase {
   return {
@@ -32,4 +33,41 @@ describe('market row filtering', () => {
     expect(rows[0].marketValue).toBeGreaterThanOrEqual(rows.at(-1)?.marketValue ?? 0)
     expect(duration).toBeLessThan(250)
   })
+
+  it('sorts by valid range extrema, including a lower ordinary price with a $400,000 variant', () => {
+    const skins = [makeSkin(0), makeSkin(1), makeSkin(2)].map((skin, index) => ({
+      ...skin,
+      finish: ['Rare Pattern', 'Premium Ordinary', 'High Floor'][index],
+      id: ['skin-a', 'skin-b', 'skin-c'][index],
+    }))
+    const ranges: Record<string, MarketPriceRange> = {
+      'skin-a': makeRange(7_000, 400_000),
+      'skin-b': makeRange(15_000, 100_000),
+      'skin-c': makeRange(30_000, 90_000),
+    }
+    const searchIndex = createMarketSearchIndex(skins)
+    const resolver = (skin: SkinBase) => ranges[skin.id]
+
+    expect(filterAndSortMarketRows(searchIndex, {}, {}, '', 'highest-maximum', resolver).map((row) => row.skin.id)).toEqual(['skin-a', 'skin-b', 'skin-c'])
+    expect(filterAndSortMarketRows(searchIndex, {}, {}, '', 'lowest-minimum', resolver).map((row) => row.skin.id)).toEqual(['skin-a', 'skin-b', 'skin-c'])
+    expect(filterAndSortMarketRows(searchIndex, {}, {}, '', 'highest-minimum', resolver).map((row) => row.skin.id)).toEqual(['skin-c', 'skin-b', 'skin-a'])
+    expect(filterAndSortMarketRows(searchIndex, {}, {}, '', 'lowest-maximum', resolver).map((row) => row.skin.id)).toEqual(['skin-c', 'skin-b', 'skin-a'])
+  })
 })
+
+function makeRange(minimum: number, maximum: number): MarketPriceRange {
+  const variant = {
+    confidence: 'simulator-estimate' as const,
+    edition: 'normal' as const,
+    patternName: 'Test pattern',
+    source: 'Test',
+    wear: WearCondition.FieldTested,
+  }
+  return {
+    hasExceptionalVariant: maximum >= minimum * 2,
+    maximum,
+    maximumVariant: { ...variant, value: maximum },
+    minimum,
+    minimumVariant: { ...variant, value: minimum },
+  }
+}

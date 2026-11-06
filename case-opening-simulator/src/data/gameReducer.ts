@@ -13,6 +13,7 @@ import {
   UpgradeId,
   type AutoSellRule,
   type CollectionEntry,
+  type NpcMarketListing,
   type SkinBase,
   type SkinInstance,
 } from './models'
@@ -37,6 +38,13 @@ import {
   type MarketEventLog,
 } from '../market/marketSimulation'
 import { analyzeTradeUp, pickTradeUpOutcome, suggestBestTradeUps } from '../utils/tradeUp'
+import {
+  getInstantSaleQuote,
+  hasProcessedMarketplaceRequest,
+  negotiateNpcListing,
+  rememberMarketplaceRequest,
+  tickMarketplace,
+} from '../marketplace/marketplace'
 import { achievementsById, getNewAchievementUnlocks } from './achievements'
 import { getMarketAdjustedSkinConditionPrice } from './skinPrices'
 import {
@@ -150,19 +158,23 @@ function normalizeOpenQuantity(quantity?: number) {
 }
 
 function getAutomationSaleValue(state: GameState, item: SkinInstance) {
-  const baseSaleValue =
-    getCurrentItemMarketValue(item, state.marketValues) *
+  const progressionMultiplier =
     getAutomationSellMultiplier(state.automation) *
     getUpgradeSellValueMultiplier(state.upgrades) *
     getPrestigeSellMultiplier(state.prestigeBonuses) *
     getSkillSellMultiplier(state.learnedSkillNodeIds)
-
-  return roundCurrency(applyCollectionSellValueBonus(
-    baseSaleValue,
+  const collectionMultiplier = applyCollectionSellValueBonus(
+    1,
     item,
     state.collectionRewards,
     getGameEventCollectionRewardMultiplier(state.activeEvents),
-  ))
+  )
+
+  return getInstantSaleQuote(
+    item,
+    state.marketValues,
+    progressionMultiplier * collectionMultiplier,
+  ).value
 }
 
 function appendEvents(state: GameState, events: GameUiEvent[]) {
@@ -555,6 +567,7 @@ function createSkinInstance(
   discoveredAt: number,
   forcedFloatValue?: number,
   prng: () => number = Math.random,
+  forcedEdition?: { statTrak: boolean; souvenir: boolean },
 ): SkinInstance {
   const floatValue = typeof forcedFloatValue === 'number'
     ? Number(Math.min(1, Math.max(0, forcedFloatValue)).toFixed(6))
@@ -567,8 +580,8 @@ function createSkinInstance(
   const hasSouvenir = 'hasSouvenir' in skin
     ? Boolean(skin.hasSouvenir)
     : Boolean(skin.souvenir)
-  const isStatTrak = hasStatTrak && prng() < 0.1
-  const isSouvenir = !isStatTrak && hasSouvenir && prng() < 0.01
+  const isStatTrak = forcedEdition ? forcedEdition.statTrak : hasStatTrak && prng() < 0.1
+  const isSouvenir = forcedEdition ? forcedEdition.souvenir : !isStatTrak && hasSouvenir && prng() < 0.01
   const fallbackMarketValue = roundCurrency(applyWearMultiplier(marketBaseValue, wear, floatValue))
   const realMarketValue = getMarketAdjustedSkinConditionPrice({
     fallbackValue: fallbackMarketValue,
@@ -1846,15 +1859,11 @@ function tickAutomation(state: GameState, now = Date.now(), prng: Prng = Math.ra
 function tradeUpItems(state: GameState, itemIds: string[]): GameState {
   const uniqueItemIds = Array.from(new Set(itemIds))
 
-  if (uniqueItemIds.length !== 10) {
-    return failTradeUp(state, 'Select exactly 10 skins for a trade-up contract.')
-  }
-
   const selectedItems = uniqueItemIds
     .map((itemId) => state.inventory.find((item) => item.instanceId === itemId))
     .filter((item): item is SkinInstance => Boolean(item))
 
-  if (selectedItems.length !== 10) {
+  if (selectedItems.length !== uniqueItemIds.length) {
     return failTradeUp(state, 'One or more selected skins are no longer in your inventory.')
   }
 
@@ -1870,14 +1879,21 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
     return failTradeUp(state, analysis.message ?? 'This trade-up contract is not valid.')
   }
 
-  const outputSkin = pickTradeUpOutcome(analysis.outcomes)
+  const output = pickTradeUpOutcome(analysis.outcomes)
 
-  if (!outputSkin) {
+  if (!output) {
     return failTradeUp(state, 'No valid trade-up result could be generated.')
   }
 
   const completedAt = Date.now()
-  const outputItem = createSkinInstance(outputSkin, state, completedAt, getTradeUpOutputFloat(selectedItems, outputSkin))
+  const outputItem = createSkinInstance(
+    output.skin,
+    state,
+    completedAt,
+    output.predictedFloat,
+    Math.random,
+    { statTrak: output.isStatTrak, souvenir: false },
+  )
   const selectedIdSet = new Set(uniqueItemIds)
   const event: GameUiEvent = {
     id: nanoid(),
@@ -1896,6 +1912,15 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
     collectionBook: updateCollectionBook(state.collectionBook, outputItem),
     recentDrops: [outputItem, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: [outputItem],
+    marketplace: {
+      ...state.marketplace,
+      pendingAcquisition: {
+        id: nanoid(),
+        source: 'trade-up',
+        item: outputItem,
+        createdAt: completedAt,
+      },
+    },
     lastError: undefined,
     uiEvents: appendEvents(state, [event]),
     statistics: {
@@ -1946,6 +1971,13 @@ function sellItem(state: GameState, itemId: string): GameState {
     ...state,
     money: roundCurrency(clampNumber(state.money) + salePrice),
     inventory: state.inventory.filter((inventoryItem) => inventoryItem.instanceId !== itemId),
+    marketplace: {
+      ...state.marketplace,
+      transactions: [{
+        id: nanoid(), type: 'instant-sale' as const, item, price: salePrice,
+        fairMarketValue: getCurrentItemMarketValue(item, state.marketValues), createdAt: soldAt,
+      }, ...state.marketplace.transactions].slice(0, 160),
+    },
     lastError: undefined,
     uiEvents: appendEvents(state, [event]),
     statistics: {
@@ -1996,6 +2028,16 @@ function sellItems(state: GameState, itemIds: string[]): GameState {
     ...state,
     money: roundCurrency(clampNumber(state.money) + saleValue),
     inventory: state.inventory.filter((item) => !soldItemIds.has(item.instanceId)),
+    marketplace: {
+      ...state.marketplace,
+      transactions: [
+        ...soldItems.map((soldItem) => ({
+          id: nanoid(), type: 'instant-sale' as const, item: soldItem, price: soldItem.marketValue,
+          fairMarketValue: getCurrentItemMarketValue(soldItem, state.marketValues), createdAt: soldAt,
+        })),
+        ...state.marketplace.transactions,
+      ].slice(0, 160),
+    },
     lastError: lockedMessage,
     uiEvents: appendEvents(state, [event]),
     statistics: {
@@ -2007,6 +2049,213 @@ function sellItems(state: GameState, itemIds: string[]): GameState {
     type: 'sell_value',
     amount: saleValue,
   }, soldAt)
+}
+
+function buyMarketListing(
+  state: GameState,
+  listingId: string,
+  requestId: string,
+  listingSnapshot?: NpcMarketListing,
+  negotiatedPrice?: number,
+  now = Date.now(),
+): GameState {
+  if (hasProcessedMarketplaceRequest(state.marketplace, requestId)) return state
+  if (state.marketplace.removedVirtualListingIds.includes(listingId)) return { ...state, lastError: 'That listing is no longer available.' }
+  const listing = state.marketplace.npcListings.find((candidate) => candidate.id === listingId)
+    ?? (listingSnapshot?.id === listingId ? listingSnapshot : undefined)
+  if (!listing || listing.expiresAt <= now) return { ...state, lastError: 'That listing is no longer available.' }
+  const acceptedNegotiationPrice = listing.negotiation?.status === 'accepted'
+    ? listing.negotiation.currentCounterOffer
+    : undefined
+  const requestedNegotiatedPrice = typeof negotiatedPrice === 'number' ? roundCurrency(negotiatedPrice) : undefined
+  const price = requestedNegotiatedPrice !== undefined && acceptedNegotiationPrice === requestedNegotiatedPrice
+    ? requestedNegotiatedPrice
+    : listing.askingPrice
+  if (clampNumber(state.money) < price) return { ...state, lastError: `Need $${price.toFixed(2)} to buy this listing.` }
+  if (!hasInventorySpace(state)) return { ...state, lastError: 'Inventory is full. Make room before buying this listing.' }
+  const transactionType = price < listing.askingPrice ? 'negotiated-purchase' as const : 'npc-purchase' as const
+  const marketplace = rememberMarketplaceRequest({
+    ...state.marketplace,
+    npcListings: state.marketplace.npcListings.filter((candidate) => candidate.id !== listingId),
+    removedVirtualListingIds: [...state.marketplace.removedVirtualListingIds, listingId],
+    pendingAcquisition: {
+      id: nanoid(),
+      source: transactionType === 'negotiated-purchase' ? 'market-negotiation' : 'market-buy',
+      item: listing.item,
+      price,
+      createdAt: now,
+    },
+    transactions: [{
+      id: nanoid(),
+      type: transactionType,
+      item: listing.item,
+      price,
+      fairMarketValue: listing.fairMarketValue,
+      counterparty: listing.seller.username,
+      createdAt: now,
+    }, ...state.marketplace.transactions].slice(0, 160),
+  }, requestId)
+  return withInventoryValuation({
+    ...state,
+    money: roundCurrency(clampNumber(state.money) - price),
+    inventory: [listing.item, ...state.inventory],
+    collectionBook: updateCollectionBook(state.collectionBook, listing.item),
+    recentDrops: [listing.item, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
+    marketplace,
+    lastError: undefined,
+    statistics: {
+      ...state.statistics,
+      marketPurchases: state.statistics.marketPurchases + 1,
+      moneySpent: roundCurrency(state.statistics.moneySpent + price),
+    },
+  }, now)
+}
+
+function negotiateMarketListing(state: GameState, listingId: string, offer: number, listingSnapshot?: NpcMarketListing, now = Date.now()) {
+  if (state.marketplace.removedVirtualListingIds.includes(listingId)) return { ...state, lastError: 'That listing is no longer available.' }
+  const listing = state.marketplace.npcListings.find((candidate) => candidate.id === listingId)
+    ?? (listingSnapshot?.id === listingId ? listingSnapshot : undefined)
+  if (!listing || listing.expiresAt <= now) return { ...state, lastError: 'That listing is no longer available.' }
+  if (!Number.isFinite(offer) || offer <= 0) return { ...state, lastError: 'Enter a valid offer.' }
+  const result = negotiateNpcListing(listing, offer, now)
+  return {
+    ...state,
+    marketplace: {
+      ...state.marketplace,
+      npcListings: state.marketplace.npcListings.some((candidate) => candidate.id === listingId)
+        ? state.marketplace.npcListings.map((candidate) => candidate.id === listingId ? result.listing : candidate)
+        : [result.listing, ...state.marketplace.npcListings],
+    },
+    lastError: result.error,
+  }
+}
+
+function listItemOnMarket(
+  state: GameState,
+  itemId: string,
+  askingPrice: number,
+  requestId: string,
+  now = Date.now(),
+): GameState {
+  if (hasProcessedMarketplaceRequest(state.marketplace, requestId)) return state
+  const item = state.inventory.find((candidate) => candidate.instanceId === itemId)
+  if (!item) return { ...state, lastError: 'That item is no longer in your inventory.' }
+  if (item.isLocked) return { ...state, lastError: 'Unlock this item before listing it.' }
+  if (!Number.isFinite(askingPrice) || askingPrice <= 0) return { ...state, lastError: 'Enter a valid asking price.' }
+  const fairMarketValue = roundCurrency(getCurrentItemMarketValue(item, state.marketValues))
+  const marketplace = rememberMarketplaceRequest({
+    ...state.marketplace,
+    playerListings: [{
+      id: `player-listing-${nanoid()}`,
+      item,
+      askingPrice: roundCurrency(askingPrice),
+      fairMarketValue,
+      createdAt: now,
+      expiresAt: now + 7 * 24 * 60 * 60_000,
+      status: 'active',
+    }, ...state.marketplace.playerListings],
+  }, requestId)
+  return withInventoryValuation({
+    ...state,
+    inventory: state.inventory.filter((candidate) => candidate.instanceId !== itemId),
+    marketplace,
+    lastError: undefined,
+  }, now)
+}
+
+function cancelPlayerMarketListing(state: GameState, listingId: string, requestId: string, now = Date.now()) {
+  if (hasProcessedMarketplaceRequest(state.marketplace, requestId)) return state
+  const listing = state.marketplace.playerListings.find((candidate) => candidate.id === listingId)
+  if (!listing) return { ...state, lastError: 'That listing is no longer active.' }
+  const marketplace = rememberMarketplaceRequest({
+    ...state.marketplace,
+    playerListings: state.marketplace.playerListings.filter((candidate) => candidate.id !== listingId),
+    transactions: [{
+      id: nanoid(), type: 'listing-cancelled' as const, item: listing.item, price: listing.askingPrice,
+      fairMarketValue: listing.fairMarketValue, createdAt: now,
+    }, ...state.marketplace.transactions].slice(0, 160),
+  }, requestId)
+  return withInventoryValuation({
+    ...state,
+    inventory: [listing.item, ...state.inventory],
+    marketplace,
+    lastError: undefined,
+  }, now)
+}
+
+function completePlayerMarketSale(
+  state: GameState,
+  listingId: string,
+  requestId: string,
+  priceOverride?: number,
+  now = Date.now(),
+) {
+  if (hasProcessedMarketplaceRequest(state.marketplace, requestId)) return state
+  const listing = state.marketplace.playerListings.find((candidate) => candidate.id === listingId)
+  if (!listing) return { ...state, lastError: 'That listing is no longer active.' }
+  const price = roundCurrency(priceOverride ?? listing.askingPrice)
+  const marketplace = rememberMarketplaceRequest({
+    ...state.marketplace,
+    playerListings: state.marketplace.playerListings.filter((candidate) => candidate.id !== listingId),
+    transactions: [{
+      id: nanoid(), type: priceOverride === undefined ? 'player-sale' as const : 'negotiated-sale' as const, item: listing.item, price,
+      fairMarketValue: listing.fairMarketValue,
+      counterparty: listing.incomingOffer?.buyer.username,
+      createdAt: now,
+    }, ...state.marketplace.transactions].slice(0, 160),
+  }, requestId)
+  return {
+    ...state,
+    money: roundCurrency(clampNumber(state.money) + price),
+    marketplace,
+    lastError: undefined,
+    statistics: {
+      ...state.statistics,
+      marketSales: state.statistics.marketSales + 1,
+      itemsSold: state.statistics.itemsSold + 1,
+      moneyEarned: roundCurrency(state.statistics.moneyEarned + price),
+    },
+  }
+}
+
+function tickMarketplaceState(state: GameState, now = Date.now(), prng: Prng = Math.random) {
+  const result = tickMarketplace(state.marketplace, state.marketValues, now, prng)
+  const revenue = roundCurrency(result.completedSales.reduce((sum, listing) => sum + listing.askingPrice, 0))
+  const saleTransactions = result.completedSales.map((listing) => ({
+    id: nanoid(),
+    type: 'player-sale' as const,
+    item: listing.item,
+    price: listing.askingPrice,
+    fairMarketValue: listing.fairMarketValue,
+    counterparty: 'Marketplace buyer',
+    createdAt: now,
+  }))
+  return withInventoryValuation({
+    ...state,
+    money: roundCurrency(clampNumber(state.money) + revenue),
+    inventory: [...result.expiredListings.map((listing) => listing.item), ...state.inventory],
+    marketplace: {
+      ...result.marketplace,
+      transactions: [
+        ...saleTransactions,
+        ...result.expiredListings.map((listing) => ({
+          id: nanoid(),
+          type: 'listing-cancelled' as const,
+          item: listing.item,
+          price: listing.askingPrice,
+          fairMarketValue: listing.fairMarketValue,
+          createdAt: now,
+        })),
+        ...result.marketplace.transactions,
+      ].slice(0, 160),
+    },
+    statistics: {
+      ...state.statistics,
+      marketSales: state.statistics.marketSales + result.completedSales.length,
+      itemsSold: state.statistics.itemsSold + result.completedSales.length,
+      moneyEarned: roundCurrency(state.statistics.moneyEarned + revenue),
+    },
+  }, now)
 }
 
 function claimAchievementReward(
@@ -2448,6 +2697,38 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return withProgressionUnlocks(sellItems(state, action.itemIds))
     case 'TRADE_UP':
       return withProgressionUnlocks(tradeUpItems(state, action.itemIds))
+    case 'BUY_MARKET_LISTING':
+      return withProgressionUnlocks(buyMarketListing(state, action.listingId, action.requestId, action.listing, action.negotiatedPrice, action.now), action.now)
+    case 'NEGOTIATE_MARKET_LISTING':
+      return negotiateMarketListing(state, action.listingId, action.offer, action.listing, action.now)
+    case 'LIST_ITEM_ON_MARKET':
+      return listItemOnMarket(state, action.itemId, action.askingPrice, action.requestId, action.now)
+    case 'CANCEL_PLAYER_MARKET_LISTING':
+      return cancelPlayerMarketListing(state, action.listingId, action.requestId, action.now)
+    case 'ACCEPT_PLAYER_MARKET_OFFER': {
+      const listing = state.marketplace.playerListings.find((candidate) => candidate.id === action.listingId)
+      if (!listing?.incomingOffer || listing.incomingOffer.expiresAt <= (action.now ?? Date.now())) {
+        return { ...state, lastError: 'That buyer offer is no longer available.' }
+      }
+      return completePlayerMarketSale(state, action.listingId, action.requestId, listing.incomingOffer.amount, action.now)
+    }
+    case 'DECLINE_PLAYER_MARKET_OFFER':
+      return {
+        ...state,
+        marketplace: {
+          ...state.marketplace,
+          playerListings: state.marketplace.playerListings.map((listing) => listing.id === action.listingId
+            ? { ...listing, incomingOffer: undefined, status: 'active' as const }
+            : listing),
+        },
+        lastError: undefined,
+      }
+    case 'CLAIM_ACQUISITION':
+      return state.marketplace.pendingAcquisition?.id === action.acquisitionId
+        ? { ...state, marketplace: { ...state.marketplace, pendingAcquisition: undefined } }
+        : state
+    case 'TICK_MARKETPLACE':
+      return tickMarketplaceState(state, action.now, action.prng)
     case 'PURCHASE_AUTO_OPENER':
       return withProgressionUnlocks(
         purchaseAutoOpener(state, action.caseId, action.now),
@@ -2747,7 +3028,7 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
         upcomingEvents: state.upcomingMarketEvents,
       })
 
-      return withProgressionUnlocks(withInventoryValuation({
+      const marketState = withProgressionUnlocks(withInventoryValuation({
         ...state,
         marketValues: tick.marketValues,
         marketHistory: tick.marketHistory,
@@ -2761,6 +3042,8 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
         ])),
         lastMarketTick: tick.lastMarketTick,
       }, tick.lastMarketTick), tick.lastMarketTick)
+
+      return tickMarketplaceState(marketState, tick.lastMarketTick, action.prng)
     }
     case 'APPLY_MARKET_TICK':
       return withProgressionUnlocks(withInventoryValuation({
@@ -2869,15 +3152,6 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
     default:
       return state
   }
-}
-
-function getTradeUpOutputFloat(inputItems: SkinInstance[], outputSkin: SkinBase) {
-  const averageInputFloat = inputItems.reduce((total, item) => total + item.floatValue, 0) / inputItems.length
-  const metadata = outputSkin as SkinBase & { minFloat?: number; maxFloat?: number }
-  const minFloat = typeof metadata.minFloat === 'number' ? Math.max(0, Math.min(1, metadata.minFloat)) : 0
-  const maxFloat = typeof metadata.maxFloat === 'number' ? Math.max(minFloat, Math.min(1, metadata.maxFloat)) : 1
-
-  return Number((minFloat + averageInputFloat * (maxFloat - minFloat)).toFixed(6))
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {

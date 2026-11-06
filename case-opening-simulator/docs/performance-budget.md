@@ -1,19 +1,21 @@
 # Performance Budget
 
-Measured on 2026-10-19 with `npm run build` on Node 22-class tooling. Sizes are Vite minified output; gzip values are Vite's computed transfer estimates.
+Measured on 2026-11-06 with `npm run build` on Node 22-class tooling. Sizes are Vite minified output; gzip values are Vite's computed transfer estimates.
 
 | Chunk | Before Prompt 5 | After Prompt 5 | Final Prompt 6 | Final change from Prompt 5 |
 | --- | ---: | ---: | ---: | ---: |
-| Application entry | 620.88 kB / 194.22 kB gzip | 623.85 kB / 194.90 kB gzip | **202.52 kB / 54.18 kB gzip** | **-421.33 kB / -140.72 kB gzip** |
+| Application entry | 620.88 kB / 194.22 kB gzip | 623.85 kB / 194.90 kB gzip | **219.22 kB / 58.54 kB gzip** | **-404.63 kB / -136.36 kB gzip** |
 | React/router vendor | bundled in entry | bundled in entry | 225.17 kB / 72.13 kB gzip | separated and cacheable |
-| Lucide icons | bundled in entry | bundled in entry | 34.04 kB / 11.77 kB gzip | separated and cacheable |
-| Startup app + framework | 620.88 kB / 194.22 kB gzip | 623.85 kB / 194.90 kB gzip | **461.73 kB / 138.08 kB gzip** | **-162.12 kB / -56.82 kB gzip** |
+| Lucide icons | bundled in entry | bundled in entry | 36.86 kB / 12.72 kB gzip | separated and cacheable |
+| Startup app + framework | 620.88 kB / 194.22 kB gzip | 623.85 kB / 194.90 kB gzip | **481.25 kB / 143.39 kB gzip** | **-142.60 kB / -51.51 kB gzip** |
 | Chart renderer | bundled in entry | bundled in entry | 203.04 kB / 69.59 kB gzip | lazy, loaded only when a chart mounts |
 | Pattern lookups | 1,012.82 kB / 396.92 kB gzip | 308.40 kB / 75.85 kB gzip | 302.88 kB / 73.55 kB gzip | -5.52 kB / -2.30 kB gzip |
 | Price data | 648.70 kB / 124.16 kB gzip | 291.68 kB / 80.56 kB gzip | 206.86 kB / 55.79 kB gzip | -84.82 kB / -24.77 kB gzip |
 | Case catalog | shared with other data | shared with other data | 219.77 kB / 18.18 kB gzip | separate generated-data chunk |
 | Skin catalog | 1,310.28 kB / 114.16 kB gzip | 1,310.28 kB / 114.16 kB gzip | 1,309.57 kB / 114.27 kB gzip | effectively unchanged |
-| PWA precache | 91 entries | 96 entries / 4,155.31 KiB | 78 entries / 4,178.38 KiB | route/data split reflected in manifest |
+| Market route | not isolated | 50.71 kB / 12.14 kB gzip | 67.89 kB / 16.78 kB gzip | includes full virtual-market catalog and dedicated listing UI |
+| Marketplace core | not isolated | 11.20 kB / 4.38 kB gzip | 10.19 kB / 3.90 kB gzip | deterministic generation and transactions |
+| PWA precache | 91 entries | 96 entries / 4,155.31 KiB | 80 entries / 4,286.35 KiB | route/data split reflected in manifest |
 
 Prompt 6 removes Chart.js from the startup dependency graph with `DeferredChart`, keeps route screens lazy, and assigns stable cacheable chunks to React, icons, virtualization, generated skin data, generated prices, and pattern lookups. `index.html` no longer preloads the chart renderer. Price and pattern records remain decoded/cached once, inventory and market lists remain virtualized, and images retain lazy loading, async decoding, fallback handling, and fixed object-contain dimensions.
 
@@ -25,6 +27,8 @@ Prompt 6 removes Chart.js from the startup dependency graph with `DeferredChart`
 - Pattern data: target ≤ 350 kB raw and ≤ 90 kB gzip.
 - Price data: target ≤ 250 kB raw and ≤ 70 kB gzip.
 - Any ordinary route chunk: target ≤ 100 kB raw unless documented.
+- Virtual-market catalog supply computation: target ≤ 250 ms; a 24-listing page must not allocate the full supply.
+- High-supply page 1,001: target < 2 seconds and < 30,000 deterministic candidates scanned.
 - No page may create horizontal document overflow at 1920×1080, 1366×768, 1280×720, or 390×844.
 - The generated skin catalog is allowed above Vite's 500 kB warning because it is a compressed, cacheable data chunk shared by catalog-heavy routes. Moving it to an indexed/static-data service would add deployment and offline complexity disproportionate to the measured gain.
 

@@ -24,6 +24,11 @@ import { Tooltip } from './Tooltip'
 
 interface RuleDraft {
   enabled: boolean
+  includeSouvenir: boolean
+  includeStatTrak: boolean
+  keepCount: string
+  protectRarePatterns: boolean
+  protectSpecialItems: boolean
   rarityThreshold: Rarity
   type: AutoSellRuleType
   valueThreshold: string
@@ -63,6 +68,11 @@ const defaultRarityThresholds: Record<Rarity, string> = {
 
 const defaultDraft: RuleDraft = {
   enabled: true,
+  includeSouvenir: false,
+  includeStatTrak: false,
+  keepCount: '1',
+  protectRarePatterns: true,
+  protectSpecialItems: true,
   rarityThreshold: Rarity.MilSpec,
   type: AutoSellRuleType.MinValue,
   valueThreshold: '0.75',
@@ -139,6 +149,13 @@ function createRuleFromDraft(draft: RuleDraft, id = nanoid()): AutoSellRule {
       draft.type === AutoSellRuleType.SellDuplicatesKeepOne
         ? true
         : undefined,
+    keepCount: draft.type === AutoSellRuleType.SellDuplicatesKeepOne
+      ? Math.max(1, Math.floor(parseMoney(draft.keepCount)))
+      : undefined,
+    includeSouvenir: draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? draft.includeSouvenir : undefined,
+    includeStatTrak: draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? draft.includeStatTrak : undefined,
+    protectRarePatterns: draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? draft.protectRarePatterns : undefined,
+    protectSpecialItems: draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? draft.protectSpecialItems : undefined,
   }
 }
 
@@ -156,6 +173,11 @@ function createDraftFromRule(rule: AutoSellRule): RuleDraft {
 
   return {
     enabled: rule.enabled,
+    includeSouvenir: rule.includeSouvenir ?? false,
+    includeStatTrak: rule.includeStatTrak ?? false,
+    keepCount: String(rule.keepCount ?? 1),
+    protectRarePatterns: rule.protectRarePatterns ?? true,
+    protectSpecialItems: rule.protectSpecialItems ?? true,
     rarityThreshold: rule.rarityThreshold ?? defaultDraft.rarityThreshold,
     type: editableType,
     valueThreshold: String(rule.valueThreshold ?? defaultDraft.valueThreshold),
@@ -180,7 +202,7 @@ function getRuleThresholdLabel(rule: AutoSellRule) {
     case AutoSellRuleType.SellNonFavoritedBelow:
       return `Non-favorited below ${formatCurrency(rule.valueThreshold ?? 0)}`
     case AutoSellRuleType.SellDuplicatesKeepOne:
-      return 'Keep the highest-value eligible copy; protected items are never sold'
+      return `Keep the ${Math.max(1, rule.keepCount ?? 1)} highest-value eligible ${Math.max(1, rule.keepCount ?? 1) === 1 ? 'copy' : 'copies'}; protected items are never sold`
     case AutoSellRuleType.SellNonKnifeUnderValue:
       return `Non-knife below ${formatCurrency(rule.valueThreshold ?? 0)}`
     case AutoSellRuleType.KeepFactoryNew:
@@ -224,6 +246,19 @@ export function AutoSellRulesPanel({
   const isEditing = Boolean(editingRuleId)
   const activeRulesCount = useMemo(() => rules.filter((rule) => rule.enabled).length, [rules])
   const simulation = useMemo(() => simulateAutoSell(inventory, rules), [inventory, rules])
+  const duplicatePreview = useMemo(() => {
+    const rule = rules.find((candidate) => candidate.enabled && candidate.type === AutoSellRuleType.SellDuplicatesKeepOne)
+    if (!rule) return undefined
+    const sellIds = new Set(simulation.items.map((item) => item.instanceId))
+    const grouped = new Map<string, SkinInstance[]>()
+    for (const item of inventory) grouped.set(item.id, [...(grouped.get(item.id) ?? []), item])
+    const group = [...grouped.values()]
+      .filter((copies) => copies.length > Math.max(1, rule.keepCount ?? 1))
+      .sort((left, right) => right.length - left.length)[0]
+    if (!group) return undefined
+    const ordered = [...group].sort((left, right) => right.marketValue - left.marketValue || left.instanceId.localeCompare(right.instanceId))
+    return { keep: ordered.filter((item) => !sellIds.has(item.instanceId)), sell: ordered.filter((item) => sellIds.has(item.instanceId)) }
+  }, [inventory, rules, simulation.items])
 
   function resetDraft() {
     setDraft(defaultDraft)
@@ -303,6 +338,13 @@ export function AutoSellRulesPanel({
         </div>
       ) : null}
 
+      {duplicatePreview ? (
+        <div className="mt-3 grid gap-3 border border-cs-border bg-cs-surface p-3 sm:grid-cols-2">
+          <PreviewColumn items={duplicatePreview.keep} label="Keep" tone="text-cs-green" />
+          <PreviewColumn items={duplicatePreview.sell} label="Auto-sell" tone="text-rarity-covert" />
+        </div>
+      ) : null}
+
       <div className="mt-5 grid min-w-0 gap-3 lg:grid-cols-[16rem_1fr_12rem_auto]">
         <label className="min-w-0 text-sm text-cs-muted">
           Rule Type
@@ -365,9 +407,16 @@ export function AutoSellRulesPanel({
       </div>
 
       {draft.type === AutoSellRuleType.SellDuplicatesKeepOne ? (
-        <p className="mt-3 border-l-2 border-cs-green bg-cs-green/10 px-3 py-2 text-sm text-cs-muted">
-          Automatically sell extra copies of each skin while keeping your most valuable eligible copy. Locked, favorited, Factory New-protected, and exceptional-pattern items are never sold.
-        </p>
+        <div className="mt-3 border-l-2 border-cs-green bg-cs-green/10 px-3 py-3 text-sm text-cs-muted">
+          <p>Keep the requested number of highest-value copies using wear, float, StatTrak, Souvenir, and Pattern premiums. Extra copies use the same discounted instant-sale quote as manual selling.</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <SafetyToggle checked={draft.protectRarePatterns} label="Protect rare Patterns" onChange={(checked) => setDraft((current) => ({ ...current, protectRarePatterns: checked }))} />
+            <SafetyToggle checked={draft.protectSpecialItems} label="Protect knives & gloves" onChange={(checked) => setDraft((current) => ({ ...current, protectSpecialItems: checked }))} />
+            <SafetyToggle checked={draft.includeStatTrak} label="Allow StatTrak sales" onChange={(checked) => setDraft((current) => ({ ...current, includeStatTrak: checked }))} />
+            <SafetyToggle checked={draft.includeSouvenir} label="Allow Souvenir sales" onChange={(checked) => setDraft((current) => ({ ...current, includeSouvenir: checked }))} />
+          </div>
+          <p className="mt-2 text-xs">Locked and favorited items are always protected. Disable safeguards only when you explicitly want those editions included.</p>
+        </div>
       ) : null}
 
       <div className="mt-5 grid gap-2">
@@ -470,6 +519,14 @@ export function AutoSellRulesPanel({
   )
 }
 
+function SafetyToggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (checked: boolean) => void }) {
+  return <label className="flex min-h-10 items-center gap-2 border border-cs-border bg-cs-panel px-3"><input checked={checked} className="h-4 w-4 accent-rarity-special" onChange={(event) => onChange(event.target.checked)} type="checkbox" /><span className="text-xs text-cs-text">{label}</span></label>
+}
+
+function PreviewColumn({ items, label, tone }: { items: SkinInstance[]; label: string; tone: string }) {
+  return <div className="min-w-0"><p className={`font-mono text-[10px] uppercase ${tone}`}>{label}</p><div className="mt-2 space-y-1">{items.slice(0, 5).map((item, index) => <div className="flex min-w-0 justify-between gap-2 text-xs" key={item.instanceId}><span className="truncate text-cs-muted">#{index + 1} {item.weapon} | {item.finish}</span><span className="shrink-0 font-semibold text-cs-text">{formatCurrency(item.marketValue)}</span></div>)}{items.length > 5 ? <p className="text-xs text-cs-muted">+{items.length - 5} more</p> : null}</div></div>
+}
+
 function ThresholdField({
   draft,
   setDraft,
@@ -527,7 +584,6 @@ function ThresholdField({
 
   if (
     draft.type === AutoSellRuleType.SellDuplicates ||
-    draft.type === AutoSellRuleType.SellDuplicatesKeepOne ||
     draft.type === AutoSellRuleType.KeepFactoryNew
   ) {
     return (
@@ -537,6 +593,23 @@ function ThresholdField({
           {draft.type === AutoSellRuleType.KeepFactoryNew ? 'Factory New protected' : 'Duplicate copies'}
         </p>
       </div>
+    )
+  }
+
+  if (draft.type === AutoSellRuleType.SellDuplicatesKeepOne) {
+    return (
+      <label className="min-w-0 text-sm text-cs-muted">
+        Copies to keep
+        <input
+          className="mt-2 w-full border border-cs-border bg-cs-surface px-3 py-2 text-cs-text outline-none focus:border-rarity-special"
+          min="1"
+          max="99"
+          onChange={(event) => setDraft((currentDraft) => ({ ...currentDraft, keepCount: event.target.value }))}
+          step="1"
+          type="number"
+          value={draft.keepCount}
+        />
+      </label>
     )
   }
 

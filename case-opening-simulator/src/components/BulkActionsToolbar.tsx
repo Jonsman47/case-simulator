@@ -33,7 +33,7 @@ export function BulkActionsToolbar({
             {selectedCount} selected
           </p>
           <p className="mt-1 text-sm text-cs-muted">
-            Sale value:{' '}
+            Instant-sale quote:{' '}
             <span className="font-semibold text-cs-green">{formatCurrency(selectedValue)}</span>
           </p>
           {lockedSelectedCount > 0 ? (
@@ -78,6 +78,7 @@ export function BulkActionsToolbar({
               Sell {sellableCount} unlocked item{sellableCount === 1 ? '' : 's'} for{' '}
               <span className="font-semibold text-cs-green">{formatCurrency(selectedValue)}</span>.
             </p>
+            <p className="mt-1 text-xs text-cs-muted">Quotes include each instance's wear, float, edition, and Pattern, then apply the 85–95% liquidity rate.</p>
             {lockedSelectedCount > 0 ? (
               <p className="mt-2 text-sm text-cs-muted">
                 {lockedSelectedCount} locked item{lockedSelectedCount === 1 ? '' : 's'} will be skipped.

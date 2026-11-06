@@ -177,6 +177,15 @@ export interface SkinBase {
   paintIndex?: number
   /** Source-provided paint-kit variant, for example "Ruby" or "Phase 2". */
   phase?: string
+  /** Imported CS2 float bounds. Optional only for the tiny built-in fallback catalog. */
+  minFloat?: number
+  maxFloat?: number
+  /** Imported collection names used by current trade-up outcome grouping. */
+  collections?: string[]
+  /** Imported condition intersections. */
+  wearRanges?: Partial<Record<WearCondition, { min: number; max: number }>>
+  hasStatTrak?: boolean
+  hasSouvenir?: boolean
 }
 
 export type PatternFamily =
@@ -261,7 +270,122 @@ export interface AutoSellRule {
   rarityThreshold?: Rarity
   wearThreshold?: WearCondition
   sellDuplicates?: boolean
+  /** Number of highest-valued copies retained by duplicate rules. */
+  keepCount?: number
+  includeStatTrak?: boolean
+  includeSouvenir?: boolean
+  protectRarePatterns?: boolean
+  protectSpecialItems?: boolean
   excludedIds?: string[]
+}
+
+export type MarketplaceConfidence = 'market' | 'listing' | 'simulator-estimate'
+
+export interface MarketplaceNpc {
+  id: string
+  username: string
+  avatarHue: number
+  personalitySeed: number
+  archetypeId: string
+  patience: number
+  priceSensitivity: number
+  negotiationTolerance: number
+  responseDelayMs: number
+  preferredWeapons: string[]
+}
+
+export interface MarketplaceMessage {
+  id: string
+  author: 'player' | 'npc'
+  amount?: number
+  text: string
+  createdAt: number
+}
+
+export interface MarketplaceNegotiation {
+  status: 'open' | 'accepted' | 'declined' | 'walked-away'
+  round: number
+  patienceRemaining: number
+  bestPlayerOffer: number
+  currentCounterOffer?: number
+  cooldownUntil?: number
+  messages: MarketplaceMessage[]
+}
+
+export interface NpcMarketListing {
+  id: string
+  item: SkinInstance
+  seller: MarketplaceNpc
+  askingPrice: number
+  reservationPrice: number
+  fairMarketValue: number
+  liquidityScore: number
+  scarcityScore: number
+  createdAt: number
+  expiresAt: number
+  negotiation?: MarketplaceNegotiation
+}
+
+export interface PlayerMarketListing {
+  id: string
+  item: SkinInstance
+  askingPrice: number
+  fairMarketValue: number
+  createdAt: number
+  expiresAt: number
+  status: 'active' | 'offer-received'
+  incomingOffer?: {
+    id: string
+    buyer: MarketplaceNpc
+    amount: number
+    createdAt: number
+    expiresAt: number
+  }
+}
+
+export type MarketplaceTransactionType =
+  | 'npc-purchase'
+  | 'negotiated-purchase'
+  | 'player-sale'
+  | 'negotiated-sale'
+  | 'instant-sale'
+  | 'listing-cancelled'
+  | 'npc-offer'
+
+export interface MarketplaceTransaction {
+  id: string
+  type: MarketplaceTransactionType
+  item: SkinInstance
+  price: number
+  fairMarketValue: number
+  counterparty?: string
+  createdAt: number
+}
+
+export interface AcquisitionReveal {
+  id: string
+  source: 'market-buy' | 'market-negotiation' | 'trade-up'
+  item: SkinInstance
+  price?: number
+  createdAt: number
+}
+
+export interface MarketplaceState {
+  /**
+   * Materialized virtual listings only. Ordinary catalog supply is generated
+   * on demand; a listing is stored here once a negotiation changes it.
+   */
+  npcListings: NpcMarketListing[]
+  playerListings: PlayerMarketListing[]
+  transactions: MarketplaceTransaction[]
+  processedRequestIds: string[]
+  lastSupplyTick: number
+  nextSupplyTick: number
+  virtualMarketEpoch: number
+  virtualMarketNextEpochAt: number
+  virtualMarketSeed: number
+  removedVirtualListingIds: string[]
+  pendingAcquisition?: AcquisitionReveal
 }
 
 export interface CollectionEntry {
@@ -375,6 +499,7 @@ export interface PlayerState {
   }[]
   unlockedCases: string[]
   autoSellRules: AutoSellRule[]
+  marketplace?: MarketplaceState
   automation: AutomationState
   upgrades: UpgradeLevels
   trophyAssignments: TrophyAssignments
@@ -418,6 +543,8 @@ export interface PlayerState {
     workJobsCompleted: number
     bestPrecisionScore: number
     bestMemoryScore: number
+    marketPurchases: number
+    marketSales: number
     dropsByRarity: Record<Rarity, number>
   }
   lastBackupAt: number

@@ -212,6 +212,21 @@ test('Poop Cleaning requires disposal and grants its reward exactly once', async
 test('Market rows open a paginated wear and Pattern price checker', async ({ page }) => {
   await page.goto('/market')
   await dismissTutorial(page)
+  const sort = page.getByRole('combobox', { name: 'Sort Market skins' })
+  await expect(sort).toHaveValue('highest-maximum')
+  await expect(page.getByText('Valid price range')).toBeVisible()
+  const readVisibleRanges = async () => page.getByTestId('market-row').evaluateAll((rows) => rows.slice(0, 3).map((row) => {
+    const match = row.textContent?.match(/\$([\d,.]+)\s*–\s*\$([\d,.]+)/)
+    return match ? [Number(match[1].replaceAll(',', '')), Number(match[2].replaceAll(',', ''))] : undefined
+  }).filter(Boolean) as [number, number][])
+  let ranges = await readVisibleRanges()
+  expect(ranges[0][1]).toBeGreaterThanOrEqual(ranges[1][1])
+  await page.getByRole('button', { name: 'Tick Market' }).click()
+  ranges = await readVisibleRanges()
+  expect(ranges[0][1]).toBeGreaterThanOrEqual(ranges[1][1])
+  await sort.selectOption('lowest-minimum')
+  ranges = await readVisibleRanges()
+  expect(ranges[0][0]).toBeLessThanOrEqual(ranges[1][0])
   await page.getByRole('searchbox', { name: /search market skins/i }).fill('Fade')
   const row = page.getByTestId('market-row').first()
   await expect(row).toBeVisible()
@@ -224,6 +239,28 @@ test('Market rows open a paginated wear and Pattern price checker', async ({ pag
     await expect(dialog.getByRole('spinbutton', { name: 'Search pattern ID' })).toBeVisible()
     expect(await dialog.getByRole('row').count()).toBeLessThan(40)
   }
+})
+
+test('virtual marketplace navigates catalog to a dedicated skin market and purchases once', async ({ page }) => {
+  await page.goto('/market')
+  await dismissTutorial(page)
+  const catalogSearch = page.getByRole('textbox', { name: 'Search skin markets' })
+  await catalogSearch.fill('P250 Sand Dune')
+  const skinMarket = page.getByRole('button', { name: /P250 \| Sand Dune.*View all listings/i }).first()
+  await expect(skinMarket).toBeVisible()
+  await skinMarket.click()
+  await expect(page.getByRole('button', { name: /Back to all skin markets/i })).toBeVisible()
+  await expect(page.getByText('Listing filters')).toBeVisible()
+  await expect(page.getByText(/full market is never allocated in memory/i)).toBeVisible()
+
+  const before = await readSave(page)
+  const buy = page.getByRole('button', { name: 'Buy', exact: true }).first()
+  await expect(buy).toBeEnabled()
+  await buy.click()
+  await expect.poll(async () => (await readSave(page)).state.inventory.length).toBe(before.state.inventory.length + 1)
+  const after = await readSave(page)
+  expect(after.state.money).toBeLessThan(before.state.money)
+  expect(after.state.marketplace.removedVirtualListingIds.length).toBeGreaterThan(0)
 })
 
 test('Achievements Claim All grants unlocked rewards once', async ({ page }) => {

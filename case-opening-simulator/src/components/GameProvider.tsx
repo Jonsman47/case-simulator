@@ -16,6 +16,7 @@ import {
 } from '../data/cases'
 import { getCaseLicenseCost } from '../data/casePricing'
 import { calculateDropOdds } from '../data/dropLogic'
+import { getAutomationSellMultiplier } from '../utils/automation'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import {
   type GameSettings,
@@ -25,12 +26,14 @@ import {
 import type {
   AutomationModuleId,
   AutoSellRule,
+  NpcMarketListing,
   PrestigeBonusId,
   SkillNodeId,
   UpgradeId,
 } from '../data/models'
 import { gameReducer } from '../data/gameReducer'
 import { MARKET_TICK_MS } from '../market/marketSimulation'
+import { MARKETPLACE_SUPPLY_TICK_MS } from '../marketplace/marketplace'
 import {
   GAME_EVENT_TICK_MS,
   applyGameEventEffectsToCases,
@@ -393,6 +396,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [pendingOfflineProgress, state.settings.marketSimulationEnabled])
 
   useEffect(() => {
+    if (pendingOfflineProgress) return undefined
+    const tickMarketplace = () => dispatch({ type: 'TICK_MARKETPLACE', now: Date.now() })
+    tickMarketplace()
+    const intervalId = window.setInterval(tickMarketplace, MARKETPLACE_SUPPLY_TICK_MS)
+    return () => window.clearInterval(intervalId)
+  }, [pendingOfflineProgress])
+
+  useEffect(() => {
     if (pendingOfflineProgress) {
       return undefined
     }
@@ -469,6 +480,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const tradeUpItems = useCallback((itemIds: string[]) => {
     dispatch({ type: 'TRADE_UP', itemIds })
+  }, [])
+
+  const buyMarketListing = useCallback((listingId: string, negotiatedPrice?: number, listing?: NpcMarketListing) => {
+    dispatch({ type: 'BUY_MARKET_LISTING', listingId, listing, negotiatedPrice, requestId: nanoid(), now: Date.now() })
+  }, [])
+
+  const negotiateMarketListing = useCallback((listingId: string, offer: number, listing?: NpcMarketListing) => {
+    dispatch({ type: 'NEGOTIATE_MARKET_LISTING', listingId, listing, offer, now: Date.now() })
+  }, [])
+
+  const listItemOnMarket = useCallback((itemId: string, askingPrice: number) => {
+    dispatch({ type: 'LIST_ITEM_ON_MARKET', itemId, askingPrice, requestId: nanoid(), now: Date.now() })
+  }, [])
+
+  const cancelPlayerMarketListing = useCallback((listingId: string) => {
+    dispatch({ type: 'CANCEL_PLAYER_MARKET_LISTING', listingId, requestId: nanoid(), now: Date.now() })
+  }, [])
+
+  const acceptPlayerMarketOffer = useCallback((listingId: string) => {
+    dispatch({ type: 'ACCEPT_PLAYER_MARKET_OFFER', listingId, requestId: nanoid(), now: Date.now() })
+  }, [])
+
+  const declinePlayerMarketOffer = useCallback((listingId: string) => {
+    dispatch({ type: 'DECLINE_PLAYER_MARKET_OFFER', listingId, now: Date.now() })
+  }, [])
+
+  const claimAcquisition = useCallback((acquisitionId: string) => {
+    dispatch({ type: 'CLAIM_ACQUISITION', acquisitionId })
   }, [])
 
   const claimAchievementReward = useCallback((achievementId: string) => {
@@ -561,9 +600,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       state.prestigeBonuses,
       state.learnedSkillNodeIds,
       getGameEventCollectionRewardMultiplier(state.activeEvents),
+      getAutomationSellMultiplier(state.automation),
     ),
     [
       state.activeEvents,
+      state.automation,
       state.collectionRewards,
       state.inventory,
       state.learnedSkillNodeIds,
@@ -1086,6 +1127,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       sellItem,
       sellItems,
       tradeUpItems,
+      buyMarketListing,
+      negotiateMarketListing,
+      listItemOnMarket,
+      cancelPlayerMarketListing,
+      acceptPlayerMarketOffer,
+      declinePlayerMarketOffer,
+      claimAcquisition,
       claimAchievementReward,
       claimAllAchievementRewards,
       claimDailyReward,
@@ -1197,6 +1245,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       signUpCloud,
       syncCloudNow,
       tradeUpItems,
+      buyMarketListing,
+      negotiateMarketListing,
+      listItemOnMarket,
+      cancelPlayerMarketListing,
+      acceptPlayerMarketOffer,
+      declinePlayerMarketOffer,
+      claimAcquisition,
       spendMoney,
       state,
       tickEventsNow,

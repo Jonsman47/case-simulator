@@ -21,7 +21,6 @@ import {
   useInventoryFilters,
 } from '../hooks/useInventoryFilters'
 import { useGame } from '../hooks/useGame'
-import { getCurrentItemMarketValue } from '../utils/inventory'
 import { selectDuplicates } from '../utils/inventoryBulk'
 import { formatCurrency } from '../utils/format'
 import { getInventoryCapacity, getInventoryFreeSlots } from '../utils/inventoryCapacity'
@@ -203,8 +202,8 @@ export function InventoryView() {
       return undefined
     }
 
-    return getCurrentItemMarketValue(activeItem, state.marketValues)
-  }, [activeItem, state.marketValues])
+    return getSelectedItemsValue([activeItem.instanceId])
+  }, [activeItem, getSelectedItemsValue])
   const columnCount = getColumnCount(gridWidth || 1280)
   const cardRowHeight = getCardRowHeight(gridWidth || 1280)
   const rowCount = Math.ceil(filteredItems.length / columnCount)

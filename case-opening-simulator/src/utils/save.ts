@@ -49,6 +49,12 @@ import {
   type DailyRewardClaim,
   type DailyRewardsState,
   type PlayerState,
+  type MarketplaceState,
+  type MarketplaceNpc,
+  type NpcMarketListing,
+  type PlayerMarketListing,
+  type MarketplaceTransaction,
+  type AcquisitionReveal,
   type SkinInstance,
   type TrophyAssignment,
   type TrophyAssignments,
@@ -82,9 +88,10 @@ import {
 } from './poopCleanupMinigame'
 import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
+import { createDefaultMarketplaceState } from '../marketplace/marketplace'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 30
+export const CURRENT_SAVE_VERSION = 32
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -179,6 +186,11 @@ function isAutoSellRule(value: unknown): value is AutoSellRule {
     (value.rarityThreshold === undefined || isEnumValue(Object.values(Rarity), value.rarityThreshold)) &&
     (value.wearThreshold === undefined || isEnumValue(Object.values(WearCondition), value.wearThreshold)) &&
     (value.sellDuplicates === undefined || typeof value.sellDuplicates === 'boolean') &&
+    (value.keepCount === undefined || isNumber(value.keepCount)) &&
+    (value.includeStatTrak === undefined || typeof value.includeStatTrak === 'boolean') &&
+    (value.includeSouvenir === undefined || typeof value.includeSouvenir === 'boolean') &&
+    (value.protectRarePatterns === undefined || typeof value.protectRarePatterns === 'boolean') &&
+    (value.protectSpecialItems === undefined || typeof value.protectSpecialItems === 'boolean') &&
     (value.excludedIds === undefined || isStringArray(value.excludedIds))
   )
 }
@@ -376,6 +388,8 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
     moneySpent: value.moneySpent,
     moneyEarned: value.moneyEarned,
     itemsSold: normalizeNumber(value.itemsSold, 0),
+    marketPurchases: Math.max(0, Math.floor(normalizeNumber(value.marketPurchases, 0))),
+    marketSales: Math.max(0, Math.floor(normalizeNumber(value.marketSales, 0))),
     tradeUpsCompleted: normalizeNumber(value.tradeUpsCompleted, 0),
     drops: value.drops,
     rareDrops: value.rareDrops,
@@ -841,6 +855,61 @@ function normalizeDailyRewardsState(value: unknown, now = Date.now()): DailyRewa
 
 function normalizeAutoSellRules(value: unknown) {
   return Array.isArray(value) && value.every(isAutoSellRule) ? value : []
+}
+
+function normalizeMarketplace(value: unknown): MarketplaceState {
+  if (!isRecord(value)) return createDefaultMarketplaceState()
+  const isMarketplaceNpc = (entry: unknown): entry is MarketplaceNpc => (
+    isRecord(entry) && typeof entry.id === 'string' && typeof entry.username === 'string' &&
+    isNumber(entry.avatarHue) && isNumber(entry.personalitySeed) && typeof entry.archetypeId === 'string' &&
+    isNumber(entry.patience) && isNumber(entry.priceSensitivity) && isNumber(entry.negotiationTolerance) &&
+    isNumber(entry.responseDelayMs) && Array.isArray(entry.preferredWeapons) &&
+    entry.preferredWeapons.every((weapon) => typeof weapon === 'string')
+  )
+  const transactionTypes = new Set(['npc-purchase', 'negotiated-purchase', 'player-sale', 'negotiated-sale', 'instant-sale', 'listing-cancelled', 'npc-offer'])
+  const npcListings = Array.isArray(value.npcListings)
+    ? value.npcListings.filter((entry): entry is NpcMarketListing => (
+        isRecord(entry) && typeof entry.id === 'string' && isSkinInstance(entry.item) &&
+        isMarketplaceNpc(entry.seller) &&
+        isNumber(entry.askingPrice) && isNumber(entry.reservationPrice) &&
+        isNumber(entry.fairMarketValue) && isNumber(entry.liquidityScore) && isNumber(entry.scarcityScore) &&
+        isNumber(entry.createdAt) && isNumber(entry.expiresAt)
+      ))
+    : []
+  const playerListings = Array.isArray(value.playerListings)
+    ? value.playerListings.filter((entry): entry is PlayerMarketListing => (
+        isRecord(entry) && typeof entry.id === 'string' && isSkinInstance(entry.item) &&
+        isNumber(entry.askingPrice) && isNumber(entry.fairMarketValue) &&
+        isNumber(entry.createdAt) && isNumber(entry.expiresAt) && typeof entry.status === 'string'
+      ))
+    : []
+  const transactions = Array.isArray(value.transactions)
+    ? value.transactions.filter((entry): entry is MarketplaceTransaction => (
+        isRecord(entry) && typeof entry.id === 'string' && typeof entry.type === 'string' && transactionTypes.has(entry.type) &&
+        isSkinInstance(entry.item) && isNumber(entry.price) && isNumber(entry.fairMarketValue) &&
+        isNumber(entry.createdAt)
+      )).slice(0, 160)
+    : []
+  const pendingAcquisition = isRecord(value.pendingAcquisition) &&
+    typeof value.pendingAcquisition.id === 'string' &&
+    typeof value.pendingAcquisition.source === 'string' &&
+    isSkinInstance(value.pendingAcquisition.item) &&
+    isNumber(value.pendingAcquisition.createdAt)
+      ? value.pendingAcquisition as unknown as AcquisitionReveal
+      : undefined
+  return {
+    npcListings,
+    playerListings,
+    transactions,
+    processedRequestIds: readStringArray(value.processedRequestIds).slice(-120),
+    lastSupplyTick: normalizeNumber(value.lastSupplyTick, 0),
+    nextSupplyTick: normalizeNumber(value.nextSupplyTick, 0),
+    virtualMarketEpoch: Math.max(0, Math.floor(normalizeNumber(value.virtualMarketEpoch, 0))),
+    virtualMarketNextEpochAt: Math.max(0, normalizeNumber(value.virtualMarketNextEpochAt, Date.now() + 6 * 60 * 60_000)),
+    virtualMarketSeed: Math.max(0, Math.floor(normalizeNumber(value.virtualMarketSeed, 0x435332))),
+    removedVirtualListingIds: readStringArray(value.removedVirtualListingIds),
+    pendingAcquisition,
+  }
 }
 
 function isAchievementProgress(value: unknown): value is AchievementProgress {
@@ -1464,6 +1533,35 @@ function migrateV29ToV30(value: unknown): unknown {
   }
 }
 
+function migrateV30ToV31(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const statistics = isRecord(value.statistics) ? value.statistics : {}
+  return {
+    ...value,
+    marketplace: createDefaultMarketplaceState(),
+    statistics: {
+      ...statistics,
+      marketPurchases: normalizeNumber(statistics.marketPurchases, 0),
+      marketSales: normalizeNumber(statistics.marketSales, 0),
+    },
+  }
+}
+
+function migrateV31ToV32(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const marketplace = isRecord(value.marketplace) ? value.marketplace : createDefaultMarketplaceState()
+  return {
+    ...value,
+    marketplace: {
+      ...marketplace,
+      virtualMarketEpoch: Math.max(0, Math.floor(normalizeNumber(marketplace.virtualMarketEpoch, 0))),
+      virtualMarketNextEpochAt: Math.max(0, normalizeNumber(marketplace.virtualMarketNextEpochAt, Date.now() + 6 * 60 * 60_000)),
+      virtualMarketSeed: Math.max(0, Math.floor(normalizeNumber(marketplace.virtualMarketSeed, 0x435332))),
+      removedVirtualListingIds: readStringArray(marketplace.removedVirtualListingIds),
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1495,6 +1593,8 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   27: migrateV27ToV28,
   28: migrateV28ToV29,
   29: migrateV29ToV30,
+  30: migrateV30ToV31,
+  31: migrateV31ToV32,
 }
 
 function getEnvelope(value: unknown) {
@@ -1548,6 +1648,7 @@ export function toPlayerState(state: GameState): PlayerState {
     inventoryValueHistory: state.inventoryValueHistory,
     unlockedCases: state.casesUnlocked,
     autoSellRules: state.autoSellRules,
+    marketplace: state.marketplace,
     automation: state.automation,
     upgrades: state.upgrades,
     trophyAssignments: state.trophyAssignments,
@@ -1595,6 +1696,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     ),
     casesUnlocked: state.unlockedCases,
     autoSellRules: state.autoSellRules,
+    marketplace: normalizeMarketplace(state.marketplace),
     automation: normalizeAutomation(state.automation),
     upgrades: normalizeUpgradeLevels(state.upgrades),
     trophyAssignments: normalizeTrophyAssignments(state.trophyAssignments),
@@ -1677,6 +1779,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     favoriteCaseIds: readStringArray(value.favoriteCaseIds),
     specialEventCaseIds: readStringArray(value.specialEventCaseIds),
     autoSellRules: normalizeAutoSellRules(value.autoSellRules),
+    marketplace: normalizeMarketplace(value.marketplace),
     automation: normalizeAutomation(value.automation),
     upgrades: normalizeUpgradeLevels(value.upgrades),
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),

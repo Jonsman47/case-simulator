@@ -731,14 +731,14 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(nextState.money).toBe(260)
+    expect(nextState.money).toBe(234.31)
     expect(nextState.inventory).toHaveLength(0)
-    expect(nextState.statistics.moneyEarned).toBe(210)
+    expect(nextState.statistics.moneyEarned).toBe(184.31)
     expect(nextState.statistics.itemsSold).toBe(1)
     expect(nextState.collectionBook[0]?.timesFound).toBe(2)
     expect(findUiEvent(nextState, 'item_sold')).toMatchObject({
       type: 'item_sold',
-      salePrice: 210,
+      salePrice: 184.31,
     })
   })
 
@@ -763,8 +763,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(nextState.money).toBe(262.1)
-    expect(nextState.statistics.moneyEarned).toBe(212.1)
+    expect(nextState.money).toBe(236.15)
+    expect(nextState.statistics.moneyEarned).toBe(186.15)
   })
 
   it('applies collection case discounts when opening cases', () => {
@@ -900,7 +900,7 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(unlockedState, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(260)
+    expect(soldState.money).toBe(234.31)
     expect(soldState.inventory).toHaveLength(0)
     expect(soldState.statistics.itemsSold).toBe(1)
   })
@@ -965,18 +965,18 @@ describe('gameReducer OPEN_CASE', () => {
       itemIds: [item.instanceId, lockedItem.instanceId, cheapItem.instanceId],
     })
 
-    expect(nextState.money).toBe(270.5)
+    expect(nextState.money).toBe(243.61)
     expect(nextState.inventory.map((inventoryItem) => inventoryItem.instanceId)).toEqual([
       lockedItem.instanceId,
     ])
-    expect(nextState.statistics.moneyEarned).toBe(220.5)
+    expect(nextState.statistics.moneyEarned).toBe(193.61)
     expect(nextState.statistics.itemsSold).toBe(2)
     expect(nextState.collectionBook).toEqual([collectionEntry])
     expect(nextState.lastError).toBe('1 locked item skipped.')
     expect(findUiEvent(nextState, 'items_sold')).toMatchObject({
       type: 'items_sold',
       itemCount: 2,
-      salePrice: 220.5,
+      salePrice: 193.61,
       skippedLockedCount: 1,
     })
   })
@@ -1145,7 +1145,7 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.inventory).toEqual(inputItems)
     expect(nextState.statistics.tradeUpsCompleted).toBe(0)
-    expect(nextState.lastError).toBe('Select exactly 10 skins for a trade-up contract.')
+    expect(nextState.lastError).toBe('Select exactly 10 skins.')
   })
 
   it('prevents locked or favorited skins from being consumed in trade-ups', () => {
@@ -1567,8 +1567,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(158.15)
-    expect(soldState.statistics.moneyEarned).toBe(108.15)
+    expect(soldState.money).toBe(145.2)
+    expect(soldState.statistics.moneyEarned).toBe(95.2)
   })
 
   it('applies upgrade sell value bonuses when selling', () => {
@@ -1587,8 +1587,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(266.3)
-    expect(soldState.statistics.moneyEarned).toBe(216.3)
+    expect(soldState.money).toBe(239.84)
+    expect(soldState.statistics.moneyEarned).toBe(189.84)
   })
 
   it('applies prestige sell value bonuses when selling', () => {
@@ -1607,8 +1607,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(276.8)
-    expect(soldState.statistics.moneyEarned).toBe(226.8)
+    expect(soldState.money).toBe(249.05)
+    expect(soldState.statistics.moneyEarned).toBe(199.05)
   })
 
   it('applies upgrade case discounts when opening cases', () => {
@@ -1752,8 +1752,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(264.2)
-    expect(soldState.statistics.moneyEarned).toBe(214.2)
+    expect(soldState.money).toBe(238)
+    expect(soldState.statistics.moneyEarned).toBe(188)
   })
 
   it('applies skill automation speed bonuses to auto opening intervals', () => {
@@ -1885,7 +1885,7 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(openedState.dailyRewards.challenges.find((challenge) => challenge.id === 'open')?.progress).toBe(1)
     expect(openedState.dailyRewards.challenges.find((challenge) => challenge.id === 'rarity')?.progress).toBe(1)
-    expect(soldState.dailyRewards.challenges.find((challenge) => challenge.id === 'sell')?.progress).toBe(10)
+    expect(soldState.dailyRewards.challenges.find((challenge) => challenge.id === 'sell')?.progress).toBe(9.3)
   })
 
   it('claims completed daily challenge rewards and blocks repeated claims', () => {

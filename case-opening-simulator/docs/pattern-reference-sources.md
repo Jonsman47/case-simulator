@@ -50,6 +50,8 @@ The Market detail panel combines the existing wear/StatTrak/Souvenir condition c
 
 When no provider observation exists, the explorer evaluates all 1,001 IDs with the simulator's weapon/finish-specific classifier and labels the value **Simulator estimate**. Ordinary IDs remain at the selected wear's base value. Paint-kit variants such as Ruby or Sapphire are shown as phases rather than falsely ranked by seed. The Top 10 is therefore the best available mixture of exact cached listing evidence and clearly identified conservative model estimates; it is not represented as a verified-sale appraisal.
 
+The Market catalog summarizes each skin as a valid price range rather than a single representative price. The minimum and maximum are taken across float-valid wears, supported Standard/StatTrak/Souvenir editions, paint-kit phases, seed-specific model premiums, and cached observations. Current simulated-market movement is applied to both base prices and observations. The maximum is labeled **Market-priced**, **Listing-backed**, or **Estimated** according to the winning variant; an asking price is never promoted to a confirmed sale. Each skin's model extrema are cached, so a market tick recalculates condition bases without allocating 1,001 Pattern rows for every catalog entry.
+
 ## UI limitation
 
 The catalog contains one thumbnail per finish/paint-kit, not a render for every seed. Interfaces explicitly state that a thumbnail does not depict the seed-specific appearance. The project does not generate or present fake seed screenshots.

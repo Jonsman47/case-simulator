@@ -5,6 +5,7 @@ import type {
   AutomationModuleId,
   AutoSellRule,
   CaseDefinition,
+  NpcMarketListing,
   PrestigeBonusId,
   SkillNodeId,
   UpgradeId,
@@ -35,6 +36,13 @@ export interface GameContextValue {
   sellItem: (itemId: string) => void
   sellItems: (itemIds: string[]) => void
   tradeUpItems: (itemIds: string[]) => void
+  buyMarketListing: (listingId: string, negotiatedPrice?: number, listing?: NpcMarketListing) => void
+  negotiateMarketListing: (listingId: string, offer: number, listing?: NpcMarketListing) => void
+  listItemOnMarket: (itemId: string, askingPrice: number) => void
+  cancelPlayerMarketListing: (listingId: string) => void
+  acceptPlayerMarketOffer: (listingId: string) => void
+  declinePlayerMarketOffer: (listingId: string) => void
+  claimAcquisition: (acquisitionId: string) => void
   claimAchievementReward: (achievementId: string) => void
   claimAllAchievementRewards: () => void
   claimDailyReward: () => void

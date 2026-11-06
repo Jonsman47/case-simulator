@@ -209,7 +209,8 @@ describe('shouldAutoSell', () => {
     ])
 
     expect(simulation.items.map((item) => item.instanceId)).toEqual(['sell'])
-    expect(simulation.totalValue).toBe(2)
+    expect(simulation.totalValue).toBeGreaterThanOrEqual(1.7)
+    expect(simulation.totalValue).toBeLessThanOrEqual(1.9)
   })
 
   it('keeps the best deterministic duplicate and never sells protected or exceptional copies', () => {
@@ -234,5 +235,21 @@ describe('shouldAutoSell', () => {
 
     expect(getKeepBestDuplicateSaleCandidates([laterId, earlierId], [rule]).map((item) => item.instanceId))
       .toEqual(['z-copy'])
+  })
+
+  it('keeps a custom N highest-valued copies and sells the worst copies first', () => {
+    const rule = { enabled: true, id: 'keep-three', type: AutoSellRuleType.SellDuplicatesKeepOne, keepCount: 3 }
+    const copies = [10, 50, 20, 40, 30].map((marketValue, index) => makeItem({ instanceId: `copy-${index}`, marketValue }))
+    expect(getKeepBestDuplicateSaleCandidates(copies, [rule]).map((item) => item.marketValue)).toEqual([10, 20])
+  })
+
+  it('protects StatTrak and Souvenir duplicates unless the player explicitly includes them', () => {
+    const regular = makeItem({ instanceId: 'regular', marketValue: 50 })
+    const statTrak = makeItem({ instanceId: 'st', marketValue: 10, statTrak: true })
+    const souvenir = makeItem({ instanceId: 'souvenir', marketValue: 5, souvenir: true })
+    const safeRule = { enabled: true, id: 'safe', type: AutoSellRuleType.SellDuplicatesKeepOne }
+    expect(getKeepBestDuplicateSaleCandidates([regular, statTrak, souvenir], [safeRule])).toEqual([])
+    const explicitRule = { ...safeRule, includeStatTrak: true, includeSouvenir: true }
+    expect(getKeepBestDuplicateSaleCandidates([regular, statTrak, souvenir], [explicitRule]).map((item) => item.instanceId)).toEqual(['st', 'souvenir'])
   })
 })

@@ -115,3 +115,20 @@ Status: **COMPLETE**
 - Expanded unit and Playwright coverage for the playtest flows.
 
 Exit evidence: 67 unit files/341 tests, lint, TypeScript, production/PWA build, release verification, 2,134 asset validation, and 15 serial Chromium E2E journeys pass. Browser coverage includes tutorial replay/persistence, Light/Large Text responsive checks, Poop Cleaning drag and accessible disposal, Memory/Precision visibility, detailed Market inspection, atomic Claim All, exact-once opening/selling transactions, and four target viewport sizes. Live Supabase proof and exact seed-specific artwork remain documented limitations.
+
+## Post-release CSFloat-Style Virtual Marketplace Overhaul
+
+Status: **COMPLETE FOR LOCAL SIMULATION — LIVE SUPABASE DEPLOYMENT UNVERIFIED**
+
+- Replaced the global 96-listing feed with a catalog of every supported skin. Each skin now has its own dedicated marketplace, lowest ask, complete value range, estimated offer count, wear distribution and paginated seller listings.
+- Added an O(1) supply model using rarity, current reference value, source-case/collection breadth, weapon demand and deterministic circulation history. The catalog models millions of offers while explicitly labeling counts as simulator estimates.
+- Added stable per-epoch virtual IDs, deterministic seller/item generation, bounded page scans, skin-specific rare-Pattern availability and zero-listing outcomes. Only the requested 24-listing page is allocated.
+- Preserved all 18 hidden NPC archetypes and expanded them into a procedurally generated seller population with stable usernames, avatars, reputation, patience, reservation floors and remembered negotiation history.
+- Added owned-item marketplace escrow, time-based NPC buyer offers, safe expiry/cancellation restoration, atomic local request-ledger handling, and the shared NEW/Claim acquisition reveal.
+- Replaced full-value instant selling with visible 85–95% liquidity quotes while preserving progression modifiers and exact-once statistics.
+- Extended duplicate auto-sell to keep a custom N highest-value eligible copies with deterministic comparison and layered locked/favorite/rare Pattern/knife/glove/edition protections.
+- Updated trade-ups for current ten-item and October 2025 five-Covert contracts, normalized float mapping, source-weighted outcomes, edition restrictions, current Souvenir stripping, projections and shared acquisition reveal.
+- Migrated saves to v32 without rerolling old items. The save stores only virtual epoch metadata, purchased-ID tombstones, interacted listings, escrow and transaction/request ledgers—not the global simulated population. The existing Supabase v31 authority migration remains undeployed and would require a follow-up deployment migration for the v32 virtual fields.
+- Added performance and regression coverage for total supply, common/elite divergence, iconic zero-supply Patterns, deterministic regeneration, non-overlapping pagination, sorting/filtering, page 1,001, exact-once purchase, negotiation overrides and save migration.
+
+Exit evidence: 70 unit files/371 tests, zero-error lint, TypeScript, production/PWA build, release verification, 2,134-asset validation and all 16 Chromium journeys pass. The browser suite includes catalog → dedicated market → exact purchase/tombstone persistence. Live Supabase deployment remains unverified because credentials were not provided. See `case-opening-simulator/docs/marketplace-economy.md`.
