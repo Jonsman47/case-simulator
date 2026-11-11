@@ -17,6 +17,7 @@ const InventoryView = lazy(() => import('./views/InventoryView').then((module) =
 const LeaderboardView = lazy(() => import('./views/LeaderboardView').then((module) => ({ default: module.LeaderboardView })))
 const Main = lazy(() => import('./views/Main').then((module) => ({ default: module.Main })))
 const Market = lazy(() => import('./views/Market').then((module) => ({ default: module.Market })))
+const CSWear = lazy(() => import('./views/CSWear').then((module) => ({ default: module.CSWear })))
 const MarketEvents = lazy(() => import('./views/MarketEvents').then((module) => ({ default: module.MarketEvents })))
 const Prestige = lazy(() => import('./views/Prestige').then((module) => ({ default: module.Prestige })))
 const PlayerProfileView = lazy(() => import('./views/PlayerProfileView').then((module) => ({ default: module.PlayerProfileView })))
@@ -64,6 +65,7 @@ function App() {
               <Route path="inventory" element={<Suspense fallback={<RouteFallback />}><InventoryView /></Suspense>} />
               <Route path="collection-book" element={<Suspense fallback={<RouteFallback />}><CollectionBookView /></Suspense>} />
               <Route path="market" element={<Suspense fallback={<RouteFallback />}><Market /></Suspense>} />
+              <Route path="cswear" element={<Suspense fallback={<RouteFallback />}><CSWear /></Suspense>} />
               <Route path="events" element={<Suspense fallback={<RouteFallback />}><MarketEvents /></Suspense>} />
               <Route
                 path="admin"

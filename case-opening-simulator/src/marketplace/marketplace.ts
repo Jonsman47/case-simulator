@@ -25,9 +25,9 @@ import { applyWearMultiplier, getWearConditionForFloat, randomFloatForSkin } fro
 
 export const MARKETPLACE_HISTORY_LIMIT = 160
 export const MARKETPLACE_REQUEST_LEDGER_LIMIT = 120
-export const MARKETPLACE_LISTING_DURATION_MS = 6 * 60 * 60 * 1_000
+export const MARKETPLACE_LISTING_DURATION_MS = 7 * 24 * 60 * 60 * 1_000
 export const MARKETPLACE_SUPPLY_TICK_MS = 60_000
-export const MARKETPLACE_EPOCH_MS = 6 * 60 * 60 * 1_000
+export const MARKETPLACE_EPOCH_MS = MARKETPLACE_LISTING_DURATION_MS
 
 type Prng = () => number
 
@@ -247,8 +247,6 @@ export function createNpcListing({
     fairMarketValue * getInstantSaleRate(item, fairMarketValue) * 1.015,
     askingPrice * (1 - reservationDiscount),
   ))
-  const lifetimeMultiplier = 1 + scarcityScore * 3 + prng()
-
   return {
     id: `listing-${now.toString(36)}-${nanoid(7)}`,
     item,
@@ -259,11 +257,12 @@ export function createNpcListing({
     liquidityScore,
     scarcityScore,
     createdAt: now,
-    expiresAt: now + Math.round(MARKETPLACE_LISTING_DURATION_MS * lifetimeMultiplier),
+    expiresAt: now + MARKETPLACE_LISTING_DURATION_MS,
   }
 }
 
 export function createDefaultMarketplaceState(now = Date.now()): MarketplaceState {
+  const virtualMarketEpoch = Math.floor(Math.max(0, now) / MARKETPLACE_EPOCH_MS)
   return {
     npcListings: [],
     playerListings: [],
@@ -271,8 +270,8 @@ export function createDefaultMarketplaceState(now = Date.now()): MarketplaceStat
     processedRequestIds: [],
     lastSupplyTick: now,
     nextSupplyTick: now,
-    virtualMarketEpoch: Math.floor(Math.max(0, now) / MARKETPLACE_EPOCH_MS),
-    virtualMarketNextEpochAt: Math.max(0, now) + MARKETPLACE_EPOCH_MS,
+    virtualMarketEpoch,
+    virtualMarketNextEpochAt: (virtualMarketEpoch + 1) * MARKETPLACE_EPOCH_MS,
     virtualMarketSeed: 0x435332,
     removedVirtualListingIds: [],
   }
@@ -289,13 +288,14 @@ export function refreshNpcSupply(
   // Only negotiated/materialized exceptions remain in persisted state here.
   const nextListings = marketplace.npcListings.filter((listing) => listing.expiresAt > now)
   const shouldAdvanceEpoch = now >= marketplace.virtualMarketNextEpochAt
+  const currentEpoch = Math.floor(Math.max(0, now) / MARKETPLACE_EPOCH_MS)
   return {
     ...marketplace,
     npcListings: nextListings,
     lastSupplyTick: now,
     nextSupplyTick: now + MARKETPLACE_SUPPLY_TICK_MS,
-    virtualMarketEpoch: shouldAdvanceEpoch ? marketplace.virtualMarketEpoch + 1 : marketplace.virtualMarketEpoch,
-    virtualMarketNextEpochAt: shouldAdvanceEpoch ? now + MARKETPLACE_EPOCH_MS : marketplace.virtualMarketNextEpochAt,
+    virtualMarketEpoch: shouldAdvanceEpoch ? currentEpoch : marketplace.virtualMarketEpoch,
+    virtualMarketNextEpochAt: shouldAdvanceEpoch ? (currentEpoch + 1) * MARKETPLACE_EPOCH_MS : marketplace.virtualMarketNextEpochAt,
   }
 }
 

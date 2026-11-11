@@ -47,6 +47,16 @@ describe('marketplace reducer transactions', () => {
     expect(next.lastError).toMatch(/Need/)
   })
 
+  it('rejects an expired NPC snapshot without charging or transferring it', () => {
+    const expiredListing = { ...listing(), expiresAt: 99 }
+    const initial = { ...defaultGameState, money: 500, inventory: [], marketplace: createDefaultMarketplaceState() }
+    const next = gameReducer(initial, { type: 'BUY_MARKET_LISTING', listingId: expiredListing.id, listing: expiredListing, requestId: 'expired-buy', now: 100 })
+    expect(next.money).toBe(500)
+    expect(next.inventory).toHaveLength(0)
+    expect(next.marketplace.processedRequestIds).not.toContain('expired-buy')
+    expect(next.lastError).toMatch(/no longer available/i)
+  })
+
   it('buys a generated listing snapshot once and remembers its virtual ID as removed', () => {
     const virtual = { ...listing(), id: 'vm-epoch-skin-1' }
     const initial = { ...defaultGameState, money: 500, inventory: [], marketplace: createDefaultMarketplaceState() }

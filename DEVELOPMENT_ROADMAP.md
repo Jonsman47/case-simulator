@@ -132,3 +132,16 @@ Status: **COMPLETE FOR LOCAL SIMULATION — LIVE SUPABASE DEPLOYMENT UNVERIFIED*
 - Added performance and regression coverage for total supply, common/elite divergence, iconic zero-supply Patterns, deterministic regeneration, non-overlapping pagination, sorting/filtering, page 1,001, exact-once purchase, negotiation overrides and save migration.
 
 Exit evidence: 70 unit files/371 tests, zero-error lint, TypeScript, production/PWA build, release verification, 2,134-asset validation and all 16 Chromium journeys pass. The browser suite includes catalog → dedicated market → exact purchase/tombstone persistence. Live Supabase deployment remains unverified because credentials were not provided. See `case-opening-simulator/docs/marketplace-economy.md`.
+
+## Post-release CSWEAR Marketplace Restructure
+
+Status: **IMPLEMENTED — FINAL VERIFICATION RECORDED IN PROJECT_STATUS.md**
+
+- Separated Market (price checker only) from CSWEAR (simulated transactions, negotiation, listings, escrow and history) and added CSWEAR to the existing Market navigation group.
+- Added dynamic O(1) per-skin `View offers on CSWEAR` counts and deep links with browser Back support.
+- Replaced visible numbered marketplace pagination with lazy catalog batches and a `react-window` listing stream. The stream automatically grows near the bottom, retains bounded generated pages, unmounts distant rows, preserves a per-query scroll index and provides a manual load fallback.
+- Added seven-day virtual and player listing lifetimes, timestamp-derived countdown/status UI, efficient epoch expiry, direct long-offline epoch catch-up and expired-purchase rejection.
+- Added Pattern classification, credible Best Deals and Expiring Soon filters/sorts while retaining wear, edition, Pattern ID/tier, float, price and seller querying.
+- Migrated saves from v32 to v33 without changing inventory, money, Patterns, escrow, negotiation history, transaction history, request IDs or purchased-listing tombstones.
+
+Exit evidence: 70 unit files/376 tests, zero-error lint, TypeScript, production/PWA build, 2,134-asset verification, release verification, and all 16 Chromium journeys pass. The two changed Market/CSWEAR journeys also passed after final cursor-restoration hardening.

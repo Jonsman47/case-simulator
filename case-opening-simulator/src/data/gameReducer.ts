@@ -41,6 +41,7 @@ import { analyzeTradeUp, pickTradeUpOutcome, suggestBestTradeUps } from '../util
 import {
   getInstantSaleQuote,
   hasProcessedMarketplaceRequest,
+  MARKETPLACE_LISTING_DURATION_MS,
   negotiateNpcListing,
   rememberMarketplaceRequest,
   tickMarketplace,
@@ -2151,7 +2152,7 @@ function listItemOnMarket(
       askingPrice: roundCurrency(askingPrice),
       fairMarketValue,
       createdAt: now,
-      expiresAt: now + 7 * 24 * 60 * 60_000,
+      expiresAt: now + MARKETPLACE_LISTING_DURATION_MS,
       status: 'active',
     }, ...state.marketplace.playerListings],
   }, requestId)

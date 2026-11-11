@@ -1,6 +1,6 @@
 # Simulated Marketplace and Economy
 
-Updated: 2026-11-06 · Save schema: v32
+Updated: 2026-11-09 · Save schema: v33
 
 ## Scope and safety
 
@@ -8,16 +8,17 @@ This is a fictional in-game market. It never connects to Steam trading, handles 
 
 ## Virtual catalog and supply
 
-- The main market is a catalog of all 2,092 supported skins. Every card shows its image, rarity, lowest simulated asking price, complete pattern-aware value range and skin-specific estimated offer count.
+- `Market` is the non-transactional price checker. `CSWEAR` is the simulated marketplace. The Market price checker shows a live O(1) offer count and deep-link for every skin; CSWEAR contains browsing, buying, negotiation, owned-item listing, escrow and history.
+- CSWEAR begins with a catalog of all 2,092 supported skins. Every card shows its image, rarity, lowest simulated asking price, complete pattern-aware value range and skin-specific estimated offer count.
 - Supply is calculated in O(1) per skin from rarity, reference value, weapon demand, number of source cases/collections, deterministic circulation history and the current market epoch. Cheap circulating skins can have tens or hundreds of thousands of offers; elite items may have single-digit supply.
 - Counts are explicitly labeled **simulator estimates**. They are not represented as live CSFloat, Steam or third-party inventory.
-- The total market can contain millions of offers without allocating millions of objects. Only the requested page (24 listings) is generated. A page stores stable virtual IDs derived from market epoch, skin and source index.
-- Six-hour epochs produce bounded supply/price turnover. The next-epoch timestamp is persisted and advances at most one epoch after a forward clock jump; clock rollback cannot restore an older market.
-- Wear, edition, float, Pattern, seller and price filters are applied during bounded deterministic page scans. Page 1,001 of a high-supply skin is covered by the performance suite without materializing preceding pages.
+- The total market can contain millions of offers without allocating millions of objects. The UI starts with 24 listings, grows automatically near the bottom, and uses `react-window` so only nearby rows are mounted. At most 18 generated listing pages are retained in the component cache; evicted pages regenerate deterministically when revisited.
+- Listing IDs derive from the persisted market epoch, skin and source index. Seven-day epochs give every newly generated virtual listing exactly seven real-world days between `createdAt` and `expiresAt`; player listings already use the same lifetime. Long offline gaps jump directly to the current epoch instead of replaying or reviving expired populations.
+- Wear, edition, float, Pattern ID/classification/tier, seller and price filters are applied during bounded deterministic population scans. Sorting includes price, float, credible discount, creation/expiry and Pattern value. `Best deals` discounts estimated-confidence Patterns so uncertain appraisals cannot dominate solely on an unreliable valuation.
 
 ## Exact listings and Pattern scarcity
 
-- Each generated listing contains an exact item instance: base skin, wear, float, Pattern ID/classification, StatTrak/Souvenir state, estimated value, seller, creation/expiry times, liquidity and scarcity.
+- Each generated listing contains an exact item instance: base skin, wear, float, Pattern ID/classification, StatTrak/Souvenir state, estimated value, seller, creation/expiry times, derived active/expired status, liquidity and scarcity.
 - Ordinary listings regenerate identically from their stable ID inputs. Interacted listings are compact persisted exceptions; negotiation state and seller memory therefore survive epoch changes and reloads.
 - Purchased virtual IDs are stored in a removal ledger and are excluded from subsequent regeneration. The reducer also retains the request ledger, so repeat clicks cannot charge or transfer twice.
 - Documented notable, rare, exceptional and iconic Patterns receive progressively stronger availability gates. Exact Pattern supply uses deterministic stochastic rounding; `0 active listings` is a normal, stable result for elite seeds such as AK-47 Case Hardened Pattern #661.
@@ -52,7 +53,7 @@ This is a fictional in-game market. It never connects to Steam trading, handles 
 
 ## Persistence and authority
 
-- v31 saves migrate to v32 by retaining all marketplace escrow, transactions, materialized negotiations and player progress while adding the virtual epoch, next-epoch deadline, deterministic seed and purchased-ID ledger. Inventory, money, IDs, float and Patterns are never rerolled.
+- v31 saves migrate through v32 to v33. v33 realigns virtual supply to persisted seven-day epochs while retaining marketplace escrow, transactions, materialized negotiations, removed-ID tombstones and all player progress. Inventory, money, IDs, float and Patterns are never rerolled.
 - The save stores only player listings, transaction history, request IDs, removed virtual IDs and interacted NPC listings. It never stores the simulated catalog population.
 - Local guest play is client-authoritative because the project is a static PWA. Reducer transactions are atomic and idempotent within the saved game, but local state is not a cheat-resistant server boundary.
 - `supabase/migrations/20261105_marketplace_v31.sql` adds normalized NPC/listing/negotiation/history/request-ledger tables, RLS/grants, and an idempotent `marketplace_buy_now` RPC that row-locks both listing and save before transferring the exact JSON item and currency in one database transaction.
@@ -61,9 +62,9 @@ This is a fictional in-game market. It never connects to Steam trading, handles 
 ## Performance targets
 
 - Catalog supply precomputation: under 250 ms in the unit benchmark.
-- First dedicated listing page: under 250 ms on the development reference machine.
+- First dedicated listing batch: under 250 ms on the development reference machine.
 - Page 1,001 of a high-supply skin: under 2 seconds and fewer than 30,000 generated candidates.
-- Resident listing objects for normal browsing: at most one visible page plus compact interacted exceptions.
+- Mounted listing rows: viewport plus three overscan rows. Generated page cache: at most 18 pages plus compact interacted exceptions.
 - No full-market scan is used for catalog sorting or offer counts.
 
 ## Reference supply snapshot
@@ -79,9 +80,9 @@ These are calibrated simulator populations and deliberately are not described as
 
 ## Verification
 
-- Unit coverage includes total supply, common-versus-elite circulation, iconic Pattern zero-supply epochs, deterministic identities, stable non-overlapping pagination, filters, sorting, purchased-ID exclusion, negotiation overrides, page-1,001 performance, exact-once reducer transfer, escrow, and v32 save migration. The complete suite passes: 70 files and 371 tests.
-- Browser coverage navigates catalog → dedicated skin market → listing purchase and checks the compact removal ledger. All 16 Chromium journeys pass.
-- Lint, TypeScript, production/PWA build, 2,134-asset verification and `verify:release` pass.
+- Unit coverage includes total supply, common-versus-elite circulation, iconic Pattern zero-supply epochs, deterministic identities, stable non-overlapping batches, seven-day expiry, filters, sorting, purchased-ID exclusion, negotiation overrides, high-offset performance, exact-once reducer transfer, escrow, and v33 save migration.
+- Browser coverage verifies Market → CSWEAR deep links, continuous virtualized loading, bounded mounted rows, catalog → dedicated skin market → exact purchase and the compact removal ledger.
+- Verification passes: 70 Vitest files/376 tests, zero-error lint, TypeScript, production/PWA build, 2,134-asset verification, `verify:release`, and 16/16 Chromium journeys. The two changed Market/CSWEAR journeys were rerun after final cursor-restoration hardening and passed 2/2.
 
 ## Primary rules references
 

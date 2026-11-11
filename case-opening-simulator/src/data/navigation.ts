@@ -52,6 +52,7 @@ export const primaryNavigationItems: NavigationItem[] = [
     icon: ChartNoAxesCombined,
     items: [
       { label: 'Market', path: '/market' },
+      { label: 'CSWEAR', path: '/cswear' },
       { label: 'Events', path: '/events', icon: RadioTower },
       { label: 'Admin Panel', path: '/admin', adminOnly: true },
     ],

@@ -4,6 +4,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { GameContext, type GameContextValue } from '../components/GameContext'
 import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
 import { defaultGameState, type GameState } from '../data/gameState'
@@ -106,9 +107,11 @@ function renderMarket(stateOverrides: Partial<GameState> = {}) {
   }
 
   render(
-    <GameContext.Provider value={makeContextValue(state)}>
-      <Market />
-    </GameContext.Provider>,
+    <MemoryRouter>
+      <GameContext.Provider value={makeContextValue(state)}>
+        <Market />
+      </GameContext.Provider>
+    </MemoryRouter>,
   )
 }
 
@@ -121,6 +124,7 @@ describe('Market', () => {
     expect(screen.getByRole('combobox', { name: 'Sort Market skins' })).toHaveValue('highest-maximum')
     expect(screen.getByText('Valid price range')).toBeInTheDocument()
     expect(screen.getAllByText(/\$[\d,.]+\s+–\s+\$[\d,.]+/).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('button', { name: /View offers on CSWEAR \([\d,]+\)/ }).length).toBeGreaterThan(0)
 
     expect(screen.getAllByTestId('market-row').length).toBeLessThanOrEqual(
       Math.min(SKIN_DEFINITIONS.length, 32),

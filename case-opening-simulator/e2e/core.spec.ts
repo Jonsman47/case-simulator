@@ -209,7 +209,7 @@ test('Poop Cleaning requires disposal and grants its reward exactly once', async
   expect((await readSave(page)).state.money).toBe(after.state.money)
 })
 
-test('Market rows open a paginated wear and Pattern price checker', async ({ page }) => {
+test('Market remains a dedicated price checker and links each skin to CSWEAR supply', async ({ page }) => {
   await page.goto('/market')
   await dismissTutorial(page)
   const sort = page.getByRole('combobox', { name: 'Sort Market skins' })
@@ -228,6 +228,7 @@ test('Market rows open a paginated wear and Pattern price checker', async ({ pag
   ranges = await readVisibleRanges()
   expect(ranges[0][0]).toBeLessThanOrEqual(ranges[1][0])
   await page.getByRole('searchbox', { name: /search market skins/i }).fill('Fade')
+  await expect(page.getByRole('button', { name: /View offers on CSWEAR \([\d,]+\)/ }).first()).toBeVisible()
   const row = page.getByTestId('market-row').first()
   await expect(row).toBeVisible()
   await row.click()
@@ -239,10 +240,14 @@ test('Market rows open a paginated wear and Pattern price checker', async ({ pag
     await expect(dialog.getByRole('spinbutton', { name: 'Search pattern ID' })).toBeVisible()
     expect(await dialog.getByRole('row').count()).toBeLessThan(40)
   }
+  await dialog.getByRole('button', { name: 'Close price details' }).click()
+  await page.getByRole('button', { name: /View offers on CSWEAR \([\d,]+\)/ }).first().click()
+  await expect(page).toHaveURL(/\/cswear\?skin=/)
+  await expect(page.getByText('Listing filters')).toBeVisible()
 })
 
-test('virtual marketplace navigates catalog to a dedicated skin market and purchases once', async ({ page }) => {
-  await page.goto('/market')
+test('CSWEAR navigates catalog, infinitely loads stable offers, and purchases once', async ({ page }) => {
+  await page.goto('/cswear')
   await dismissTutorial(page)
   const catalogSearch = page.getByRole('textbox', { name: 'Search skin markets' })
   await catalogSearch.fill('P250 Sand Dune')
@@ -251,7 +256,16 @@ test('virtual marketplace navigates catalog to a dedicated skin market and purch
   await skinMarket.click()
   await expect(page.getByRole('button', { name: /Back to all skin markets/i })).toBeVisible()
   await expect(page.getByText('Listing filters')).toBeVisible()
-  await expect(page.getByText(/full market is never allocated in memory/i)).toBeVisible()
+  await expect(page.getByText(/offer population is never allocated in memory/i)).toBeVisible()
+  await expect(page).toHaveURL(/\/cswear\?skin=/)
+  const virtualList = page.getByTestId('cswear-infinite-list')
+  await expect(virtualList).toBeVisible()
+  const initialText = await virtualList.getByText(/Loaded index:/).innerText()
+  await virtualList.locator('[role="list"]').evaluate((element) => { element.scrollTop = element.scrollHeight })
+  await expect.poll(async () => virtualList.getByText(/Loaded index:/).innerText()).not.toBe(initialText)
+  const visibleOffers = virtualList.locator('article')
+  const idsBefore = await visibleOffers.evaluateAll((articles) => articles.map((article) => article.textContent))
+  expect(new Set(idsBefore).size).toBe(idsBefore.length)
 
   const before = await readSave(page)
   const buy = page.getByRole('button', { name: 'Buy', exact: true }).first()

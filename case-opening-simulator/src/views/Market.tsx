@@ -1,15 +1,15 @@
-import { ArrowDownWideNarrow, RefreshCw, Search, Sparkles } from 'lucide-react'
+import { ArrowDownWideNarrow, RefreshCw, Search, Sparkles, Users } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { List } from 'react-window'
+import { useNavigate } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { MarketSkinDetails } from '../components/MarketSkinDetails'
-import { NpcMarketplace } from '../components/NpcMarketplace'
-import { AcquisitionReveal } from '../components/AcquisitionReveal'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { useMarket } from '../hooks/useMarket'
 import { useGame } from '../hooks/useGame'
 import { type MarketTrendArrow } from '../market/marketSimulation'
+import { getVirtualSkinSupply } from '../marketplace/virtualMarket'
 import { formatCurrency } from '../utils/format'
 import {
   createMarketSearchIndex,
@@ -29,6 +29,7 @@ const MARKET_LIST_MAX_HEIGHT = 640
 const marketSearchIndex = createMarketSearchIndex(SKIN_DEFINITIONS)
 const marketGridColumns =
   'minmax(20rem,2fr) minmax(9rem,1fr) minmax(13rem,1fr) minmax(4rem,.35fr)'
+const marketGridColumnsWithOffers = `${marketGridColumns} minmax(12rem,.75fr)`
 
 const marketSortOptions: { label: string; value: MarketSortOption }[] = [
   { label: 'Highest maximum price', value: 'highest-maximum' },
@@ -57,15 +58,21 @@ function formatTickTime(value: number) {
 
 interface MarketRowProps {
   onSelect: (row: MarketSkinRow) => void
+  onViewOffers: (skinId: string) => void
   rows: MarketSkinRow[]
+  virtualMarketEpoch: number
+  virtualMarketSeed: number
 }
 
 function MarketRow({
   ariaAttributes,
   index,
   onSelect,
+  onViewOffers,
   rows,
   style,
+  virtualMarketEpoch,
+  virtualMarketSeed,
 }: MarketRowProps & {
   ariaAttributes: {
     'aria-posinset': number
@@ -82,17 +89,21 @@ function MarketRow({
   }
 
   const rarityColor = getSkinRarityColor(row.skin)
+  const offerCount = getVirtualSkinSupply(row.skin, row.marketValue, virtualMarketEpoch, virtualMarketSeed)
 
   return (
-    <div {...ariaAttributes} style={style}>
+    <div
+      {...ariaAttributes}
+      className={index % 2 === 0 ? 'bg-cs-surface/60' : 'bg-cs-panel'}
+      style={{ ...style, display: 'grid', gridTemplateColumns: marketGridColumnsWithOffers }}
+    >
       <button
         className={[
-          'grid h-full w-full items-center border-b border-cs-border text-left text-sm transition-colors hover:bg-rarity-special/10 focus-visible:relative focus-visible:z-10',
-          index % 2 === 0 ? 'bg-cs-surface/60' : 'bg-cs-panel',
+          'grid h-full min-w-0 items-center border-b border-cs-border text-left text-sm transition-colors hover:bg-rarity-special/10 focus-visible:relative focus-visible:z-10',
         ].join(' ')}
         data-testid="market-row"
         onClick={() => onSelect(row)}
-        style={{ borderColor: rarityColor, gridTemplateColumns: marketGridColumns }}
+        style={{ borderColor: rarityColor, gridColumn: '1 / 5', gridTemplateColumns: marketGridColumns }}
         type="button"
       >
         <div className="flex min-w-0 items-center gap-2 border-r border-cs-border px-2 py-1.5 text-cs-text">
@@ -122,12 +133,23 @@ function MarketRow({
           {row.trend}
         </div>
       </button>
+      <div className="grid min-w-0 place-items-center border-b border-l border-cs-border px-2 py-1.5">
+        <button
+          className="inline-flex min-h-10 w-full items-center justify-center gap-1.5 border border-rarity-special/60 bg-rarity-special/10 px-2 text-center text-xs font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20"
+          onClick={() => onViewOffers(row.skin.id)}
+          type="button"
+        >
+          <Users aria-hidden="true" size={14} />
+          <span>View offers on CSWEAR ({offerCount.toLocaleString()})</span>
+        </button>
+      </div>
     </div>
   )
 }
 
 export function Market() {
-  const { claimAcquisition, state } = useGame()
+  const { state } = useGame()
+  const navigate = useNavigate()
   const {
     lastMarketTick,
     marketTrends,
@@ -157,7 +179,13 @@ export function Market() {
     rows.length === 0
       ? 0
       : Math.min(MARKET_LIST_MAX_HEIGHT, Math.max(240, rows.length * MARKET_ROW_HEIGHT))
-  const rowProps = useMemo<MarketRowProps>(() => ({ onSelect: setSelectedRow, rows }), [rows])
+  const rowProps = useMemo<MarketRowProps>(() => ({
+    onSelect: setSelectedRow,
+    onViewOffers: (skinId) => navigate(`/cswear?skin=${encodeURIComponent(skinId)}`),
+    rows,
+    virtualMarketEpoch: state.marketplace.virtualMarketEpoch,
+    virtualMarketSeed: state.marketplace.virtualMarketSeed,
+  }), [navigate, rows, state.marketplace.virtualMarketEpoch, state.marketplace.virtualMarketSeed])
 
   return (
     <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5" data-onboarding-target="market-catalog">
@@ -177,8 +205,6 @@ export function Market() {
           Tick Market
         </button>
       </div>
-
-      <NpcMarketplace />
 
       <div className="mt-7 border-l-4 border-rarity-industrial pl-4">
         <p className="font-mono text-xs uppercase text-rarity-industrial">Reference catalog</p>
@@ -216,9 +242,9 @@ export function Market() {
             <div className="min-w-[50rem]">
               <div
                 className="grid border-b border-cs-border bg-cs-surface text-cs-muted"
-                style={{ gridTemplateColumns: marketGridColumns }}
+                style={{ gridTemplateColumns: marketGridColumnsWithOffers }}
               >
-                {['Skin preview', 'Rarity', 'Valid price range', 'Trend'].map((heading) => (
+                {['Skin preview', 'Rarity', 'Valid price range', 'Trend', 'CSWEAR supply'].map((heading) => (
                   <div
                     className="border-r border-cs-border px-2 py-1.5 font-mono text-[10px] uppercase last:border-r-0"
                     key={heading}
@@ -248,7 +274,6 @@ export function Market() {
         </div>
       </div>
       {selectedRow ? <MarketSkinDetails currentMarketValue={selectedRow.marketValue} marketPriceRange={selectedRow.priceRange} onClose={() => setSelectedRow(undefined)} skin={selectedRow.skin} /> : null}
-      {state.marketplace.pendingAcquisition && state.marketplace.pendingAcquisition.source !== 'trade-up' ? <AcquisitionReveal acquisition={state.marketplace.pendingAcquisition} onClaim={claimAcquisition} /> : null}
     </section>
   )
 }

@@ -10,7 +10,7 @@ export const VIRTUAL_MARKET_EPOCH_MS = MARKETPLACE_EPOCH_MS
 export const VIRTUAL_MARKET_PAGE_SIZE = 24
 export const VIRTUAL_MARKET_MAX_SCAN = 300_000
 
-export type VirtualListingSort = 'lowest-price' | 'highest-price' | 'lowest-float' | 'highest-float' | 'newest' | 'valuable-pattern'
+export type VirtualListingSort = 'lowest-price' | 'highest-price' | 'lowest-float' | 'highest-float' | 'best-deals' | 'newest' | 'expiring-soon' | 'valuable-pattern'
 export type VirtualListingEdition = 'all' | 'normal' | 'stattrak' | 'souvenir'
 export type VirtualPatternTier = 'all' | 'special' | SkinPattern['tier']
 
@@ -22,8 +22,17 @@ export interface VirtualListingFilters {
   maxFloat?: number
   patternId?: number
   patternTier?: VirtualPatternTier
+  patternClassification?: string
   edition?: VirtualListingEdition
   seller?: string
+  /** Internal continuation cursor used by the virtualized browser. */
+  afterPrice?: { value: number; id: string; descending: boolean }
+  /** Internal continuation cursor used by the virtualized browser. */
+  afterFloat?: { value: number; id: string; descending: boolean }
+  afterDeal?: { score: number; askingPrice: number; id: string }
+  afterCreatedAt?: { value: number; id: string }
+  afterExpiresAt?: { value: number; id: string }
+  afterPattern?: { multiplier: number; fairMarketValue: number; id: string }
 }
 
 export interface VirtualListingPage {
@@ -247,8 +256,7 @@ export function createVirtualListing({
     askingPrice * (1 - reservationDiscount),
   ))
   const epochStart = epoch * VIRTUAL_MARKET_EPOCH_MS
-  const ageRank = getDimensionValue(sourceIndex, skin.id, epoch, 'age')
-  const createdAt = Math.max(0, Math.round(epochStart - ageRank * VIRTUAL_MARKET_EPOCH_MS * (1 + scarcityScore * 6)))
+  const createdAt = Math.max(0, epochStart)
   const item: SkinInstance = {
     ...skin,
     instanceId: `${id}-item`,
@@ -276,7 +284,7 @@ export function createVirtualListing({
     liquidityScore: clamp(1 - scarcityScore, .005, 1),
     scarcityScore,
     createdAt,
-    expiresAt: epochStart + VIRTUAL_MARKET_EPOCH_MS * (scarcityScore > .94 ? 12 : scarcityScore > .8 ? 6 : 2),
+    expiresAt: createdAt + VIRTUAL_MARKET_EPOCH_MS,
   }
 }
 
@@ -291,13 +299,91 @@ function matchesFilters(listing: NpcMarketListing, filters: VirtualListingFilter
     if (filters.patternTier === 'special' && listing.item.pattern?.tier === 'standard') return false
     if (filters.patternTier !== 'special' && listing.item.pattern?.tier !== filters.patternTier) return false
   }
+  if (filters.patternClassification?.trim()) {
+    const query = filters.patternClassification.trim().toLowerCase()
+    const pattern = listing.item.pattern
+    if (!pattern || !`${pattern.name} ${pattern.family} ${pattern.tier}`.toLowerCase().includes(query)) return false
+  }
   if (filters.edition && filters.edition !== 'all') {
     if (filters.edition === 'stattrak' && !listing.item.statTrak) return false
     if (filters.edition === 'souvenir' && !listing.item.souvenir) return false
     if (filters.edition === 'normal' && (listing.item.statTrak || listing.item.souvenir)) return false
   }
   if (filters.seller && !listing.seller.username.toLowerCase().includes(filters.seller.trim().toLowerCase())) return false
+  if (filters.afterPrice) {
+    const { descending, id, value } = filters.afterPrice
+    const followsCursor = descending
+      ? listing.askingPrice < value || (listing.askingPrice === value && listing.id.localeCompare(id) > 0)
+      : listing.askingPrice > value || (listing.askingPrice === value && listing.id.localeCompare(id) > 0)
+    if (!followsCursor) return false
+  }
+  if (filters.afterFloat) {
+    const { descending, id, value } = filters.afterFloat
+    const followsCursor = descending
+      ? listing.item.floatValue < value || (listing.item.floatValue === value && listing.id.localeCompare(id) > 0)
+      : listing.item.floatValue > value || (listing.item.floatValue === value && listing.id.localeCompare(id) > 0)
+    if (!followsCursor) return false
+  }
+  if (filters.afterDeal) {
+    const score = getCredibleDealScore(listing)
+    const cursor = filters.afterDeal
+    const followsCursor = score < cursor.score
+      || (score === cursor.score && listing.askingPrice > cursor.askingPrice)
+      || (score === cursor.score && listing.askingPrice === cursor.askingPrice && listing.id.localeCompare(cursor.id) > 0)
+    if (!followsCursor) return false
+  }
+  if (filters.afterCreatedAt) {
+    const cursor = filters.afterCreatedAt
+    if (!(listing.createdAt < cursor.value || (listing.createdAt === cursor.value && listing.id.localeCompare(cursor.id) > 0))) return false
+  }
+  if (filters.afterExpiresAt) {
+    const cursor = filters.afterExpiresAt
+    if (!(listing.expiresAt > cursor.value || (listing.expiresAt === cursor.value && listing.id.localeCompare(cursor.id) > 0))) return false
+  }
+  if (filters.afterPattern) {
+    const multiplier = listing.item.pattern?.premiumMultiplier ?? 1
+    const cursor = filters.afterPattern
+    const followsCursor = multiplier < cursor.multiplier
+      || (multiplier === cursor.multiplier && listing.fairMarketValue < cursor.fairMarketValue)
+      || (multiplier === cursor.multiplier && listing.fairMarketValue === cursor.fairMarketValue && listing.id.localeCompare(cursor.id) > 0)
+    if (!followsCursor) return false
+  }
   return true
+}
+
+export function createVirtualListingContinuationFilters(
+  filters: VirtualListingFilters,
+  sort: VirtualListingSort,
+  boundary: NpcMarketListing,
+): VirtualListingFilters {
+  if (sort === 'lowest-price' || sort === 'highest-price') {
+    return {
+      ...filters,
+      afterPrice: { value: boundary.askingPrice, id: boundary.id, descending: sort === 'highest-price' },
+    }
+  }
+  if (sort === 'lowest-float' || sort === 'highest-float') {
+    return {
+      ...filters,
+      afterFloat: { value: boundary.item.floatValue, id: boundary.id, descending: sort === 'highest-float' },
+    }
+  }
+  if (sort === 'best-deals') {
+    return {
+      ...filters,
+      afterDeal: { score: getCredibleDealScore(boundary), askingPrice: boundary.askingPrice, id: boundary.id },
+    }
+  }
+  if (sort === 'newest') return { ...filters, afterCreatedAt: { value: boundary.createdAt, id: boundary.id } }
+  if (sort === 'expiring-soon') return { ...filters, afterExpiresAt: { value: boundary.expiresAt, id: boundary.id } }
+  return {
+    ...filters,
+    afterPattern: {
+      multiplier: boundary.item.pattern?.premiumMultiplier ?? 1,
+      fairMarketValue: boundary.fairMarketValue,
+      id: boundary.id,
+    },
+  }
 }
 
 function estimateFilteredSupply(skin: SkinBase, supply: number, filters: VirtualListingFilters, epoch: number, seed: number) {
@@ -310,6 +396,7 @@ function estimateFilteredSupply(skin: SkinBase, supply: number, filters: Virtual
   if (typeof filters.patternId === 'number') return getVirtualPatternSupply(skin, filters.patternId, supply, epoch, seed)
   if (filters.patternTier === 'special') factor *= .015
   else if (filters.patternTier && filters.patternTier !== 'all') factor *= patternAvailability[filters.patternTier] * .025
+  if (filters.patternClassification?.trim()) factor *= .02
   if (filters.seller?.trim()) factor *= .0025
   if (typeof filters.minPrice === 'number' || typeof filters.maxPrice === 'number') factor *= .65
   return Math.max(0, Math.round(supply * factor))
@@ -341,10 +428,20 @@ function compareListings(sort: VirtualListingSort) {
     if (sort === 'highest-price') return b.askingPrice - a.askingPrice || a.id.localeCompare(b.id)
     if (sort === 'lowest-float') return a.item.floatValue - b.item.floatValue || a.id.localeCompare(b.id)
     if (sort === 'highest-float') return b.item.floatValue - a.item.floatValue || a.id.localeCompare(b.id)
+    if (sort === 'best-deals') return getCredibleDealScore(b) - getCredibleDealScore(a) || a.askingPrice - b.askingPrice || a.id.localeCompare(b.id)
     if (sort === 'newest') return b.createdAt - a.createdAt || a.id.localeCompare(b.id)
+    if (sort === 'expiring-soon') return a.expiresAt - b.expiresAt || a.id.localeCompare(b.id)
     if (sort === 'valuable-pattern') return (b.item.pattern?.premiumMultiplier ?? 1) - (a.item.pattern?.premiumMultiplier ?? 1) || b.fairMarketValue - a.fairMarketValue || a.id.localeCompare(b.id)
     return a.askingPrice - b.askingPrice || a.id.localeCompare(b.id)
   }
+}
+
+export function getCredibleDealScore(listing: NpcMarketListing) {
+  const discount = clamp((listing.fairMarketValue - listing.askingPrice) / Math.max(.01, listing.fairMarketValue), -.5, .5)
+  const confidence = listing.item.pattern?.referenceConfidence === 'verified'
+    ? 1
+    : listing.item.pattern?.referenceConfidence === 'estimated' ? .68 : .5
+  return discount * confidence
 }
 
 export function generateVirtualListingPage({
@@ -358,6 +455,7 @@ export function generateVirtualListingPage({
   sort = 'lowest-price',
   page = 0,
   pageSize = VIRTUAL_MARKET_PAGE_SIZE,
+  now = epoch * VIRTUAL_MARKET_EPOCH_MS + VIRTUAL_MARKET_EPOCH_MS / 2,
 }: {
   skin: SkinBase
   marketValues: Record<string, number>
@@ -369,43 +467,58 @@ export function generateVirtualListingPage({
   sort?: VirtualListingSort
   page?: number
   pageSize?: number
+  now?: number
 }): VirtualListingPage {
   const totalSupply = getVirtualSkinSupply(skin, marketValues[skin.id], epoch, seed)
   const normalizedPage = Math.max(0, Math.floor(page))
   const normalizedPageSize = clamp(Math.floor(pageSize), 1, 100)
+  const epochStart = epoch * VIRTUAL_MARKET_EPOCH_MS
+  const virtualPopulationActive = now >= epochStart && now < epochStart + VIRTUAL_MARKET_EPOCH_MS
   const exactPatternSupply = typeof filters.patternId === 'number'
     ? getVirtualPatternSupply(skin, filters.patternId, totalSupply, epoch, seed)
     : undefined
   const removedBeforeGeneration = new Set(removedListingIds)
-  const matchingPersistedOverrides = overrides.filter((listing) => !removedBeforeGeneration.has(listing.id) && matchesFilters(listing, filters))
+  const matchingPersistedOverrides = overrides.filter((listing) => listing.expiresAt > now && !removedBeforeGeneration.has(listing.id) && matchesFilters(listing, filters))
+  if (!virtualPopulationActive && matchingPersistedOverrides.length === 0) {
+    return { listings: [], totalSupply, filteredSupplyEstimate: 0, page: normalizedPage, pageSize: normalizedPageSize, scanned: 0, exactPatternUnavailable: false }
+  }
   if (exactPatternSupply === 0 && matchingPersistedOverrides.length === 0) {
     return { listings: [], totalSupply, filteredSupplyEstimate: 0, page: normalizedPage, pageSize: normalizedPageSize, scanned: 0, exactPatternUnavailable: true }
   }
   const removed = removedBeforeGeneration
   const overrideMap = new Map(overrides.map((listing) => [listing.id, listing]))
-  const skip = normalizedPage * normalizedPageSize
+  const rankedCandidateMultiplier = sort === 'newest' || sort === 'expiring-soon' ? 1 : 16
+  const candidateTarget = normalizedPageSize * rankedCandidateMultiplier
+  // Page zero ranks a wider deterministic candidate window. Direct numbered
+  // pages begin after that window so they cannot overlap it, while cursor-based
+  // infinite scrolling always asks for page zero with a continuation filter.
+  const skip = normalizedPage === 0
+    ? 0
+    : normalizedPage * normalizedPageSize + (rankedCandidateMultiplier - 1) * normalizedPageSize
   const matches: NpcMarketListing[] = []
   const seen = new Set<string>()
   let matched = 0
   let scanned = 0
   const scanLimit = Math.min(totalSupply, Math.max(VIRTUAL_MARKET_MAX_SCAN, (skip + normalizedPageSize) * 24))
 
-  // Interacted listings are compact persisted exceptions. Keep them visible
-  // on the first matching page even after the procedural epoch advances.
+  // Current-epoch overrides stay at their deterministic source rank. Only an
+  // unexpired interacted listing from an older epoch is pinned to page one.
   if (normalizedPage === 0) {
+    const currentEpochPrefix = `vm-${epoch.toString(36)}-`
     for (const listing of overrides) {
-      if (matches.length >= normalizedPageSize || removed.has(listing.id) || !matchesFilters(listing, filters)) continue
+      if (listing.id.startsWith(currentEpochPrefix) || matches.length >= candidateTarget || listing.expiresAt <= now || removed.has(listing.id) || !matchesFilters(listing, filters)) continue
       matches.push(listing)
       seen.add(listing.id)
     }
   }
 
-  for (let rank = 0; rank < totalSupply && scanned < scanLimit && matches.length < normalizedPageSize; rank += 1) {
+  for (let rank = 0; rank < totalSupply && scanned < scanLimit && matches.length < candidateTarget; rank += 1) {
     const sourceIndex = sourceIndexForRank(rank, totalSupply, skin, epoch, sort)
     const generated = createVirtualListing({ skin, marketValues, epoch, seed, sourceIndex })
     scanned += 1
     if (removed.has(generated.id)) continue
     const listing = overrideMap.get(generated.id) ?? generated
+    if (listing.expiresAt <= now) continue
     if (seen.has(listing.id)) continue
     if (!matchesFilters(listing, filters)) continue
     if (matched < skip) {

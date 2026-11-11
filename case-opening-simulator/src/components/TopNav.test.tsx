@@ -28,6 +28,12 @@ describe('TopNav', () => {
       path: '/credits',
       tone: 'danger',
     })
+    expect(getPrimaryNavigationItems().find((item) => item.label === 'Market')?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Market', path: '/market' }),
+        expect.objectContaining({ label: 'CSWEAR', path: '/cswear' }),
+      ]),
+    )
   })
 
   it('opens a mobile navigation drawer and closes it after route selection', () => {

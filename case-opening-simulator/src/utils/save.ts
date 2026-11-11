@@ -88,10 +88,10 @@ import {
 } from './poopCleanupMinigame'
 import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
-import { createDefaultMarketplaceState } from '../marketplace/marketplace'
+import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketplace/marketplace'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 32
+export const CURRENT_SAVE_VERSION = 33
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -905,7 +905,7 @@ function normalizeMarketplace(value: unknown): MarketplaceState {
     lastSupplyTick: normalizeNumber(value.lastSupplyTick, 0),
     nextSupplyTick: normalizeNumber(value.nextSupplyTick, 0),
     virtualMarketEpoch: Math.max(0, Math.floor(normalizeNumber(value.virtualMarketEpoch, 0))),
-    virtualMarketNextEpochAt: Math.max(0, normalizeNumber(value.virtualMarketNextEpochAt, Date.now() + 6 * 60 * 60_000)),
+    virtualMarketNextEpochAt: Math.max(0, normalizeNumber(value.virtualMarketNextEpochAt, Date.now() + MARKETPLACE_EPOCH_MS)),
     virtualMarketSeed: Math.max(0, Math.floor(normalizeNumber(value.virtualMarketSeed, 0x435332))),
     removedVirtualListingIds: readStringArray(value.removedVirtualListingIds),
     pendingAcquisition,
@@ -1562,6 +1562,23 @@ function migrateV31ToV32(value: unknown): unknown {
   }
 }
 
+function migrateV32ToV33(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const marketplace = isRecord(value.marketplace) ? value.marketplace : createDefaultMarketplaceState()
+  const now = Date.now()
+  const virtualMarketEpoch = Math.floor(now / MARKETPLACE_EPOCH_MS)
+  return {
+    ...value,
+    marketplace: {
+      ...marketplace,
+      virtualMarketEpoch,
+      virtualMarketNextEpochAt: (virtualMarketEpoch + 1) * MARKETPLACE_EPOCH_MS,
+      virtualMarketSeed: Math.max(0, Math.floor(normalizeNumber(marketplace.virtualMarketSeed, 0x435332))),
+      removedVirtualListingIds: readStringArray(marketplace.removedVirtualListingIds),
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1595,6 +1612,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   29: migrateV29ToV30,
   30: migrateV30ToV31,
   31: migrateV31ToV32,
+  32: migrateV32ToV33,
 }
 
 function getEnvelope(value: unknown) {

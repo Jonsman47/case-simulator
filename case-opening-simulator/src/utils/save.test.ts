@@ -646,6 +646,27 @@ describe('save system', () => {
     })
   })
 
+  it('migrates v32 virtual supply to seven-day epochs without changing inventory or tombstones', () => {
+    const owned = makeItem({ instanceId: 'preserved-v32', paintSeed: 661 })
+    const state = makeState({
+      inventory: [owned],
+      marketplace: {
+        ...defaultGameState.marketplace,
+        virtualMarketEpoch: 12,
+        virtualMarketNextEpochAt: 13,
+        removedVirtualListingIds: ['vm-purchased'],
+      },
+    })
+    const before = Date.now()
+    const migrated = parseGameSaveText(JSON.stringify({ version: 32, savedAt: before, state }))
+
+    expect(migrated.inventory[0]).toMatchObject({ instanceId: 'preserved-v32', paintSeed: 661 })
+    expect(migrated.marketplace.removedVirtualListingIds).toEqual(['vm-purchased'])
+    expect(migrated.marketplace.virtualMarketEpoch).not.toBe(12)
+    expect(migrated.marketplace.virtualMarketNextEpochAt).toBeGreaterThan(before)
+    expect(createSaveEnvelope(migrated).version).toBe(33)
+  })
+
   it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {
     const marketItem = makeItem({ instanceId: 'market-instance', paintSeed: 661 })
     const state = makeState({

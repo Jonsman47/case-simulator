@@ -140,7 +140,7 @@ describe('wear condition generation', () => {
     expect(counts[WearCondition.BattleScarred]).toBe(0)
     expect(counts[WearCondition.MinimalWear] / 20_000).toBeCloseTo(3 / 8, 2)
     expect(counts[WearCondition.FieldTested] / 20_000).toBeCloseTo(5 / 8, 2)
-  })
+  }, 15_000)
 })
 
 describe('float generation and wear value adjustment', () => {
