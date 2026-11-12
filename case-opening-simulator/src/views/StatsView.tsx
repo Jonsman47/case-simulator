@@ -20,6 +20,7 @@ import { DeferredBarChart, DeferredLineChart, DeferredPieChart } from '../compon
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel } from '../utils/itemLabels'
+import { getCareerSnapshot } from '../career/careerProgress'
 import {
   buildInventoryValueLineChartData,
   buildMoneyFlowChartData,
@@ -331,6 +332,7 @@ function SmallStat({
 
 export function StatsView() {
   const { state } = useGame()
+  const careerSnapshot = getCareerSnapshot(state.career)
   const [range, setRange] = useState<StatsTimeRange>('all')
   const [session] = useState(() => {
     const startedAt = Date.now()
@@ -601,6 +603,19 @@ export function StatsView() {
           label="Active This Session"
           subLabel={`Prestige ${summary.prestigeLevel} / ${summary.casesUnlocked} cases unlocked`}
           value={formatDuration(summary.timePlayedMs)}
+        />
+        <MetricCard
+          icon={Medal}
+          label="Career Progress"
+          subLabel={`${state.career.currentRunXp.toLocaleString()} current-run XP`}
+          tone="amber"
+          value={`L${careerSnapshot.level} · ${careerSnapshot.rank.name}`}
+        />
+        <MetricCard
+          icon={BadgeDollarSign}
+          label="Lifetime Career XP"
+          subLabel="Separate from cash and financial profit"
+          value={state.career.lifetimeXp.toLocaleString()}
         />
       </div>
 

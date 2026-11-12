@@ -82,6 +82,8 @@ describe('offline progression', () => {
       },
     })
     const result = calculateOfflineProgress(state, now)
+    const firstOnlineTick = gameReducer(state, { type: 'TICK_AUTOMATION', now: lastSaved + 30_000 })
+    const secondOnlineTick = gameReducer(firstOnlineTick, { type: 'TICK_AUTOMATION', now })
 
     expect(result?.summary).toMatchObject({
       caseFarmEarned: 6,
@@ -96,6 +98,10 @@ describe('offline progression', () => {
     expect(result?.state.inventory).toHaveLength(2)
     expect(result?.state.automation.autoOpener.totalOpened).toBe(2)
     expect(result?.state.lastSaved).toBe(now)
+    expect(result?.state.career.specializations.caseOpening.currentRunXp).toBeGreaterThan(0)
+    expect(result?.state.career.recentEvents.filter((event) => event.type === 'case-opening')).toHaveLength(2)
+    expect(result?.state.career.specializations.caseOpening.currentRunXp)
+      .toBe(secondOnlineTick.career.specializations.caseOpening.currentRunXp)
   })
 
   it('applies the passive-income branch once in both online and offline Case Farm calculations', () => {

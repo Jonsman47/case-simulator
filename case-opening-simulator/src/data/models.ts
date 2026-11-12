@@ -549,6 +549,7 @@ export interface PlayerState {
     marketSales: number
     dropsByRarity: Record<Rarity, number>
   }
+    career?: import('../career/careerProgress').CareerState
   lastBackupAt: number
   lastSaved: number
 }

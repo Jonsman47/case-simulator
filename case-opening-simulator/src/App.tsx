@@ -11,6 +11,7 @@ const Achievements = lazy(() => import('./views/Achievements').then((module) => 
 const AdminPanel = lazy(() => import('./views/AdminPanel').then((module) => ({ default: module.AdminPanel })))
 const Automation = lazy(() => import('./views/Automation').then((module) => ({ default: module.Automation })))
 const CaseSelectionView = lazy(() => import('./views/CaseSelectionView').then((module) => ({ default: module.CaseSelectionView })))
+const Career = lazy(() => import('./views/Career').then((module) => ({ default: module.Career })))
 const CollectionBookView = lazy(() => import('./views/CollectionBookView').then((module) => ({ default: module.CollectionBookView })))
 const CreditsView = lazy(() => import('./views/CreditsView').then((module) => ({ default: module.CreditsView })))
 const InventoryView = lazy(() => import('./views/InventoryView').then((module) => ({ default: module.InventoryView })))
@@ -78,6 +79,7 @@ function App() {
               <Route path="rewards" element={<Suspense fallback={<RouteFallback />}><RewardsView /></Suspense>} />
               <Route path="trade-ups" element={<Suspense fallback={<RouteFallback />}><TradeUps /></Suspense>} />
               <Route path="automation" element={<Suspense fallback={<RouteFallback />}><Automation /></Suspense>} />
+              <Route path="career" element={<Suspense fallback={<RouteFallback />}><Career /></Suspense>} />
               <Route path="upgrades" element={<Suspense fallback={<RouteFallback />}><Upgrades /></Suspense>} />
               <Route path="prestige" element={<Suspense fallback={<RouteFallback />}><Prestige /></Suspense>} />
               <Route path="skill-tree" element={<Suspense fallback={<RouteFallback />}><SkillTree /></Suspense>} />

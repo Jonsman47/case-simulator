@@ -1101,6 +1101,8 @@ describe('gameReducer OPEN_CASE', () => {
       timesFound: 1,
     })
     expect(nextState.statistics.tradeUpsCompleted).toBe(1)
+    expect(nextState.career.specializations.tradeUps.currentRunXp).toBeGreaterThan(0)
+    expect(nextState.career.recentEvents.filter((event) => event.type === 'trade-up')).toHaveLength(1)
     expect(findUiEvent(nextState, 'trade_up_completed')).toMatchObject({
       type: 'trade_up_completed',
       item: resultItem,

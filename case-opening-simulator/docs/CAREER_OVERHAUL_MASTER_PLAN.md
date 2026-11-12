@@ -2,7 +2,7 @@
 
 Status: authoritative design reference for Career Overhaul Prompts 1–8
 Created: 2026-11-11
-Implementation baseline: save schema v34
+Implementation baseline: save schema v35 (Career Overhaul Prompt 2)
 
 This document defines the intended career economy. It supersedes conflicting progression proposals, but it does not claim that provisional numbers are balanced before the simulations listed in section 21 pass. Existing CS2 case odds, item identity, paint seeds, pattern premiums, inventory, marketplace state, and cloud compatibility remain authoritative.
 
@@ -408,3 +408,38 @@ Full browser walkthrough, accessibility/responsiveness, long-session performance
 - Instant-sale progression closes the remaining spread with `1 - exp(-1.35 × progression)` diminishing returns and never exceeds 95% of fair value.
 - Trade-up skills/events lower the Trading Bot's minimum **positive** profit threshold; they never discount actual consumed value.
 - Unspent Upgrade Points survive transitional prestige.
+
+## 24. Prompt 2 implementation decisions
+
+Prompt 2 implements the career foundation in save schema v35 without removing the legacy Automation, Upgrades, Skill Tree, or Prestige systems.
+
+- Career level is derived from **current-run cumulative XP** with the exact section 3 formula and a hard level cap of 100. Lifetime XP is a permanent record and does not independently grant a run rank after prestige.
+- The six ranks currently use level gates only. The target hour ranges remain balancing evidence, never timers. Future capability notes are displayed as future work and do not unlock unavailable employees or upgrades.
+- XP is awarded by a centralized post-reducer pipeline. It consumes confirmed state deltas and stable opening session, item instance, marketplace transaction, achievement, Work completion, and discovery IDs. UI renders and imports never award XP.
+- Detailed XP history is bounded to 100 events, exact-once IDs to 1,200, rolling anti-farm windows to 96, milestones to 40, and compact hashed discovery keys to 12,000. Lifetime/current-run aggregates remain permanent within these documented limits.
+- Opening XP follows the section 4 formula. Verified special and exceptional Pattern classifications add conservative novelty bonuses. Automated opening XP is halved and has a lower rolling-hour soft cap; odds and item values are unchanged.
+- Trading XP is awarded only when a player-owned item completes a CSWEAR sale with known ledger cost basis. The amount uses realized profit, losses receive at most the documented learning award, and player/self counterparties do not qualify.
+- Collection XP uses All Time novelty for the v35 foundation. A discovery already present in the permanent collection does not become farmable after prestige. Current-run discovery keys are tracked for the Prompt 6 Collection Book split even when no second XP award is due.
+- Trade-up XP uses the actual completed output and a hash of the consumed skin identities. Identical strategies in the six-hour window diminish but never fall below 20%.
+- Work XP is `15 + 30 × normalizedPerformance`, only after the reducer records a real job completion and cooldown timestamp.
+- Achievement XP is awarded at claim time for post-v35 unlocks only. Migration marks every pre-v35 achievement as legacy, including unclaimed rewards, so claiming an old reward cannot convert the same historical milestone twice.
+- Business operational XP remains disabled until Prompt 3 because no employee operation exists yet. Existing Automation achievement XP is classified under Case Opening rather than fabricating Business activity.
+- v34→v35 migration grants a one-time baseline equal to 50% of configured XP for verified legacy achievements, capped at 2,500 XP. It creates no historical XP events, derives permanent discovery hashes from the existing collection book, and changes no cash, inventory, Pattern, escrow, ledger, or progression identity.
+- Prestige starts a new Career run, clears current-run XP/windows/current-run specialization XP, and preserves lifetime XP, lifetime discoveries, rank records, and legacy migration metadata.
+- `Career & Upgrades` is a real read-only progression dashboard. Full specialization purchases remain scheduled for Prompt 4; the old purchase routes remain accessible during transition.
+
+### Prompt 2 preliminary progression projections
+
+These deterministic projections use provisional effective XP/hour assumptions after current anti-farming. They are not telemetry and do not claim the unfinished employee/upgrade economy is balanced.
+
+| Archetype | XP/hour | L15 | L35 | L55 | L75 | L100 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Casual mixed play | 900 | 104.0h | 531.5h | 1,276.4h | 2,238.5h | 3,705.7h |
+| Regular mixed play | 2,200 | 42.6h | 217.4h | 522.2h | 915.8h | 1,516.0h |
+| Dedicated mixed play | 4,200 | 22.3h | 113.9h | 273.5h | 479.7h | 794.1h |
+| Opening focused | 2,400 | 39.0h | 199.3h | 478.6h | 839.4h | 1,389.6h |
+| Trading focused | 4,600 | 20.4h | 104.0h | 249.7h | 438.0h | 725.0h |
+| Collection focused | 3,600 | 26.0h | 132.9h | 319.1h | 559.6h | 926.4h |
+| Trade-up focused | 3,300 | 28.4h | 144.9h | 348.1h | 610.5h | 1,010.6h |
+
+The dedicated and trading-focused projections reach the 650–800-hour Legend target. Regular, opening, collecting, and trade-up paths are too slow at the foundation stage. Prompt 3 employee throughput and Prompt 4 specialization effects must narrow that gap without making passive play exceed expert active trading; Prompt 5 must replace these assumptions with scripted careers and telemetry-informed calibration.

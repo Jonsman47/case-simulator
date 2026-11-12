@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { recordCareerAction, startNextCareerRun } from '../career/careerProgress'
 import { CASE_DEFINITIONS, unlockCasesForProgress } from './cases'
 import { getCaseLicenseCost, requiresCaseLicense } from './casePricing'
 import { pickDrop, type Prng } from './dropLogic'
@@ -1385,9 +1386,11 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     lastSaved: now,
   }, now)
 
+  const economyLedger = startNextEconomyRun(state, prestigedState, now)
   return {
     ...prestigedState,
-    economyLedger: startNextEconomyRun(state, prestigedState, now),
+    economyLedger,
+    career: startNextCareerRun(state.career, economyLedger.currentRunId, now),
   }
 }
 
@@ -3198,6 +3201,7 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   const reducedState = validateGameState(reduceGameState(state, action))
-  return recordEconomyAction(state, reducedState, action)
+  const withEconomy = recordEconomyAction(state, reducedState, action)
+  return recordCareerAction(state, withEconomy, action)
 }
 

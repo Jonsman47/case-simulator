@@ -694,7 +694,7 @@ describe('save system', () => {
       moneySpent: 125,
     })
     expect(migrated.economyLedger.recentTransactions).toEqual([])
-    expect(createSaveEnvelope(migrated).version).toBe(34)
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
   })
 
   it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {

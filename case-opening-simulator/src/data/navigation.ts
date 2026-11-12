@@ -1,6 +1,7 @@
 import {
   Backpack,
   BadgeInfo,
+  BadgeCheck,
   Bot,
   BriefcaseBusiness,
   ChartNoAxesCombined,
@@ -62,6 +63,7 @@ export const primaryNavigationItems: NavigationItem[] = [
     path: '/automation',
     icon: Bot,
     items: [
+      { label: 'Career & Upgrades', path: '/career', icon: BadgeCheck },
       { label: 'Automation', path: '/automation' },
       { label: 'Upgrades', path: '/upgrades' },
       { label: 'Prestige', path: '/prestige' },

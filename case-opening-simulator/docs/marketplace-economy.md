@@ -1,6 +1,6 @@
 # Simulated Marketplace and Economy
 
-Updated: 2026-11-11 · Save schema: v34
+Updated: 2026-11-12 · Save schema: v35
 
 ## Scope and safety
 
@@ -53,7 +53,7 @@ This is a fictional in-game market. It never connects to Steam trading, handles 
 
 ## Persistence and authority
 
-- v31 saves migrate through v32 and v33 to v34. v33 realigns virtual supply to persisted seven-day epochs; v34 adds bounded economic accounting while retaining marketplace escrow, transactions, materialized negotiations, removed-ID tombstones and all player progress. Inventory, money, IDs, float and Patterns are never rerolled.
+- v31 saves migrate through v32 and v33 to v34 and v35. v33 realigns virtual supply to persisted seven-day epochs; v34 adds bounded economic accounting; v35 adds bounded Career XP/rank state while retaining marketplace escrow, transactions, materialized negotiations, removed-ID tombstones and all player progress. Inventory, money, IDs, float and Patterns are never rerolled.
 - The save stores only player listings, transaction history, request IDs, removed virtual IDs and interacted NPC listings. It never stores the simulated catalog population.
 - Local guest play is client-authoritative because the project is a static PWA. Reducer transactions are atomic and idempotent within the saved game, but local state is not a cheat-resistant server boundary.
 - `supabase/migrations/20261105_marketplace_v31.sql` adds normalized NPC/listing/negotiation/history/request-ledger tables, RLS/grants, and an idempotent `marketplace_buy_now` RPC that row-locks both listing and save before transferring the exact JSON item and currency in one database transaction.
@@ -80,7 +80,7 @@ These are calibrated simulator populations and deliberately are not described as
 
 ## Verification
 
-- Unit coverage includes total supply, common-versus-elite circulation, iconic Pattern zero-supply epochs, deterministic identities, stable non-overlapping batches, seven-day expiry, filters, sorting, purchased-ID exclusion, negotiation overrides, high-offset performance, exact-once reducer and ledger transfer, escrow, and v34 save migration.
+- Unit coverage includes total supply, common-versus-elite circulation, iconic Pattern zero-supply epochs, deterministic identities, stable non-overlapping batches, seven-day expiry, filters, sorting, purchased-ID exclusion, negotiation overrides, high-offset performance, exact-once reducer and ledger transfer, escrow, and v34/v35 save migration.
 - Browser coverage verifies Market → CSWEAR deep links, continuous virtualized loading, bounded mounted rows, catalog → dedicated skin market → exact purchase and the compact removal ledger.
 - Verification passes: 70 Vitest files/376 tests, zero-error lint, TypeScript, production/PWA build, 2,134-asset verification, `verify:release`, and 16/16 Chromium journeys. The two changed Market/CSWEAR journeys were rerun after final cursor-restoration hardening and passed 2/2.
 

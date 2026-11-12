@@ -4,6 +4,7 @@ import { useAchievements } from '../hooks/useAchievements'
 import { useGame } from '../hooks/useGame'
 import type { Achievement, AchievementCategory } from '../data/models'
 import { formatCurrency } from '../utils/format'
+import { getAchievementCareerXp } from '../career/careerProgress'
 
 const categoryAccentClasses: Record<AchievementCategory, string> = {
   Opening: 'border-rarity-mil-spec text-rarity-mil-spec',
@@ -27,18 +28,16 @@ const categoryIcons: Record<AchievementCategory, LucideIcon> = {
   'Trophy Room': Trophy,
 }
 
-function formatReward(achievement: Achievement) {
+function formatReward(achievement: Achievement, careerXp = 0) {
   const reward = achievement.reward
 
-  if (!reward) {
-    return 'Cosmetic record'
-  }
-
   return [
-    reward.money ? formatCurrency(reward.money) : undefined,
-    reward.upgradePoints ? `${reward.upgradePoints} upgrade point${reward.upgradePoints === 1 ? '' : 's'}` : undefined,
-    reward.skillPoints ? `${reward.skillPoints} skill point${reward.skillPoints === 1 ? '' : 's'}` : undefined,
-    reward.badge ? `${reward.badge} badge` : undefined,
+    reward?.money ? formatCurrency(reward.money) : undefined,
+    reward?.upgradePoints ? `${reward.upgradePoints} upgrade point${reward.upgradePoints === 1 ? '' : 's'}` : undefined,
+    reward?.skillPoints ? `${reward.skillPoints} skill point${reward.skillPoints === 1 ? '' : 's'}` : undefined,
+    reward?.badge ? `${reward.badge} badge` : undefined,
+    careerXp > 0 ? `${careerXp} Career XP` : undefined,
+    !reward && careerXp <= 0 ? 'Cosmetic record' : undefined,
   ]
     .filter(Boolean)
     .join(' / ')
@@ -71,8 +70,11 @@ export function Achievements() {
     summary.skillPoints += achievement.reward.skillPoints ?? 0
     summary.upgradePoints += achievement.reward.upgradePoints ?? 0
     summary.badges += achievement.reward.badge ? 1 : 0
+    if (!state.career.legacyAchievementIds.includes(achievement.id)) {
+      summary.careerXp += getAchievementCareerXp(achievement.id)
+    }
     return summary
-  }, { badges: 0, money: 0, skillPoints: 0, upgradePoints: 0 }), [achievements, getProgress])
+  }, { badges: 0, careerXp: 0, money: 0, skillPoints: 0, upgradePoints: 0 }), [achievements, getProgress, state.career.legacyAchievementIds])
   const completion = achievements.length > 0 ? Math.round((unlockedCount / achievements.length) * 100) : 0
 
   return (
@@ -108,6 +110,7 @@ export function Achievements() {
               claimableSummary.upgradePoints ? `${claimableSummary.upgradePoints} upgrade points` : '',
               claimableSummary.skillPoints ? `${claimableSummary.skillPoints} skill points` : '',
               claimableSummary.badges ? `${claimableSummary.badges} badges` : '',
+              claimableSummary.careerXp ? `${claimableSummary.careerXp} Career XP` : '',
             ].filter(Boolean)
             claimAllAchievementRewards()
             setClaimSummary(`Claimed ${claimableCount} rewards: ${parts.join(', ')}.`)
@@ -154,7 +157,12 @@ export function Achievements() {
                     : achievement.description
                   const displayReward = achievement.isHidden && !isUnlocked
                     ? 'Hidden reward'
-                    : formatReward(achievement)
+                    : formatReward(
+                        achievement,
+                        state.career.legacyAchievementIds.includes(achievement.id)
+                          ? 0
+                          : getAchievementCareerXp(achievement.id),
+                      )
 
                   return (
                     <article

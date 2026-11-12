@@ -110,6 +110,39 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   expect(save.state.money).toBeLessThanOrEqual(138.9)
 })
 
+test('Career XP, rank progress, and save reload remain consistent', async ({ page }) => {
+  await page.goto('/career')
+  await dismissTutorial(page)
+  await expect(page.getByRole('heading', { name: 'Career & Upgrades' })).toBeVisible()
+  await expect(page.getByTestId('career-level')).toHaveText('1')
+  await expect(page.getByTestId('career-rank')).toHaveText('Case Addict')
+
+  await page.goto('/work')
+  await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
+  await page.getByRole('button', { name: 'Start Sort Boxes' }).click()
+  for (const color of ['Red', 'Blue', 'Green', 'Yellow']) {
+    await page.getByRole('button', { name: `${color} box` }).click()
+    await page.getByRole('button', { name: `${color} container` }).click()
+  }
+  await expect(page.getByText('Earned $20.00')).toBeVisible()
+  await page.goto('/career')
+  const earnedXp = (await readSave(page)).state.career.currentRunXp
+  expect(earnedXp).toBeGreaterThan(0)
+  await expect(page.getByTestId('career-xp')).toContainText(`${earnedXp} current-run XP`)
+  await page.reload()
+  await expect(page.getByTestId('career-xp')).toContainText(`${earnedXp} current-run XP`)
+
+  await page.addInitScript(({ key, rankXp }) => {
+    const envelope = JSON.parse(localStorage.getItem(key) ?? '{}')
+    envelope.state.career.currentRunXp = rankXp
+    envelope.state.career.lifetimeXp = Math.max(envelope.state.career.lifetimeXp, rankXp)
+    localStorage.setItem(key, JSON.stringify(envelope))
+  }, { key: saveKey, rankXp: 93_614 })
+  await page.reload()
+  await expect(page.getByTestId('career-level')).toHaveText('15')
+  await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
+})
+
 test('focused Memory Circuit stays visible, completes all rounds, and cannot claim twice', async ({ page }) => {
   await page.addInitScript(() => { Math.random = () => 0 })
   await page.setViewportSize({ width: 1280, height: 720 })
@@ -349,7 +382,7 @@ test('every player-facing route renders without console errors or horizontal cli
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
   await page.setViewportSize({ width: 1366, height: 768 })
-  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/automation', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
+  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/automation', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
     await expect(page.locator('main')).toBeVisible()

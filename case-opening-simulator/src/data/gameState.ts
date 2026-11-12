@@ -49,6 +49,7 @@ import { createDefaultDailyRewardsState } from '../rewards/dailyRewards'
 import type { WorkMiniGameCooldowns, WorkMiniGameId } from '../utils/workMinigames'
 import { createDefaultMarketplaceState } from '../marketplace/marketplace'
 import { createEconomyLedger, type EconomyLedgerState } from '../economy/economyLedger'
+import { createCareerState, type CareerState } from '../career/careerProgress'
 
 export type RarityKey =
   | 'consumer'
@@ -346,6 +347,7 @@ export interface GameState {
   lastEventTick: number
   statistics: GameStatistics
   economyLedger: EconomyLedgerState
+  career: CareerState
   settings: GameSettings
   ui: GameUiState
   lastBackupAt: number
@@ -496,6 +498,7 @@ export const defaultGameState: GameState = {
     dropsByRarity: defaultDropsByRarity,
   },
   economyLedger: createEconomyLedger({ now: 0, runId: 'initial-run' }),
+  career: createCareerState({ now: 0, runId: 'initial-run' }),
   settings: {
     animationSpeed: 'normal',
     animationsEnabled: true,

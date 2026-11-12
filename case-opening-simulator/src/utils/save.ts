@@ -90,9 +90,10 @@ import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketplace/marketplace'
 import { createEconomyLedger, normalizeEconomyLedger } from '../economy/economyLedger'
+import { createLegacyCareerState, normalizeCareerState } from '../career/careerProgress'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 34
+export const CURRENT_SAVE_VERSION = 35
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1594,6 +1595,26 @@ function migrateV33ToV34(value: unknown): unknown {
   }
 }
 
+function migrateV34ToV35(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const savedAt = normalizeNumber(value.lastSaved, Date.now())
+  const achievements = normalizeAchievements(value.achievements, savedAt)
+  const collectionEntries = normalizeCollectionBook(value.collectionBook)
+  const ledger = isRecord(value.economyLedger) ? value.economyLedger : {}
+  const runId = typeof ledger.currentRunId === 'string'
+    ? ledger.currentRunId
+    : `legacy-v35-${savedAt.toString(36)}`
+  return {
+    ...value,
+    career: createLegacyCareerState({
+      achievementIds: achievements.map((achievement) => achievement.id),
+      collectionEntries,
+      now: savedAt,
+      runId,
+    }),
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1629,6 +1650,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   31: migrateV31ToV32,
   32: migrateV32ToV33,
   33: migrateV33ToV34,
+  34: migrateV34ToV35,
 }
 
 function getEnvelope(value: unknown) {
@@ -1705,6 +1727,7 @@ export function toPlayerState(state: GameState): PlayerState {
     upcomingEvents: state.upcomingEvents,
     eventHistory: state.eventHistory,
     statistics: state.statistics,
+    career: state.career,
     lastBackupAt: state.lastBackupAt,
     lastSaved: state.lastSaved,
   }
@@ -1717,6 +1740,14 @@ function playerStateToGameState(state: PlayerState): GameState {
     ...state.marketValues,
   }
   const inventoryValue = getInventoryValue(inventory, marketValues)
+  const achievements = normalizeAchievements(state.achievements, state.lastSaved)
+  const collectionBook = normalizeCollectionBook(state.collectionBook)
+  const career = normalizeCareerState(state.career, {
+    achievements,
+    collectionEntries: collectionBook,
+    now: state.lastSaved,
+    runId: defaultGameState.economyLedger.currentRunId,
+  })
 
   return {
     ...defaultGameState,
@@ -1735,7 +1766,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     upgrades: normalizeUpgradeLevels(state.upgrades),
     trophyAssignments: normalizeTrophyAssignments(state.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(state.dailyRewards),
-    collectionBook: state.collectionBook,
+    collectionBook,
     collectionRewards: state.collectionRewards,
     hasUsedFirstCaseHook: typeof state.hasUsedFirstCaseHook === 'boolean'
       ? state.hasUsedFirstCaseHook
@@ -1751,7 +1782,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     upgradePoints: state.upgradePoints,
     skillPoints: state.skillPoints,
     learnedSkillNodeIds: normalizeLearnedSkillNodeIds(state.learnedSkillNodeIds),
-    achievements: state.achievements,
+    achievements,
     marketValues,
     marketHistory: {
       ...defaultGameState.marketHistory,
@@ -1761,6 +1792,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     upcomingEvents: state.upcomingEvents,
     eventHistory: state.eventHistory,
     statistics: state.statistics,
+    career,
     lastBackupAt: normalizeNumber(state.lastBackupAt, defaultGameState.lastBackupAt),
     lastSaved: state.lastSaved,
   }
@@ -1805,6 +1837,14 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     lastSaved,
     [...inventory, ...marketplace.playerListings.map((listing) => listing.item)],
   )
+  const achievements = normalizeAchievements(value.achievements, lastSaved)
+  const collectionBook = normalizeCollectionBook(value.collectionBook)
+  const career = normalizeCareerState(value.career, {
+    achievements,
+    collectionEntries: collectionBook,
+    now: lastSaved,
+    runId: economyLedger.currentRunId,
+  })
 
   return {
     ...defaultGameState,
@@ -1825,7 +1865,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     upgrades: normalizeUpgradeLevels(value.upgrades),
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(value.dailyRewards),
-    collectionBook: normalizeCollectionBook(value.collectionBook),
+    collectionBook,
     collectionRewards: normalizeCollectionRewards(value.collectionRewards),
     hasUsedFirstCaseHook: typeof value.hasUsedFirstCaseHook === 'boolean'
       ? value.hasUsedFirstCaseHook
@@ -1842,7 +1882,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     upgradePoints: normalizeNumber(value.upgradePoints, defaultGameState.upgradePoints),
     skillPoints: normalizeNumber(value.skillPoints, defaultGameState.skillPoints),
     learnedSkillNodeIds: normalizeLearnedSkillNodeIds(value.learnedSkillNodeIds),
-    achievements: normalizeAchievements(value.achievements, lastSaved),
+    achievements,
     marketValues: mergedMarketValues,
     marketHistory: normalizeMarketHistory(value.marketHistory, marketValues, savedAt),
     marketTrends: normalizeMarketTrends(value.marketTrends),
@@ -1856,6 +1896,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     lastEventTick: normalizeNumber(value.lastEventTick, 0),
     statistics,
     economyLedger,
+    career,
     settings: normalizeSettings(value.settings),
     ui: normalizeUiState(value.ui),
     lastBackupAt: normalizeNumber(value.lastBackupAt, defaultGameState.lastBackupAt),
@@ -1888,6 +1929,12 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
     currentTime,
     [...inventory, ...gameState.marketplace.playerListings.map((listing) => listing.item)],
   )
+  const persistedCareer = normalizeCareerState(gameState.career, {
+    achievements: gameState.achievements,
+    collectionEntries: gameState.collectionBook,
+    now: currentTime,
+    runId: persistedEconomyLedger.currentRunId,
+  })
   const itemByInstanceId = new Map(inventory.map((item) => [item.instanceId, item]))
   const prioritizedMarketSkinIds = [
     ...Object.values(gameState.trophyAssignments)
@@ -1940,6 +1987,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       inventory,
       inventoryValue,
       economyLedger: persistedEconomyLedger,
+      career: persistedCareer,
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],

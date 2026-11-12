@@ -153,7 +153,7 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | Prompt | Scope | Status |
 | --- | --- | --- |
 | 1. Economy foundation, critical fixes, master design | v34 ledger; honest Stats; Case Farm offline parity; trade-up opportunity cost; marketplace/Auction/sale/max-level/prestige/wear fixes; permanent master plan | **COMPLETE — unit, lint, build, release and browser verification passed** |
-| 2. Career ranks and specialization foundation | Career XP event pipeline, anti-farming, ranks, initial Career & Upgrades destination | **PLANNED** |
+| 2. Career ranks and specialization foundation | v35 Career XP event pipeline, anti-farming, six ranks, five specialization foundations, Career dashboard, legacy-safe migration | **COMPLETE — 399 unit tests, lint, build, release and 17 browser journeys passed** |
 | 3. Business and employees | Five employees, budgets, wages, shared scheduler/offline rules, safe Case Farm replacement | **PLANNED** |
 | 4. Upgrade consolidation | Migrate old skills/upgrades/automation benefits into 80–110 distinct five-specialization upgrades | **PLANNED** |
 | 5. Economy simulation and balance | Multi-strategy scripted careers, XP/cash/wage/profit calibration, exploit search, 500–800-hour target | **PLANNED** |
