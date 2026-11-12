@@ -154,7 +154,7 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | --- | --- | --- |
 | 1. Economy foundation, critical fixes, master design | v34 ledger; honest Stats; Case Farm offline parity; trade-up opportunity cost; marketplace/Auction/sale/max-level/prestige/wear fixes; permanent master plan | **COMPLETE — unit, lint, build, release and browser verification passed** |
 | 2. Career ranks and specialization foundation | v35 Career XP event pipeline, anti-farming, six ranks, five specialization foundations, Career dashboard, legacy-safe migration | **COMPLETE — 399 unit tests, lint, build, release and 17 browser journeys passed** |
-| 3. Business and employees | Five employees, budgets, wages, shared scheduler/offline rules, safe Case Farm replacement | **PLANNED** |
+| 3. Business and employees | v36 five-role Business system, reserved budgets, payroll, shared online/offline scheduler, real operations, legacy conversion and Case Farm retirement | **COMPLETE — 415 unit tests, lint, TypeScript, build, release and 19 browser journeys passed** |
 | 4. Upgrade consolidation | Migrate old skills/upgrades/automation benefits into 80–110 distinct five-specialization upgrades | **PLANNED** |
 | 5. Economy simulation and balance | Multi-strategy scripted careers, XP/cash/wage/profit calibration, exploit search, 500–800-hour target | **PLANNED** |
 | 6. Prestige and legacy systems | New eligibility/PP, reset policy, Legacy Vault, archived runs, All Time/Current Run Collection Book | **PLANNED** |
@@ -162,3 +162,11 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | 8. Final career QA and release | Save/cloud migration matrix, full unit/E2E/performance/economy validation, documentation and release | **PLANNED** |
 
 The old progression systems remain available until their replacement is implemented and migrated. No player-facing placeholder controls are scheduled ahead of working mechanics.
+
+### Prompt 3 implementation notes
+
+- Save v36 makes `TICK_BUSINESS` the only employee automation authority and redirects the former Automation route to Business.
+- Five working roles reuse existing authoritative gameplay paths: paid Case Operator openings; protected Sales Assistant sale/escrow management; notify-only deterministic Market Scout searches; honest-EV Trade-Up Specialist contracts; and conservative exact-once Junior Trader purchases.
+- Allocated employee funds are reserved out of the wallet; timestamp payroll, daily risk limits, capacity, inventory rules and the 24-hour offline cap apply through the same scheduler online and offline.
+- The old free-money Case Farm is retired. Legacy automation receives a one-time, capped, noncash conversion; Warehouse and Auction House remain facilities.
+- Full specialization upgrades, calibrated employee economics, final Prestige/Legacy Vault behavior, and final progression navigation remain correctly scheduled for Prompts 4–8.

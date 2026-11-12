@@ -13,6 +13,9 @@ export type EconomyTransactionType =
   | 'auction-purchase'
   | 'automation-cycle'
   | 'automation-purchase'
+  | 'business-investment'
+  | 'business-operation'
+  | 'business-transfer'
   | 'case-license'
   | 'case-opening'
   | 'daily-reward'
@@ -52,6 +55,9 @@ export interface EconomyTransactionAllocation {
   achievementIncome: number
   automationIncome: number
   automationExpenses: number
+  businessRevenue: number
+  businessExpenses: number
+  businessPayroll: number
   upgradeSpend: number
   licenseSpend: number
   realizedTradingProfit: number
@@ -123,6 +129,9 @@ const zeroAllocation = (): EconomyTransactionAllocation => ({
   achievementIncome: 0,
   automationIncome: 0,
   automationExpenses: 0,
+  businessRevenue: 0,
+  businessExpenses: 0,
+  businessPayroll: 0,
   upgradeSpend: 0,
   licenseSpend: 0,
   realizedTradingProfit: 0,
@@ -378,6 +387,16 @@ function classifyAction(action: GameAction): {
       return { type: 'automation-purchase', source: 'player cash', destination: 'automation' }
     case 'TICK_AUTOMATION':
       return { type: 'automation-cycle', source: 'automation', destination: 'player' }
+    case 'HIRE_EMPLOYEE':
+    case 'TRAIN_EMPLOYEE':
+      return { type: 'business-investment', source: 'player cash', destination: 'Business' }
+    case 'ALLOCATE_EMPLOYEE_BUDGET':
+      return { type: 'business-transfer', source: 'player cash', destination: `${action.roleId} reserve` }
+    case 'RELEASE_EMPLOYEE_BUDGET':
+      return { type: 'business-transfer', source: `${action.roleId} reserve`, destination: 'player cash' }
+    case 'TICK_BUSINESS':
+    case 'CONFIRM_BUSINESS_TRADE_UP':
+      return { type: 'business-operation', source: 'Business', destination: 'player' }
     case 'PURCHASE_UPGRADE':
     case 'PURCHASE_PRESTIGE_BONUS':
     case 'LEARN_SKILL_NODE':
@@ -484,6 +503,19 @@ function buildAllocation(
     }
   } else if (type === 'automation-purchase') {
     allocation.automationExpenses = allocation.cashExpense
+  } else if (type === 'business-investment') {
+    allocation.businessExpenses = allocation.cashExpense
+  } else if (type === 'business-operation') {
+    allocation.businessRevenue = allocation.cashIncome
+    allocation.businessExpenses = allocation.cashExpense
+    allocation.businessPayroll = safeNonNegative(after.business.financials.payroll - before.business.financials.payroll)
+    const newOperations = after.business.recentOperations.filter((operation) => !before.business.processedOperationIds.includes(operation.id))
+    const openingSpend = newOperations.filter((operation) => operation.type === 'case-opened').reduce((sum, operation) => sum + operation.expense, 0)
+    const openingReturns = newOperations.filter((operation) => operation.type === 'case-opened').reduce((sum, operation) => sum + operation.revenue, 0)
+    allocation.caseOpeningSpend = safeNonNegative(openingSpend)
+    allocation.caseOpeningReturns = safeNonNegative(openingReturns)
+    allocation.marketplacePurchases = safeNonNegative(newOperations.filter((operation) => operation.type === 'market-purchase').reduce((sum, operation) => sum + operation.expense, 0))
+    allocation.marketplaceSales = safeNonNegative(newOperations.filter((operation) => operation.type === 'instant-sale').reduce((sum, operation) => sum + operation.revenue, 0))
   } else if (type === 'upgrade-purchase') {
     allocation.upgradeSpend = allocation.cashExpense
   } else if (type === 'case-license') {
@@ -498,6 +530,7 @@ function buildAllocation(
 
 function updateCostBasis(
   ledger: EconomyLedgerState,
+  before: GameState,
   after: GameState,
   type: EconomyTransactionType,
   allocation: EconomyTransactionAllocation,
@@ -512,6 +545,12 @@ function updateCostBasis(
   else if (type === 'marketplace-purchase') totalAcquisitionCost = allocation.marketplacePurchases
   else if (type === 'auction-purchase') totalAcquisitionCost = allocation.auctionPurchases
   else if (type === 'trade-up') totalAcquisitionCost = consumedBasis
+  else if (type === 'business-operation') {
+    const existing = new Set(before.business.processedOperationIds)
+    totalAcquisitionCost = after.business.recentOperations
+      .filter((operation) => !existing.has(operation.id) && (operation.type === 'case-opened' || operation.type === 'market-purchase'))
+      .reduce((sum, operation) => sum + operation.expense, 0)
+  }
   const perItemCost = acquired.length > 0 ? safeNonNegative(totalAcquisitionCost / acquired.length) : 0
   for (const item of removed) delete next[item.instanceId]
   for (const item of acquired) next[item.instanceId] = perItemCost
@@ -553,9 +592,17 @@ function shouldSkipLedgerAction(action: GameAction) {
 
 export function recordEconomyAction(before: GameState, after: GameState, action: GameAction): GameState {
   if (shouldSkipLedgerAction(action)) return after
-  const moneyDelta = safeMoney(after.money - before.money)
+  const isBusinessTransfer = action.type === 'ALLOCATE_EMPLOYEE_BUDGET' || action.type === 'RELEASE_EMPLOYEE_BUDGET'
+  const beforeReserved = Object.values(before.business.employees).reduce((sum, employee) => sum + employee.availableCapital + employee.reservedCapital, 0)
+  const afterReserved = Object.values(after.business.employees).reduce((sum, employee) => sum + employee.availableCapital + employee.reservedCapital, 0)
+  const walletDelta = safeMoney(after.money - before.money)
+  const moneyDelta = isBusinessTransfer
+    ? 0
+    : action.type === 'TICK_BUSINESS'
+      ? safeMoney(walletDelta + afterReserved - beforeReserved)
+      : walletDelta
   const itemDeltas = buildItemDeltas(before, after, action)
-  if (moneyDelta === 0 && itemDeltas.length === 0) return after
+  if (moneyDelta === 0 && itemDeltas.length === 0 && !isBusinessTransfer) return after
   const timestamp = getActionTimestamp(action)
   const id = getDeterministicTransactionId(action, timestamp)
   const ledger = after.economyLedger
@@ -586,7 +633,7 @@ export function recordEconomyAction(before: GameState, after: GameState, action:
       : addAllocation(ledger.currentRun, allocation, moneyDelta),
     recentTransactions: [transaction, ...ledger.recentTransactions].slice(0, ECONOMY_LEDGER_HISTORY_LIMIT),
     processedTransactionIds: [...ledger.processedTransactionIds, id].slice(-ECONOMY_LEDGER_REQUEST_LIMIT),
-    itemCostBasis: updateCostBasis(ledger, after, classification.type, allocation, itemDeltas),
+    itemCostBasis: updateCostBasis(ledger, before, after, classification.type, allocation, itemDeltas),
   }
   return { ...after, economyLedger: nextLedger }
 }

@@ -24,7 +24,7 @@ export function getCareerXpEventSource(transaction: EconomyTransaction): CareerX
   if (transaction.type === 'skin-sale' || transaction.type === 'marketplace-sale') return 'trade-realized'
   if (transaction.type === 'trade-up') return 'trade-up-research'
   if (transaction.type === 'work-reward') return 'work-performance'
-  if (transaction.type === 'automation-cycle') return 'business-operation'
+  if (transaction.type === 'automation-cycle' || transaction.type === 'business-operation') return 'business-operation'
   return undefined
 }
 
@@ -40,9 +40,11 @@ export function getTradingProfitability(state: GameState, scope: 'lifetime' | 'c
 export function getBusinessFinancials(state: GameState, scope: 'lifetime' | 'currentRun' = 'currentRun') {
   const financials = getLedgerFinancialSnapshot(state, scope)
   return {
-    revenue: financials.automationIncome,
-    expenses: financials.automationExpenses,
-    net: Number((financials.automationIncome - financials.automationExpenses).toFixed(2)),
+    revenue: financials.businessRevenue + financials.automationIncome,
+    expenses: financials.businessExpenses + financials.automationExpenses,
+    payroll: financials.businessPayroll,
+    reserved: Object.values(state.business.employees).reduce((sum, employee) => sum + employee.availableCapital + employee.reservedCapital, 0),
+    net: Number((financials.businessRevenue + financials.automationIncome - financials.businessExpenses - financials.automationExpenses).toFixed(2)),
   }
 }
 

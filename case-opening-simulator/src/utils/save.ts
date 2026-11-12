@@ -91,9 +91,14 @@ import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketplace/marketplace'
 import { createEconomyLedger, normalizeEconomyLedger } from '../economy/economyLedger'
 import { createLegacyCareerState, normalizeCareerState } from '../career/careerProgress'
+import {
+  migrateLegacyAutomationToBusiness,
+  normalizeBusinessState,
+  retireLegacyAutomation,
+} from '../business/business'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 35
+export const CURRENT_SAVE_VERSION = 36
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1615,6 +1620,18 @@ function migrateV34ToV35(value: unknown): unknown {
   }
 }
 
+function migrateV35ToV36(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const now = normalizeNumber(value.lastSaved, Date.now())
+  const automation = normalizeAutomation(value.automation)
+  const upgrades = normalizeUpgradeLevels(value.upgrades)
+  return {
+    ...value,
+    automation: retireLegacyAutomation(automation),
+    business: migrateLegacyAutomationToBusiness(automation, upgrades, now),
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1651,6 +1668,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   32: migrateV32ToV33,
   33: migrateV33ToV34,
   34: migrateV34ToV35,
+  35: migrateV35ToV36,
 }
 
 function getEnvelope(value: unknown) {
@@ -1706,6 +1724,7 @@ export function toPlayerState(state: GameState): PlayerState {
     autoSellRules: state.autoSellRules,
     marketplace: state.marketplace,
     automation: state.automation,
+    business: state.business,
     upgrades: state.upgrades,
     trophyAssignments: state.trophyAssignments,
     dailyRewards: state.dailyRewards,
@@ -1763,6 +1782,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     autoSellRules: state.autoSellRules,
     marketplace: normalizeMarketplace(state.marketplace),
     automation: normalizeAutomation(state.automation),
+    business: normalizeBusinessState(state.business, state.lastSaved),
     upgrades: normalizeUpgradeLevels(state.upgrades),
     trophyAssignments: normalizeTrophyAssignments(state.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(state.dailyRewards),
@@ -1862,6 +1882,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     autoSellRules: normalizeAutoSellRules(value.autoSellRules),
     marketplace,
     automation: normalizeAutomation(value.automation),
+    business: normalizeBusinessState(value.business, lastSaved),
     upgrades: normalizeUpgradeLevels(value.upgrades),
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(value.dailyRewards),
@@ -1988,6 +2009,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       inventoryValue,
       economyLedger: persistedEconomyLedger,
       career: persistedCareer,
+      business: normalizeBusinessState(gameState.business, currentTime),
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],

@@ -143,6 +143,41 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
   await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
 })
 
+test('Business hires, funds, schedules, and persists a paid Case Operator', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  seeded.state.money = 10_000
+  seeded.state.career.currentRunXp = 93_614
+  seeded.state.career.lifetimeXp = Math.max(seeded.state.career.lifetimeXp, 93_614)
+  await page.addInitScript(({ envelope, key }) => {
+    if (sessionStorage.getItem('business-career-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('business-career-seeded', '1')
+  }, { envelope: seeded, key: saveKey })
+  await page.goto('/business')
+  await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
+  const caseOperator = page.locator('article').filter({ has: page.getByRole('heading', { name: 'Case Operator' }) }).first()
+  await caseOperator.getByRole('button', { name: /Hire/ }).click()
+  await expect(caseOperator.getByRole('button', { name: 'Configure' })).toBeVisible()
+  await caseOperator.getByRole('button', { name: 'Configure' }).click()
+  const configuration = page.getByRole('dialog')
+  await configuration.getByRole('spinbutton', { name: 'Budget amount' }).fill('250')
+  await configuration.getByRole('button', { name: 'Allocate' }).click()
+  await configuration.getByRole('button', { name: 'Close configuration' }).click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.business?.employees?.caseOperator?.availableCapital === 250, saveKey)
+  const before = await readSave(page)
+  await caseOperator.getByRole('button', { name: 'Start' }).click()
+  await page.waitForFunction(({ key, expected }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.casesOpened > expected, { key: saveKey, expected: before.state.statistics.casesOpened }, { timeout: 45_000 })
+  const after = await readSave(page)
+  expect(after.state.money).toBe(before.state.money)
+  expect(after.state.business.employees.caseOperator.availableCapital).toBeLessThan(250)
+  expect(after.state.business.recentOperations[0].type).toBe('case-opened')
+  expect(after.state.career.specializations.business.currentRunXp).toBeGreaterThan(0)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
+})
+
 test('focused Memory Circuit stays visible, completes all rounds, and cannot claim twice', async ({ page }) => {
   await page.addInitScript(() => { Math.random = () => 0 })
   await page.setViewportSize({ width: 1280, height: 720 })
@@ -216,7 +251,7 @@ test('Large Text and Light theme are readable, persistent, and do not create hor
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
   await page.reload()
   await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'light')
-  for (const route of ['/', '/inventory', '/market', '/work', '/automation', '/settings']) {
+  for (const route of ['/', '/inventory', '/market', '/work', '/business', '/settings']) {
     await page.goto(route)
     await expect(page.locator('[data-theme]').first()).toHaveAttribute('data-theme', 'light')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
@@ -310,6 +345,20 @@ test('CSWEAR navigates catalog, infinitely loads stable offers, and purchases on
   expect(after.state.marketplace.removedVirtualListingIds.length).toBeGreaterThan(0)
 })
 
+test('CSWEAR negotiation shortcuts only prepare a manual percentage offer', async ({ page }) => {
+  await page.goto('/cswear')
+  await dismissTutorial(page)
+  await page.getByRole('textbox', { name: 'Search skin markets' }).fill('P250 Sand Dune')
+  await page.getByRole('button', { name: /P250 \| Sand Dune.*View all listings/i }).first().click()
+  await page.getByRole('button', { name: 'Negotiate' }).first().click()
+  const dialog = page.getByRole('dialog')
+  const askingText = await dialog.getByText(/asking \$/).textContent()
+  const asking = Number(askingText?.match(/asking \$([\d,.]+)/)?.[1].replaceAll(',', ''))
+  await dialog.getByRole('button', { name: '-10%' }).click()
+  await expect(dialog.getByRole('spinbutton', { name: 'Offer amount' })).toHaveValue((asking * .9).toFixed(2))
+  await expect(dialog.getByText('Round 0')).toBeVisible()
+})
+
 test('Achievements Claim All grants unlocked rewards once', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
@@ -382,7 +431,7 @@ test('every player-facing route renders without console errors or horizontal cli
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
   await page.setViewportSize({ width: 1366, height: 768 })
-  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/automation', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
+  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
     await expect(page.locator('main')).toBeVisible()

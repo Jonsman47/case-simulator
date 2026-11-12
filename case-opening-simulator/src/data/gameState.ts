@@ -50,6 +50,12 @@ import type { WorkMiniGameCooldowns, WorkMiniGameId } from '../utils/workMinigam
 import { createDefaultMarketplaceState } from '../marketplace/marketplace'
 import { createEconomyLedger, type EconomyLedgerState } from '../economy/economyLedger'
 import { createCareerState, type CareerState } from '../career/careerProgress'
+import {
+  createDefaultBusinessState,
+  type BusinessState,
+  type EmployeeRoleId,
+  type ScoutWatchlist,
+} from '../business/business'
 
 export type RarityKey =
   | 'consumer'
@@ -348,6 +354,7 @@ export interface GameState {
   statistics: GameStatistics
   economyLedger: EconomyLedgerState
   career: CareerState
+  business: BusinessState
   settings: GameSettings
   ui: GameUiState
   lastBackupAt: number
@@ -391,6 +398,18 @@ export type GameAction =
   | { type: 'REROLL_DAILY_CHALLENGE'; challengeId: string; now?: number }
   | { type: 'REFRESH_DAILY_REWARDS'; now?: number }
   | { type: 'TICK_AUTOMATION'; now?: number; prng?: Prng }
+  | { type: 'HIRE_EMPLOYEE'; roleId: EmployeeRoleId; requestId: string; now?: number }
+  | { type: 'TRAIN_EMPLOYEE'; roleId: EmployeeRoleId; requestId: string; now?: number }
+  | { type: 'TOGGLE_EMPLOYEE'; roleId: EmployeeRoleId; isEnabled?: boolean; now?: number }
+  | { type: 'UPDATE_EMPLOYEE_SETTINGS'; roleId: EmployeeRoleId; settings: Record<string, unknown>; now?: number }
+  | { type: 'ALLOCATE_EMPLOYEE_BUDGET'; roleId: EmployeeRoleId; amount: number; requestId: string; now?: number }
+  | { type: 'RELEASE_EMPLOYEE_BUDGET'; roleId: EmployeeRoleId; amount?: number; requestId: string; now?: number }
+  | { type: 'TICK_BUSINESS'; now?: number; prng?: Prng; maxOperations?: number }
+  | { type: 'CREATE_SCOUT_WATCHLIST'; watchlist: ScoutWatchlist; requestId: string; now?: number }
+  | { type: 'UPDATE_SCOUT_WATCHLIST'; watchlistId: string; watchlist: Partial<ScoutWatchlist>; now?: number }
+  | { type: 'REMOVE_SCOUT_WATCHLIST'; watchlistId: string; requestId: string; now?: number }
+  | { type: 'SET_SCOUT_ALERT_STATUS'; alertId: string; status: 'reviewed' | 'dismissed'; now?: number }
+  | { type: 'CONFIRM_BUSINESS_TRADE_UP'; approvalId: string; requestId: string; now?: number }
   | { type: 'PURCHASE_AUCTION_DEAL'; dealId: string; now?: number }
   | { type: 'CLAIM_ACHIEVEMENT_REWARD'; achievementId: string; now?: number }
   | { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS'; now?: number }
@@ -499,6 +518,7 @@ export const defaultGameState: GameState = {
   },
   economyLedger: createEconomyLedger({ now: 0, runId: 'initial-run' }),
   career: createCareerState({ now: 0, runId: 'initial-run' }),
+  business: createDefaultBusinessState(0),
   settings: {
     animationSpeed: 'normal',
     animationsEnabled: true,

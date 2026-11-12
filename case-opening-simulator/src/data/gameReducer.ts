@@ -17,6 +17,7 @@ import {
   type NpcMarketListing,
   type SkinBase,
   type SkinInstance,
+  WearCondition,
 } from './models'
 import { SKIN_DEFINITIONS } from './skins'
 import {
@@ -149,6 +150,27 @@ import {
   type WorkMiniGameId,
 } from '../utils/workMinigames'
 import { recordEconomyAction, startNextEconomyRun } from '../economy/economyLedger'
+import {
+  BUSINESS_MAX_TRAINING_LEVEL,
+  EMPLOYEE_ROLE_DEFINITIONS,
+  EMPLOYEE_ROLE_IDS,
+  getActiveEmployeeCount,
+  getCaseOperatorMaximumBatch,
+  getEmployeeHireCost,
+  getEmployeeHourlyWage,
+  getEmployeeOperationInterval,
+  getEmployeeTrainingCost,
+  getOperatingCapacity,
+  getScoutCandidateLimit,
+  isBusinessProtectedItem,
+  isEmployeeUnlocked,
+  refreshBusinessDay,
+  rememberBusinessOperation,
+  type BusinessOperation,
+  type EmployeeRoleId,
+  type ScoutWatchlist,
+} from '../business/business'
+import { generateVirtualListingPage, getCredibleDealScore } from '../marketplace/virtualMarket'
 
 const RECENT_DROPS_LIMIT = 20
 const UI_EVENTS_LIMIT = 50
@@ -1047,6 +1069,7 @@ function failAutomationModule(
 }
 
 function purchaseAutoOpener(state: GameState, caseId?: string, now = Date.now()): GameState {
+  if (state.business.authoritative) return { ...state, lastError: 'Auto Opener has retired. Hire and configure the Case Operator on the Business page.' }
   const currentAutoOpener = state.automation.autoOpener
 
   if (currentAutoOpener.level >= AUTO_OPENER_MAX_LEVEL) {
@@ -1093,6 +1116,9 @@ function purchaseAutomationModule(
   moduleId: AutomationModuleId,
   now = Date.now(),
 ): GameState {
+  if (state.business.authoritative && moduleId !== AutomationModuleId.WarehouseSystem && moduleId !== AutomationModuleId.AuctionHouse) {
+    return { ...state, lastError: 'This legacy module has retired. Its replacement is managed through Business employees.' }
+  }
   const moduleState = state.automation.modules[moduleId]
   const definition = AUTOMATION_MODULE_DEFINITIONS[moduleId]
 
@@ -1381,6 +1407,16 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     trophyAssignments: state.trophyAssignments,
     settings: state.settings,
     ui: state.ui,
+    business: {
+      ...defaultGameState.business,
+      migrationApplied: state.business.migrationApplied,
+      migratedAt: state.business.migratedAt,
+      transitionCreditGranted: state.business.transitionCreditGranted,
+      transitionCredit: 0,
+      legacyOperatingCapacity: state.business.legacyOperatingCapacity,
+      lastSchedulerAt: now,
+      dailyUsage: refreshBusinessDay(defaultGameState.business, now).dailyUsage,
+    },
     uiEvents: appendEvents(state, [prestigeEvent]),
     lastError: undefined,
     lastSaved: now,
@@ -1413,6 +1449,9 @@ function toggleAutomationModule(
   isEnabled?: boolean,
   now = Date.now(),
 ): GameState {
+  if (state.business.authoritative && moduleId !== AutomationModuleId.WarehouseSystem && moduleId !== AutomationModuleId.AuctionHouse) {
+    return { ...state, lastError: 'This legacy module is retired and cannot run alongside Business employees.' }
+  }
   const moduleState = state.automation.modules[moduleId]
 
   if (moduleState.level <= 0) {
@@ -1455,6 +1494,7 @@ function toggleAutomationModule(
 }
 
 function toggleAutoOpener(state: GameState, isEnabled?: boolean, now = Date.now()): GameState {
+  if (state.business.authoritative) return { ...state, lastError: 'Auto Opener has retired. Use the Case Operator instead.' }
   const autoOpener = state.automation.autoOpener
 
   if (autoOpener.level <= 0) {
@@ -1881,17 +1921,452 @@ function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now())
 }
 
 function tickAutomation(state: GameState, now = Date.now(), prng: Prng = Math.random): GameState {
+  // Save schema v36 makes Business the only authority for employee work. The
+  // legacy scheduler remains solely for the independent Auction House market.
+  if (state.business.authoritative) return tickAuctionHouse(state, now, prng)
   let nextState = tickAutoOpener(state, now)
-
   nextState = tickOpeningDesk(nextState, now)
   nextState = tickCaseFarm(nextState, now)
   nextState = tickTradingBot(nextState, now)
-  nextState = tickAuctionHouse(nextState, now, prng)
-
-  return nextState
+  return tickAuctionHouse(nextState, now, prng)
 }
 
-function tradeUpItems(state: GameState, itemIds: string[]): GameState {
+function appendBusinessProcessedId(state: GameState, requestId: string) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  return {
+    ...state,
+    business: {
+      ...state.business,
+      processedOperationIds: [...state.business.processedOperationIds, requestId].slice(-800),
+    },
+  }
+}
+
+function spendWithTransitionCredit(state: GameState, cost: number) {
+  const creditUsed = Math.min(state.business.transitionCredit, cost)
+  const cashCost = roundCurrency(cost - creditUsed)
+  if (state.money < cashCost) return undefined
+  return {
+    cashCost,
+    creditUsed,
+    state: {
+      ...state,
+      money: roundCurrency(state.money - cashCost),
+      business: { ...state.business, transitionCredit: roundCurrency(state.business.transitionCredit - creditUsed) },
+      statistics: { ...state.statistics, moneySpent: roundCurrency(state.statistics.moneySpent + cashCost) },
+    },
+  }
+}
+
+function hireBusinessEmployee(state: GameState, roleId: EmployeeRoleId, requestId: string, now: number) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const employee = state.business.employees[roleId]
+  if (!employee || employee.isHired) return { ...state, lastError: employee ? `${EMPLOYEE_ROLE_DEFINITIONS[roleId].name} is already hired.` : 'Employee role not found.' }
+  if (!isEmployeeUnlocked(roleId, state.career)) return { ...state, lastError: `${EMPLOYEE_ROLE_DEFINITIONS[roleId].name} unlocks at Career level ${EMPLOYEE_ROLE_DEFINITIONS[roleId].unlockLevel}.` }
+  const purchase = spendWithTransitionCredit(state, getEmployeeHireCost(roleId))
+  if (!purchase) return { ...state, lastError: 'Not enough available cash or transition credit to hire this employee.' }
+  const hired = {
+    ...employee,
+    isHired: true,
+    status: 'paused' as const,
+    payrollSettledThrough: now,
+    nextActionAt: now + getEmployeeOperationInterval(roleId, 0),
+    assignment: roleId === 'marketScout' ? 'Scan watchlists' : 'Ready to configure',
+  }
+  const operation: BusinessOperation = { id: `hire:${requestId}`, employeeRole: roleId, type: 'hire', timestamp: now, description: `Hired ${EMPLOYEE_ROLE_DEFINITIONS[roleId].name}`, grossVolume: 0, revenue: 0, expense: purchase.cashCost, realizedProfit: -purchase.cashCost, relatedItemIds: [] }
+  const next = {
+    ...purchase.state,
+    business: rememberBusinessOperation({ ...purchase.state.business, employees: { ...purchase.state.business.employees, [roleId]: hired } }, operation),
+    lastError: purchase.creditUsed > 0 ? `Used $${purchase.creditUsed.toFixed(2)} of legacy Business transition credit.` : undefined,
+  }
+  return appendBusinessProcessedId(next, requestId)
+}
+
+function trainBusinessEmployee(state: GameState, roleId: EmployeeRoleId, requestId: string, now: number) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const employee = state.business.employees[roleId]
+  if (!employee?.isHired) return { ...state, lastError: 'Hire this employee before training.' }
+  if (employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL) return { ...state, lastError: 'This employee has reached the effective training maximum.' }
+  const cost = getEmployeeTrainingCost(roleId, employee.trainingLevel)
+  const purchase = spendWithTransitionCredit(state, cost)
+  if (!purchase) return { ...state, lastError: 'Not enough available cash or transition credit for training.' }
+  const nextLevel = employee.trainingLevel + 1
+  const trained = { ...employee, trainingLevel: nextLevel, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEmployeeOperationInterval(roleId, nextLevel)) : employee.nextActionAt }
+  const operation: BusinessOperation = { id: `training:${requestId}`, employeeRole: roleId, type: 'training', timestamp: now, description: `Trained ${EMPLOYEE_ROLE_DEFINITIONS[roleId].name} to level ${nextLevel}`, grossVolume: 0, revenue: 0, expense: purchase.cashCost, realizedProfit: -purchase.cashCost, relatedItemIds: [] }
+  const next = { ...purchase.state, business: rememberBusinessOperation({ ...purchase.state.business, employees: { ...purchase.state.business.employees, [roleId]: trained } }, operation), lastError: undefined }
+  return appendBusinessProcessedId(next, requestId)
+}
+
+function toggleBusinessEmployee(state: GameState, roleId: EmployeeRoleId, isEnabled: boolean | undefined, now: number) {
+  const employee = state.business.employees[roleId]
+  if (!employee?.isHired) return { ...state, lastError: 'Hire this employee first.' }
+  const enable = isEnabled ?? !employee.isEnabled
+  if (enable && getActiveEmployeeCount(state.business) >= getOperatingCapacity(state.business) && !employee.isEnabled) return { ...state, lastError: 'Business operating capacity is full. Pause another employee first.' }
+  if (enable && employee.availableCapital < getEmployeeHourlyWage(roleId, employee.trainingLevel)) return { ...state, lastError: 'Allocate enough operating funds to cover at least one hour of wages.' }
+  return {
+    ...state,
+    business: {
+      ...state.business,
+      employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: enable, status: enable ? 'running' : 'paused', lastPauseReason: undefined, payrollSettledThrough: enable ? now : employee.payrollSettledThrough, nextActionAt: enable ? now + getEmployeeOperationInterval(roleId, employee.trainingLevel) : employee.nextActionAt } },
+    },
+    lastError: undefined,
+  }
+}
+
+function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId, update: Record<string, unknown>, now: number) {
+  const employee = state.business.employees[roleId]
+  if (!employee) return state
+  const nextSettings = { ...employee.settings } as typeof employee.settings
+  const finite = (key: string, fallback: number, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) => {
+    const value = Number(update[key] ?? fallback)
+    return Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, value)) : fallback
+  }
+  if (roleId === 'caseOperator') {
+    const caseSettings = employee.settings as typeof state.business.employees.caseOperator.settings
+    const caseId = typeof update.caseId === 'string' && CASE_DEFINITIONS.some((entry) => entry.id === update.caseId) ? update.caseId : caseSettings.caseId
+    Object.assign(nextSettings, {
+      caseId,
+      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', caseSettings.intervalMs, 10_000, 24 * 60 * 60_000)),
+      batchSize: Math.max(1, Math.min(getCaseOperatorMaximumBatch(employee.trainingLevel), Math.floor(finite('batchSize', caseSettings.batchSize, 1, 5)))),
+      maximumCasesPerShift: Math.floor(finite('maximumCasesPerShift', caseSettings.maximumCasesPerShift, 1, 10_000)),
+      minimumWalletReserve: finite('minimumWalletReserve', caseSettings.minimumWalletReserve),
+      stopLoss: finite('stopLoss', caseSettings.stopLoss, .01),
+      inventoryCapacityReserve: Math.floor(finite('inventoryCapacityReserve', caseSettings.inventoryCapacityReserve, 0, 10_000)),
+      allowAutoSell: typeof update.allowAutoSell === 'boolean' ? update.allowAutoSell : caseSettings.allowAutoSell,
+    })
+  } else if (roleId === 'salesAssistant') {
+    const current = employee.settings as typeof state.business.employees.salesAssistant.settings
+    Object.assign(nextSettings, {
+      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      keepBestDuplicates: Math.floor(finite('keepBestDuplicates', current.keepBestDuplicates, 1, 100)),
+      allowedWeapons: Array.isArray(update.allowedWeapons) ? update.allowedWeapons.filter((value): value is string => typeof value === 'string').slice(0, 100) : current.allowedWeapons,
+      allowedRarities: Array.isArray(update.allowedRarities) ? update.allowedRarities.filter((value): value is Rarity => Object.values(Rarity).includes(value as Rarity)) : current.allowedRarities,
+      maximumItemValue: finite('maximumItemValue', current.maximumItemValue, .01),
+      minimumSaleQuote: finite('minimumSaleQuote', current.minimumSaleQuote, 0),
+      minimumListingPrice: finite('minimumListingPrice', current.minimumListingPrice, .01),
+      minimumProfitMargin: finite('minimumProfitMargin', current.minimumProfitMargin, -1, 10),
+      maximumListingDiscount: finite('maximumListingDiscount', current.maximumListingDiscount, 0, .35),
+      maximumActiveListings: Math.floor(finite('maximumActiveListings', current.maximumActiveListings, 1, 500)),
+      repricingIntervalMs: finite('repricingIntervalMs', current.repricingIntervalMs, 60_000, 30 * 24 * 60 * 60_000),
+      relistExpired: typeof update.relistExpired === 'boolean' ? update.relistExpired : current.relistExpired,
+      mode: update.mode === 'instant' || update.mode === 'list' || update.mode === 'mixed' ? update.mode : current.mode,
+      confirmationThreshold: finite('confirmationThreshold', current.confirmationThreshold, .01),
+    })
+  } else if (roleId === 'marketScout') {
+    const current = employee.settings as typeof state.business.employees.marketScout.settings
+    Object.assign(nextSettings, {
+      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      minimumValuationConfidence: finite('minimumValuationConfidence', current.minimumValuationConfidence, 0, 1),
+    })
+  } else if (roleId === 'tradeUpSpecialist') {
+    const current = employee.settings as typeof state.business.employees.tradeUpSpecialist.settings
+    Object.assign(nextSettings, {
+      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      maximumInputValue: finite('maximumInputValue', current.maximumInputValue, .01),
+      maximumDailyConsumedValue: finite('maximumDailyConsumedValue', current.maximumDailyConsumedValue, .01),
+      minimumExpectedProfit: finite('minimumExpectedProfit', current.minimumExpectedProfit, 0),
+      minimumExpectedRoi: finite('minimumExpectedRoi', current.minimumExpectedRoi, 0, 10),
+      allowedCollections: Array.isArray(update.allowedCollections) ? update.allowedCollections.filter((value): value is string => typeof value === 'string').slice(0, 100) : current.allowedCollections,
+      allowedRarities: Array.isArray(update.allowedRarities) ? update.allowedRarities.filter((value): value is Rarity => Object.values(Rarity).includes(value as Rarity)) : current.allowedRarities,
+      maximumContractsPerShift: Math.floor(finite('maximumContractsPerShift', current.maximumContractsPerShift, 1, 100)),
+      confirmationThreshold: finite('confirmationThreshold', current.confirmationThreshold, .01),
+    })
+  } else {
+    const current = employee.settings as typeof state.business.employees.juniorTrader.settings
+    const minimumFloat = finite('minimumFloat', current.minimumFloat, 0, 1)
+    Object.assign(nextSettings, {
+      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      maximumPurchasePrice: finite('maximumPurchasePrice', current.maximumPurchasePrice, .01),
+      maximumDailyTransactions: Math.floor(finite('maximumDailyTransactions', current.maximumDailyTransactions, 1, 100)),
+      minimumDiscount: finite('minimumDiscount', current.minimumDiscount, 0, .9),
+      minimumValuationConfidence: finite('minimumValuationConfidence', current.minimumValuationConfidence, 0, 1),
+      allowedWeapons: Array.isArray(update.allowedWeapons) ? update.allowedWeapons.filter((value): value is string => typeof value === 'string').slice(0, 100) : current.allowedWeapons,
+      allowedWear: Array.isArray(update.allowedWear) ? update.allowedWear.filter((value): value is WearCondition => Object.values(WearCondition).includes(value as WearCondition)) : current.allowedWear,
+      minimumFloat,
+      maximumFloat: Math.max(minimumFloat, finite('maximumFloat', current.maximumFloat, 0, 1)),
+      maximumExposurePerSkin: Math.floor(finite('maximumExposurePerSkin', current.maximumExposurePerSkin, 1, 100)),
+      maximumItemValue: finite('maximumItemValue', current.maximumItemValue, .01),
+      walletReserve: finite('walletReserve', current.walletReserve),
+      stopLoss: finite('stopLoss', current.stopLoss, .01),
+      manualApprovalThreshold: finite('manualApprovalThreshold', current.manualApprovalThreshold, .01),
+    })
+  }
+  return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, settings: nextSettings, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEmployeeOperationInterval(roleId, employee.trainingLevel)) : employee.nextActionAt } } }, lastError: undefined }
+}
+
+function allocateEmployeeBudget(state: GameState, roleId: EmployeeRoleId, amount: number, requestId: string) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const employee = state.business.employees[roleId]
+  const normalized = roundCurrency(Math.max(0, amount))
+  if (!employee?.isHired || normalized <= 0 || state.money < normalized) return { ...state, lastError: !employee?.isHired ? 'Hire this employee first.' : 'Not enough wallet cash for that allocation.' }
+  const next = { ...state, money: roundCurrency(state.money - normalized), business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, allocatedCapital: roundCurrency(employee.allocatedCapital + normalized), availableCapital: roundCurrency(employee.availableCapital + normalized) } } }, lastError: undefined }
+  return appendBusinessProcessedId(next, requestId)
+}
+
+function releaseEmployeeBudget(state: GameState, roleId: EmployeeRoleId, amount: number | undefined, requestId: string) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const employee = state.business.employees[roleId]
+  if (!employee) return state
+  const released = roundCurrency(Math.min(employee.availableCapital, Math.max(0, amount ?? employee.availableCapital)))
+  const next = { ...state, money: roundCurrency(state.money + released), business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, allocatedCapital: roundCurrency(Math.max(0, employee.allocatedCapital - released)), availableCapital: roundCurrency(employee.availableCapital - released) } } }, lastError: undefined }
+  return appendBusinessProcessedId(next, requestId)
+}
+
+function pauseEmployee(state: GameState, roleId: EmployeeRoleId, reason: string, now: number) {
+  const employee = state.business.employees[roleId]
+  return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: false, status: 'paused' as const, lastPauseReason: reason, nextActionAt: now } } } }
+}
+
+function settleEmployeePayroll(state: GameState, roleId: EmployeeRoleId, now: number) {
+  const employee = state.business.employees[roleId]
+  if (!employee.isHired || !employee.isEnabled) return state
+  const from = employee.payrollSettledThrough || employee.lastActionAt || now
+  const elapsed = Math.min(24 * 60 * 60_000, Math.max(0, now - from))
+  if (elapsed < 60_000) return state
+  const wage = getEmployeeHourlyWage(roleId, employee.trainingLevel)
+  const due = roundCurrency(wage * elapsed / 3_600_000)
+  if (due <= 0) return state
+  if (employee.availableCapital < due) return pauseEmployee(state, roleId, `Paused: needs $${due.toFixed(2)} payroll, but only $${employee.availableCapital.toFixed(2)} is allocated.`, now)
+  const operation: BusinessOperation = { id: `payroll:${roleId}:${from}:${now}`, employeeRole: roleId, type: 'payroll', timestamp: now, description: `${EMPLOYEE_ROLE_DEFINITIONS[roleId].name} payroll`, grossVolume: 0, revenue: 0, expense: due, realizedProfit: -due, relatedItemIds: [] }
+  const paid = { ...employee, availableCapital: roundCurrency(employee.availableCapital - due), spentCapital: roundCurrency(employee.spentCapital + due), totalOperatingExpenses: roundCurrency(employee.totalOperatingExpenses + due), payrollSettledThrough: now }
+  return { ...state, business: rememberBusinessOperation({ ...state.business, employees: { ...state.business.employees, [roleId]: paid } }, operation), statistics: { ...state.statistics, moneySpent: roundCurrency(state.statistics.moneySpent + due) } }
+}
+
+function trophyItemIds(state: GameState) {
+  return new Set(Object.values(state.trophyAssignments).flatMap((entry) => entry?.itemId ? [entry.itemId] : []))
+}
+
+function finishEmployeeOperation(state: GameState, roleId: EmployeeRoleId, operation: BusinessOperation, now: number, recentResult: string) {
+  const employee = state.business.employees[roleId]
+  const updated = { ...employee, status: 'running' as const, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), completedOperationCount: employee.completedOperationCount + 1, recentResult, lastPauseReason: undefined }
+  return { ...state, business: rememberBusinessOperation({ ...state.business, employees: { ...state.business.employees, [roleId]: updated } }, operation) }
+}
+
+function runCaseOperator(state: GameState, now: number, prng: Prng) {
+  const roleId = 'caseOperator' as const
+  const employee = state.business.employees[roleId]
+  const settings = employee.settings
+  const selectedCase = CASE_DEFINITIONS.find((candidate) => candidate.id === settings.caseId)
+  const caseDef = selectedCase && canOpenCase(selectedCase, state) ? selectedCase : CASE_DEFINITIONS.find((candidate) => canOpenCase(candidate, state))
+  if (!caseDef) return pauseEmployee(state, roleId, 'Paused: no case is currently available.', now)
+  const effectiveCase = getEffectiveCaseDefinition(state, caseDef, now)
+  if (state.money < settings.minimumWalletReserve) return pauseEmployee(state, roleId, 'Paused: player wallet reserve reached.', now)
+  if (getInventoryFreeSlots(state) <= settings.inventoryCapacityReserve) return pauseEmployee(state, roleId, 'Paused: inventory capacity reserve reached.', now)
+  const shiftRemaining = Math.max(0, settings.maximumCasesPerShift - state.business.dailyUsage.caseOperatorCases)
+  const freeSlots = Math.max(0, getInventoryFreeSlots(state) - settings.inventoryCapacityReserve)
+  const maximumAffordable = Math.floor(employee.availableCapital / effectiveCase.cost)
+  const batch = Math.min(settings.batchSize, getCaseOperatorMaximumBatch(employee.trainingLevel), shiftRemaining, freeSlots, maximumAffordable)
+  if (batch <= 0) {
+    const reason = freeSlots <= 0 ? 'Paused: inventory capacity reserve reached.' : shiftRemaining <= 0 ? 'Paused: shift case limit reached.' : 'Paused: assigned budget cannot cover the selected case.'
+    return pauseEmployee(state, roleId, reason, now)
+  }
+  if (employee.spentCapital + effectiveCase.cost * batch > settings.stopLoss) return pauseEmployee(state, roleId, 'Paused: configured stop-loss reached.', now)
+  const beforeFund = employee.availableCapital
+  const wallet = state.money
+  const opened = openCase({ ...state, money: beforeFund, autoSellRules: settings.allowAutoSell ? state.autoSellRules : [] }, caseDef.id, batch, now, prng(), `business-case:${now}:${employee.completedOperationCount}`)
+  const openedCount = opened.statistics.casesOpened - state.statistics.casesOpened
+  if (openedCount <= 0) return pauseEmployee({ ...opened, money: wallet }, roleId, opened.lastError ?? 'Paused: opening could not complete.', now)
+  const fundAfter = opened.money
+  const spent = roundCurrency(effectiveCase.cost * openedCount)
+  const autoSaleRevenue = roundCurrency(Math.max(0, fundAfter - beforeFund + spent))
+  const nextEmployee = { ...opened.business.employees[roleId], availableCapital: fundAfter, spentCapital: roundCurrency(employee.spentCapital + spent), totalOperatingExpenses: roundCurrency(employee.totalOperatingExpenses + spent), realizedBusinessIncome: roundCurrency(employee.realizedBusinessIncome + autoSaleRevenue) }
+  let next = { ...opened, money: wallet, autoSellRules: state.autoSellRules, business: { ...opened.business, employees: { ...opened.business.employees, [roleId]: nextEmployee }, dailyUsage: { ...opened.business.dailyUsage, caseOperatorCases: opened.business.dailyUsage.caseOperatorCases + openedCount } } }
+  const items = opened.lastOpenedItems.map((item) => item.instanceId)
+  next = finishEmployeeOperation(next, roleId, { id: `business-case:${now}:${employee.completedOperationCount}`, employeeRole: roleId, type: 'case-opened', timestamp: now, description: `Opened ${openedCount} × ${caseDef.name}`, grossVolume: spent + autoSaleRevenue, revenue: autoSaleRevenue, expense: spent, realizedProfit: autoSaleRevenue - spent, relatedItemIds: items }, now, `Opened ${openedCount} ${caseDef.name}`)
+  return next
+}
+
+function getOrdinaryDuplicateCandidate(state: GameState, keepBestDuplicates: number) {
+  const protectedIds = trophyItemIds(state)
+  const groups = new Map<string, SkinInstance[]>()
+  for (const item of state.inventory) {
+    const key = `${item.id}:${item.statTrak ? 'st' : item.souvenir ? 'souvenir' : 'normal'}`
+    groups.set(key, [...(groups.get(key) ?? []), item])
+  }
+  return [...groups.values()].flatMap((items) => {
+    if (items.length < 2) return []
+    const protectedItems = items.filter((item) => isBusinessProtectedItem(item, protectedIds))
+    const eligible = items.filter((item) => !isBusinessProtectedItem(item, protectedIds)).sort((a, b) => b.marketValue - a.marketValue || a.instanceId.localeCompare(b.instanceId))
+    return eligible.slice(Math.max(0, Math.max(0, keepBestDuplicates) - protectedItems.length))
+  }).sort((a, b) => a.marketValue - b.marketValue || a.instanceId.localeCompare(b.instanceId))[0]
+}
+
+function runSalesAssistant(state: GameState, now: number) {
+  const roleId = 'salesAssistant' as const
+  const employee = state.business.employees[roleId]
+  const settings = employee.settings
+  const candidate = getOrdinaryDuplicateCandidate(state, settings.keepBestDuplicates)
+  if (!candidate) {
+    const listing = state.marketplace.playerListings.find((entry) => !isBusinessProtectedItem(entry.item, trophyItemIds(state)))
+    const lastReprice = listing ? state.business.recentOperations.find((operation) => operation.type === 'listing-repriced' && operation.relatedMarketplaceId === listing.id) : undefined
+    if (listing && now - (lastReprice?.timestamp ?? listing.createdAt) >= settings.repricingIntervalMs) {
+      const floor = Math.max(settings.minimumListingPrice, listing.fairMarketValue * (1 - Math.min(.35, settings.maximumListingDiscount)))
+      const askingPrice = roundCurrency(Math.max(floor, listing.askingPrice * .98))
+      if (askingPrice < listing.askingPrice) {
+        const next = { ...state, marketplace: { ...state.marketplace, playerListings: state.marketplace.playerListings.map((entry) => entry.id === listing.id ? { ...entry, askingPrice } : entry) } }
+        return finishEmployeeOperation(next, roleId, { id: `business-reprice:${listing.id}:${now}`, employeeRole: roleId, type: 'listing-repriced', timestamp: now, description: `Repriced ${listing.item.weapon} | ${listing.item.finish} without resetting expiry`, grossVolume: askingPrice, revenue: 0, expense: 0, realizedProfit: 0, relatedItemIds: [listing.item.instanceId], relatedMarketplaceId: listing.id }, now, `Repriced listing to $${askingPrice.toFixed(2)}`)
+      }
+    }
+    const expired = settings.relistExpired ? state.marketplace.transactions.find((transaction) => transaction.type === 'listing-cancelled' && state.inventory.some((item) => item.instanceId === transaction.item.instanceId) && !isBusinessProtectedItem(transaction.item, trophyItemIds(state))) : undefined
+    if (expired && !state.business.recentOperations.some((operation) => operation.type === 'market-listing' && operation.relatedItemIds.includes(expired.item.instanceId) && operation.timestamp >= expired.createdAt)) {
+      const ask = roundCurrency(Math.max(settings.minimumListingPrice, expired.fairMarketValue * (1 - Math.min(.35, settings.maximumListingDiscount))))
+      const requestId = `business-relist:${expired.item.instanceId}:${expired.createdAt}`
+      const relisted = listItemOnMarket(state, expired.item.instanceId, ask, requestId, now)
+      if (relisted.marketplace.playerListings.length > state.marketplace.playerListings.length) return finishEmployeeOperation(relisted, roleId, { id: requestId, employeeRole: roleId, type: 'market-listing', timestamp: now, description: `Relisted expired ${expired.item.weapon} | ${expired.item.finish}`, grossVolume: ask, revenue: 0, expense: 0, realizedProfit: 0, relatedItemIds: [expired.item.instanceId], relatedMarketplaceId: relisted.marketplace.playerListings[0]?.id }, now, 'Relisted an expired ordinary item')
+    }
+    return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No eligible ordinary duplicate or listing task found' } } } }
+  }
+  if (candidate.marketValue > Math.min(settings.maximumItemValue, settings.confirmationThreshold)) return pauseEmployee(state, roleId, 'Paused: eligible duplicate exceeds the manual confirmation threshold.', now)
+  if (!settings.allowedRarities.includes(candidate.rarity)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed rarities' } } } }
+  if (settings.allowedWeapons.length > 0 && !settings.allowedWeapons.includes(candidate.weapon)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed weapons' } } } }
+  const shouldList = settings.mode === 'list' || (settings.mode === 'mixed' && state.marketplace.playerListings.length < settings.maximumActiveListings && employee.completedOperationCount % 2 === 1)
+  if (shouldList && state.marketplace.playerListings.length < settings.maximumActiveListings) {
+    const fair = getCurrentItemMarketValue(candidate, state.marketValues)
+    const ask = roundCurrency(Math.max(settings.minimumListingPrice, fair * (1 - Math.min(.35, settings.maximumListingDiscount))))
+    const requestId = `business-list:${candidate.instanceId}:${now}`
+    const listed = listItemOnMarket(state, candidate.instanceId, ask, requestId, now)
+    if (listed.marketplace.playerListings.length === state.marketplace.playerListings.length) return pauseEmployee(listed, roleId, listed.lastError ?? 'Paused: listing could not be created.', now)
+    return finishEmployeeOperation(listed, roleId, { id: requestId, employeeRole: roleId, type: 'market-listing', timestamp: now, description: `Listed ${candidate.weapon} | ${candidate.finish} on CSWEAR`, grossVolume: ask, revenue: 0, expense: 0, realizedProfit: 0, relatedItemIds: [candidate.instanceId], relatedMarketplaceId: listed.marketplace.playerListings[0]?.id }, now, `Listed ${candidate.weapon} | ${candidate.finish}`)
+  }
+  const quote = getAutomationSaleValue(state, candidate)
+  const basis = state.economyLedger.itemCostBasis[candidate.instanceId]
+  if (basis !== undefined && (quote - basis) / Math.max(.01, basis) < settings.minimumProfitMargin) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Skipped duplicate below configured profit margin' } } } }
+  if (quote < settings.minimumSaleQuote) return pauseEmployee(state, roleId, 'Paused: instant-sale quote is below the configured floor.', now)
+  const sold = sellItem(state, candidate.instanceId)
+  if (sold.inventory.length === state.inventory.length) return pauseEmployee(sold, roleId, sold.lastError ?? 'Paused: duplicate could not be sold.', now)
+  const operation = { id: `business-sale:${candidate.instanceId}:${now}`, employeeRole: roleId, type: 'instant-sale' as const, timestamp: now, description: `Sold ordinary duplicate ${candidate.weapon} | ${candidate.finish}`, grossVolume: quote, revenue: quote, expense: 0, realizedProfit: quote - (state.economyLedger.itemCostBasis[candidate.instanceId] ?? candidate.marketValue), relatedItemIds: [candidate.instanceId] }
+  return finishEmployeeOperation({ ...sold, business: { ...sold.business, dailyUsage: { ...sold.business.dailyUsage, salesActions: sold.business.dailyUsage.salesActions + 1 } } }, roleId, operation, now, `Sold duplicate for $${quote.toFixed(2)}`)
+}
+
+function watchlistMatchesListing(watchlist: ScoutWatchlist, listing: NpcMarketListing, now: number) {
+  const discount = (listing.fairMarketValue - listing.askingPrice) / Math.max(.01, listing.fairMarketValue)
+  const confidence = listing.item.pattern?.referenceConfidence === 'verified' ? 1 : listing.item.pattern?.referenceConfidence === 'estimated' ? .75 : .65
+  return (!watchlist.skinId || listing.item.id === watchlist.skinId) && (!watchlist.weapon || listing.item.weapon === watchlist.weapon) && (!watchlist.wear || listing.item.wear === watchlist.wear) && (watchlist.minimumFloat === undefined || listing.item.floatValue >= watchlist.minimumFloat) && (watchlist.maximumFloat === undefined || listing.item.floatValue <= watchlist.maximumFloat) && (watchlist.patternId === undefined || listing.item.paintSeed === watchlist.patternId) && (!watchlist.patternClassification || listing.item.pattern?.name.toLowerCase().includes(watchlist.patternClassification.toLowerCase())) && (watchlist.maximumPrice === undefined || listing.askingPrice <= watchlist.maximumPrice) && discount >= watchlist.minimumDiscount && confidence >= watchlist.minimumConfidence && (!watchlist.seller || listing.seller.username.toLowerCase().includes(watchlist.seller.toLowerCase())) && (watchlist.maximumListingAgeMs === undefined || now - listing.createdAt <= watchlist.maximumListingAgeMs) && (watchlist.expiringWithinMs === undefined || listing.expiresAt - now <= watchlist.expiringWithinMs) && (watchlist.statTrak === undefined || Boolean(listing.item.statTrak) === watchlist.statTrak) && (watchlist.souvenir === undefined || Boolean(listing.item.souvenir) === watchlist.souvenir)
+}
+
+function runMarketScout(state: GameState, now: number) {
+  const roleId = 'marketScout' as const
+  const employee = state.business.employees[roleId]
+  const watchlist = state.business.watchlists.find((entry) => entry.enabled)
+  if (!watchlist) return pauseEmployee(state, roleId, 'Paused: create and enable a watchlist first.', now)
+  const skinCandidates = watchlist.skinId ? SKIN_DEFINITIONS.filter((skin) => skin.id === watchlist.skinId) : SKIN_DEFINITIONS.filter((skin) => !watchlist.weapon || skin.weapon === watchlist.weapon)
+  if (skinCandidates.length === 0) return pauseEmployee(state, roleId, 'Paused: watchlist has no matching catalog skins.', now)
+  const scanLimit = getScoutCandidateLimit(employee.trainingLevel)
+  const skin = skinCandidates[watchlist.scanCursor % skinCandidates.length]
+  const filters = { wear: watchlist.wear ?? 'all' as const, minFloat: watchlist.minimumFloat, maxFloat: watchlist.maximumFloat, patternId: watchlist.patternId, patternClassification: watchlist.patternClassification, maxPrice: watchlist.maximumPrice, seller: watchlist.seller, edition: watchlist.statTrak ? 'stattrak' as const : watchlist.souvenir ? 'souvenir' as const : 'all' as const }
+  const result = generateVirtualListingPage({ skin, marketValues: state.marketValues, epoch: state.marketplace.virtualMarketEpoch, seed: state.marketplace.virtualMarketSeed, removedListingIds: state.marketplace.removedVirtualListingIds, overrides: state.marketplace.npcListings.filter((listing) => listing.item.id === skin.id), filters, sort: 'best-deals', pageSize: Math.min(100, scanLimit), now })
+  const alertedIds = new Set(state.business.alerts.map((alert) => alert.listingId))
+  const listing = result.listings.find((candidate) => !alertedIds.has(candidate.id) && watchlistMatchesListing(watchlist, candidate, now))
+  const nextWatchlists = state.business.watchlists.map((entry) => entry.id === watchlist.id ? { ...entry, lastScannedAt: now, scanCursor: entry.scanCursor + 1, scannedCandidates: entry.scannedCandidates + result.scanned } : entry)
+  if (!listing) return { ...state, business: { ...state.business, watchlists: nextWatchlists, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: `Scanned ${result.scanned} candidates; no genuine match` } } } }
+  const discount = (listing.fairMarketValue - listing.askingPrice) / Math.max(.01, listing.fairMarketValue)
+  const alert = { id: `alert:${watchlist.id}:${listing.id}`, watchlistId: watchlist.id, listingId: listing.id, skinId: listing.item.id, skinName: `${listing.item.weapon} | ${listing.item.finish}`, image: listing.item.image, seller: listing.seller.username, price: listing.askingPrice, wear: listing.item.wear, float: listing.item.floatValue, patternId: listing.item.paintSeed, patternClassification: listing.item.pattern?.name, estimatedValue: listing.fairMarketValue, discount, confidence: listing.item.pattern?.referenceConfidence === 'verified' ? 'market' as const : listing.item.pattern?.referenceConfidence === 'estimated' ? 'listing' as const : 'simulator-estimate' as const, expiresAt: listing.expiresAt, discoveredAt: now, status: 'new' as const }
+  const next = { ...state, business: { ...state.business, watchlists: nextWatchlists, alerts: [alert, ...state.business.alerts].slice(0, 80) } }
+  return finishEmployeeOperation(next, roleId, { id: `scout:${listing.id}`, employeeRole: roleId, type: 'scout-match', timestamp: now, description: `Found ${alert.skinName} at ${(discount * 100).toFixed(1)}% below estimate`, grossVolume: listing.askingPrice, revenue: 0, expense: 0, realizedProfit: 0, relatedItemIds: [], relatedMarketplaceId: listing.id }, now, `Found ${alert.skinName}`)
+}
+
+function runTradeUpSpecialist(state: GameState, now: number, prng: Prng) {
+  const roleId = 'tradeUpSpecialist' as const
+  const employee = state.business.employees[roleId]
+  const settings = employee.settings
+  if (state.business.dailyUsage.tradeUpContracts >= settings.maximumContractsPerShift || state.business.dailyUsage.tradeUpInputValue >= settings.maximumDailyConsumedValue) return pauseEmployee(state, roleId, 'Paused: daily contract risk limit reached.', now)
+  const protectedIds = trophyItemIds(state)
+  const suggestions = suggestBestTradeUps({ inventory: state.inventory.filter((item) => !isBusinessProtectedItem(item, protectedIds)), marketValues: state.marketValues, limit: 10 })
+  const suggestion = suggestions.find(({ analysis, inputItems }) => {
+    const roi = analysis.expectedProfit / Math.max(.01, analysis.inputValue)
+    return analysis.inputValue <= settings.maximumInputValue && state.business.dailyUsage.tradeUpInputValue + analysis.inputValue <= settings.maximumDailyConsumedValue && analysis.expectedProfit >= settings.minimumExpectedProfit && roi >= settings.minimumExpectedRoi && settings.allowedRarities.includes(inputItems[0]?.rarity) && (settings.allowedCollections.length === 0 || inputItems.every((item) => item.collections?.some((id) => settings.allowedCollections.includes(id))))
+  })
+  if (!suggestion) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No genuinely eligible positive-EV contract' } } } }
+  const covert = suggestion.inputItems[0]?.rarity === Rarity.Covert
+  if (covert || suggestion.analysis.inputValue >= settings.confirmationThreshold) {
+    const approval = { id: `trade-approval:${now}:${employee.completedOperationCount}`, inputItemIds: suggestion.inputItems.map((item) => item.instanceId), inputValue: suggestion.analysis.inputValue, expectedOutputValue: suggestion.analysis.expectedValue, expectedProfit: suggestion.analysis.expectedProfit, expectedRoi: suggestion.analysis.expectedProfit / Math.max(.01, suggestion.analysis.inputValue), createdAt: now, reason: covert ? 'Five-Covert special-output contracts require manual confirmation.' : 'Input value exceeds the manual confirmation threshold.' }
+    return { ...state, business: { ...state.business, pendingTradeUpApproval: approval, employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: false, status: 'awaiting-approval' as const, lastPauseReason: approval.reason, lastActionAt: now } } } }
+  }
+  const traded = tradeUpItems(state, suggestion.inputItems.map((item) => item.instanceId), now, prng)
+  if (traded.statistics.tradeUpsCompleted === state.statistics.tradeUpsCompleted) return pauseEmployee(traded, roleId, traded.lastError ?? 'Paused: contract execution failed.', now)
+  const output = traded.lastOpenedItems[0]
+  const realized = (output?.marketValue ?? 0) - suggestion.analysis.inputValue
+  const next = { ...traded, business: { ...traded.business, dailyUsage: { ...traded.business.dailyUsage, tradeUpContracts: traded.business.dailyUsage.tradeUpContracts + 1, tradeUpInputValue: roundCurrency(traded.business.dailyUsage.tradeUpInputValue + suggestion.analysis.inputValue) } } }
+  return finishEmployeeOperation(next, roleId, { id: `business-tradeup:${output?.instanceId ?? now}`, employeeRole: roleId, type: 'trade-up', timestamp: now, description: `Completed an honest-EV contract`, grossVolume: suggestion.analysis.inputValue + (output?.marketValue ?? 0), revenue: 0, expense: 0, realizedProfit: realized, relatedItemIds: [...suggestion.inputItems.map((item) => item.instanceId), ...(output ? [output.instanceId] : [])] }, now, `Contract result ${realized >= 0 ? '+' : ''}$${realized.toFixed(2)}`)
+}
+
+function runJuniorTrader(state: GameState, now: number) {
+  const roleId = 'juniorTrader' as const
+  const employee = state.business.employees[roleId]
+  const settings = employee.settings
+  if (state.business.dailyUsage.juniorTraderPurchases >= settings.maximumDailyTransactions) return pauseEmployee(state, roleId, 'Paused: daily purchase limit reached.', now)
+  if (state.money < settings.walletReserve) return pauseEmployee(state, roleId, 'Paused: player wallet reserve reached.', now)
+  if (state.business.dailyUsage.juniorTraderSpend >= settings.stopLoss) return pauseEmployee(state, roleId, 'Paused: daily stop-loss reached.', now)
+  const affordable = Math.min(settings.maximumPurchasePrice, employee.availableCapital)
+  if (affordable <= 0) return pauseEmployee(state, roleId, 'Paused: assigned purchase budget is empty.', now)
+  const start = employee.completedOperationCount % SKIN_DEFINITIONS.length
+  let selected: NpcMarketListing | undefined
+  for (let offset = 0; offset < Math.min(24, SKIN_DEFINITIONS.length); offset += 1) {
+    const skin = SKIN_DEFINITIONS[(start + offset) % SKIN_DEFINITIONS.length]
+    if (settings.allowedWeapons.length > 0 && !settings.allowedWeapons.includes(skin.weapon)) continue
+    const page = generateVirtualListingPage({ skin, marketValues: state.marketValues, epoch: state.marketplace.virtualMarketEpoch, seed: state.marketplace.virtualMarketSeed, removedListingIds: state.marketplace.removedVirtualListingIds, overrides: state.marketplace.npcListings.filter((listing) => listing.item.id === skin.id), filters: { maxPrice: affordable, minFloat: settings.minimumFloat, maxFloat: settings.maximumFloat }, sort: 'best-deals', pageSize: 8, now })
+    selected = page.listings.find((listing) => {
+      const confidence = listing.item.pattern?.referenceConfidence === 'verified' ? 1 : listing.item.pattern?.referenceConfidence === 'estimated' ? .75 : .65
+      return settings.allowedWear.includes(listing.item.wear) && listing.item.marketValue <= settings.maximumItemValue && listing.askingPrice < settings.manualApprovalThreshold && state.business.dailyUsage.juniorTraderSpend + listing.askingPrice <= settings.stopLoss && !isExceptionalPattern(listing.item) && confidence >= settings.minimumValuationConfidence && getCredibleDealScore(listing) >= settings.minimumDiscount && state.inventory.filter((item) => item.id === listing.item.id).length < settings.maximumExposurePerSkin
+    })
+    if (selected) break
+  }
+  if (!selected) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No credible ordinary bargain within limits' } } } }
+  const wallet = state.money
+  const beforeFund = employee.availableCapital
+  const requestId = `business-buy:${selected.id}`
+  const purchased = buyMarketListing({ ...state, money: beforeFund }, selected.id, requestId, selected, undefined, now)
+  if (purchased.inventory.length === state.inventory.length) return pauseEmployee({ ...purchased, money: wallet }, roleId, purchased.lastError ?? 'Paused: listing could not be purchased.', now)
+  const cost = roundCurrency(beforeFund - purchased.money)
+  const nextEmployee = { ...purchased.business.employees[roleId], availableCapital: purchased.money, spentCapital: roundCurrency(employee.spentCapital + cost), totalOperatingExpenses: roundCurrency(employee.totalOperatingExpenses + cost) }
+  const next = { ...purchased, money: wallet, business: { ...purchased.business, employees: { ...purchased.business.employees, [roleId]: nextEmployee }, dailyUsage: { ...purchased.business.dailyUsage, juniorTraderPurchases: purchased.business.dailyUsage.juniorTraderPurchases + 1, juniorTraderSpend: roundCurrency(purchased.business.dailyUsage.juniorTraderSpend + cost) } } }
+  return finishEmployeeOperation(next, roleId, { id: requestId, employeeRole: roleId, type: 'market-purchase', timestamp: now, description: `Purchased ${selected.item.weapon} | ${selected.item.finish} at a credible discount`, grossVolume: cost, revenue: 0, expense: cost, realizedProfit: 0, relatedItemIds: [selected.item.instanceId], relatedMarketplaceId: selected.id }, now, `Purchased ${selected.item.weapon} | ${selected.item.finish}`)
+}
+
+function tickBusiness(state: GameState, now: number, prng: Prng = Math.random, maxOperations = 1) {
+  const removedListings = new Set(state.marketplace.removedVirtualListingIds)
+  let next = {
+    ...state,
+    business: {
+      ...refreshBusinessDay(state.business, now),
+      alerts: state.business.alerts.map((alert) => alert.status === 'new' && (alert.expiresAt <= now || removedListings.has(alert.listingId)) ? { ...alert, status: 'unavailable' as const } : alert),
+    },
+  }
+  for (const roleId of EMPLOYEE_ROLE_IDS) next = settleEmployeePayroll(next, roleId, now)
+  for (let count = 0; count < Math.max(1, Math.min(10, maxOperations)); count += 1) {
+    const due = EMPLOYEE_ROLE_IDS.map((roleId) => next.business.employees[roleId]).filter((employee) => employee.isHired && employee.isEnabled && employee.nextActionAt <= now).sort((a, b) => a.nextActionAt - b.nextActionAt || a.roleId.localeCompare(b.roleId))[0]
+    if (!due) break
+    if (due.roleId === 'caseOperator') next = runCaseOperator(next, now, prng)
+    else if (due.roleId === 'salesAssistant') next = runSalesAssistant(next, now)
+    else if (due.roleId === 'marketScout') next = runMarketScout(next, now)
+    else if (due.roleId === 'tradeUpSpecialist') next = runTradeUpSpecialist(next, now, prng)
+    else next = runJuniorTrader(next, now)
+  }
+  return { ...next, business: { ...next.business, lastSchedulerAt: now } }
+}
+
+function createScoutWatchlist(state: GameState, watchlist: ScoutWatchlist, requestId: string) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const limit = 1 + Math.max(0, state.business.employees.marketScout.trainingLevel)
+  if (state.business.watchlists.length >= Math.min(12, limit)) return { ...state, lastError: `Market Scout training currently supports ${Math.min(12, limit)} watchlist${limit === 1 ? '' : 's'}.` }
+  if (state.business.watchlists.some((entry) => entry.id === watchlist.id)) return appendBusinessProcessedId(state, requestId)
+  return appendBusinessProcessedId({ ...state, business: { ...state.business, watchlists: [...state.business.watchlists, { ...watchlist, lastScannedAt: 0, scanCursor: 0, scannedCandidates: 0 }] }, lastError: undefined }, requestId)
+}
+
+function confirmBusinessTradeUp(state: GameState, approvalId: string, requestId: string, now: number) {
+  if (state.business.processedOperationIds.includes(requestId)) return state
+  const approval = state.business.pendingTradeUpApproval
+  if (!approval || approval.id !== approvalId) return { ...state, lastError: 'This contract approval is no longer available.' }
+  const traded = tradeUpItems(state, approval.inputItemIds, now)
+  if (traded.statistics.tradeUpsCompleted === state.statistics.tradeUpsCompleted) return { ...traded, business: { ...traded.business, pendingTradeUpApproval: undefined } }
+  const employee = traded.business.employees.tradeUpSpecialist
+  const output = traded.lastOpenedItems[0]
+  const realized = (output?.marketValue ?? 0) - approval.inputValue
+  const next = finishEmployeeOperation({ ...traded, business: { ...traded.business, pendingTradeUpApproval: undefined, dailyUsage: { ...traded.business.dailyUsage, tradeUpContracts: traded.business.dailyUsage.tradeUpContracts + 1, tradeUpInputValue: roundCurrency(traded.business.dailyUsage.tradeUpInputValue + approval.inputValue) }, employees: { ...traded.business.employees, tradeUpSpecialist: { ...employee, isEnabled: false, status: 'paused', lastPauseReason: 'Manual contract completed. Resume when ready.' } } } }, 'tradeUpSpecialist', { id: `business-approved-tradeup:${output?.instanceId ?? now}`, employeeRole: 'tradeUpSpecialist', type: 'trade-up', timestamp: now, description: 'Completed manually approved contract', grossVolume: approval.inputValue + (output?.marketValue ?? 0), revenue: 0, expense: 0, realizedProfit: realized, relatedItemIds: [...approval.inputItemIds, ...(output ? [output.instanceId] : [])] }, now, `Approved contract result ${realized >= 0 ? '+' : ''}$${realized.toFixed(2)}`)
+  return appendBusinessProcessedId(next, requestId)
+}
+
+function tradeUpItems(state: GameState, itemIds: string[], now = Date.now(), prng: Prng = Math.random): GameState {
   const uniqueItemIds = Array.from(new Set(itemIds))
 
   const selectedItems = uniqueItemIds
@@ -1911,19 +2386,19 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
     return failTradeUp(state, analysis.message ?? 'This trade-up contract is not valid.')
   }
 
-  const output = pickTradeUpOutcome(analysis.outcomes)
+  const output = pickTradeUpOutcome(analysis.outcomes, prng)
 
   if (!output) {
     return failTradeUp(state, 'No valid trade-up result could be generated.')
   }
 
-  const completedAt = Date.now()
+  const completedAt = now
   const outputItem = createSkinInstance(
     output.skin,
     state,
     completedAt,
     output.predictedFloat,
-    Math.random,
+    prng,
     { statTrak: output.isStatTrak, souvenir: false },
   )
   const selectedIdSet = new Set(uniqueItemIds)
@@ -2810,6 +3285,33 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
 
       return nextState === state ? state : withProgressionUnlocks(nextState, action.now)
     }
+    case 'HIRE_EMPLOYEE':
+      return withProgressionUnlocks(hireBusinessEmployee(state, action.roleId, action.requestId, action.now ?? Date.now()), action.now)
+    case 'TRAIN_EMPLOYEE':
+      return withProgressionUnlocks(trainBusinessEmployee(state, action.roleId, action.requestId, action.now ?? Date.now()), action.now)
+    case 'TOGGLE_EMPLOYEE':
+      return toggleBusinessEmployee(state, action.roleId, action.isEnabled, action.now ?? Date.now())
+    case 'UPDATE_EMPLOYEE_SETTINGS':
+      return updateBusinessEmployeeSettings(state, action.roleId, action.settings, action.now ?? Date.now())
+    case 'ALLOCATE_EMPLOYEE_BUDGET':
+      return allocateEmployeeBudget(state, action.roleId, action.amount, action.requestId)
+    case 'RELEASE_EMPLOYEE_BUDGET':
+      return releaseEmployeeBudget(state, action.roleId, action.amount ?? state.business.employees[action.roleId].availableCapital, action.requestId)
+    case 'TICK_BUSINESS': {
+      const nextState = tickBusiness(state, action.now ?? Date.now(), action.prng, action.maxOperations)
+      return nextState === state ? state : withProgressionUnlocks(nextState, action.now)
+    }
+    case 'CREATE_SCOUT_WATCHLIST':
+      return createScoutWatchlist(state, action.watchlist, action.requestId)
+    case 'UPDATE_SCOUT_WATCHLIST':
+      return { ...state, business: { ...state.business, watchlists: state.business.watchlists.map((entry) => entry.id === action.watchlistId ? { ...entry, ...action.watchlist, id: entry.id } : entry) }, lastError: undefined }
+    case 'REMOVE_SCOUT_WATCHLIST':
+      if (state.business.processedOperationIds.includes(action.requestId)) return state
+      return appendBusinessProcessedId({ ...state, business: { ...state.business, watchlists: state.business.watchlists.filter((entry) => entry.id !== action.watchlistId), alerts: state.business.alerts.filter((alert) => alert.watchlistId !== action.watchlistId) }, lastError: undefined }, action.requestId)
+    case 'SET_SCOUT_ALERT_STATUS':
+      return { ...state, business: { ...state.business, alerts: state.business.alerts.map((alert) => alert.id === action.alertId ? { ...alert, status: action.status } : alert) } }
+    case 'CONFIRM_BUSINESS_TRADE_UP':
+      return withProgressionUnlocks(confirmBusinessTradeUp(state, action.approvalId, action.requestId, action.now ?? Date.now()), action.now)
     case 'PURCHASE_AUCTION_DEAL':
       return withProgressionUnlocks(purchaseAuctionDeal(state, action.dealId, action.now), action.now)
     case 'CLAIM_DAILY_REWARD':

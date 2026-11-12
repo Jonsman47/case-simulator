@@ -36,6 +36,9 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       ...defaultGameState.statistics,
       dropsByRarity: { ...defaultDropsByRarity },
     },
+    // Keep legacy reducer coverage available while v36 production saves use
+    // the authoritative Business scheduler instead.
+    business: { ...defaultGameState.business, authoritative: false },
     ...overrides,
   }
 }

@@ -65,18 +65,18 @@ function getNextAutomationRunAt(state: GameState, tradingBotRuns: number) {
     getPrestigeAutomationIntervalMultiplier(state.prestigeBonuses) *
     getSkillAutomationIntervalMultiplier(state.learnedSkillNodeIds)
 
-  if (autoOpener.isEnabled && autoOpener.level > 0 && autoOpener.caseId) {
+  if (!state.business.authoritative && autoOpener.isEnabled && autoOpener.level > 0 && autoOpener.caseId) {
     runTimes.push(autoOpener.lastOpenTime + Math.round(autoOpener.intervalMs * intervalMultiplier))
   }
 
-  if (isModuleActive(state, AutomationModuleId.OpeningDesk)) {
+  if (!state.business.authoritative && isModuleActive(state, AutomationModuleId.OpeningDesk)) {
     const openingDesk = state.automation.modules[AutomationModuleId.OpeningDesk]
 
     runTimes.push(openingDesk.lastRunTime + Math.round(getOpeningDeskIntervalMs(openingDesk.level) * intervalMultiplier))
   }
 
   if (
-    isModuleActive(state, AutomationModuleId.TradingBot) &&
+    !state.business.authoritative && isModuleActive(state, AutomationModuleId.TradingBot) &&
     tradingBotRuns < OFFLINE_TRADING_BOT_MAX_RUNS
   ) {
     const tradingBot = state.automation.modules[AutomationModuleId.TradingBot]
@@ -98,6 +98,14 @@ function getNextAutomationRunAt(state: GameState, tradingBotRuns: number) {
 
   if (state.settings.marketSimulationEnabled) {
     runTimes.push((state.lastMarketTick || state.lastSaved) + OFFLINE_MARKET_STEP_MS)
+  }
+
+  if (state.business.authoritative) {
+    for (const employee of Object.values(state.business.employees)) {
+      if (!employee.isHired || !employee.isEnabled) continue
+      runTimes.push(employee.nextActionAt || state.lastSaved)
+      runTimes.push((employee.payrollSettledThrough || state.lastSaved) + 60 * 60_000)
+    }
   }
 
   return runTimes.length > 0 ? Math.min(...runTimes) : undefined
@@ -161,6 +169,10 @@ function getAutomationRunDelta(
 }
 
 function isTimedAutomationDue(state: GameState, now: number, tradingBotRuns: number) {
+  if (state.business.authoritative) {
+    const auctionModule = state.automation.modules[AutomationModuleId.AuctionHouse]
+    return auctionModule.isEnabled && auctionModule.level > 0 && (state.automation.auctionHouse.nextRefreshTime || auctionModule.lastRunTime + getAuctionHouseRefreshMs(auctionModule.level)) <= now
+  }
   const intervalMultiplier =
     getUpgradeAutomationIntervalMultiplier(state.upgrades) *
     getPrestigeAutomationIntervalMultiplier(state.prestigeBonuses) *
@@ -321,10 +333,12 @@ export function calculateOfflineProgress(
     ? ['Offline progress is capped at 24 hours.']
     : []
   const before = state
-  let simulatedState = applyOfflineCaseFarm(state, appliedDurationMs, simulationEnd)
-  const caseFarmEarned =
-    simulatedState.automation.modules[AutomationModuleId.CaseFarm].totalGenerated -
-    state.automation.modules[AutomationModuleId.CaseFarm].totalGenerated
+  let simulatedState = state.business.authoritative
+    ? state
+    : applyOfflineCaseFarm(state, appliedDurationMs, simulationEnd)
+  const caseFarmEarned = state.business.authoritative
+    ? 0
+    : simulatedState.automation.modules[AutomationModuleId.CaseFarm].totalGenerated - state.automation.modules[AutomationModuleId.CaseFarm].totalGenerated
   let tradingBotRuns = 0
   let eventsProcessed = 0
   let marketTicks = 0
@@ -372,6 +386,9 @@ export function calculateOfflineProgress(
         0,
         getAutomationRunDelta(beforeAutomation, simulatedState, AutomationModuleId.TradingBot),
       )
+    }
+    if (simulatedState.business.authoritative && Object.values(simulatedState.business.employees).some((employee) => employee.isHired && employee.isEnabled && (employee.nextActionAt <= tickAt || employee.payrollSettledThrough + 60 * 60_000 <= tickAt))) {
+      simulatedState = gameReducer(simulatedState, { type: 'TICK_BUSINESS', now: tickAt })
     }
     skippedTasks.push(...collectPauseMessages(simulatedState))
     steps += 1

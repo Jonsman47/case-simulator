@@ -22,6 +22,8 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
       ...defaultGameState.statistics,
       dropsByRarity: { ...defaultDropsByRarity },
     },
+    // These fixtures exercise the pre-v36 fallback scheduler explicitly.
+    business: { ...defaultGameState.business, authoritative: false },
     ...overrides,
   }
 }
@@ -235,5 +237,49 @@ describe('offline progression', () => {
     expect(result?.state.automation.modules[AutomationModuleId.TradingBot].totalRuns).toBe(
       OFFLINE_TRADING_BOT_MAX_RUNS,
     )
+  })
+
+  it('uses the authoritative employee scheduler offline and never runs retired Case Farm', () => {
+    const lastSaved = 1_000
+    const state = makeState({
+      lastSaved,
+      money: 100,
+      business: {
+        ...defaultGameState.business,
+        authoritative: true,
+        employees: {
+          ...defaultGameState.business.employees,
+          caseOperator: {
+            ...defaultGameState.business.employees.caseOperator,
+            isHired: true,
+            isEnabled: true,
+            status: 'running',
+            availableCapital: 10,
+            allocatedCapital: 10,
+            nextActionAt: lastSaved + 30_000,
+            payrollSettledThrough: lastSaved,
+          },
+        },
+      },
+      automation: {
+        ...defaultGameState.automation,
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.CaseFarm]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.CaseFarm],
+            isEnabled: true,
+            level: 10,
+            lastRunTime: lastSaved,
+          },
+        },
+      },
+    })
+    const result = calculateOfflineProgress(state, lastSaved + 30_001)
+
+    expect(result?.summary.casesOpened).toBe(1)
+    expect(result?.summary.caseFarmEarned).toBe(0)
+    expect(result?.state.money).toBe(100)
+    expect(result?.state.business.employees.caseOperator.availableCapital).toBeLessThan(10)
+    expect(result?.state.business.recentOperations[0]?.type).toBe('case-opened')
   })
 })

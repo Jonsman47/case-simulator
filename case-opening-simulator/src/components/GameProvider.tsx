@@ -23,13 +23,13 @@ import {
   type GameState,
   type InventoryItem,
 } from '../data/gameState'
-import type {
+import {
   AutomationModuleId,
-  AutoSellRule,
-  NpcMarketListing,
-  PrestigeBonusId,
-  SkillNodeId,
-  UpgradeId,
+  type AutoSellRule,
+  type NpcMarketListing,
+  type PrestigeBonusId,
+  type SkillNodeId,
+  type UpgradeId,
 } from '../data/models'
 import { gameReducer } from '../data/gameReducer'
 import { MARKET_TICK_MS } from '../market/marketSimulation'
@@ -421,30 +421,34 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const hasActiveAutomation = useMemo(() => {
     return (
-      (state.automation.autoOpener.isEnabled && state.automation.autoOpener.level > 0) ||
-      Object.values(state.automation.modules).some((moduleState) => {
-        return moduleState.isEnabled && moduleState.level > 0
-      })
+      state.automation.modules[AutomationModuleId.AuctionHouse].isEnabled &&
+      state.automation.modules[AutomationModuleId.AuctionHouse].level > 0
     )
-  }, [state.automation.autoOpener.isEnabled, state.automation.autoOpener.level, state.automation.modules])
+  }, [state.automation.modules])
+  const hasActiveBusiness = useMemo(
+    () => Object.values(state.business.employees).some((employee) => employee.isHired && employee.isEnabled),
+    [state.business.employees],
+  )
 
   useEffect(() => {
     if (pendingOfflineProgress) {
       return undefined
     }
 
-    if (!hasActiveAutomation) {
+    if (!hasActiveAutomation && !hasActiveBusiness) {
       return undefined
     }
 
     const intervalId = window.setInterval(() => {
-      dispatch({ type: 'TICK_AUTOMATION', now: Date.now() })
+      const now = Date.now()
+      if (hasActiveBusiness) dispatch({ type: 'TICK_BUSINESS', now })
+      if (hasActiveAutomation) dispatch({ type: 'TICK_AUTOMATION', now })
     }, 1_000)
 
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [hasActiveAutomation, pendingOfflineProgress])
+  }, [hasActiveAutomation, hasActiveBusiness, pendingOfflineProgress])
 
   const addMoney = useCallback((amount: number) => {
     dispatch({ type: 'ADD_MONEY', amount })

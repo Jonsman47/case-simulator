@@ -443,3 +443,18 @@ These deterministic projections use provisional effective XP/hour assumptions af
 | Trade-up focused | 3,300 | 28.4h | 144.9h | 348.1h | 610.5h | 1,010.6h |
 
 The dedicated and trading-focused projections reach the 650–800-hour Legend target. Regular, opening, collecting, and trade-up paths are too slow at the foundation stage. Prompt 3 employee throughput and Prompt 4 specialization effects must narrow that gap without making passive play exceed expert active trading; Prompt 5 must replace these assumptions with scripted careers and telemetry-informed calibration.
+
+## 25. Prompt 3 implementation decisions
+
+Prompt 3 advances saves to v36 and makes Business the only employee-automation authority. Detailed mechanics and migration policy are maintained in `BUSINESS_SYSTEM.md`.
+
+- The five roles use fixed acquisition tiers, maximum training level 8, the section 7 hire/training/wage formulas, and Career gates at levels 15/15/35/35/55.
+- Operating allocations are reserved cash, not a duplicate wallet or economic expense. The ledger recognizes expense only when payroll or a real operation consumes the allocation. Unused funds return exactly once.
+- A persistent payroll watermark settles eligible online/offline time once and pauses an employee before the allocation can become negative.
+- `TICK_BUSINESS` is shared by live and offline play. It invokes the existing case, sale/listing, virtual-market purchase, and trade-up reducers instead of creating parallel reward paths.
+- Business XP uses completed, ledger-backed operations and stable operation IDs. Hiring, training, transfers, wages, scans without a match, and failed operations award none.
+- Case Operator uses official drop rules and real case costs. Sales Assistant excludes protected/special items. Market Scout only alerts. Trade-Up Specialist uses actual opportunity cost and manual high-value/five-Covert approval. Junior Trader buys only bounded ordinary offers and never negotiates.
+- Legacy Case Farm cash generation is fully retired. The v35→v36 migration converts reconstructed legacy investment into employee training/capacity and noncash transition credit capped at $75,000. Warehouse and Auction House are preserved.
+- The old `/automation` route redirects to `/business`; legacy controls remain in source only for old-schema compatibility tests. The old scheduler cannot execute employee work once `business.authoritative` is true.
+- Negotiation percentage shortcuts only populate the editable offer. The player still submits every offer manually.
+- The final upgrade consolidation, advanced capacity/training perks, and complete balance calibration remain Prompt 4 and Prompt 5 work rather than hidden placeholder controls.

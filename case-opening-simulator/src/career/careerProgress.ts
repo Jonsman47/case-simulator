@@ -67,7 +67,7 @@ export const CAREER_RANKS: CareerRankDefinition[] = [
     minimumLevel: 15,
     description: 'A self-directed trader with enough experience to research and list confidently.',
     milestone: 'Reach Career Level 15.',
-    futureCapability: 'Basic employee capability arrives with the Business system in Prompt 3.',
+    futureCapability: 'Unlocks the Case Operator and Sales Assistant.',
   },
   {
     id: 'professional-trader',
@@ -75,7 +75,7 @@ export const CAREER_RANKS: CareerRankDefinition[] = [
     minimumLevel: 35,
     description: 'Advanced market and contract knowledge supports deliberate specialization.',
     milestone: 'Reach Career Level 35.',
-    futureCapability: 'Market Scout progression arrives with the employee system in Prompt 3.',
+    futureCapability: 'Unlocks the Market Scout and Trade-Up Specialist.',
   },
   {
     id: 'business-owner',
@@ -83,7 +83,7 @@ export const CAREER_RANKS: CareerRankDefinition[] = [
     minimumLevel: 55,
     description: 'Ready to coordinate employees, budgets, and trading infrastructure.',
     milestone: 'Reach Career Level 55.',
-    futureCapability: 'Employee management and infrastructure arrive in Prompt 3.',
+    futureCapability: 'Unlocks the Junior Trader and advanced operating budgets.',
   },
   {
     id: 'market-mogul',
@@ -546,13 +546,17 @@ function getNewItems(before: GameState, after: GameState) {
 }
 
 function getCaseOpeningEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
-  if (action.type !== 'OPEN_CASE' && action.type !== 'TICK_AUTOMATION') return []
+  if (action.type !== 'OPEN_CASE' && action.type !== 'TICK_AUTOMATION' && action.type !== 'TICK_BUSINESS') return []
   if (after.statistics.casesOpened <= before.statistics.casesOpened) return []
   const openedItems = getNewItems(before, after).filter((item) => (
     after.recentDrops.some((drop) => drop.instanceId === item.instanceId)
   ))
-  const automated = action.type === 'TICK_AUTOMATION'
-  const caseId = action.type === 'OPEN_CASE' ? action.payload.caseId : after.automation.autoOpener.caseId ?? 'automation'
+  const automated = action.type !== 'OPEN_CASE'
+  const caseId = action.type === 'OPEN_CASE'
+    ? action.payload.caseId
+    : action.type === 'TICK_BUSINESS'
+      ? after.business.employees.caseOperator.settings.caseId
+      : after.automation.autoOpener.caseId ?? 'automation'
   return openedItems.map((item, index) => {
     const unusualBonus = isExceptionalPattern(item) ? 45 : isSpecialPattern(item) ? 20 : 0
     const raw = 12 + 8 * rarityIndex[item.rarity] + Math.min(40, Math.log2(Math.max(1, item.marketValue)) * 3) + unusualBonus
@@ -581,6 +585,8 @@ function getCollectionEvents(before: GameState, after: GameState, action: GameAc
   const legitimateSources = new Set<GameAction['type']>([
     'OPEN_CASE',
     'TICK_AUTOMATION',
+    'TICK_BUSINESS',
+    'CONFIRM_BUSINESS_TRADE_UP',
     'TRADE_UP',
     'BUY_MARKET_LISTING',
     'PURCHASE_AUCTION_DEAL',
@@ -629,10 +635,13 @@ function getCollectionEvents(before: GameState, after: GameState, action: GameAc
 }
 
 function getTradeUpEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
-  if (action.type !== 'TRADE_UP' || after.statistics.tradeUpsCompleted <= before.statistics.tradeUpsCompleted) return []
+  if (!['TRADE_UP', 'TICK_BUSINESS', 'CONFIRM_BUSINESS_TRADE_UP'].includes(action.type) || after.statistics.tradeUpsCompleted <= before.statistics.tradeUpsCompleted) return []
   const output = getNewItems(before, after).find((item) => after.inventory.some((owned) => owned.instanceId === item.instanceId))
   if (!output) return []
-  const inputs = action.itemIds.flatMap((id) => {
+  const inputIds = action.type === 'TRADE_UP'
+    ? action.itemIds
+    : before.business.pendingTradeUpApproval?.inputItemIds ?? before.inventory.filter((item) => !after.inventory.some((candidate) => candidate.instanceId === item.instanceId)).map((item) => item.instanceId)
+  const inputs = inputIds.flatMap((id) => {
     const item = before.inventory.find((candidate) => candidate.instanceId === id)
     return item ? [item] : []
   })
@@ -649,6 +658,27 @@ function getTradeUpEvents(before: GameState, after: GameState, action: GameActio
     windowMs: 6 * 60 * 60_000,
     softCap: 1,
   }]
+}
+
+function getBusinessEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
+  if (action.type !== 'TICK_BUSINESS' && action.type !== 'CONFIRM_BUSINESS_TRADE_UP') return []
+  const beforeIds = new Set(before.business.processedOperationIds)
+  return after.business.recentOperations.flatMap((operation): PendingCareerEvent[] => {
+    if (beforeIds.has(operation.id) || !['case-opened', 'instant-sale', 'market-listing', 'trade-up', 'market-purchase'].includes(operation.type)) return []
+    const grossVolume = Math.max(0, operation.grossVolume)
+    if (grossVolume <= 0) return []
+    return [{
+      id: `business:${operation.id}`,
+      type: 'business-operation',
+      category: 'business',
+      baseXp: Math.min(160, Math.max(1, Math.round(8 * Math.log(1 + grossVolume)))),
+      reason: operation.description,
+      timestamp: operation.timestamp,
+      signature: `business:${operation.employeeRole}`,
+      windowMs: 60 * 60_000,
+      softCap: 8,
+    }]
+  })
 }
 
 function getWorkEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
@@ -856,6 +886,7 @@ export function recordCareerAction(before: GameState, after: GameState, action: 
     ...getTradeUpEvents(before, after, action),
     ...getWorkEvents(before, after, action),
     ...getAchievementEvents(before, after, action),
+    ...getBusinessEvents(before, after, action),
   ]
   const career = applyPendingEvents(after.career, pending)
   return career === after.career ? after : { ...after, career }

@@ -503,6 +503,7 @@ export interface PlayerState {
   autoSellRules: AutoSellRule[]
   marketplace?: MarketplaceState
   automation: AutomationState
+  business?: import('../business/business').BusinessState
   upgrades: UpgradeLevels
   trophyAssignments: TrophyAssignments
   dailyRewards: DailyRewardsState
