@@ -69,20 +69,20 @@ const CORE_SKILL_TREE_NODES: SkillTreeNodeDefinition[] = [
   {
     id: SkillNodeId.SellSpecialist,
     name: 'Sell Specialist',
-    description: 'Tightens your market execution for a permanent sell value bonus.',
+    description: 'Improves buyer access and closes part of the instant-sale spread with diminishing returns.',
     cost: 1,
     prerequisites: [],
     position: { x: 80, y: 260 },
-    effectLabel: '+2% sell value',
+    effectLabel: '+2% execution rating',
   },
   {
     id: SkillNodeId.WearWhisperer,
-    name: 'Wear Whisperer',
-    description: 'Improves opening rolls toward Factory New and Minimal Wear.',
+    name: 'Float Analyst',
+    description: 'Preserves a legacy float-research path for future market and trade-up tools; official case-drop floats are unchanged.',
     cost: 1,
     prerequisites: [],
     position: { x: 80, y: 430 },
-    effectLabel: '+3 FN/MW wear roll weight',
+    effectLabel: 'Float research access (drop odds unchanged)',
   },
   {
     id: SkillNodeId.BulkAutomation,
@@ -96,11 +96,11 @@ const CORE_SKILL_TREE_NODES: SkillTreeNodeDefinition[] = [
   {
     id: SkillNodeId.TradeUpEdge,
     name: 'Trade-Up Edge',
-    description: 'Treats trade-up input value as slightly cheaper in contract planning and automation.',
+    description: 'Improves contract research so the Trading Bot can act on smaller, still-positive verified edges.',
     cost: 2,
     prerequisites: [SkillNodeId.SellSpecialist],
     position: { x: 360, y: 320 },
-    effectLabel: '5% lower trade-up input cost',
+    effectLabel: '5% lower bot profit threshold',
   },
   {
     id: SkillNodeId.MarketOracle,
@@ -202,10 +202,10 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   {
     id: 'auto_sell',
     name: 'Auto-Sell Desk',
-    description: 'Improves automated sale execution as late-game costs climb.',
+    description: 'Improves automated buyer access without creating above-market instant payouts.',
     rootPrerequisite: SkillNodeId.MarketOracle,
     y: 600,
-    effectLabel: (tier) => `+${(tier * 0.6).toFixed(1)}% sell value`,
+    effectLabel: (tier) => `+${(tier * 0.6).toFixed(1)}% execution rating`,
     tierNames: branchTierNames,
   },
   {
@@ -220,10 +220,10 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   {
     id: 'trade_up',
     name: 'Contract Math',
-    description: 'Makes trade-up planning and automation more forgiving without guaranteeing profit.',
+    description: 'Improves automated contract research without discounting the real value of consumed skins.',
     rootPrerequisite: SkillNodeId.TradeUpEdge,
     y: 890,
-    effectLabel: (tier) => `${(tier * 1.5).toFixed(1)}% lower trade-up input risk`,
+    effectLabel: (tier) => `${(tier * 1.5).toFixed(1)}% lower bot profit threshold`,
     tierNames: branchTierNames,
   },
   {
@@ -246,11 +246,11 @@ const SKILL_BRANCH_DEFINITIONS: SkillBranchDefinition[] = [
   },
   {
     id: 'wear',
-    name: 'Float Tuning',
-    description: 'Gradually shifts wear rolls toward cleaner floats.',
+    name: 'Float Research',
+    description: 'Builds future float-analysis depth without changing official case-drop distributions.',
     rootPrerequisite: SkillNodeId.WearWhisperer,
     y: 1_325,
-    effectLabel: (tier) => `+${tier} FN/MW wear weight`,
+    effectLabel: (tier) => `Float research depth ${tier}`,
     tierNames: branchTierNames,
   },
   {

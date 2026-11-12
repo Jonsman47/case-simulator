@@ -60,6 +60,8 @@ import {
   CASE_FARM_INTERVAL_MS,
   TRADING_BOT_INTERVAL_MS,
   AUCTION_HOUSE_DEAL_DURATION_MS,
+  AUTO_OPENER_MAX_LEVEL,
+  AUTOMATION_MODULE_DEFINITIONS,
   getAuctionHouseDealCount,
   getAuctionHouseDiscount,
   getAuctionHouseRefreshMs,
@@ -145,9 +147,11 @@ import {
   workMiniGamesById,
   type WorkMiniGameId,
 } from '../utils/workMinigames'
+import { recordEconomyAction, startNextEconomyRun } from '../economy/economyLedger'
 
 const RECENT_DROPS_LIMIT = 20
 const UI_EVENTS_LIMIT = 50
+export const AUCTION_INSTANT_RESALE_COOLDOWN_MS = 24 * 60 * 60 * 1_000
 const skinDefinitionsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 
 function normalizeOpenQuantity(quantity?: number) {
@@ -1043,6 +1047,13 @@ function failAutomationModule(
 
 function purchaseAutoOpener(state: GameState, caseId?: string, now = Date.now()): GameState {
   const currentAutoOpener = state.automation.autoOpener
+
+  if (currentAutoOpener.level >= AUTO_OPENER_MAX_LEVEL) {
+    return {
+      ...state,
+      lastError: 'Auto Opener is already at its effective maximum level.',
+    }
+  }
   const cost = getAutoOpenerUpgradeCost(currentAutoOpener.level)
 
   if (clampNumber(state.money) < cost) {
@@ -1082,6 +1093,15 @@ function purchaseAutomationModule(
   now = Date.now(),
 ): GameState {
   const moduleState = state.automation.modules[moduleId]
+  const definition = AUTOMATION_MODULE_DEFINITIONS[moduleId]
+
+  if (!moduleState || !definition) {
+    return { ...state, lastError: 'Automation module not found.' }
+  }
+
+  if (moduleState.level >= definition.maxLevel) {
+    return { ...state, lastError: `${definition.name} is already maxed.` }
+  }
   const cost = getAutomationModuleUpgradeCost(moduleId, moduleState.level)
 
   if (clampNumber(state.money) < cost) {
@@ -1345,12 +1365,13 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     createdAt: now,
   }
 
-  return withInventoryValuation({
+  const prestigedState = withInventoryValuation({
     ...defaultGameState,
     money: startingMoney,
     prestigeLevel: state.prestigeLevel + 1,
     prestigePoints: state.prestigePoints + awardedPoints,
     prestigeBonuses: state.prestigeBonuses,
+    upgradePoints: state.upgradePoints,
     skillPoints: state.skillPoints + awardedPoints,
     learnedSkillNodeIds: state.learnedSkillNodeIds,
     achievements: state.achievements,
@@ -1363,6 +1384,11 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     lastError: undefined,
     lastSaved: now,
   }, now)
+
+  return {
+    ...prestigedState,
+    economyLedger: startNextEconomyRun(state, prestigedState, now),
+  }
 }
 
 function setAutoOpenerCase(state: GameState, caseId: string): GameState {
@@ -1632,14 +1658,15 @@ function tickTradingBot(state: GameState, now = Date.now()): GameState {
   }
 
   const [suggestion] = suggestBestTradeUps({
-    inputCostMultiplier:
-      getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds) *
-      getGameEventTradeUpInputCostMultiplier(state.activeEvents),
     inventory: state.inventory,
     marketValues: state.marketValues,
     limit: 1,
   })
-  const minimumProfit = getTradingBotMinimumProfit(moduleState.level)
+  const minimumProfit = roundCurrency(
+    getTradingBotMinimumProfit(moduleState.level) *
+    getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds) *
+    getGameEventTradeUpInputCostMultiplier(state.activeEvents),
+  )
 
   if (!suggestion || suggestion.analysis.expectedProfit < minimumProfit) {
     return {
@@ -1818,13 +1845,17 @@ function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now())
     }
   }
 
+  const purchasedItem: SkinInstance = {
+    ...deal.item,
+    instantSaleAvailableAt: now + AUCTION_INSTANT_RESALE_COOLDOWN_MS,
+  }
   const nextState = withInventoryValuation({
     ...state,
     money: roundCurrency(clampNumber(state.money) - deal.price),
-    inventory: [deal.item, ...state.inventory],
-    collectionBook: updateCollectionBook(state.collectionBook, deal.item),
-    recentDrops: [deal.item, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
-    lastOpenedItems: [deal.item],
+    inventory: [purchasedItem, ...state.inventory],
+    collectionBook: updateCollectionBook(state.collectionBook, purchasedItem),
+    recentDrops: [purchasedItem, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
+    lastOpenedItems: [purchasedItem],
     automation: {
       ...state.automation,
       auctionHouse: {
@@ -1837,13 +1868,13 @@ function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now())
       auctionPurchases: state.statistics.auctionPurchases + 1,
       auctionSavings: roundCurrency(state.statistics.auctionSavings + deal.listPrice - deal.price),
       moneySpent: roundCurrency(state.statistics.moneySpent + deal.price),
-      patternDrops: state.statistics.patternDrops + (isSpecialPattern(deal.item) ? 1 : 0),
-      exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + (isExceptionalPattern(deal.item) ? 1 : 0),
+      patternDrops: state.statistics.patternDrops + (isSpecialPattern(purchasedItem) ? 1 : 0),
+      exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + (isExceptionalPattern(purchasedItem) ? 1 : 0),
     },
     lastError: undefined,
   }, now)
 
-  return withDropChallengeProgress(nextState, [deal.item], now)
+  return withDropChallengeProgress(nextState, [purchasedItem], now)
 }
 
 function tickAutomation(state: GameState, now = Date.now(), prng: Prng = Math.random): GameState {
@@ -1869,9 +1900,6 @@ function tradeUpItems(state: GameState, itemIds: string[]): GameState {
   }
 
   const analysis = analyzeTradeUp({
-    inputCostMultiplier:
-      getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds) *
-      getGameEventTradeUpInputCostMultiplier(state.activeEvents),
     inputItems: selectedItems,
     marketValues: state.marketValues,
   })
@@ -1954,12 +1982,16 @@ function sellItem(state: GameState, itemId: string): GameState {
     return failItemSale(state, itemId, 'Locked items cannot be sold unless unlocked.')
   }
 
+  const soldAt = Date.now()
+  if ((item.instantSaleAvailableAt ?? 0) > soldAt) {
+    return failItemSale(state, itemId, 'Auction purchases must be held for 24 hours before instant resale.')
+  }
+
   const salePrice = getAutomationSaleValue(state, item)
   const soldItem = {
     ...item,
     marketValue: salePrice,
   }
-  const soldAt = Date.now()
   const event: GameUiEvent = {
     id: nanoid(),
     type: 'item_sold',
@@ -2004,26 +2036,35 @@ function sellItems(state: GameState, itemIds: string[]): GameState {
     return failItemSale(state, 'bulk', 'Selected items are locked and cannot be sold.')
   }
 
-  const soldItems = saleSummary.saleableItems.map((item) => ({
+  const soldAt = Date.now()
+  const cooldownItems = saleSummary.saleableItems.filter((item) => (item.instantSaleAvailableAt ?? 0) > soldAt)
+  const eligibleItems = saleSummary.saleableItems.filter((item) => (item.instantSaleAvailableAt ?? 0) <= soldAt)
+
+  if (eligibleItems.length === 0) {
+    return failItemSale(state, 'bulk', 'Selected Auction purchases are still in their 24-hour instant-resale hold.')
+  }
+
+  const soldItems = eligibleItems.map((item) => ({
     ...item,
     marketValue: getAutomationSaleValue(state, item),
   }))
   const soldItemIds = new Set(soldItems.map((item) => item.instanceId))
   const saleValue = roundCurrency(soldItems.reduce((total, item) => total + item.marketValue, 0))
-  const soldAt = Date.now()
   const event: GameUiEvent = {
     id: nanoid(),
     type: 'items_sold',
     items: soldItems,
     itemCount: soldItems.length,
     salePrice: saleValue,
-    skippedLockedCount: saleSummary.lockedItems.length,
+    skippedLockedCount: saleSummary.lockedItems.length + cooldownItems.length,
     createdAt: soldAt,
   }
-  const lockedMessage =
-    saleSummary.lockedItems.length > 0
+  const skippedCount = saleSummary.lockedItems.length + cooldownItems.length
+  const lockedMessage = skippedCount <= 0
+    ? undefined
+    : cooldownItems.length === 0
       ? `${saleSummary.lockedItems.length} locked item${saleSummary.lockedItems.length === 1 ? '' : 's'} skipped.`
-      : undefined
+      : `${skippedCount} protected or resale-held item${skippedCount === 1 ? '' : 's'} skipped.`
 
   return withDailyChallengeProgress(withInventoryValuation({
     ...state,
@@ -3156,6 +3197,7 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
-  return validateGameState(reduceGameState(state, action))
+  const reducedState = validateGameState(reduceGameState(state, action))
+  return recordEconomyAction(state, reducedState, action)
 }
 

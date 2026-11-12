@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { gameReducer } from '../data/gameReducer'
 import { defaultDropsByRarity, defaultGameState, type GameState } from '../data/gameState'
-import { AutomationModuleId, AutoSellRuleType, Rarity, WearCondition, type SkinInstance } from '../data/models'
+import { AutomationModuleId, AutoSellRuleType, Rarity, SkillNodeId, WearCondition, type SkinInstance } from '../data/models'
 import {
   OFFLINE_PROGRESS_CAP_MS,
   OFFLINE_TRADING_BOT_MAX_RUNS,
@@ -96,6 +96,35 @@ describe('offline progression', () => {
     expect(result?.state.inventory).toHaveLength(2)
     expect(result?.state.automation.autoOpener.totalOpened).toBe(2)
     expect(result?.state.lastSaved).toBe(now)
+  })
+
+  it('applies the passive-income branch once in both online and offline Case Farm calculations', () => {
+    const lastSaved = 1_000
+    const now = lastSaved + 10_000
+    const caseFarm = {
+      ...defaultGameState.automation.modules[AutomationModuleId.CaseFarm],
+      isEnabled: true,
+      lastRunTime: lastSaved,
+      level: 1,
+    }
+    const state = makeState({
+      lastSaved,
+      money: 0,
+      learnedSkillNodeIds: ['passive_income_10' as SkillNodeId],
+      automation: {
+        ...defaultGameState.automation,
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.CaseFarm]: caseFarm,
+        },
+      },
+    })
+    const online = gameReducer(state, { type: 'TICK_AUTOMATION', now })
+    const offline = calculateOfflineProgress(state, now)
+
+    expect(online.money).toBe(1.5)
+    expect(offline?.summary.caseFarmEarned).toBe(1.5)
+    expect(offline?.state.money).toBe(online.money)
   })
 
   it('applies auto-sell rules to offline case drops', () => {

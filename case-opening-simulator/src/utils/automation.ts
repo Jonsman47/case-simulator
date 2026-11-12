@@ -11,6 +11,7 @@ export const AUTO_OPENER_UPGRADE_COST = 2_500
 export const AUTO_OPENER_BASE_INTERVAL_MS = 30_000
 export const AUTO_OPENER_INTERVAL_STEP_MS = 5_000
 export const AUTO_OPENER_MIN_INTERVAL_MS = 5_000
+export const AUTO_OPENER_MAX_LEVEL = 6
 export const OPENING_DESK_BASE_INTERVAL_MS = 90_000
 export const OPENING_DESK_INTERVAL_STEP_MS = 7_500
 export const OPENING_DESK_MIN_INTERVAL_MS = 45_000
@@ -84,15 +85,15 @@ export const AUTOMATION_MODULE_DEFINITIONS: Record<
   [AutomationModuleId.MarketAnalyst]: {
     id: AutomationModuleId.MarketAnalyst,
     name: 'Market Analyst',
-    description: 'Improves sell quotes for manual sells, bulk sells, and auto-sells.',
+    description: 'Improves buyer access and closes part of the instant-sale spread with diminishing returns.',
     baseCost: 4_000,
     costMultiplier: 2.25,
     maxLevel: 8,
     resourceLabel: 'signals',
     getCurrentBenefit: (level) =>
-      level > 0 ? `+${Math.round(getMarketAnalystSellBonus(level) * 100)}% sell value` : 'Locked',
+      level > 0 ? `+${Math.round(getMarketAnalystSellBonus(level) * 100)}% execution rating` : 'Locked',
     getNextBenefit: (level) =>
-      `+${Math.round(getMarketAnalystSellBonus(level + 1) * 100)}% sell value`,
+      `+${Math.round(getMarketAnalystSellBonus(level + 1) * 100)}% execution rating`,
   },
   [AutomationModuleId.WarehouseSystem]: {
     id: AutomationModuleId.WarehouseSystem,
@@ -130,9 +131,10 @@ export function getAutoOpenerUpgradeCost(level: number) {
 }
 
 export function getAutoOpenerIntervalMs(level: number) {
+  const effectiveLevel = Math.min(AUTO_OPENER_MAX_LEVEL, Math.max(0, level))
   return Math.max(
     AUTO_OPENER_MIN_INTERVAL_MS,
-    AUTO_OPENER_BASE_INTERVAL_MS - Math.max(0, level - 1) * AUTO_OPENER_INTERVAL_STEP_MS,
+    AUTO_OPENER_BASE_INTERVAL_MS - Math.max(0, effectiveLevel - 1) * AUTO_OPENER_INTERVAL_STEP_MS,
   )
 }
 

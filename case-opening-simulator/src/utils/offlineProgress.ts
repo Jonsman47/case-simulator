@@ -2,7 +2,8 @@ import { gameReducer } from '../data/gameReducer'
 import type { GameState } from '../data/gameState'
 import { AutomationModuleId } from '../data/models'
 import { getSkillOfflineEarningsMultiplier } from '../data/skills'
-import { getSkillAutomationIntervalMultiplier, getSkillPassiveIncomeMultiplier } from '../data/skills'
+import { getSkillAutomationIntervalMultiplier } from '../data/skills'
+import { recordEconomyAction } from '../economy/economyLedger'
 import { getPrestigeAutomationIntervalMultiplier } from '../data/prestige'
 import { getUpgradeAutomationIntervalMultiplier } from '../data/upgrades'
 import { GAME_EVENT_TICK_MS } from '../events/eventManager'
@@ -123,8 +124,7 @@ function applyOfflineCaseFarm(state: GameState, durationMs: number, now: number)
   const earned = roundCurrency(
     (incomePerTick / intervalMs) *
       durationMs *
-      getSkillOfflineEarningsMultiplier(state.learnedSkillNodeIds) *
-      getSkillPassiveIncomeMultiplier(state.learnedSkillNodeIds),
+      getSkillOfflineEarningsMultiplier(state.learnedSkillNodeIds),
   )
   const runs = Math.floor(durationMs / intervalMs)
 
@@ -132,7 +132,7 @@ function applyOfflineCaseFarm(state: GameState, durationMs: number, now: number)
     return state
   }
 
-  return {
+  const nextState = {
     ...state,
     money: roundCurrency(state.money + earned),
     automation: {
@@ -148,6 +148,8 @@ function applyOfflineCaseFarm(state: GameState, durationMs: number, now: number)
       },
     },
   }
+
+  return recordEconomyAction(state, nextState, { type: 'TICK_AUTOMATION', now })
 }
 
 function getAutomationRunDelta(

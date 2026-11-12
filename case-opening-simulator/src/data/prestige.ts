@@ -129,8 +129,8 @@ export const PRESTIGE_BONUS_DEFINITIONS: PrestigeBonusDefinition[] = [
     maxLevel: 15,
     baseCost: 2,
     costMultiplier: 1.55,
-    getCurrentEffect: (level) => `+${formatPercent(level * 0.04)} sell value`,
-    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.04)} sell value`,
+    getCurrentEffect: (level) => `+${formatPercent(level * 0.04)} execution rating`,
+    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.04)} execution rating`,
   },
   {
     id: PrestigeBonusId.CaseDiscount,

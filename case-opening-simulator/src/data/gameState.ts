@@ -48,6 +48,7 @@ import { createDefaultTrophyAssignments } from '../utils/trophyRoom'
 import { createDefaultDailyRewardsState } from '../rewards/dailyRewards'
 import type { WorkMiniGameCooldowns, WorkMiniGameId } from '../utils/workMinigames'
 import { createDefaultMarketplaceState } from '../marketplace/marketplace'
+import { createEconomyLedger, type EconomyLedgerState } from '../economy/economyLedger'
 
 export type RarityKey =
   | 'consumer'
@@ -344,6 +345,7 @@ export interface GameState {
   lastMarketTick: number
   lastEventTick: number
   statistics: GameStatistics
+  economyLedger: EconomyLedgerState
   settings: GameSettings
   ui: GameUiState
   lastBackupAt: number
@@ -493,6 +495,7 @@ export const defaultGameState: GameState = {
     bestMemoryScore: 0,
     dropsByRarity: defaultDropsByRarity,
   },
+  economyLedger: createEconomyLedger({ now: 0, runId: 'initial-run' }),
   settings: {
     animationSpeed: 'normal',
     animationsEnabled: true,

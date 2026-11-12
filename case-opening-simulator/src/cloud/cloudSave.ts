@@ -8,6 +8,7 @@ import {
   type SaveEnvelope,
 } from '../utils/save'
 import { getCurrentItemMarketValue, getInventoryValue } from '../utils/inventory'
+import { getLedgerFinancialSnapshot } from '../economy/economyLedger'
 
 export type CloudSyncStatus = 'idle' | 'syncing' | 'synced' | 'offline' | 'conflict' | 'error'
 
@@ -955,7 +956,7 @@ export function parseCloudSaveEnvelope(envelope: SaveEnvelope) {
 
 export function createLeaderboardEntry(account: Pick<StoredAccount, 'id' | 'email' | 'username'>, save: CloudSaveRecord): LeaderboardEntry {
   const state = parseCloudSaveEnvelope(save.envelope)
-  const totalProfit = state.statistics.moneyEarned - state.statistics.moneySpent
+  const totalProfit = getLedgerFinancialSnapshot(state).netCashFlow
   const itemValues = state.inventory.map((item) => getCurrentItemMarketValue(item, state.marketValues))
 
   return {
@@ -1015,7 +1016,7 @@ export function createPublicPlayerSummary(
     rarePatterns: state.inventory.filter((item) => (
       item.pattern && ['rare', 'exceptional', 'iconic'].includes(item.pattern.tier)
     )).length,
-    totalProfit: state.statistics.moneyEarned - state.statistics.moneySpent,
+    totalProfit: getLedgerFinancialSnapshot(state).netCashFlow,
     trophyItems,
     updatedAt: Date.now(),
     userId: profile.userId,

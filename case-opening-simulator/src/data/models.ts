@@ -229,6 +229,8 @@ export interface SkinInstance extends SkinBase {
   /** Condition/edition-adjusted value before the stored pattern premium. */
   baseMarketValue?: number
   patternPremium?: number
+  /** Optional risk-control window used by discounted acquisition channels. */
+  instantSaleAvailableAt?: number
 }
 
 export interface TrophyAssignment {

@@ -4,6 +4,7 @@ import { Rarity } from '../data/models'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { getCurrentItemMarketValue, trimInventoryValueHistory, type InventoryValuePoint } from './inventory'
 import { getRarityLabel } from './itemLabels'
+import { getLedgerFinancialSnapshot } from '../economy/economyLedger'
 
 export type StatsTimeRange = 'session' | '24h' | '7d' | 'all'
 
@@ -15,6 +16,8 @@ export interface StatsSessionBaseline {
   moneySpent: number
   startedAt: number
   tradeUpsCompleted: number
+  ledgerIncome?: number
+  ledgerExpenses?: number
 }
 
 export interface StatsRarityBucket {
@@ -55,6 +58,22 @@ export interface StatsDashboardSummary {
   milestones: StatsMilestone[]
   moneyEarned: number
   moneySpent: number
+  totalIncome: number
+  totalExpenses: number
+  netCashFlow: number
+  realizedTradingProfit: number
+  totalEconomicNetWorth: number
+  caseOpeningSpend: number
+  caseOpeningReturns: number
+  automationIncome: number
+  automationExpenses: number
+  workIncome: number
+  financialHistoryComplete: boolean
+  currentRunIncome: number
+  currentRunExpenses: number
+  currentRunNetCashFlow: number
+  currentRunRealizedTradingProfit: number
+  /** @deprecated Use netCashFlow. */
   netProfit: number
   prestigeLevel: number
   rareDropsClassifiedPlus: number
@@ -101,6 +120,7 @@ function isValidTimestamp(value: number | undefined) {
 }
 
 export function createStatsSessionBaseline(state: GameState, startedAt = Date.now()): StatsSessionBaseline {
+  const financials = getLedgerFinancialSnapshot(state, 'lifetime')
   return {
     casesOpened: state.statistics.casesOpened,
     drops: state.statistics.drops,
@@ -109,6 +129,8 @@ export function createStatsSessionBaseline(state: GameState, startedAt = Date.no
     moneySpent: state.statistics.moneySpent,
     startedAt,
     tradeUpsCompleted: state.statistics.tradeUpsCompleted,
+    ledgerIncome: financials.totalIncome,
+    ledgerExpenses: financials.totalExpenses,
   }
 }
 
@@ -156,24 +178,6 @@ function getHighestItemValue(state: GameState) {
   const recentDropValues = state.recentDrops.map((item) => item.marketValue)
 
   return roundMetric(Math.max(0, ...currentInventoryValues, ...historicCollectionValues, ...recentDropValues))
-}
-
-function getFirstActivityTimestamp(state: GameState) {
-  const timestamps = [
-    ...state.inventory.map((item) => item.discoveredAt),
-    ...state.recentDrops.map((item) => item.discoveredAt),
-    ...state.collectionBook.map((entry) => entry.firstFoundAt),
-    ...state.achievements.map((achievement) => achievement.unlockedAt),
-    ...state.inventoryValueHistory.map((point) => point.timestamp),
-    ...Object.values(state.marketHistory).flatMap((points) => points.map((point) => point.timestamp)),
-    state.lastSaved,
-  ].filter(isValidTimestamp)
-
-  if (timestamps.length === 0) {
-    return undefined
-  }
-
-  return Math.min(...timestamps)
 }
 
 function getAchievementTimestamp(state: GameState, achievementId: string) {
@@ -303,16 +307,17 @@ function getComparatives(
   now: number,
   timePlayedMs: number,
 ): StatsComparatives {
+  const financials = getLedgerFinancialSnapshot(state, 'lifetime')
   const sessionHours = Math.max((now - baseline.startedAt) / hourMs, 1 / 60)
   const lifetimeHours = Math.max(timePlayedMs / hourMs, 1 / 60)
   const sessionCasesOpened = Math.max(0, state.statistics.casesOpened - baseline.casesOpened)
-  const sessionMoneyEarned = state.statistics.moneyEarned - baseline.moneyEarned
-  const sessionMoneySpent = state.statistics.moneySpent - baseline.moneySpent
+  const sessionMoneyEarned = financials.totalIncome - (baseline.ledgerIncome ?? baseline.moneyEarned)
+  const sessionMoneySpent = financials.totalExpenses - (baseline.ledgerExpenses ?? baseline.moneySpent)
   const sessionNet = roundMetric(sessionMoneyEarned - sessionMoneySpent)
 
   return {
     averageCasesPerHour: roundMetric(state.statistics.casesOpened / lifetimeHours, 1),
-    averageNetPerHour: roundMetric((state.statistics.moneyEarned - state.statistics.moneySpent) / lifetimeHours),
+    averageNetPerHour: roundMetric(financials.netCashFlow / lifetimeHours),
     sessionCasesOpened,
     sessionCasesPerHour: roundMetric(sessionCasesOpened / sessionHours, 1),
     sessionNet,
@@ -331,8 +336,9 @@ export function calculateStatsDashboardSummary({
   range: StatsTimeRange
   state: GameState
 }): StatsDashboardSummary {
-  const firstActivityAt = getFirstActivityTimestamp(state)
-  const timePlayedMs = firstActivityAt ? Math.max(0, now - firstActivityAt) : 0
+  const timePlayedMs = Math.max(0, now - baseline.startedAt)
+  const financials = getLedgerFinancialSnapshot(state, 'lifetime')
+  const currentRunFinancials = getLedgerFinancialSnapshot(state, 'currentRun')
   const automationModules = Object.values(state.automation.modules)
   const rarityBuckets = buildRarityBuckets(state)
   const rareDropsClassifiedPlus = [
@@ -360,9 +366,24 @@ export function calculateStatsDashboardSummary({
     inventoryValue: state.inventoryValue,
     itemsSold: state.statistics.itemsSold,
     milestones: buildMilestones(state, range, now, baseline.startedAt),
-    moneyEarned: state.statistics.moneyEarned,
-    moneySpent: state.statistics.moneySpent,
-    netProfit: roundMetric(state.statistics.moneyEarned - state.statistics.moneySpent),
+    moneyEarned: financials.totalIncome,
+    moneySpent: financials.totalExpenses,
+    totalIncome: financials.totalIncome,
+    totalExpenses: financials.totalExpenses,
+    netCashFlow: financials.netCashFlow,
+    realizedTradingProfit: financials.realizedTradingProfit,
+    totalEconomicNetWorth: financials.economicNetWorth,
+    caseOpeningSpend: financials.caseOpeningSpend,
+    caseOpeningReturns: financials.caseOpeningReturns,
+    automationIncome: financials.automationIncome,
+    automationExpenses: financials.automationExpenses,
+    workIncome: financials.workIncome,
+    financialHistoryComplete: financials.isHistoricalDataComplete,
+    currentRunIncome: currentRunFinancials.totalIncome,
+    currentRunExpenses: currentRunFinancials.totalExpenses,
+    currentRunNetCashFlow: currentRunFinancials.netCashFlow,
+    currentRunRealizedTradingProfit: currentRunFinancials.realizedTradingProfit,
+    netProfit: financials.netCashFlow,
     prestigeLevel: state.prestigeLevel,
     rareDropsClassifiedPlus,
     rarityBuckets,
@@ -407,11 +428,11 @@ export function buildRarityPieChartData(summary: StatsDashboardSummary): ChartDa
 
 export function buildMoneyFlowChartData(summary: StatsDashboardSummary): ChartData<'bar'> {
   return {
-    labels: ['Spent', 'Earned', 'Net'],
+    labels: ['Expenses', 'Income', 'Net cash flow'],
     datasets: [
       {
-        backgroundColor: ['#eb4b4bcc', '#22c55ecc', summary.netProfit >= 0 ? '#ffd700cc' : '#eb4b4bcc'],
-        borderColor: ['#eb4b4b', '#22c55e', summary.netProfit >= 0 ? '#ffd700' : '#eb4b4b'],
+        backgroundColor: ['#eb4b4bcc', '#22c55ecc', summary.netCashFlow >= 0 ? '#ffd700cc' : '#eb4b4bcc'],
+        borderColor: ['#eb4b4b', '#22c55e', summary.netCashFlow >= 0 ? '#ffd700' : '#eb4b4b'],
         borderWidth: 1,
         data: [summary.moneySpent, summary.moneyEarned, summary.netProfit],
       },
@@ -446,7 +467,15 @@ export function buildStatsCsv(summary: StatsDashboardSummary) {
     ['total_cases_opened', summary.totalCasesOpened],
     ['money_spent', summary.moneySpent],
     ['money_earned', summary.moneyEarned],
-    ['net_profit', summary.netProfit],
+    ['net_cash_flow', summary.netCashFlow],
+    ['realized_trading_profit', summary.realizedTradingProfit],
+    ['inventory_value', summary.inventoryValue],
+    ['total_economic_net_worth', summary.totalEconomicNetWorth],
+    ['case_opening_spend', summary.caseOpeningSpend],
+    ['case_opening_returns', summary.caseOpeningReturns],
+    ['automation_income', summary.automationIncome],
+    ['automation_expenses', summary.automationExpenses],
+    ['work_income', summary.workIncome],
     ['total_drops', summary.totalDrops],
     ['rare_drops_classified_plus', summary.rareDropsClassifiedPlus],
     ['highest_item_value', summary.highestItemValue],

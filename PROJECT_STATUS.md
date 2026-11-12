@@ -2,13 +2,13 @@
 
 Audit date: 2026-11-11
 Application directory: `case-opening-simulator/`
-Current save schema: v33
+Current save schema: v34
 
 ## Executive summary
 
-The simulator is a substantial, playable React browser game. Its core loop is complete: choose and license a case, pay once, generate a weighted predetermined item, run the roulette to that item, add it once to inventory, inspect or sell it, and progress through collection, upgrade, skill, prestige, work, trade-up, automation, and offline systems.
+The simulator is a substantial, playable React browser game. Its core loop is complete: choose and license a case, pay once, generate a weighted predetermined item, run the roulette to that item, add it once to inventory, inspect or sell it, and progress through collection, upgrade, skill, prestige, work, trade-up, automation, and offline systems. Career Overhaul Prompt 1 establishes the v34 accounting and economic foundation for a planned eight-stage 500–800-hour trading-career redesign.
 
-Prompts 1–6 are complete in the repository. Gameplay and market events, Warehouse capacity, Auction House deals, automation, upgrades, skills, prestige, selling, and offline progression are connected to live gameplay. Every newly generated item receives a permanent paint seed from 0–1000 and a finish/weapon-specific pattern classification. Pattern-aware values, protections, UI, statistics, achievements, and v33 persistence are used consistently across item-creation and item-value paths. Existing inventory is preserved without silently inventing or rerolling legacy seeds.
+Prompts 1–6 are complete in the repository. Gameplay and market events, Warehouse capacity, Auction House deals, automation, upgrades, skills, prestige, selling, and offline progression are connected to live gameplay. Every newly generated item receives a permanent paint seed from 0–1000 and a finish/weapon-specific pattern classification. Pattern-aware values, protections, UI, statistics, achievements, and v34 persistence are used consistently across item-creation and item-value paths. Existing inventory is preserved without silently inventing or rerolling legacy seeds.
 
 Prompt 4 completes the account/social architecture: optional Supabase Auth, persistent refreshable sessions, account-scoped local fallbacks, atomic revision-checked cloud writes, explicit conflict resolution with backups, privacy-controlled public profiles and selected trophies, and seven active leaderboard categories. Local guest play remains the default when Supabase is not configured. The complete local/mock implementation and browser surfaces are verified; a real Supabase project was unavailable, so deployed Auth/RLS/RPC, email delivery, and physical multi-device verification remain blocked and are not presented as passed.
 
@@ -41,7 +41,7 @@ The 2026-11-06 base-reference snapshot models 188,981,378 offers: P250 | Sand Du
 - Vitest, Testing Library, jsdom, and ESLint.
 - `react-window` for virtualized lists; Chart.js/`react-chartjs-2` for charts; Lucide React for icons.
 - `vite-plugin-pwa`, Workbox, and `workbox-window` for PWA behavior.
-- Versioned `localStorage` saves, currently schema v33.
+- Versioned `localStorage` saves, currently schema v34.
 - Build-time `csgo-blue-gem-calculator` and `csgo-fade-percentage-calculator` generation produces compact deterministic lookup data; the calculators are no longer shipped as runtime dependencies. Curated finish-specific rules remain the authority for premium tiers.
 - Optional local mock or Supabase REST/RPC cloud backends; no production credentials are committed.
 - Generated TypeScript catalog/price data and locally generated/downloaded image assets verified through a tracked SHA-256 manifest.
@@ -96,8 +96,8 @@ The application is functional in development and production. TypeScript, lint, a
 | Market events | **COMPLETE** | Autonomous and gameplay-derived price events, category targeting, affected-item counts, banner, public Events page, countdowns/history, save/load, offline processing, bounded impacts. | No live external market feed. |
 | Collection tracking | **COMPLETE** | Permanent discovery, wear completion, best float/value (including pattern premium), pagination, filters/sorts, summaries, and event-scaled rewards. | Pattern seeds are item attributes rather than separate collection-book completion slots. |
 | Filters and sorting | **COMPLETE** | Case, inventory, market, collection, and trophy tools. | Language selection does not localize labels. |
-| Local save/load | **COMPLETE** | Autosave, lifecycle persistence, v0–v33 migrations, immutable pattern round trips, seven-day virtual-market epoch/seed/removal ledger, marketplace escrow/negotiations/history/request ledger, legacy-item no-reroll behavior, event/Auction/Work hydration, JSON import/export, reset, and tests. | No confirmed local gap. |
-| Cloud save | **COMPLETE** for implemented/local scope; deployed verification blocked | Guest mode; local mock and Supabase providers; persistent/refreshable auth; account-scoped local snapshots; automatic/manual sync; atomic optimistic revisions; visible local/cloud conflict choice; backups; corrupt-save rejection; status UI; v33 IDs, floats, wear, patterns, prices, virtual marketplace state, economy, Work statistics, progression, automation, Auction, events, collection, statistics, and settings preserved. | A configured real Supabase project was unavailable, so deployed Auth/RLS/RPC, marketplace tables, email delivery, offline recovery across physical devices, and production rate-limit behavior remain unverified. |
+| Local save/load | **COMPLETE** | Autosave, lifecycle persistence, v0–v34 migrations, immutable pattern round trips, bounded economy ledger, seven-day virtual-market epoch/seed/removal ledger, marketplace escrow/negotiations/history/request ledger, legacy-item no-reroll behavior, event/Auction/Work hydration, JSON import/export, reset, and tests. | Pre-v34 detailed transactions are intentionally unavailable; only clearly marked legacy aggregate counters are retained. |
+| Cloud save | **COMPLETE** for implemented/local scope; deployed verification blocked | Guest mode; local mock and Supabase providers; persistent/refreshable auth; account-scoped local snapshots; automatic/manual sync; atomic optimistic revisions; visible local/cloud conflict choice; backups; corrupt-save rejection; status UI; v34 IDs, floats, wear, patterns, prices, virtual marketplace state, bounded economy ledger, Work statistics, progression, automation, Auction, events, collection, statistics, and settings preserved. | A configured real Supabase project was unavailable, so deployed Auth/RLS/RPC, marketplace tables, email delivery, offline recovery across physical devices, and production rate-limit behavior remain unverified. |
 | Settings | **COMPLETE** for current product scope | Save, sound effects, animation/skip/fast timing, motion, market, notifications, themes, accessibility, rarity colors, onboarding, cloud, auto-sell. Misleading Music and Language controls were removed while their legacy save fields remain compatible. | The product is English-only and does not ship a music library. |
 | Trade-ups | **COMPLETE** | Ten-item ordinary contracts plus five-Covert knife/glove contracts, per-source weighted outcomes, normalized input float mapped into each output's valid range, regular/StatTrak restrictions, current Souvenir-to-normal behavior, centralized output Pattern/value generation, shared NEW/Claim reveal, projections, stats, and Trading Bot integration. | Valve documents eligibility but not every probability implementation detail; collection-weighted odds follow the current community-documented contract model. |
 | Auto-sell duplicate policy | **COMPLETE** | Rules can keep a custom N highest actual-value copies per base weapon/finish identity with deterministic ties. Locked, favorite, exceptional Pattern, knife/glove and configured StatTrak/Souvenir protections are retained in addition to N; preview shows keep/sell outcomes. | Players should still review aggressive rules before enabling them. |
@@ -236,7 +236,7 @@ The Stage 3 implementation uses one item-identity and valuation pipeline:
 4. Fade percentages use model-specific mappings. Doppler and Gamma Doppler phases/gems come from imported paint-kit identity/phase metadata rather than pretending that the paint seed alone selects Ruby, Sapphire, Black Pearl, or Emerald.
 5. Marble Fade only classifies selected model-specific special-pattern lists. Unknown combinations remain ordinary rather than receiving an invented premium.
 6. Intrinsic value is the existing wear/edition-adjusted base value multiplied once by the stored pattern multiplier, then clamped to a finite nonnegative $1 billion ceiling. Simulated market and sale modifiers remain downstream.
-7. Save schema v29 introduced the complete immutable pattern result; v30 added Work statistics; v31 added persistent marketplace state and statistics; v32 added compact virtual-market epochs, refresh deadline, deterministic seed and purchased-listing tombstones; current v33 realigns virtual supply to seven-day listing epochs. Old items remain explicitly without pattern identity; loading never rerolls them. Cloud merge continues to use `instanceId` and preserves the stored fields.
+7. Save schema v29 introduced immutable pattern results; v30 added Work statistics; v31 added persistent marketplace state; v32 added compact virtual-market state; v33 realigned seven-day listing epochs; current v34 adds the bounded economy ledger and run summaries. Old items remain explicitly without pattern identity; loading never rerolls them. Cloud merge continues to use `instanceId` and preserves stored fields.
 8. Catalog images remain representative. The simulator never claims that the thumbnail is a seed-accurate render.
 
 Reference links, known-seed tables, confidence labels, valuation policy, and approximation boundaries are documented in `case-opening-simulator/docs/pattern-reference-sources.md`.
@@ -267,10 +267,10 @@ Estimate: **zero additional major Codex prompts** for the planned simulator. Exp
 
 - TypeScript (`npm run typecheck` and the build's `tsc -b`): pass.
 - Targeted Playtest Batch 1 tutorial, Work, Market, achievement, and auto-sell tests: pass during development.
-- `npm test`: pass — 70 files, 376 tests. Playwright specs are explicitly excluded from Vitest discovery.
+- `npm test`: pass — 71 files, 387 tests. Playwright specs are explicitly excluded from Vitest discovery.
 - `npm run lint`: pass — zero errors or warnings.
-- `npm run build`: pass — 2,134 assets (197.4 MiB) verified; TypeScript and Vite pass; PWA generates 82 precache entries (4,297.04 KiB) plus `sw.js` and Workbox output.
-- `npm run verify:release`: pass with exit code 0 — lint, all 376 unit tests, asset verification, TypeScript, Vite/PWA build, and release checks completed successfully.
+- `npm run build`: pass — 2,134 assets (197.4 MiB) verified; TypeScript and Vite pass; PWA generates 83 precache entries (4,315.00 KiB) plus `sw.js` and Workbox output.
+- `npm run verify:release`: pass with exit code 0 — lint, all 387 unit tests, asset verification, TypeScript, Vite/PWA build, and release checks completed successfully.
 - `npx playwright test`: pass — 16 Chromium tests in a deterministic single-worker run. The suite verifies Market → CSWEAR deep links, continuous virtualized loading, catalog → dedicated skin market → exact purchase, inventory/balance deltas and persisted listing tombstones. Responsive route checks pass at 1920×1080, 1366×768, 1280×720, and 390×844. After the final cursor-restoration hardening, the two changed Market/CSWEAR journeys were rerun and passed (2/2).
 - Local/mock behavior verified by automation: registration/login/logout/reset response, display-name validation/uniqueness, account-scoped guest and account saves, stale revision rejection, explicit conflict UI/actions, privacy filtering, leaderboard sorting, trophy pattern identity, corrupted/network failure handling, and SQL security invariants.
 - Browser account/social verification: pass for guest profile, Settings account/privacy UI, active seven-category Leaderboards, Trophy Room sharing status/link, profile/trophy empty states, and navigation. At 390×844, Profile and Trophy Room had no horizontal overflow; desktop was rechecked at 1366×768.
@@ -281,3 +281,23 @@ Estimate: **zero additional major Codex prompts** for the planned simulator. Exp
 - Virtual-market performance checks pass: O(1) total-supply calculation remains below 250 ms; the page-1,001 test returns 24 stable listings after scanning fewer than 30,000 candidates and completes below the 2-second budget; adjacent pages have no duplicate IDs.
 - Marketplace browser QA now covers the full catalog, dedicated skin navigation, on-demand pages, filters, zero-supply Pattern messaging, exact purchase/removal behavior, negotiation persistence, player-listing escrow, history and console cleanliness. No real Supabase credentials were available.
 - Local development server is left running at `http://127.0.0.1:5173/`.
+
+## Career Overhaul — Prompt 1 of 8
+
+Status: **COMPLETE — implementation and required verification passed**
+
+- Added `case-opening-simulator/docs/CAREER_OVERHAUL_MASTER_PLAN.md` as the authoritative specification for career ranks, XP anti-farming, five employee roles, budgets/wages, 80–110 upgrades, prestige reset policy, Legacy Vault, dual-scope Collection Book, provisional formulas, simulation gates, and Prompt 2–8 dependencies.
+- Migrated saves from v33 to v34 with a compact authoritative economy ledger. It stores bounded recent transactions, unique/request IDs, cash and owned-item deltas, current/lifetime aggregates, item acquisition cost basis, current run identity, and bounded archived run summaries. Older counters are retained as an explicitly incomplete legacy baseline; historical transactions are never fabricated.
+- Stats now separates total income, expenses, net cash flow, realized trading profit, inventory value, economic net worth, case spending/returns, automation revenue/expenses, Work income, and current-run/lifetime figures. The former misleading `Net Profit` label is now `Net Cash Flow`; elapsed save age is no longer presented as play time.
+- Corrected offline Case Farm so the passive-income branch is applied once. Online/offline equivalent configurations now match; the explicit Offline Operator bonus remains intentional.
+- Trade-up analysis always uses the full market opportunity cost of consumed items. Existing skills and Trade-Up Madness lower only the Trading Bot's minimum still-positive profit threshold.
+- Procedural buyers now refuse player asking prices beyond credible fair-value bounds: 105% ordinary, 112% special Pattern, and 118% exceptional Pattern. Players may still manually list higher.
+- Auction purchases receive a 24-hour instant-resale hold, preventing renewable Auction/instant-sale arbitrage without removing later market opportunities.
+- Sale progression closes a diminishing share of the bid/ask spread instead of multiplying payouts into a hard cap; instant liquidation remains at or below 95% of fair value.
+- Auto Opener has an effective six-level maximum and every module purchase is reducer-validated. Legacy over-max levels remain intact but cannot charge for another useless level.
+- Wear Tuning/Wear Whisperer descriptions now truthfully preserve the levels as float research and state that official drop floats are unchanged.
+- Transitional prestige preserves unspent Upgrade Points while claimed achievement rewards remain exact-once.
+
+The existing progression stack remains available during the staged overhaul. Case Farm replacement, Career XP, employees, upgrade consolidation, calibrated balance, and the final Prestige/Collection redesign are scheduled for later prompts rather than exposed as unfinished controls.
+
+Prompt 1 verification: 71 Vitest files/387 tests passed; lint passed with zero errors; the TypeScript/Vite/PWA production build and release verifier passed; all 2,134 generated images were verified; all 16 Chromium journeys passed. A live browser smoke pass rendered Stats, Trade Ups, CSWEAR, Automation, and Prestige without horizontal overflow or console errors, and visible player state remained unchanged after reload.

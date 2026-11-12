@@ -1,6 +1,6 @@
 # Economy Balance Audit
 
-Audit date: 2026-10-19
+Audit date: 2026-11-11 (Career Overhaul Prompt 1 amendment)
 
 The final balance pass used deterministic simulations and direct formula checks. It did not alter drop odds, saved item values, or existing player progress because the measured systems remained bounded and no infinite reward loop was reproduced.
 
@@ -31,12 +31,18 @@ These are theoretical active-play ceilings that require returning exactly at eve
 ## Automation and multiplier bounds
 
 - Case Farm produces $360/hour at level 1 with two unlocked cases, $14,652/hour at level 5 with 20 cases, and $82,368/hour at level 10 with all 42 cases before speed or passive-skill bonuses. The maximum passive-income skill brings the latter base rate to $123,552/hour; reaching it requires the late-game module and skill investment.
-- Auction House discounts cap at 24%, listings cap at eight, and refresh time never falls below seven minutes. A discounted item can be sold, but limited refreshes and up-front capital prevent an unbounded same-tick loop.
-- Combined non-event sale multipliers remain below 2.1× at the tested maximum Upgrade, Prestige, Market Analyst, auto-sell, and market-skill levels.
+- Auction House discounts cap at 19% at the currently purchasable level-six limit. Purchased deals carry a 24-hour instant-resale hold, eliminating the renewable same-tick Auction/instant-sale loop while preserving later market opportunity and risk.
+- Sale progression is an execution rating, not a fair-value multiplier. It closes a diminishing share of the remaining bid/ask spread and direct liquidation never exceeds 95% of credible fair market value.
 - Combined tested automation interval multipliers remain finite and above 0.29× before each module's own hard minimum interval is applied.
 - Warehouse capacity prevents unattended systems from silently generating items beyond available storage.
 - Rare-pattern premiums are intrinsic, stored once per item, bounded, and never repeatedly compounded by market ticks.
 
-## Decision
+## Career Overhaul Prompt 1 decisions
 
-No economy constants were changed in Prompt 6. The current numbers are internally consistent and exploit protections are covered by reducer, offline-progress, Auction House, Work, and browser exact-once tests. Long-session human pacing and a real deployed leaderboard remain the two places where further live telemetry could justify a later content-balance patch.
+- Offline Case Farm applies the passive-income branch once; Offline Operator's explicit offline bonus remains separate.
+- Trade-up EV always uses the actual value of consumed inputs. Trade-up research lowers only the Trading Bot's required positive-profit threshold.
+- Procedural buyers never auto-purchase player listings above a credible fair-value ceiling (105% ordinary, 112% special Pattern, 118% exceptional Pattern).
+- Auto Opener stops at effective level six, and every automation module is reducer-validated against its definition.
+- The v34 ledger distinguishes cash flow, realized profit, inventory value, and net worth. Pre-v34 statistics are retained as incomplete baselines, never fabricated as transaction history.
+
+Case Farm remains transitional and economically dominant. Its replacement with budgeted employees is scheduled for Career Overhaul Prompt 3; full 500–800-hour calibration is scheduled for Prompt 5.

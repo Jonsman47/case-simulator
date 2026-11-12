@@ -89,9 +89,10 @@ import {
 import { normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketplace/marketplace'
+import { createEconomyLedger, normalizeEconomyLedger } from '../economy/economyLedger'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 33
+export const CURRENT_SAVE_VERSION = 34
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1579,6 +1580,20 @@ function migrateV32ToV33(value: unknown): unknown {
   }
 }
 
+function migrateV33ToV34(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const statistics = normalizeStatistics(value.statistics) ?? defaultGameState.statistics
+  const savedAt = normalizeNumber(value.lastSaved, Date.now())
+  return {
+    ...value,
+    economyLedger: createEconomyLedger({
+      now: savedAt,
+      runId: `legacy-v34-${savedAt.toString(36)}`,
+      legacyStatistics: statistics,
+    }),
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1613,6 +1628,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   30: migrateV30ToV31,
   31: migrateV31ToV32,
   32: migrateV32ToV33,
+  33: migrateV33ToV34,
 }
 
 function getEnvelope(value: unknown) {
@@ -1782,6 +1798,13 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
   const upcomingEvents = normalizeActiveGameEvents(value.upcomingEvents, lastSaved)
   const activeMarketEvents = normalizeActiveMarketEvents(value.activeMarketEvents, lastSaved)
   const upcomingMarketEvents = normalizeActiveMarketEvents(value.upcomingMarketEvents, lastSaved)
+  const marketplace = normalizeMarketplace(value.marketplace)
+  const economyLedger = normalizeEconomyLedger(
+    value.economyLedger,
+    statistics,
+    lastSaved,
+    [...inventory, ...marketplace.playerListings.map((listing) => listing.item)],
+  )
 
   return {
     ...defaultGameState,
@@ -1797,7 +1820,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     favoriteCaseIds: readStringArray(value.favoriteCaseIds),
     specialEventCaseIds: readStringArray(value.specialEventCaseIds),
     autoSellRules: normalizeAutoSellRules(value.autoSellRules),
-    marketplace: normalizeMarketplace(value.marketplace),
+    marketplace,
     automation: normalizeAutomation(value.automation),
     upgrades: normalizeUpgradeLevels(value.upgrades),
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
@@ -1832,6 +1855,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     lastMarketTick: normalizeNumber(value.lastMarketTick, 0),
     lastEventTick: normalizeNumber(value.lastEventTick, 0),
     statistics,
+    economyLedger,
     settings: normalizeSettings(value.settings),
     ui: normalizeUiState(value.ui),
     lastBackupAt: normalizeNumber(value.lastBackupAt, defaultGameState.lastBackupAt),
@@ -1858,6 +1882,12 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
   const gameState = isGameState(state) ? state : playerStateToGameState(state)
   const inventory = dedupeSkinInstances(gameState.inventory)
   const inventoryValue = getInventoryValue(inventory, gameState.marketValues)
+  const persistedEconomyLedger = normalizeEconomyLedger(
+    gameState.economyLedger,
+    gameState.statistics,
+    currentTime,
+    [...inventory, ...gameState.marketplace.playerListings.map((listing) => listing.item)],
+  )
   const itemByInstanceId = new Map(inventory.map((item) => [item.instanceId, item]))
   const prioritizedMarketSkinIds = [
     ...Object.values(gameState.trophyAssignments)
@@ -1909,6 +1939,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       money: normalizeMoney(gameState.money, defaultGameState.money),
       inventory,
       inventoryValue,
+      economyLedger: persistedEconomyLedger,
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],

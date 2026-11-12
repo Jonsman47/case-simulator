@@ -144,4 +144,21 @@ Status: **IMPLEMENTED — FINAL VERIFICATION RECORDED IN PROJECT_STATUS.md**
 - Added Pattern classification, credible Best Deals and Expiring Soon filters/sorts while retaining wear, edition, Pattern ID/tier, float, price and seller querying.
 - Migrated saves from v32 to v33 without changing inventory, money, Patterns, escrow, negotiation history, transaction history, request IDs or purchased-listing tombstones.
 
-Exit evidence: 70 unit files/376 tests, zero-error lint, TypeScript, production/PWA build, 2,134-asset verification, release verification, and all 16 Chromium journeys pass. The two changed Market/CSWEAR journeys also passed after final cursor-restoration hardening.
+Exit evidence: 71 unit files/387 tests, zero-error lint, TypeScript, production/PWA build, 2,134-asset verification, release verification, and all 16 Chromium journeys pass. Live browser smoke checks also rendered Stats, Trade Ups, CSWEAR, Automation, and Prestige without horizontal overflow or console errors, with visible state preserved across reload.
+
+## Career Overhaul — 8-Prompt Roadmap
+
+The authoritative formulas, reset policy, employee boundaries, migration rules, and dependency graph live in `case-opening-simulator/docs/CAREER_OVERHAUL_MASTER_PLAN.md`.
+
+| Prompt | Scope | Status |
+| --- | --- | --- |
+| 1. Economy foundation, critical fixes, master design | v34 ledger; honest Stats; Case Farm offline parity; trade-up opportunity cost; marketplace/Auction/sale/max-level/prestige/wear fixes; permanent master plan | **COMPLETE — unit, lint, build, release and browser verification passed** |
+| 2. Career ranks and specialization foundation | Career XP event pipeline, anti-farming, ranks, initial Career & Upgrades destination | **PLANNED** |
+| 3. Business and employees | Five employees, budgets, wages, shared scheduler/offline rules, safe Case Farm replacement | **PLANNED** |
+| 4. Upgrade consolidation | Migrate old skills/upgrades/automation benefits into 80–110 distinct five-specialization upgrades | **PLANNED** |
+| 5. Economy simulation and balance | Multi-strategy scripted careers, XP/cash/wage/profit calibration, exploit search, 500–800-hour target | **PLANNED** |
+| 6. Prestige and legacy systems | New eligibility/PP, reset policy, Legacy Vault, archived runs, All Time/Current Run Collection Book | **PLANNED** |
+| 7. Achievements, Stats, navigation integration | Four final progression destinations, career achievements/statistics, clarity/accessibility pass | **PLANNED** |
+| 8. Final career QA and release | Save/cloud migration matrix, full unit/E2E/performance/economy validation, documentation and release | **PLANNED** |
+
+The old progression systems remain available until their replacement is implemented and migrated. No player-facing placeholder controls are scheduled ahead of working mechanics.

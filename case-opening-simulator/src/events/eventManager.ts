@@ -232,9 +232,9 @@ const eventTemplates: Record<GameEventType, GameEventTemplate> = {
   TradeUpMadness: {
     type: 'TradeUpMadness',
     name: 'Trade-Up Madness',
-    description: 'Contract grinders flood the workshop and better outcomes become more attractive.',
+    description: 'Contract grinders flood the workshop and the Trading Bot accepts smaller verified edges.',
     durationMs: 2 * dayMs,
-    effectSummary: 'Trade-up input value is treated 10% cheaper and result markets trend upward.',
+    effectSummary: 'Trading Bot profit threshold is 10% lower; real input opportunity cost is unchanged.',
     priority: 55,
     progressRequirement: 10,
     allowOverlap: true,

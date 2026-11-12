@@ -243,14 +243,14 @@ export function SkillTreeView() {
               <Sparkles className="text-rarity-special" size={22} />
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-              <EffectPill label="Sell Value" value={`${formatPercent(getSkillSellMultiplier(state.learnedSkillNodeIds) - 1)} bonus`} />
-              <EffectPill label="Wear Rolls" value={`+${getSkillWearBonusWeight(state.learnedSkillNodeIds)} FN/MW weight`} />
+              <EffectPill label="Sale Execution" value={`${formatPercent(getSkillSellMultiplier(state.learnedSkillNodeIds) - 1)} rating`} />
+              <EffectPill label="Float Research" value={`Depth ${getSkillWearBonusWeight(state.learnedSkillNodeIds)} / drop odds unchanged`} />
               <EffectPill label="Special Pressure" value={`${formatPercent(getSkillSpecialDropPressure(state.learnedSkillNodeIds))} pressure`} />
               <EffectPill label="Automation" value={`${formatPercent(automationReduction)} faster`} />
               <EffectPill label="Auction Deals" value={`+${getSkillAuctionDealSlotBonus(state.learnedSkillNodeIds)} offers`} />
               <EffectPill label="Licenses" value={`${formatPercent(licenseDiscount)} discount`} />
               <EffectPill label="Side Job" value={`${formatPercent(getSkillMinigameRewardMultiplier(state.learnedSkillNodeIds) - 1)} reward`} />
-              <EffectPill label="Trade Ups" value={`${formatPercent(tradeUpDiscount)} input discount`} />
+              <EffectPill label="Trade Bot" value={`${formatPercent(tradeUpDiscount)} lower positive-profit threshold`} />
               <EffectPill label="Market Read" value={`${formatPercent(getSkillMarketKnowledgeBonus(state.learnedSkillNodeIds))} event chance`} />
               <EffectPill label="Offline" value={`${formatPercent(getSkillOfflineEarningsMultiplier(state.learnedSkillNodeIds) - 1)} income`} />
               <EffectPill label="Opening Flow" value={`${formatPercent(getSkillOpeningFlowBonus(state.learnedSkillNodeIds))} faster`} />

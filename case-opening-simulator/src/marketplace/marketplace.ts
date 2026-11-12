@@ -154,8 +154,14 @@ export function getInstantSaleQuote(
 ) {
   const fairMarketValue = getCurrentItemMarketValue(item, marketValues)
   const baseRate = getInstantSaleRate(item, fairMarketValue)
-  // Progression improves the quote, but direct liquidation never exceeds 95%.
-  const effectiveRate = clamp(baseRate * Math.max(.8, sellBonus), .85, .95)
+  // Better execution closes a diminishing share of the remaining bid/ask
+  // spread. It never turns an instant liquidation into an above-market payout.
+  const executionProgress = Math.max(0, sellBonus - 1)
+  const effectiveRate = clamp(
+    baseRate + (.95 - baseRate) * (1 - Math.exp(-1.35 * executionProgress)),
+    .85,
+    .95,
+  )
   return {
     fairMarketValue: roundCurrency(fairMarketValue),
     rate: effectiveRate,
@@ -384,11 +390,26 @@ export function negotiateNpcListing(listing: NpcMarketListing, rawOffer: number,
 export function getPlayerListingAttractiveness(listing: Pick<PlayerMarketListing, 'askingPrice' | 'fairMarketValue' | 'item'>) {
   const ratio = listing.askingPrice / Math.max(.01, listing.fairMarketValue)
   const liquidity = getItemLiquidityScore(listing.item, listing.fairMarketValue)
+  if (listing.askingPrice > getAutomatedBuyerMaximum(listing)) {
+    return { label: 'Above automatic buyer range', score: 0 }
+  }
   if (ratio <= .92) return { label: 'Likely to sell quickly', score: clamp(.82 + liquidity * .18, 0, 1) }
   if (ratio <= 1.02) return { label: 'Competitive market price', score: clamp(.52 + liquidity * .28, 0, 1) }
   if (ratio <= 1.18) return { label: 'May attract an offer', score: clamp(.24 + liquidity * .18, 0, 1) }
   if (ratio <= 1.5) return { label: 'Slow sale expected', score: clamp(.06 + liquidity * .08, 0, 1) }
   return { label: 'Very unlikely to sell', score: .005 }
+}
+
+export function getAutomatedBuyerMaximum(listing: Pick<PlayerMarketListing, 'fairMarketValue' | 'item'>) {
+  // Fair market value already includes wear, edition, float and pattern premiums.
+  // Collectors can stretch modestly above it, but no procedural buyer pays an
+  // arbitrary ask merely because enough ticks have elapsed.
+  const premium = isExceptionalPattern(listing.item)
+    ? 1.18
+    : isSpecialPattern(listing.item)
+      ? 1.12
+      : 1.05
+  return roundCurrency(Math.max(.01, listing.fairMarketValue * premium))
 }
 
 export interface MarketplaceTickResult {
@@ -419,7 +440,7 @@ export function tickMarketplace(
     const valueDrag = 1 / (1 + Math.pow(listing.fairMarketValue / 2_500, .45))
     const specialCollectorBoost = isSpecialPattern(listing.item) ? 1.22 : 1
     const saleHazard = clamp(attractiveness.score * getItemLiquidityScore(listing.item, listing.fairMarketValue) * valueDrag * specialCollectorBoost * .22 * ageTicks, 0, .72)
-    if (prng() < saleHazard) {
+    if (listing.askingPrice <= getAutomatedBuyerMaximum(listing) && prng() < saleHazard) {
       completedSales.push(listing)
       return []
     }

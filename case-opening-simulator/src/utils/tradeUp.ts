@@ -96,8 +96,9 @@ export function getTradeUpInputRarity(items: SkinInstance[]) {
   return items.every((item) => item.rarity === inputRarity) ? inputRarity : undefined
 }
 
-export function getTradeUpInputValue(items: SkinInstance[], marketValues: Record<string, number>, inputCostMultiplier = 1) {
-  return roundCurrency(items.reduce((total, item) => total + getTradeUpItemValue(item, marketValues), 0) * Math.max(0, inputCostMultiplier))
+export function getTradeUpInputValue(items: SkinInstance[], marketValues: Record<string, number>) {
+  // Opportunity cost is always the full value of the items actually consumed.
+  return roundCurrency(items.reduce((total, item) => total + getTradeUpItemValue(item, marketValues), 0))
 }
 
 export function getNormalizedTradeUpFloat(items: SkinInstance[]) {
@@ -228,7 +229,8 @@ export function analyzeTradeUp({
   const statTrakCount = inputItems.filter((item) => item.statTrak).length
   const isSameEdition = statTrakCount === 0 || statTrakCount === inputItems.length
   const outputIsStatTrak = inputItems.length > 0 && statTrakCount === inputItems.length
-  const inputValue = getTradeUpInputValue(inputItems, marketValues, inputCostMultiplier)
+  void inputCostMultiplier
+  const inputValue = getTradeUpInputValue(inputItems, marketValues)
   const outcomes = isCorrectCount && isSameRarity && isSameEdition && !hasProtectedItems
     ? calculateTradeUpOutcomes({ inputItems, marketValues, skins })
     : []

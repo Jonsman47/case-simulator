@@ -84,7 +84,8 @@ export function AutomationShop() {
                     <div>
                       <h4 className="text-base font-semibold text-cs-text">{definition.name}</h4>
                       <p className="mt-1 font-mono text-[10px] uppercase text-cs-muted">
-                        Level {moduleState.level}/{definition.maxLevel} / {definition.resourceLabel}
+                        Level {Math.min(moduleState.level, definition.maxLevel)}/{definition.maxLevel} / {definition.resourceLabel}
+                        {moduleState.level > definition.maxLevel ? ` / legacy ${moduleState.level}` : ''}
                       </p>
                     </div>
                     <span

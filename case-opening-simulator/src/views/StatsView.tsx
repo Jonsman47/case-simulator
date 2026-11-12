@@ -1,11 +1,13 @@
 import type { ChartOptions } from 'chart.js'
 import {
   BarChart3,
+  BadgeDollarSign,
   Bot,
   Clipboard,
   Clock3,
   Download,
   Gem,
+  Landmark,
   Medal,
   Package,
   Repeat2,
@@ -284,6 +286,32 @@ function Comparatives({ summary }: { summary: StatsDashboardSummary }) {
   )
 }
 
+function FinancialBreakdown({ summary }: { summary: StatsDashboardSummary }) {
+  return (
+    <section className="border border-cs-border bg-cs-panel p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-semibold text-cs-text">Authoritative Financial Breakdown</h3>
+          <p className="mt-1 text-xs text-cs-muted">Cash flow is separate from profit and unrealized inventory value.</p>
+        </div>
+        <Landmark aria-hidden="true" className="text-rarity-special" size={18} />
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SmallStat label="Lifetime Income" value={formatCurrency(summary.totalIncome)} valueClass="text-cs-green" />
+        <SmallStat label="Lifetime Expenses" value={formatCurrency(summary.totalExpenses)} valueClass="text-rarity-covert" />
+        <SmallStat label="Current Run Net Cash" value={formatCurrency(summary.currentRunNetCashFlow)} valueClass={summary.currentRunNetCashFlow >= 0 ? 'text-cs-green' : 'text-rarity-covert'} />
+        <SmallStat label="Current Run Trading Profit" value={formatCurrency(summary.currentRunRealizedTradingProfit)} valueClass={summary.currentRunRealizedTradingProfit >= 0 ? 'text-cs-green' : 'text-rarity-covert'} />
+        <SmallStat label="Case Spend" value={formatCurrency(summary.caseOpeningSpend)} />
+        <SmallStat label="Case Sale Returns" value={formatCurrency(summary.caseOpeningReturns)} />
+        <SmallStat label="Automation Revenue" value={formatCurrency(summary.automationIncome)} />
+        <SmallStat label="Automation Expenses" value={formatCurrency(summary.automationExpenses)} />
+        <SmallStat label="Work Income" value={formatCurrency(summary.workIncome)} />
+        <SmallStat label="Unrealized Inventory" value={formatCurrency(summary.inventoryValue)} />
+      </div>
+    </section>
+  )
+}
+
 function SmallStat({
   label,
   value,
@@ -466,8 +494,13 @@ export function StatsView() {
           <p className="font-mono text-xs uppercase text-rarity-special">Performance log</p>
           <h2 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Stats</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">
-            Lifetime totals, live inventory trend, and milestone telemetry.
+            Authoritative cash flow, realized trading results, inventory value, and milestone telemetry.
           </p>
+          {!summary.financialHistoryComplete ? (
+            <p className="mt-2 max-w-2xl text-xs text-rarity-special">
+              Detailed transaction history starts with save v34. Earlier earned/spent counters are retained as an incomplete legacy baseline.
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <RangeControl range={range} setRange={setRange} />
@@ -504,10 +537,10 @@ export function StatsView() {
         />
         <MetricCard
           icon={Wallet}
-          label="Net Profit"
-          subLabel={`${formatCurrency(summary.moneyEarned)} earned / ${formatCurrency(summary.moneySpent)} spent`}
-          tone={summary.netProfit >= 0 ? 'green' : 'red'}
-          value={formatCurrency(summary.netProfit)}
+          label="Net Cash Flow"
+          subLabel={`${formatCurrency(summary.totalIncome)} income / ${formatCurrency(summary.totalExpenses)} expenses`}
+          tone={summary.netCashFlow >= 0 ? 'green' : 'red'}
+          value={formatCurrency(summary.netCashFlow)}
         />
         <MetricCard
           icon={Gem}
@@ -538,6 +571,20 @@ export function StatsView() {
           value={formatCurrency(summary.inventoryValue)}
         />
         <MetricCard
+          icon={BadgeDollarSign}
+          label="Realized Trading Profit"
+          subLabel="Sale proceeds minus known item cost basis"
+          tone={summary.realizedTradingProfit >= 0 ? 'green' : 'red'}
+          value={formatCurrency(summary.realizedTradingProfit)}
+        />
+        <MetricCard
+          icon={Landmark}
+          label="Economic Net Worth"
+          subLabel="Cash plus current inventory value"
+          tone="green"
+          value={formatCurrency(summary.totalEconomicNetWorth)}
+        />
+        <MetricCard
           icon={Repeat2}
           label="Trade-Ups"
           subLabel={`${summary.itemsSold.toLocaleString()} items sold`}
@@ -551,7 +598,7 @@ export function StatsView() {
         />
         <MetricCard
           icon={Clock3}
-          label="Time Played"
+          label="Active This Session"
           subLabel={`Prestige ${summary.prestigeLevel} / ${summary.casesUnlocked} cases unlocked`}
           value={formatDuration(summary.timePlayedMs)}
         />
@@ -572,7 +619,7 @@ export function StatsView() {
             )}
           </ChartPanel>
 
-          <ChartPanel subtitle="Spent / earned / net" title="Money Flow">
+          <ChartPanel subtitle="Expenses / income / net cash flow" title="Money Flow">
             <div className="h-64">
               <DeferredBarChart aria-label="Money flow chart" data={moneyFlowData} options={currencyBarOptions} />
             </div>
@@ -607,6 +654,9 @@ export function StatsView() {
 
       <div className="mt-4">
         <Comparatives summary={summary} />
+      </div>
+      <div className="mt-4">
+        <FinancialBreakdown summary={summary} />
       </div>
     </section>
   )

@@ -10,6 +10,7 @@ import {
   negotiateNpcListing,
   refreshNpcSupply,
   tickMarketplace,
+  getAutomatedBuyerMaximum,
 } from './marketplace'
 
 function makeItem(overrides: Partial<SkinInstance> = {}): SkinInstance {
@@ -96,5 +97,28 @@ describe('simulated NPC marketplace', () => {
     expect(result.completedSales.map((listing) => listing.id)).toContain('active')
     expect(result.expiredListings.map((listing) => listing.id)).toEqual(['expired'])
     expect(result.marketplace.playerListings).toHaveLength(0)
+  })
+
+  it('never auto-buys an arbitrarily overpriced player listing', () => {
+    const item = makeItem({ marketValue: 100 })
+    const overpriced: PlayerMarketListing = {
+      id: 'overpriced',
+      item,
+      askingPrice: 1_000_000,
+      fairMarketValue: 100,
+      createdAt: 1_000,
+      expiresAt: 1_000_000,
+      status: 'active',
+    }
+    const marketplace = {
+      ...createDefaultMarketplaceState(1_000),
+      nextSupplyTick: Number.MAX_SAFE_INTEGER,
+      playerListings: [overpriced],
+    }
+    const result = tickMarketplace(marketplace, {}, 100_000, () => 0)
+
+    expect(getAutomatedBuyerMaximum(overpriced)).toBe(105)
+    expect(result.completedSales).toHaveLength(0)
+    expect(result.marketplace.playerListings).toHaveLength(1)
   })
 })

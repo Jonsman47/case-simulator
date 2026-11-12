@@ -664,7 +664,37 @@ describe('save system', () => {
     expect(migrated.marketplace.removedVirtualListingIds).toEqual(['vm-purchased'])
     expect(migrated.marketplace.virtualMarketEpoch).not.toBe(12)
     expect(migrated.marketplace.virtualMarketNextEpochAt).toBeGreaterThan(before)
-    expect(createSaveEnvelope(migrated).version).toBe(33)
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
+  })
+
+  it('migrates v33 to a partial v34 ledger without fabricating historical transactions', () => {
+    const owned = makeItem({ instanceId: 'preserved-v33', paintSeed: 321 })
+    const state = makeState({
+      money: 777,
+      inventory: [owned],
+      statistics: {
+        ...defaultGameState.statistics,
+        moneyEarned: 250,
+        moneySpent: 125,
+      },
+    })
+    const legacyState: Partial<GameState> = { ...state }
+    delete legacyState.economyLedger
+    const migrated = parseGameSaveText(JSON.stringify({
+      version: 33,
+      savedAt: 1_782_147_700_000,
+      state: legacyState,
+    }))
+
+    expect(migrated.money).toBe(777)
+    expect(migrated.inventory[0]).toMatchObject({ instanceId: 'preserved-v33', paintSeed: 321 })
+    expect(migrated.economyLedger.historyCompleteness).toBe('partial-pre-v34')
+    expect(migrated.economyLedger.legacyBaseline).toMatchObject({
+      moneyEarned: 250,
+      moneySpent: 125,
+    })
+    expect(migrated.economyLedger.recentTransactions).toEqual([])
+    expect(createSaveEnvelope(migrated).version).toBe(34)
   })
 
   it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {

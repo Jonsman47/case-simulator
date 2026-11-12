@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { gameReducer } from './gameReducer'
+import { AUCTION_INSTANT_RESALE_COOLDOWN_MS, gameReducer } from './gameReducer'
 import { defaultDropsByRarity, defaultGameState, type GameState, type GameUiEvent } from './gameState'
 import {
   AutomationModuleId,
@@ -19,6 +19,7 @@ import {
   getPreviousLocalDayKey,
 } from '../rewards/dailyRewards'
 import { MAX_CURRENCY_VALUE } from '../utils/safeNumbers'
+import { AUTO_OPENER_MAX_LEVEL, AUTOMATION_MODULE_DEFINITIONS } from '../utils/automation'
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -763,8 +764,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(nextState.money).toBe(236.15)
-    expect(nextState.statistics.moneyEarned).toBe(186.15)
+    expect(nextState.money).toBe(234.51)
+    expect(nextState.statistics.moneyEarned).toBe(184.51)
   })
 
   it('applies collection case discounts when opening cases', () => {
@@ -1405,6 +1406,7 @@ describe('gameReducer OPEN_CASE', () => {
         },
       },
       skillPoints: 1,
+      upgradePoints: 5,
       learnedSkillNodeIds: [SkillNodeId.SellSpecialist],
       collectionBook: [
         {
@@ -1435,6 +1437,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.prestigeLevel).toBe(1)
     expect(nextState.prestigePoints).toBe(7)
     expect(nextState.skillPoints).toBe(8)
+    expect(nextState.upgradePoints).toBe(5)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.SellSpecialist])
     expect(nextState.achievements).toContainEqual({
       id: 'first_prestige',
@@ -1567,8 +1570,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(145.2)
-    expect(soldState.statistics.moneyEarned).toBe(95.2)
+    expect(soldState.money).toBe(142.72)
+    expect(soldState.statistics.moneyEarned).toBe(92.72)
   })
 
   it('applies upgrade sell value bonuses when selling', () => {
@@ -1587,8 +1590,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(239.84)
-    expect(soldState.statistics.moneyEarned).toBe(189.84)
+    expect(soldState.money).toBe(234.91)
+    expect(soldState.statistics.moneyEarned).toBe(184.91)
   })
 
   it('applies prestige sell value bonuses when selling', () => {
@@ -1607,8 +1610,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(249.05)
-    expect(soldState.statistics.moneyEarned).toBe(199.05)
+    expect(soldState.money).toBe(235.87)
+    expect(soldState.statistics.moneyEarned).toBe(185.87)
   })
 
   it('applies upgrade case discounts when opening cases', () => {
@@ -1752,8 +1755,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(238)
-    expect(soldState.statistics.moneyEarned).toBe(188)
+    expect(soldState.money).toBe(234.71)
+    expect(soldState.statistics.moneyEarned).toBe(184.71)
   })
 
   it('applies skill automation speed bonuses to auto opening intervals', () => {
@@ -2235,5 +2238,71 @@ describe('gameReducer OPEN_CASE', () => {
   it('starts fresh saves with exactly one hundred dollars', () => {
     expect(defaultGameState.money).toBe(100)
     expect(defaultGameState.hasUsedFirstCaseHook).toBe(false)
+  })
+
+  it('rejects useless Auto Opener and automation-module levels at the reducer boundary', () => {
+    const autoState = makeState({
+      money: 1_000_000,
+      automation: {
+        ...defaultGameState.automation,
+        autoOpener: {
+          ...defaultGameState.automation.autoOpener,
+          level: AUTO_OPENER_MAX_LEVEL,
+        },
+      },
+    })
+    const blockedAuto = gameReducer(autoState, { type: 'PURCHASE_AUTO_OPENER', now: 1_000 })
+    const definition = AUTOMATION_MODULE_DEFINITIONS[AutomationModuleId.MarketAnalyst]
+    const moduleState = makeState({
+      money: 1_000_000,
+      automation: {
+        ...defaultGameState.automation,
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.MarketAnalyst]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.MarketAnalyst],
+            level: definition.maxLevel,
+          },
+        },
+      },
+    })
+    const blockedModule = gameReducer(moduleState, {
+      type: 'PURCHASE_AUTOMATION_MODULE',
+      moduleId: AutomationModuleId.MarketAnalyst,
+      now: 1_000,
+    })
+
+    expect(blockedAuto.money).toBe(autoState.money)
+    expect(blockedAuto.automation.autoOpener.level).toBe(AUTO_OPENER_MAX_LEVEL)
+    expect(blockedModule.money).toBe(moduleState.money)
+    expect(blockedModule.automation.modules[AutomationModuleId.MarketAnalyst].level)
+      .toBe(definition.maxLevel)
+  })
+
+  it('prevents immediate Auction-to-instant-sale arbitrage while preserving the item', () => {
+    const now = Date.now()
+    const item = makeItem({ instanceId: 'auction-held', marketValue: 100 })
+    const state = makeState({
+      money: 500,
+      automation: {
+        ...defaultGameState.automation,
+        auctionHouse: {
+          deals: [{
+            id: 'held-deal', item, listPrice: 100, price: 80, discount: .2,
+            createdAt: now, expiresAt: now + 60_000,
+          }],
+          lastRefreshTime: now,
+          nextRefreshTime: now + 60_000,
+        },
+      },
+    })
+    const purchased = gameReducer(state, { type: 'PURCHASE_AUCTION_DEAL', dealId: 'held-deal', now })
+    const blocked = gameReducer(purchased, { type: 'SELL_ITEM', itemId: item.instanceId })
+
+    expect(purchased.inventory[0].instantSaleAvailableAt)
+      .toBe(now + AUCTION_INSTANT_RESALE_COOLDOWN_MS)
+    expect(blocked.inventory).toHaveLength(1)
+    expect(blocked.money).toBe(420)
+    expect(blocked.lastError).toContain('24 hours')
   })
 })

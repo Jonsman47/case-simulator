@@ -8,7 +8,6 @@ import type { GameUiEvent } from '../data/gameState'
 import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
-import { getSkillTradeUpInputCostMultiplier } from '../data/skills'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getCurrentItemMarketValue } from '../utils/inventory'
@@ -103,14 +102,12 @@ export function TradeUps() {
     () => eligibleItems.filter((item) => item.rarity === activeRarity),
     [activeRarity, eligibleItems],
   )
-  const tradeUpInputCostMultiplier = getSkillTradeUpInputCostMultiplier(state.learnedSkillNodeIds)
   const analysis = useMemo(
     () => analyzeTradeUp({
-      inputCostMultiplier: tradeUpInputCostMultiplier,
       inputItems: selectedItems,
       marketValues: state.marketValues,
     }),
-    [selectedItems, state.marketValues, tradeUpInputCostMultiplier],
+    [selectedItems, state.marketValues],
   )
   const latestTradeUpEvent = getLatestTradeUpEvent(state.uiEvents)
 

@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/format'
 import {
   AUTOMATION_MODULE_DEFINITIONS,
   AUTOMATION_MODULE_IDS,
+  AUTO_OPENER_MAX_LEVEL,
   CASE_FARM_INTERVAL_MS,
   TRADING_BOT_INTERVAL_MS,
   getAutoOpenerProgress,
@@ -80,7 +81,7 @@ function getModuleTotalLabel(moduleState: AutomationModuleState) {
   }
 
   if (moduleState.id === AutomationModuleId.MarketAnalyst) {
-    return `+${Math.round(getMarketAnalystSellBonus(moduleState.level) * 100)}% sell value`
+    return `+${Math.round(getMarketAnalystSellBonus(moduleState.level) * 100)}% execution rating`
   }
 
   if (moduleState.id === AutomationModuleId.WarehouseSystem) {
@@ -128,7 +129,8 @@ export function Automation() {
   const selectedCaseId = autoOpener.caseId ?? availableCases[0]?.id ?? 'starter_case'
   const selectedCase = availableCases.find((caseDef) => caseDef.id === selectedCaseId)
   const upgradeCost = getAutoOpenerUpgradeCost(autoOpener.level)
-  const canAffordUpgrade = state.money >= upgradeCost
+  const isAutoOpenerMaxed = autoOpener.level >= AUTO_OPENER_MAX_LEVEL
+  const canAffordUpgrade = !isAutoOpenerMaxed && state.money >= upgradeCost
   const progress = getAutoOpenerProgress(effectiveAutoOpener, now)
   const remainingMs = getAutoOpenerTimeRemainingMs(effectiveAutoOpener, now)
   const recentAutomationDrops = useMemo(() => state.recentDrops.slice(0, 6), [state.recentDrops])
@@ -166,7 +168,7 @@ export function Automation() {
           </p>
         </div>
         <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-4">
-          <StatPill label="Level" value={String(autoOpener.level)} />
+          <StatPill label="Level" value={`${Math.min(autoOpener.level, AUTO_OPENER_MAX_LEVEL)}/${AUTO_OPENER_MAX_LEVEL}`} />
           <StatPill label="Interval" value={formatDuration(effectiveAutoOpener.intervalMs)} />
           <StatPill label="Auto Opens" value={String(autoOpener.totalOpened)} />
           <StatPill label="Modules" value={`${activeModules.filter((module) => module.id !== AutomationModuleId.WarehouseSystem).length}/${moduleCapacity}`} />
@@ -185,7 +187,9 @@ export function Automation() {
                   <p className="font-mono text-xs uppercase text-cs-muted">Core Module</p>
                   <h3 className="mt-1 text-2xl font-semibold text-cs-text">Auto Opener</h3>
                   <p className="mt-2 text-sm text-cs-muted">
-                    Next upgrade costs {formatCurrency(upgradeCost)}.
+                    {isAutoOpenerMaxed
+                      ? 'Maximum effective speed reached.'
+                      : `Next upgrade costs ${formatCurrency(upgradeCost)}.`}
                   </p>
                 </div>
               </div>
@@ -196,7 +200,7 @@ export function Automation() {
                 type="button"
               >
                 <ShoppingCart size={18} />
-                {autoOpener.level > 0 ? 'Upgrade' : 'Purchase'}
+                {isAutoOpenerMaxed ? 'Max Level' : autoOpener.level > 0 ? 'Upgrade' : 'Purchase'}
               </button>
             </div>
 

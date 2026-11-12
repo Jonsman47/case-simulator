@@ -201,14 +201,14 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
   {
     id: UpgradeId.WearTuning,
     category: UpgradeCategory.Opening,
-    name: 'Wear Tuning',
-    description: 'Improves the wear roll distribution toward Factory New and Minimal Wear.',
+    name: 'Float Research',
+    description: 'Legacy research level reserved for future market and trade-up analysis. It does not alter official case-drop floats.',
     baseMoneyCost: 2_000,
     costMultiplier: 2.3,
     maxLevel: 5,
     getCurrentEffect: (level) =>
-      level > 0 ? `+${level * 2} FN/MW roll weight` : 'Default wear distribution',
-    getNextEffect: (level) => `+${(level + 1) * 2} FN/MW roll weight`,
+      level > 0 ? `Float research tier ${level} (drop odds unchanged)` : 'Official float distribution',
+    getNextEffect: (level) => `Float research tier ${level + 1} (drop odds unchanged)`,
   },
   {
     id: UpgradeId.ClickIncome,
@@ -226,13 +226,13 @@ export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
     id: UpgradeId.MarketSignal,
     category: UpgradeCategory.Market,
     name: 'Market Signal',
-    description: 'Improves sell quotes from manual sells, bulk sells, and auto-sells.',
+    description: 'Improves buyer access and closes part of the instant-sale spread with diminishing returns.',
     baseMoneyCost: 3_000,
     costMultiplier: 2.3,
     maxLevel: 5,
     getCurrentEffect: (level) =>
-      level > 0 ? `+${formatPercent(level * 0.015)} sell value` : 'No sell bonus',
-    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.015)} sell value`,
+      level > 0 ? `+${formatPercent(level * 0.015)} execution rating` : 'Base buyer access',
+    getNextEffect: (level) => `+${formatPercent((level + 1) * 0.015)} execution rating`,
   },
   {
     id: UpgradeId.TrendScanner,

@@ -87,6 +87,22 @@ describe('trade-up utilities', () => {
     })
   })
 
+  it('uses full consumed opportunity cost even when legacy planning discounts are supplied', () => {
+    const inputs = makeTradeUpInputs({ marketValue: 100 })
+    const baseline = analyzeTradeUp({
+      inputItems: inputs,
+      marketValues: { p250_sand_dune: 100 },
+    })
+    const analysis = analyzeTradeUp({
+      inputCostMultiplier: .1,
+      inputItems: inputs,
+      marketValues: { p250_sand_dune: 100 },
+    })
+
+    expect(analysis.inputValue).toBe(baseline.inputValue)
+    expect(analysis.expectedProfit).toBe(baseline.expectedProfit)
+  })
+
   it('labels profitability with green, red, and neutral states', () => {
     expect(getTradeUpProfitability(1)).toBe('profitable')
     expect(getTradeUpProfitability(-1)).toBe('unprofitable')
