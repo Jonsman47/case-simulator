@@ -24,7 +24,7 @@ describe('skill tree data helpers', () => {
     expect(skillTreeNodesById.get(branchNodeId)?.prerequisites).toEqual(['license_2'])
     expect(normalizeLearnedSkillNodeIds([branchNodeId, 'not-real'])).toEqual([branchNodeId])
     expect(getSkillBranchTier([branchNodeId], 'license')).toBe(3)
-    expect(getSkillLicenseDiscount([branchNodeId])).toBeCloseTo(0.045)
+    expect(getSkillLicenseDiscount([branchNodeId])).toBe(0)
   })
 
   it('reports learnable and locked node states from prerequisites and skill points', () => {
@@ -53,17 +53,17 @@ describe('skill tree data helpers', () => {
     expect(unlockedStatus.canLearn).toBe(true)
   })
 
-  it('improves wear rolls toward better conditions when Wear Whisperer is learned', () => {
+  it('keeps official wear rolls unchanged for archived skills', () => {
     const skin = skinsById.get('p250_sand_dune') as SkinBase
     const prng = () => 0.3
 
     expect(randomWearConditionForSkinWithSkills(skin, [], prng)).toBe(WearCondition.FieldTested)
-    expect(
-      randomWearConditionForSkinWithSkills(skin, [SkillNodeId.WearWhisperer], prng),
-    ).toBe(WearCondition.MinimalWear)
+    expect(randomWearConditionForSkinWithSkills(skin, [SkillNodeId.WearWhisperer], prng)).toBe(
+      WearCondition.FieldTested,
+    )
   })
 
-  it('boosts special item pressure while preserving total drop weight', () => {
+  it('keeps official drop weights unchanged for archived skills', () => {
     const caseDef: CaseDefinition = {
       id: 'skill_test_case',
       name: 'Skill Test Case',
@@ -85,6 +85,6 @@ describe('skill tree data helpers', () => {
     const specialDrop = adjustedCase.dropTable.find((drop) => drop.skinId === 'karambit_doppler')
 
     expect(adjustedTotal).toBeCloseTo(originalTotal, 6)
-    expect(specialDrop?.weight).toBeGreaterThan(0.05)
+    expect(specialDrop?.weight).toBe(0.05)
   })
 })

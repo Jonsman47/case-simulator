@@ -46,6 +46,20 @@ import { CASE_DEFINITIONS } from '../data/cases'
 import { requiresCaseLicense } from '../data/casePricing'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { AutomationModuleId, CaseStatus, Rarity, WearCondition } from '../data/models'
+import {
+  getCareerBusinessIntervalMultiplier,
+  getCareerCaseOperatorBatchBonus,
+  getCareerListingCapacityBonus,
+  getCareerOperatingCapacityBonus,
+  getCareerPayrollDiscount,
+  getCareerScoutCandidateBonus,
+  getCareerScoutWatchlistBonus,
+  getCareerTradeUpApprovalBonus,
+  getCareerTradeUpContractBonus,
+  getCareerTrainingDiscount,
+  getCareerUpgradeEffect,
+  type CareerUpgradeState,
+} from '../career/careerUpgrades'
 
 const roleIcons: Record<EmployeeRoleId, LucideIcon> = {
   caseOperator: PackageOpen,
@@ -80,7 +94,7 @@ export function Business() {
   const [editingWatchId, setEditingWatchId] = useState<string>()
   const [now] = useState(() => Date.now())
   const activeCount = getActiveEmployeeCount(state.business)
-  const capacity = getOperatingCapacity(state.business)
+  const capacity = getOperatingCapacity(state.business) + getCareerOperatingCapacityBonus(state.careerUpgrades)
   const reserved = getBusinessReservedFunds(state.business)
   const pendingAlerts = state.business.alerts.filter((alert) => alert.status === 'new' && alert.expiresAt > now)
   const inventoryCapacity = getInventoryCapacity(state)
@@ -114,7 +128,7 @@ export function Business() {
       <section aria-labelledby="employees-heading" className="border border-cs-border bg-cs-surface p-4 sm:p-6">
         <div className="flex items-center gap-2"><BriefcaseBusiness className="text-rarity-mil-spec" size={20} /><h2 className="text-xl font-semibold text-cs-text" id="employees-heading">Employees</h2></div>
         <div className="mt-4 grid gap-3 md:grid-cols-2 2xl:grid-cols-5">
-          {EMPLOYEE_ROLE_IDS.map((roleId) => <EmployeeCard employee={state.business.employees[roleId]} key={roleId} now={now} onConfigure={() => setSelectedRole(roleId)} onHire={() => hire(roleId)} onToggle={() => dispatch({ type: 'TOGGLE_EMPLOYEE', roleId, now: Date.now() })} onTrain={() => train(roleId)} unlocked={isEmployeeUnlocked(roleId, state.career)} />)}
+          {EMPLOYEE_ROLE_IDS.map((roleId) => <EmployeeCard careerUpgrades={state.careerUpgrades} employee={state.business.employees[roleId]} key={roleId} now={now} onConfigure={() => setSelectedRole(roleId)} onHire={() => hire(roleId)} onToggle={() => dispatch({ type: 'TOGGLE_EMPLOYEE', roleId, now: Date.now() })} onTrain={() => train(roleId)} unlocked={isEmployeeUnlocked(roleId, state.career)} />)}
         </div>
       </section>
 
@@ -190,10 +204,22 @@ export function Business() {
   )
 }
 
-function EmployeeCard({ employee, now, onConfigure, onHire, onToggle, onTrain, unlocked }: { employee: BusinessEmployeeState; now: number; onConfigure: () => void; onHire: () => void; onToggle: () => void; onTrain: () => void; unlocked: boolean }) {
+function EmployeeCard({ careerUpgrades, employee, now, onConfigure, onHire, onToggle, onTrain, unlocked }: { careerUpgrades: CareerUpgradeState; employee: BusinessEmployeeState; now: number; onConfigure: () => void; onHire: () => void; onToggle: () => void; onTrain: () => void; unlocked: boolean }) {
   const definition = EMPLOYEE_ROLE_DEFINITIONS[employee.roleId]
   const Icon = roleIcons[employee.roleId]
-  return <article className="flex min-w-0 flex-col border border-cs-border bg-cs-panel p-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center border border-rarity-mil-spec/60 bg-rarity-mil-spec/10 text-rarity-mil-spec"><Icon size={20} /></div><div className="min-w-0"><h3 className="font-semibold text-cs-text">{definition.name}</h3><p className="mt-1 text-xs leading-5 text-cs-muted">{definition.description}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><Metric label="Training" value={`${employee.trainingLevel}/${BUSINESS_MAX_TRAINING_LEVEL}`} /><Metric label="Wage / hour" value={formatCurrency(getEmployeeHourlyWage(employee.roleId, employee.trainingLevel))} /><Metric label="Operating fund" value={formatCurrency(employee.availableCapital)} /><Metric label="Next action" value={employee.isEnabled ? formatDuration(employee.nextActionAt - now) : 'Paused'} /></div><p className={`mt-3 min-h-10 text-xs leading-5 ${employee.lastPauseReason ? 'text-rarity-covert' : 'text-cs-muted'}`}>{employee.lastPauseReason ?? employee.recentResult ?? (unlocked ? `Ready at Career level ${definition.unlockLevel}.` : `Unlocks at Career level ${definition.unlockLevel}.`)}</p><div className="mt-auto grid grid-cols-2 gap-2 pt-3">{!employee.isHired ? <button className="col-span-2 min-h-10 border border-rarity-special px-3 text-sm font-semibold text-rarity-special disabled:border-cs-border disabled:text-cs-muted" disabled={!unlocked} onClick={onHire} type="button"><span className="inline-flex items-center gap-2"><BriefcaseBusiness size={15} /> Hire · {formatCurrency(getEmployeeHireCost(employee.roleId))}</span></button> : <><button className="min-h-10 border border-cs-border px-2 text-sm text-cs-text" onClick={onToggle} type="button"><span className="inline-flex items-center gap-2">{employee.isEnabled ? <CirclePause size={15} /> : <CirclePlay size={15} />}{employee.isEnabled ? 'Pause' : 'Start'}</span></button><button className="min-h-10 border border-cs-border px-2 text-sm text-cs-text" onClick={onConfigure} type="button"><span className="inline-flex items-center gap-2"><Settings2 size={15} /> Configure</span></button><button className="col-span-2 min-h-10 border border-rarity-classified/60 px-2 text-sm text-rarity-classified disabled:text-cs-muted" disabled={employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL} onClick={onTrain} type="button"><span className="inline-flex items-center gap-2"><GraduationCap size={15} /> Train · {employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL ? 'Max' : formatCurrency(getEmployeeTrainingCost(employee.roleId, employee.trainingLevel))}</span></button></>}</div></article>
+  const wage = getEmployeeHourlyWage(employee.roleId, employee.trainingLevel) * (1 - getCareerPayrollDiscount(careerUpgrades))
+  const trainingCost = getEmployeeTrainingCost(employee.roleId, employee.trainingLevel) * (1 - getCareerTrainingDiscount(careerUpgrades))
+  const intervalImprovement = Math.round((1 - getCareerBusinessIntervalMultiplier(careerUpgrades)) * 100)
+  const roleCareerEffect = employee.roleId === 'caseOperator'
+    ? `+${getCareerCaseOperatorBatchBonus(careerUpgrades)} batch · +${getCareerUpgradeEffect(careerUpgrades, 'business.caseCapacityReserve')} reserve`
+    : employee.roleId === 'salesAssistant'
+      ? `+${getCareerListingCapacityBonus(careerUpgrades)} listing capacity`
+      : employee.roleId === 'marketScout'
+        ? `+${getCareerScoutWatchlistBonus(careerUpgrades)} watchlists · +${getCareerScoutCandidateBonus(careerUpgrades)} scan`
+        : employee.roleId === 'tradeUpSpecialist'
+          ? `+${getCareerTradeUpContractBonus(careerUpgrades)} contracts · +${getCareerTradeUpApprovalBonus(careerUpgrades)} threshold`
+          : `+${getCareerUpgradeEffect(careerUpgrades, 'business.juniorCandidates')} candidates`
+  return <article className="flex min-w-0 flex-col border border-cs-border bg-cs-panel p-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center border border-rarity-mil-spec/60 bg-rarity-mil-spec/10 text-rarity-mil-spec"><Icon size={20} /></div><div className="min-w-0"><h3 className="font-semibold text-cs-text">{definition.name}</h3><p className="mt-1 text-xs leading-5 text-cs-muted">{definition.description}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><Metric label="Training" value={`${employee.trainingLevel}/${BUSINESS_MAX_TRAINING_LEVEL}`} /><Metric label="Wage / hour" value={formatCurrency(wage)} /><Metric label="Operating fund" value={formatCurrency(employee.availableCapital)} /><Metric label="Next action" value={employee.isEnabled ? formatDuration(employee.nextActionAt - now) : 'Paused'} /><Metric label="Career scheduler" value={intervalImprovement > 0 ? `${intervalImprovement}% faster` : 'Standard'} /><Metric label="Career role tools" value={roleCareerEffect} /></div><p className={`mt-3 min-h-10 text-xs leading-5 ${employee.lastPauseReason ? 'text-rarity-covert' : 'text-cs-muted'}`}>{employee.lastPauseReason ?? employee.recentResult ?? (unlocked ? `Ready at Career level ${definition.unlockLevel}.` : `Unlocks at Career level ${definition.unlockLevel}.`)}</p><div className="mt-auto grid grid-cols-2 gap-2 pt-3">{!employee.isHired ? <button className="col-span-2 min-h-10 border border-rarity-special px-3 text-sm font-semibold text-rarity-special disabled:border-cs-border disabled:text-cs-muted" disabled={!unlocked} onClick={onHire} type="button"><span className="inline-flex items-center gap-2"><BriefcaseBusiness size={15} /> Hire · {formatCurrency(getEmployeeHireCost(employee.roleId))}</span></button> : <><button className="min-h-10 border border-cs-border px-2 text-sm text-cs-text" onClick={onToggle} type="button"><span className="inline-flex items-center gap-2">{employee.isEnabled ? <CirclePause size={15} /> : <CirclePlay size={15} />}{employee.isEnabled ? 'Pause' : 'Start'}</span></button><button className="min-h-10 border border-cs-border px-2 text-sm text-cs-text" onClick={onConfigure} type="button"><span className="inline-flex items-center gap-2"><Settings2 size={15} /> Configure</span></button><button className="col-span-2 min-h-10 border border-rarity-classified/60 px-2 text-sm text-rarity-classified disabled:text-cs-muted" disabled={employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL} onClick={onTrain} type="button"><span className="inline-flex items-center gap-2"><GraduationCap size={15} /> Train · {employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL ? 'Max' : formatCurrency(trainingCost)}</span></button></>}</div></article>
 }
 
 function ConfigurationPanel({ budget, employee, onAllocate, onBudgetChange, onClose, onRelease, onSettings, unlockedCaseIds }: { budget: string; employee: BusinessEmployeeState; onAllocate: () => void; onBudgetChange: (value: string) => void; onClose: () => void; onRelease: () => void; onSettings: (settings: Record<string, unknown>) => void; unlockedCaseIds: string[] }) {

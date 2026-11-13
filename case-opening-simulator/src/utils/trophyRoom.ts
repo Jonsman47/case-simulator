@@ -1,5 +1,6 @@
 import { Rarity, type SkinInstance, type TrophyAssignments } from '../data/models'
-import { getSkillTrophySlotBonus } from '../data/skills'
+import type { CareerUpgradeState } from '../career/careerUpgrades'
+import { getCareerUpgradeEffect } from '../career/careerUpgrades'
 import { getCurrentItemMarketValue } from './inventory'
 
 export interface TrophySlotDefinition {
@@ -26,8 +27,9 @@ export function createTrophySlotId(index: number) {
   return `${TROPHY_SLOT_ID_PREFIX}${index}`
 }
 
-export function getTrophyRoomSlotCount(learnedSkillNodeIds: string[] = []) {
-  return BASE_TROPHY_SLOT_COUNT + getSkillTrophySlotBonus(learnedSkillNodeIds)
+export function getTrophyRoomSlotCount(_learnedSkillNodeIds: string[] = [], careerUpgrades?: CareerUpgradeState) {
+  void _learnedSkillNodeIds
+  return BASE_TROPHY_SLOT_COUNT + (careerUpgrades ? Math.floor(getCareerUpgradeEffect(careerUpgrades, 'collecting.trophySlots')) : 0)
 }
 
 export function createTrophySlotDefinitions(slotCount = BASE_TROPHY_SLOT_COUNT): TrophySlotDefinition[] {
@@ -59,11 +61,11 @@ export function getTrophyAssignmentsList(trophyAssignments: TrophyAssignments) {
     .sort((left, right) => left.slotId.localeCompare(right.slotId, undefined, { numeric: true }))
 }
 
-export function isUnlockedTrophySlot(slotId: string, learnedSkillNodeIds: string[] = []) {
+export function isUnlockedTrophySlot(slotId: string, learnedSkillNodeIds: string[] = [], careerUpgrades?: CareerUpgradeState) {
   const match = new RegExp(`^${TROPHY_SLOT_ID_PREFIX}(\\d+)$`).exec(slotId)
   const slotIndex = match ? Number.parseInt(match[1], 10) : 0
 
-  return Number.isFinite(slotIndex) && slotIndex >= 1 && slotIndex <= getTrophyRoomSlotCount(learnedSkillNodeIds)
+  return Number.isFinite(slotIndex) && slotIndex >= 1 && slotIndex <= getTrophyRoomSlotCount(learnedSkillNodeIds, careerUpgrades)
 }
 
 export function getTrophyScore(trophyAssignments: TrophyAssignments) {

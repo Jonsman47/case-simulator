@@ -217,8 +217,13 @@ describe('TrophyRoomView', () => {
     expect(assignTrophyItem).toHaveBeenCalledWith('showcase_1', secondItem.instanceId)
   })
 
-  it('shows upgraded trophy room slots from the skill tree inventory branch', () => {
-    renderTrophyRoom({ learnedSkillNodeIds: ['inventory_1'] as never })
+  it('shows upgraded trophy room slots from the Career collecting branch', () => {
+    renderTrophyRoom({
+      careerUpgrades: {
+        ...defaultGameState.careerUpgrades,
+        levels: { 'collecting.trophy-expansion': 4 },
+      },
+    })
 
     expect(screen.getByText('0/16')).toBeInTheDocument()
     expect(screen.getAllByText('Showcase Slot 16').length).toBeGreaterThan(0)

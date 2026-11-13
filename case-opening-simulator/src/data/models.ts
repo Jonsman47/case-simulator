@@ -504,6 +504,7 @@ export interface PlayerState {
   marketplace?: MarketplaceState
   automation: AutomationState
   business?: import('../business/business').BusinessState
+  careerUpgrades?: import('../career/careerUpgrades').CareerUpgradeState
   upgrades: UpgradeLevels
   trophyAssignments: TrophyAssignments
   dailyRewards: DailyRewardsState

@@ -143,6 +143,41 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
   await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
 })
 
+test('Career specializations purchase, activate, and persist an upgrade', async ({ page }) => {
+  await page.goto('/career')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  seeded.state.money = 5_000_000
+  seeded.state.career.currentRunXp = 4_000_000
+  seeded.state.career.lifetimeXp = Math.max(seeded.state.career.lifetimeXp, 4_000_000)
+  for (const specialization of Object.values(seeded.state.career.specializations)) {
+    specialization.currentRunXp = 100_000
+    specialization.lifetimeXp = Math.max(specialization.lifetimeXp, 100_000)
+  }
+  await page.addInitScript(({ envelope, key }) => {
+    if (sessionStorage.getItem('career-upgrades-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('career-upgrades-seeded', '1')
+  }, { envelope: seeded, key: saveKey })
+  await page.reload()
+
+  for (const branch of ['Case Opening', 'Trading', 'Collecting', 'Trade-Ups', 'Business']) {
+    await expect(page.getByRole('tab', { name: new RegExp(branch) })).toBeVisible()
+  }
+  await page.getByRole('tab', { name: /Trading/ }).click()
+  await expect(page.getByRole('heading', { name: 'Upgrade explorer' })).toBeVisible()
+  await page.getByRole('tab', { name: /Case Opening/ }).click()
+
+  const upgrade = page.locator('[data-upgrade-id="case-opening.presentation-drive"]')
+  await upgrade.getByRole('button').first().click()
+  await upgrade.getByRole('button', { name: /Purchase/ }).click()
+  await expect(upgrade).toContainText('Lv 1/3')
+  await expect(page.getByLabel('Case Opening active toolkit')).toContainText('Presentation Drive')
+
+  await page.reload()
+  await expect(page.locator('[data-upgrade-id="case-opening.presentation-drive"]')).toContainText('Lv 1/3')
+})
+
 test('Business hires, funds, schedules, and persists a paid Case Operator', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
@@ -434,7 +469,7 @@ test('every player-facing route renders without console errors or horizontal cli
   for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page.locator('main'), `route ${route} should render its application shell`).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('body')).not.toContainText('Something went wrong')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), route).toBe(true)
   }

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { defaultGameState } from '../data/gameState'
-import { AutomationModuleId, PrestigeBonusId, SkillNodeId, UpgradeId } from '../data/models'
+import { AutomationModuleId, PrestigeBonusId } from '../data/models'
 import { BASE_INVENTORY_CAPACITY, getInventoryCapacity, getInventoryFreeSlots } from './inventoryCapacity'
 
 describe('inventory capacity', () => {
-  it('combines Warehouse, upgrade, prestige, and skill capacity bonuses', () => {
+  it('combines Warehouse, prestige, and Career storage capacity bonuses', () => {
     const state = {
       ...defaultGameState,
       automation: {
@@ -17,12 +17,14 @@ describe('inventory capacity', () => {
           },
         },
       },
-      upgrades: { [UpgradeId.WarehouseRows]: 2 },
       prestigeBonuses: { [PrestigeBonusId.InventoryCapacity]: 1 },
-      learnedSkillNodeIds: ['inventory_1' as SkillNodeId],
+      careerUpgrades: {
+        ...defaultGameState.careerUpgrades,
+        levels: { 'collecting.storage-expansion': 4 },
+      },
     }
 
-    expect(getInventoryCapacity(state)).toBeGreaterThan(BASE_INVENTORY_CAPACITY + 1_500)
+    expect(getInventoryCapacity(state)).toBe(BASE_INVENTORY_CAPACITY + 1_500)
   })
 
   it('grandfathers over-capacity inventories without reporting negative free slots', () => {

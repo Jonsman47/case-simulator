@@ -46,9 +46,8 @@ import {
   type OfflineProgressResult,
 } from '../utils/offlineProgress'
 import { applyCollectionRewardsToCases } from '../utils/collectionRewards'
-import { applyUpgradeEffectsToCases, getOpeningAnimationSpeedBonus } from '../data/upgrades'
 import { applyPrestigeEffectsToCases } from '../data/prestige'
-import { applySkillEffectsToCases, getSkillOpeningFlowBonus } from '../data/skills'
+import { getCareerOpeningAnimationSpeedBonus } from '../career/careerUpgrades'
 import { getExternalSkinMarketValues, HAS_EXTERNAL_SKIN_PRICES } from '../data/skinPrices'
 import { applyDailyRewardsToCases } from '../rewards/dailyRewards'
 import {
@@ -156,23 +155,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       SKIN_DEFINITIONS,
       getGameEventCollectionRewardMultiplier(state.activeEvents),
     )
-    const upgradedCases = applyUpgradeEffectsToCases(
-      rewardedCases,
-      state.upgrades,
-      skinDefinitionsById,
-    )
     const prestigeCases = applyPrestigeEffectsToCases(
-      upgradedCases,
+      rewardedCases,
       state.prestigeBonuses,
       skinDefinitionsById,
     )
-    const skillCases = applySkillEffectsToCases(
-      prestigeCases,
-      state.learnedSkillNodeIds,
-      skinDefinitionsById,
-    )
     const eventCases = applyGameEventEffectsToCases(
-      skillCases,
+      prestigeCases,
       state.activeEvents,
       skinDefinitionsById,
     )
@@ -184,11 +173,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     state.collectionRewards,
     state.activeEvents,
     state.dailyRewards,
-    state.learnedSkillNodeIds,
     state.prestigeBonuses,
     state.prestigeLevel,
     state.statistics.casesOpened,
-    state.upgrades,
   ])
 
   const availableCases = useMemo(() => {
@@ -1291,10 +1278,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           potentialSkins={openingPotentialSkins}
           soundEnabled={openingSession.soundEnabled ?? state.settings.soundEnabled}
           speed={state.settings.animationSpeed}
-          speedBonus={
-            getOpeningAnimationSpeedBonus(state.upgrades) +
-            getSkillOpeningFlowBonus(state.learnedSkillNodeIds)
-          }
+          speedBonus={getCareerOpeningAnimationSpeedBonus(state.careerUpgrades)}
           startSkipped={openingSession.startSkipped ?? (openingSession.skipAnimations || state.settings.animationSpeed === 'skip')}
         />
       ) : null}

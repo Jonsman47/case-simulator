@@ -637,7 +637,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(soldState.trophyAssignments.showcase_1?.itemId).toBe(item.instanceId)
   })
 
-  it('keeps trophy slot upgrades gated by learned skill tree tiers', () => {
+  it('keeps trophy slot upgrades gated by Career collecting tiers', () => {
     const item = makeItem()
     const lockedState = gameReducer(makeState({ inventory: [item] }), {
       type: 'ASSIGN_TROPHY_ITEM',
@@ -647,7 +647,10 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const upgradedState = gameReducer(makeState({
       inventory: [item],
-      learnedSkillNodeIds: [SkillNodeId.BulkAutomation, 'inventory_1' as SkillNodeId],
+      careerUpgrades: {
+        ...defaultGameState.careerUpgrades,
+        levels: { 'collecting.trophy-expansion': 4 },
+      },
     }), {
       type: 'ASSIGN_TROPHY_ITEM',
       slotId: 'showcase_16',
@@ -1322,7 +1325,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.lastError).toContain('Upgrade purchased')
   })
 
-  it('purchases upgrades, deducts money, and increases the level', () => {
+  it('archives legacy run-upgrade purchases without mutating saved levels', () => {
     const state = makeState({ money: 2_000 })
     const nextState = gameReducer(state, {
       type: 'PURCHASE_UPGRADE',
@@ -1330,10 +1333,10 @@ describe('gameReducer OPEN_CASE', () => {
       now: Date.now(),
     })
 
-    expect(nextState.money).toBe(750)
-    expect(nextState.upgrades[UpgradeId.CaseContract]).toBe(1)
-    expect(nextState.statistics.moneySpent).toBe(1_250)
-    expect(nextState.lastError).toBeUndefined()
+    expect(nextState.money).toBe(2_000)
+    expect(nextState.upgrades[UpgradeId.CaseContract]).toBe(0)
+    expect(nextState.statistics.moneySpent).toBe(0)
+    expect(nextState.lastError).toContain('archived')
   })
 
   it('does not purchase upgrades past max level', () => {
@@ -1352,10 +1355,10 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.money).toBe(100_000)
     expect(nextState.upgrades[UpgradeId.CaseContract]).toBe(5)
-    expect(nextState.lastError).toBe('Upgrade is already maxed.')
+    expect(nextState.lastError).toContain('archived')
   })
 
-  it('enforces upgrade prerequisites and point costs', () => {
+  it('does not spend legacy upgrade points after the Career migration', () => {
     const lockedState = gameReducer(makeState({
       money: 100_000,
       upgradePoints: 10,
@@ -1384,11 +1387,11 @@ describe('gameReducer OPEN_CASE', () => {
     })
 
     expect(lockedState.upgrades[UpgradeId.RarityLuck]).toBe(0)
-    expect(lockedState.lastError).toBe('Upgrade requirements are not met.')
+    expect(lockedState.lastError).toContain('archived')
     expect(brokeState.upgrades[UpgradeId.RarityLuck]).toBe(0)
-    expect(brokeState.lastError).toBe('Not enough resources to purchase upgrade.')
-    expect(purchasedState.upgrades[UpgradeId.RarityLuck]).toBe(1)
-    expect(purchasedState.upgradePoints).toBe(1)
+    expect(brokeState.lastError).toContain('archived')
+    expect(purchasedState.upgrades[UpgradeId.RarityLuck]).toBe(0)
+    expect(purchasedState.upgradePoints).toBe(2)
   })
 
   it('prestiges an eligible run and resets run progress while preserving permanent progress', () => {
@@ -1441,7 +1444,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.collectionBook).toHaveLength(1)
     expect(nextState.prestigeLevel).toBe(1)
     expect(nextState.prestigePoints).toBe(7)
-    expect(nextState.skillPoints).toBe(8)
+    expect(nextState.skillPoints).toBe(1)
     expect(nextState.upgradePoints).toBe(5)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.SellSpecialist])
     expect(nextState.achievements).toContainEqual({
@@ -1579,7 +1582,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(soldState.statistics.moneyEarned).toBe(92.72)
   })
 
-  it('applies upgrade sell value bonuses when selling', () => {
+  it('does not apply archived upgrade sell bonuses', () => {
     const item = makeItem()
     const state = makeState({
       money: 50,
@@ -1595,8 +1598,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(234.91)
-    expect(soldState.statistics.moneyEarned).toBe(184.91)
+    expect(soldState.money).toBe(234.31)
+    expect(soldState.statistics.moneyEarned).toBe(184.31)
   })
 
   it('applies prestige sell value bonuses when selling', () => {
@@ -1619,7 +1622,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(soldState.statistics.moneyEarned).toBe(185.87)
   })
 
-  it('applies upgrade case discounts when opening cases', () => {
+  it('does not apply archived upgrade case discounts', () => {
     const state = makeState({
       money: 10,
       upgrades: {
@@ -1632,8 +1635,8 @@ describe('gameReducer OPEN_CASE', () => {
       payload: { caseId: 'starter_case' },
     })
 
-    expect(nextState.money).toBe(9.82)
-    expect(nextState.statistics.moneySpent).toBe(0.18)
+    expect(nextState.money).toBe(9.8)
+    expect(nextState.statistics.moneySpent).toBe(0.2)
   })
 
   it('applies prestige case discounts and starting money bonuses', () => {
@@ -1670,7 +1673,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(prestigedState.money).toBe(4_100)
   })
 
-  it('applies automation speed upgrades to auto opening intervals', () => {
+  it('does not apply archived automation-speed upgrades', () => {
     const now = Date.now()
     const state = makeState({
       money: 10,
@@ -1692,8 +1695,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'TICK_AUTOMATION', now })
 
-    expect(nextState.statistics.casesOpened).toBe(1)
-    expect(nextState.automation.autoOpener.totalOpened).toBe(1)
+    expect(nextState.statistics.casesOpened).toBe(0)
+    expect(nextState.automation.autoOpener.totalOpened).toBe(0)
   })
 
   it('applies prestige automation speed bonuses to auto opening intervals', () => {
@@ -1722,7 +1725,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.automation.autoOpener.totalOpened).toBe(1)
   })
 
-  it('learns skill nodes by spending skill points and enforces prerequisites', () => {
+  it('archives legacy skill-tree purchases without spending points', () => {
     const rootState = gameReducer(makeState({ skillPoints: 2 }), {
       type: 'LEARN_SKILL_NODE',
       nodeId: SkillNodeId.SellSpecialist,
@@ -1739,15 +1742,16 @@ describe('gameReducer OPEN_CASE', () => {
       now: Date.now(),
     })
 
-    expect(rootState.skillPoints).toBe(1)
-    expect(rootState.learnedSkillNodeIds).toEqual([SkillNodeId.SellSpecialist])
+    expect(rootState.skillPoints).toBe(2)
+    expect(rootState.learnedSkillNodeIds).toEqual([])
+    expect(rootState.lastError).toContain('archived')
     expect(lockedState.learnedSkillNodeIds).toEqual([])
-    expect(lockedState.lastError).toBe('Skill prerequisites are not met.')
-    expect(duplicateState.skillPoints).toBe(1)
-    expect(duplicateState.lastError).toBe('Skill node is already learned.')
+    expect(lockedState.lastError).toContain('archived')
+    expect(duplicateState.skillPoints).toBe(2)
+    expect(duplicateState.lastError).toContain('archived')
   })
 
-  it('applies skill sell value bonuses when selling', () => {
+  it('does not apply archived skill sell bonuses', () => {
     const item = makeItem()
     const state = makeState({
       money: 50,
@@ -1760,11 +1764,11 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(234.71)
-    expect(soldState.statistics.moneyEarned).toBe(184.71)
+    expect(soldState.money).toBe(234.31)
+    expect(soldState.statistics.moneyEarned).toBe(184.31)
   })
 
-  it('applies skill automation speed bonuses to auto opening intervals', () => {
+  it('does not apply archived skill automation speed bonuses', () => {
     const now = Date.now()
     const state = makeState({
       money: 10,
@@ -1783,11 +1787,11 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'TICK_AUTOMATION', now })
 
-    expect(nextState.statistics.casesOpened).toBe(1)
-    expect(nextState.automation.autoOpener.totalOpened).toBe(1)
+    expect(nextState.statistics.casesOpened).toBe(0)
+    expect(nextState.automation.autoOpener.totalOpened).toBe(0)
   })
 
-  it('boosts prestige point and skill point yield with Prestige Scholar', () => {
+  it('does not apply archived Prestige Scholar bonuses', () => {
     const state = makeState({
       inventoryValue: 1_000_000,
       learnedSkillNodeIds: [SkillNodeId.PrestigeScholar],
@@ -1801,8 +1805,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
 
-    expect(nextState.prestigePoints).toBe(9)
-    expect(nextState.skillPoints).toBe(9)
+    expect(nextState.prestigePoints).toBe(7)
+    expect(nextState.skillPoints).toBe(0)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.PrestigeScholar])
   })
 
@@ -2054,7 +2058,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(afterBoxes.statistics.moneyEarned).toBe(30)
   })
 
-  it('applies active-income upgrades and side-job skills to Work rewards', () => {
+  it('does not apply archived upgrade or skill modifiers to Work rewards', () => {
     const completedAt = 1_782_216_000_000
     const state = makeState({
       money: 0,
@@ -2070,8 +2074,8 @@ describe('gameReducer OPEN_CASE', () => {
       now: completedAt,
     })
 
-    expect(nextState.money).toBe(14)
-    expect(nextState.statistics.moneyEarned).toBe(14)
+    expect(nextState.money).toBe(10)
+    expect(nextState.statistics.moneyEarned).toBe(10)
   })
 
   it('blocks duplicate Work mini-game rewards during their own cooldown', () => {
@@ -2198,7 +2202,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(repeated.statistics.auctionPurchases).toBe(1)
   })
 
-  it('adds learned Auction House offer slots without duplicating transactions', () => {
+  it('does not add Auction House offer slots from archived skills', () => {
     const now = 1_782_216_000_000
     const state = makeState({
       money: 10_000,
@@ -2222,7 +2226,7 @@ describe('gameReducer OPEN_CASE', () => {
       prng: () => 0.5,
     })
 
-    expect(generated.automation.auctionHouse.deals).toHaveLength(2)
+    expect(generated.automation.auctionHouse.deals).toHaveLength(1)
   })
 
   it('sanitizes invalid market values before storing them', () => {

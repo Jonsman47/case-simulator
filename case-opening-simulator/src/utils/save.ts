@@ -92,13 +92,17 @@ import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketpl
 import { createEconomyLedger, normalizeEconomyLedger } from '../economy/economyLedger'
 import { createLegacyCareerState, normalizeCareerState } from '../career/careerProgress'
 import {
+  createLegacyCareerUpgradeState,
+  normalizeCareerUpgradeState,
+} from '../career/careerUpgrades'
+import {
   migrateLegacyAutomationToBusiness,
   normalizeBusinessState,
   retireLegacyAutomation,
 } from '../business/business'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 36
+export const CURRENT_SAVE_VERSION = 37
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1632,6 +1636,25 @@ function migrateV35ToV36(value: unknown): unknown {
   }
 }
 
+function migrateV36ToV37(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const now = normalizeNumber(value.lastSaved, Date.now())
+  const normalizedUpgrades = normalizeUpgradeLevels(value.upgrades)
+  const legacyUpgradeLevels = Object.entries(normalizedUpgrades)
+    .filter(([id]) => id !== 'module_bay')
+    .reduce((total, [, level]) => total + Math.max(0, Math.floor(level)), 0)
+  return {
+    ...value,
+    careerUpgrades: createLegacyCareerUpgradeState({
+      now,
+      skillPoints: normalizeNumber(value.skillPoints, 0),
+      upgradePoints: normalizeNumber(value.upgradePoints, 0),
+      learnedSkillCount: readStringArray(value.learnedSkillNodeIds).length,
+      legacyUpgradeLevels,
+    }),
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1669,6 +1692,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   33: migrateV33ToV34,
   34: migrateV34ToV35,
   35: migrateV35ToV36,
+  36: migrateV36ToV37,
 }
 
 function getEnvelope(value: unknown) {
@@ -1747,6 +1771,7 @@ export function toPlayerState(state: GameState): PlayerState {
     eventHistory: state.eventHistory,
     statistics: state.statistics,
     career: state.career,
+    careerUpgrades: state.careerUpgrades,
     lastBackupAt: state.lastBackupAt,
     lastSaved: state.lastSaved,
   }
@@ -1813,6 +1838,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     eventHistory: state.eventHistory,
     statistics: state.statistics,
     career,
+    careerUpgrades: normalizeCareerUpgradeState(state.careerUpgrades, state.lastSaved),
     lastBackupAt: normalizeNumber(state.lastBackupAt, defaultGameState.lastBackupAt),
     lastSaved: state.lastSaved,
   }
@@ -1865,6 +1891,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     now: lastSaved,
     runId: economyLedger.currentRunId,
   })
+  const careerUpgrades = normalizeCareerUpgradeState(value.careerUpgrades, lastSaved)
 
   return {
     ...defaultGameState,
@@ -1918,6 +1945,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     statistics,
     economyLedger,
     career,
+    careerUpgrades,
     settings: normalizeSettings(value.settings),
     ui: normalizeUiState(value.ui),
     lastBackupAt: normalizeNumber(value.lastBackupAt, defaultGameState.lastBackupAt),
@@ -2009,6 +2037,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       inventoryValue,
       economyLedger: persistedEconomyLedger,
       career: persistedCareer,
+      careerUpgrades: normalizeCareerUpgradeState(gameState.careerUpgrades, currentTime),
       business: normalizeBusinessState(gameState.business, currentTime),
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),

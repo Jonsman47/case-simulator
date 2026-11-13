@@ -106,7 +106,7 @@ describe('offline progression', () => {
       .toBe(secondOnlineTick.career.specializations.caseOpening.currentRunXp)
   })
 
-  it('applies the passive-income branch once in both online and offline Case Farm calculations', () => {
+  it('keeps the pre-v36 Case Farm fallback consistent without archived skill multipliers', () => {
     const lastSaved = 1_000
     const now = lastSaved + 10_000
     const caseFarm = {
@@ -130,8 +130,8 @@ describe('offline progression', () => {
     const online = gameReducer(state, { type: 'TICK_AUTOMATION', now })
     const offline = calculateOfflineProgress(state, now)
 
-    expect(online.money).toBe(1.5)
-    expect(offline?.summary.caseFarmEarned).toBe(1.5)
+    expect(online.money).toBe(1)
+    expect(offline?.summary.caseFarmEarned).toBe(1)
     expect(offline?.state.money).toBe(online.money)
   })
 

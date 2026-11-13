@@ -102,7 +102,7 @@ describe('prestige helpers', () => {
     expect(getPrestigeStartingMoneyBonus(bonuses)).toBe(8_000)
   })
 
-  it('applies case discounts and rarity luck while preserving weight totals', () => {
+  it('applies case discounts without changing official rarity odds', () => {
     const bonuses = {
       ...createDefaultPrestigeBonusLevels(),
       [PrestigeBonusId.CaseDiscount]: 2,
@@ -127,7 +127,7 @@ describe('prestige helpers', () => {
 
     expect(discountedCase.cost).toBe(9.5)
     expect(Number(boostedTable.reduce((total, drop) => total + drop.weight, 0).toFixed(6))).toBe(101)
-    expect(boostedTable[1]?.weight).toBeGreaterThan(dropTable[1].weight)
+    expect(boostedTable).toEqual(dropTable)
   })
 
   it('guards prestige bonus purchases by points and max level', () => {

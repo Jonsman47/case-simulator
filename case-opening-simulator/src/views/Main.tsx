@@ -5,7 +5,7 @@ import { ItemDetailModal } from '../components/ItemDetailModal'
 import { PlaceholderView } from '../components/PlaceholderView'
 import { RecentDropsFeed } from '../components/RecentDropsFeed'
 import type { SkinInstance } from '../data/models'
-import { getMaxMultiOpenBatch } from '../data/upgrades'
+import { getCareerMultiOpenBatch } from '../career/careerUpgrades'
 import { useGame } from '../hooks/useGame'
 import { canOpenCaseFromSelection } from '../utils/caseSelection'
 import { formatCurrency } from '../utils/format'
@@ -101,7 +101,7 @@ export function Main() {
                 <CaseOpenControls
                   canOpen={canOpenCaseFromSelection(selectedCase, state)}
                   caseDef={selectedCase}
-                  maxQuantity={getMaxMultiOpenBatch(state.upgrades, state.learnedSkillNodeIds)}
+                  maxQuantity={getCareerMultiOpenBatch(state.careerUpgrades)}
                   money={state.money}
                   onOpen={handleOpenSelectedCase}
                 />

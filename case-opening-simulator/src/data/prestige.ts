@@ -2,7 +2,6 @@ import { PRESTIGE_INVENTORY_VALUE_THRESHOLD } from '../utils/inventory'
 import { getCollectionPrestigeBonus } from '../utils/collectionRewards'
 import {
   PrestigeBonusId,
-  Rarity,
   type AchievementProgress,
   type CaseDefinition,
   type CollectionRewardProgress,
@@ -44,17 +43,6 @@ export interface PrestigeEligibility {
   moneyEarnedProgress: number
   moneySpentProgress: number
   reason: string
-}
-
-const rarityBoostOrder: Record<Rarity, number> = {
-  [Rarity.Consumer]: 0,
-  [Rarity.Industrial]: 1,
-  [Rarity.MilSpec]: 2,
-  [Rarity.Restricted]: 3,
-  [Rarity.Classified]: 4,
-  [Rarity.Covert]: 5,
-  [Rarity.SpecialItem]: 6,
-  [Rarity.Contraband]: 7,
 }
 
 function formatPercent(value: number) {
@@ -272,34 +260,9 @@ export function applyPrestigeLuckToDropTable(
   prestigeBonuses: PrestigeBonusLevels,
   skinsById: Map<string, SkinBase>,
 ) {
-  const luckBonus = getPrestigeLuckBonus(prestigeBonuses)
-  const originalTotal = dropTable.reduce((total, drop) => total + Math.max(0, drop.weight), 0)
-
-  if (luckBonus <= 0 || originalTotal <= 0) {
-    return dropTable
-  }
-
-  const boostedTable = dropTable.map((drop) => {
-    const skin = skinsById.get(drop.skinId)
-    const boost = skin ? 1 + rarityBoostOrder[skin.rarity] * luckBonus : 1
-
-    return {
-      ...drop,
-      weight: Math.max(0, drop.weight) * boost,
-    }
-  })
-  const boostedTotal = boostedTable.reduce((total, drop) => total + drop.weight, 0)
-
-  if (boostedTotal <= 0) {
-    return dropTable
-  }
-
-  const normalizationFactor = originalTotal / boostedTotal
-
-  return boostedTable.map((drop) => ({
-    ...drop,
-    weight: drop.weight * normalizationFactor,
-  }))
+  void prestigeBonuses
+  void skinsById
+  return dropTable
 }
 
 export function applyPrestigeEffectsToCase(

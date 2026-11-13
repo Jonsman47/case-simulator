@@ -17,17 +17,16 @@ function workIncomePerHour(upgrades: UpgradeLevels, skills: SkillNodeId[], perfo
 }
 
 describe('economy balance scenarios', () => {
-  it('keeps active Work income bounded from early through fully upgraded play', () => {
+  it('keeps archived Work modifiers neutral during the Career transition', () => {
     const early = workIncomePerHour({}, [], 0.6)
     const mid = workIncomePerHour({ [UpgradeId.ClickIncome]: 3 }, ['minigame_3' as SkillNodeId], 0.6)
     const late = workIncomePerHour({ [UpgradeId.ClickIncome]: 10 }, ['minigame_10' as SkillNodeId], 1)
 
     expect(early).toBeCloseTo(448.67, 1)
-    expect(mid).toBeCloseTo(1067.84, 1)
-    expect(late).toBeCloseTo(3814.20, 1)
-    expect(early).toBeLessThan(mid)
-    expect(mid).toBeLessThan(late)
-    expect(late).toBeLessThan(4_000)
+    expect(mid).toBeCloseTo(448.67, 1)
+    expect(late).toBeCloseTo(495.35, 1)
+    expect(mid).toBe(early)
+    expect(late).toBeGreaterThan(mid)
   })
 
   it('keeps Case Farm growth finite and tied to costly progression', () => {
@@ -39,7 +38,7 @@ describe('economy balance scenarios', () => {
     expect(earlyHourly).toBe(360)
     expect(midHourly).toBeCloseTo(14_652, 2)
     expect(lateBaseHourly).toBeCloseTo(82_368, 2)
-    expect(lateBaseHourly * getSkillPassiveIncomeMultiplier(lateSkills)).toBeCloseTo(123_552, 2)
+    expect(lateBaseHourly * getSkillPassiveIncomeMultiplier(lateSkills)).toBeCloseTo(82_368, 2)
   })
 
   it('caps discount, deal-count, speed, and sale multiplier stacking', () => {

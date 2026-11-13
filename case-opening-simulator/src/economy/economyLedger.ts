@@ -398,6 +398,7 @@ function classifyAction(action: GameAction): {
     case 'CONFIRM_BUSINESS_TRADE_UP':
       return { type: 'business-operation', source: 'Business', destination: 'player' }
     case 'PURCHASE_UPGRADE':
+    case 'PURCHASE_CAREER_UPGRADE':
     case 'PURCHASE_PRESTIGE_BONUS':
     case 'LEARN_SKILL_NODE':
       return { type: 'upgrade-purchase', source: 'player', destination: 'progression' }

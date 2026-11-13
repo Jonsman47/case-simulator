@@ -76,13 +76,13 @@ function isWearCatalogComplete(state: PlayerState) {
 }
 
 function hasFilledAllTrophySlots(state: PlayerState) {
-  return createTrophySlotDefinitions(getTrophyRoomSlotCount(state.learnedSkillNodeIds))
+  return createTrophySlotDefinitions(getTrophyRoomSlotCount(state.learnedSkillNodeIds, state.careerUpgrades))
     .every((slot) => Boolean(state.trophyAssignments[slot.id]))
 }
 
 function hasEliteTrophyRoom(state: PlayerState) {
   const assignments = getTrophyAssignmentsList(state.trophyAssignments)
-  const slotCount = getTrophyRoomSlotCount(state.learnedSkillNodeIds)
+  const slotCount = getTrophyRoomSlotCount(state.learnedSkillNodeIds, state.careerUpgrades)
   const inventoryById = new Map(state.inventory.map((item) => [item.instanceId, item]))
 
   return (

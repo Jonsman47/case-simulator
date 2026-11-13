@@ -426,7 +426,7 @@ Prompt 2 implements the career foundation in save schema v35 without removing th
 - Business operational XP remains disabled until Prompt 3 because no employee operation exists yet. Existing Automation achievement XP is classified under Case Opening rather than fabricating Business activity.
 - v34→v35 migration grants a one-time baseline equal to 50% of configured XP for verified legacy achievements, capped at 2,500 XP. It creates no historical XP events, derives permanent discovery hashes from the existing collection book, and changes no cash, inventory, Pattern, escrow, ledger, or progression identity.
 - Prestige starts a new Career run, clears current-run XP/windows/current-run specialization XP, and preserves lifetime XP, lifetime discoveries, rank records, and legacy migration metadata.
-- `Career & Upgrades` is a real read-only progression dashboard. Full specialization purchases remain scheduled for Prompt 4; the old purchase routes remain accessible during transition.
+- `Career & Upgrades` began as the Prompt 2 read-only dashboard. Prompt 4 now makes it the authoritative purchase and research-tool surface; the archived purchase routes redirect here.
 
 ### Prompt 2 preliminary progression projections
 
@@ -458,3 +458,16 @@ Prompt 3 advances saves to v36 and makes Business the only employee-automation a
 - The old `/automation` route redirects to `/business`; legacy controls remain in source only for old-schema compatibility tests. The old scheduler cannot execute employee work once `business.authoritative` is true.
 - Negotiation percentage shortcuts only populate the editable offer. The player still submits every offer manually.
 - The final upgrade consolidation, advanced capacity/training perks, and complete balance calibration remain Prompt 4 and Prompt 5 work rather than hidden placeholder controls.
+
+## 26. Prompt 4 implementation decisions
+
+Prompt 4 advances saves to v37 and makes the five Career specializations the only player-facing upgrade authority. The complete 95-node catalog, exact costs, prerequisites, consumers, reset rules and coverage map live in `CAREER_UPGRADE_SYSTEM.md`.
+
+- Distribution is exactly 18 Case Opening, 22 Trading, 16 Collecting, 18 Trade-Ups and 21 Business nodes. The registry is typed and is the shared source for purchase validation, UI text and runtime values.
+- Purchases use cash plus a one-time bounded noncash transition credit. Career XP remains a gate and is never spent. No specialization tokens or branch currencies were added.
+- Legacy run-upgrade and Skill Tree fields remain loadable historical data, but their helpers are neutral, actions reject purchases, routes redirect to Career, and they cannot stack hidden effects.
+- The v36→v37 transition converts eligible old progression once using `min($75,000, SkillPoints×$500 + UpgradePoints×$1,000 + LearnedSkills×$250 + EligibleUpgradeLevels×$750)`. Prompt 3's Module Bay conversion is excluded.
+- Official case rarity, wear, float and Pattern generation are unchanged. Research upgrades reveal existing information or add workflow capacity; they never predict a result or create a price premium.
+- Mechanical upgrades are consumed by opening presentation/batch controls, inventory and Trophy Room capacity, CSWEAR player-sale fees, and the shared online/offline employee scheduler. Business panels expose role-specific Career effects.
+- Every run specialization level resets on Prestige. Lifetime Career XP, collection discoveries, achievements, Prestige records, migration metadata and remaining transition credit are preserved.
+- Cost and 500–800-hour economy calibration remain provisional until Prompt 5. Prompt 6 still owns the new Prestige formula, Legacy Vault and All Time/Current Run Collection Book presentation.

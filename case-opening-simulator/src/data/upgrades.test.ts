@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CaseStatus, Rarity, SkillNodeId, UpgradeId, WearCondition, type SkinBase } from './models'
+import { CaseStatus, Rarity, UpgradeId, WearCondition, type SkinBase } from './models'
 import {
   applyUpgradeCaseCost,
   applyUpgradeLuckToDropTable,
@@ -31,8 +31,8 @@ const rareSkin: SkinBase = {
   image: '/assets/placeholder.png',
 }
 
-describe('upgrade helpers', () => {
-  it('derives upgrade effects from persisted levels', () => {
+describe('archived run-upgrade helpers', () => {
+  it('preserves legacy levels without applying hidden gameplay effects', () => {
     const upgrades = {
       ...createDefaultUpgradeLevels(),
       [UpgradeId.BulkLoader]: 2,
@@ -41,23 +41,23 @@ describe('upgrade helpers', () => {
       [UpgradeId.AutomationServos]: 2,
     }
 
-    expect(getMaxMultiOpenBatch(upgrades)).toBe(30)
-    expect(getCaseCostReduction(upgrades)).toBe(0.06)
-    expect(getUpgradeSellValueMultiplier(upgrades)).toBe(1.03)
-    expect(getUpgradeAutomationIntervalMultiplier(upgrades)).toBe(0.9)
+    expect(getMaxMultiOpenBatch(upgrades)).toBe(10)
+    expect(getCaseCostReduction(upgrades)).toBe(0)
+    expect(getUpgradeSellValueMultiplier(upgrades)).toBe(1)
+    expect(getUpgradeAutomationIntervalMultiplier(upgrades)).toBe(1)
   })
 
-  it('combines Bulk Loader and Opening Line skill tiers for later batch sizes', () => {
+  it('does not allow archived upgrades or skills to change batch size', () => {
     const upgrades = {
       ...createDefaultUpgradeLevels(),
       [UpgradeId.BulkLoader]: 9,
     }
 
-    expect(getMaxMultiOpenBatch(upgrades)).toBe(100)
-    expect(getMaxMultiOpenBatch(createDefaultUpgradeLevels(), ['opening_4' as SkillNodeId])).toBe(30)
+    expect(getMaxMultiOpenBatch(upgrades)).toBe(10)
+    expect(getMaxMultiOpenBatch(createDefaultUpgradeLevels())).toBe(10)
   })
 
-  it('applies case discounts without dropping below the minimum price', () => {
+  it('keeps official case costs unchanged', () => {
     const discountedCase = applyUpgradeCaseCost({
       id: 'starter_case',
       name: 'Starter Case',
@@ -70,10 +70,10 @@ describe('upgrade helpers', () => {
       [UpgradeId.CaseContract]: 5,
     })
 
-    expect(discountedCase.cost).toBe(0.18)
+    expect(discountedCase.cost).toBe(0.2)
   })
 
-  it('boosts rarer drop weights while preserving total table weight', () => {
+  it('keeps official rarity weights unchanged', () => {
     const dropTable = [
       { skinId: commonSkin.id, weight: 100 },
       { skinId: rareSkin.id, weight: 1 },
@@ -89,18 +89,15 @@ describe('upgrade helpers', () => {
     const boostedTotal = boostedTable.reduce((total, drop) => total + drop.weight, 0)
 
     expect(Number(boostedTotal.toFixed(6))).toBe(Number(originalTotal.toFixed(6)))
-    expect(boostedTable[1]?.weight).toBeGreaterThan(dropTable[1].weight)
-    expect(boostedTable[0]?.weight).toBeLessThan(dropTable[0].weight)
+    expect(boostedTable).toEqual(dropTable)
   })
 
-  it('wear tuning moves early rolls into better wear conditions', () => {
+  it('does not magically improve official case wear rolls', () => {
     const upgrades = {
       ...createDefaultUpgradeLevels(),
       [UpgradeId.WearTuning]: 5,
     }
 
-    expect(randomWearConditionForSkinWithUpgrades(rareSkin, upgrades, () => 0.14)).toBe(
-      WearCondition.FactoryNew,
-    )
+    expect(randomWearConditionForSkinWithUpgrades(rareSkin, upgrades, () => 0.14)).toBe(WearCondition.MinimalWear)
   })
 })

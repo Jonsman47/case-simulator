@@ -233,8 +233,8 @@ export function TrophyRoomView() {
     toggleItemLock,
   } = useGame()
   const slotDefinitions = useMemo(
-    () => createTrophySlotDefinitions(getTrophyRoomSlotCount(state.learnedSkillNodeIds)),
-    [state.learnedSkillNodeIds],
+    () => createTrophySlotDefinitions(getTrophyRoomSlotCount(state.learnedSkillNodeIds, state.careerUpgrades)),
+    [state.careerUpgrades, state.learnedSkillNodeIds],
   )
   const [selectedSlotId, setSelectedSlotId] = useState(slotDefinitions[0]?.id ?? 'showcase_1')
   const [activeItem, setActiveItem] = useState<SkinInstance | undefined>()

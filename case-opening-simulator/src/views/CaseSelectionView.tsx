@@ -25,7 +25,7 @@ import {
 import { calculateCaseStats, type CaseRarityStat } from '../utils/caseStats'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel, getSkinRarityLabel } from '../utils/itemLabels'
-import { getMaxMultiOpenBatch } from '../data/upgrades'
+import { getCareerMultiOpenBatch } from '../career/careerUpgrades'
 
 const skinsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 
@@ -509,7 +509,7 @@ function CaseDetailPanel({
         <CaseOpenControls
           canOpen={canOpen}
           caseDef={caseDef}
-          maxQuantity={getMaxMultiOpenBatch(state.upgrades, state.learnedSkillNodeIds)}
+          maxQuantity={getCareerMultiOpenBatch(state.careerUpgrades)}
           money={state.money}
           onOpen={handleOpenFromControls}
           requiresLicense={needsLicense}

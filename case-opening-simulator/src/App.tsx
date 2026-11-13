@@ -24,11 +24,9 @@ const Prestige = lazy(() => import('./views/Prestige').then((module) => ({ defau
 const PlayerProfileView = lazy(() => import('./views/PlayerProfileView').then((module) => ({ default: module.PlayerProfileView })))
 const RewardsView = lazy(() => import('./views/RewardsView').then((module) => ({ default: module.RewardsView })))
 const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
-const SkillTree = lazy(() => import('./views/SkillTree').then((module) => ({ default: module.SkillTree })))
 const Stats = lazy(() => import('./views/Stats').then((module) => ({ default: module.Stats })))
 const TradeUps = lazy(() => import('./views/TradeUps').then((module) => ({ default: module.TradeUps })))
 const TrophyRoom = lazy(() => import('./views/TrophyRoom').then((module) => ({ default: module.TrophyRoom })))
-const Upgrades = lazy(() => import('./views/Upgrades').then((module) => ({ default: module.Upgrades })))
 const WorkView = lazy(() => import('./views/WorkView').then((module) => ({ default: module.WorkView })))
 
 function RouteFallback() {
@@ -81,9 +79,9 @@ function App() {
               <Route path="automation" element={<Navigate to="/business" replace />} />
               <Route path="business" element={<Suspense fallback={<RouteFallback />}><Business /></Suspense>} />
               <Route path="career" element={<Suspense fallback={<RouteFallback />}><Career /></Suspense>} />
-              <Route path="upgrades" element={<Suspense fallback={<RouteFallback />}><Upgrades /></Suspense>} />
+              <Route path="upgrades" element={<Navigate to="/career" replace />} />
               <Route path="prestige" element={<Suspense fallback={<RouteFallback />}><Prestige /></Suspense>} />
-              <Route path="skill-tree" element={<Suspense fallback={<RouteFallback />}><SkillTree /></Suspense>} />
+              <Route path="skill-tree" element={<Navigate to="/career" replace />} />
               <Route path="achievements" element={<Suspense fallback={<RouteFallback />}><Achievements /></Suspense>} />
               <Route path="stats" element={<Suspense fallback={<RouteFallback />}><Stats /></Suspense>} />
               <Route path="work" element={<Suspense fallback={<RouteFallback />}><WorkView /></Suspense>} />

@@ -51,6 +51,10 @@ import { createDefaultMarketplaceState } from '../marketplace/marketplace'
 import { createEconomyLedger, type EconomyLedgerState } from '../economy/economyLedger'
 import { createCareerState, type CareerState } from '../career/careerProgress'
 import {
+  createDefaultCareerUpgradeState,
+  type CareerUpgradeState,
+} from '../career/careerUpgrades'
+import {
   createDefaultBusinessState,
   type BusinessState,
   type EmployeeRoleId,
@@ -354,6 +358,7 @@ export interface GameState {
   statistics: GameStatistics
   economyLedger: EconomyLedgerState
   career: CareerState
+  careerUpgrades: CareerUpgradeState
   business: BusinessState
   settings: GameSettings
   ui: GameUiState
@@ -388,6 +393,7 @@ export type GameAction =
   | { type: 'PURCHASE_AUTOMATION_MODULE'; moduleId: AutomationModuleId; now?: number }
   | { type: 'TOGGLE_AUTOMATION_MODULE'; moduleId: AutomationModuleId; isEnabled?: boolean; now?: number }
   | { type: 'PURCHASE_UPGRADE'; upgradeId: UpgradeId; now?: number }
+  | { type: 'PURCHASE_CAREER_UPGRADE'; upgradeId: string; now?: number }
   | { type: 'PRESTIGE'; now?: number }
   | { type: 'PURCHASE_PRESTIGE_BONUS'; bonusId: PrestigeBonusId; now?: number }
   | { type: 'LEARN_SKILL_NODE'; nodeId: SkillNodeId; now?: number }
@@ -518,6 +524,7 @@ export const defaultGameState: GameState = {
   },
   economyLedger: createEconomyLedger({ now: 0, runId: 'initial-run' }),
   career: createCareerState({ now: 0, runId: 'initial-run' }),
+  careerUpgrades: createDefaultCareerUpgradeState(0),
   business: createDefaultBusinessState(0),
   settings: {
     animationSpeed: 'normal',

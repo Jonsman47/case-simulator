@@ -1,6 +1,5 @@
 import type { Prng } from './dropLogic'
 import {
-  Rarity,
   SkillNodeId,
   WearCondition,
   type CaseDefinition,
@@ -332,16 +331,6 @@ export const SKILL_TREE_GRAPH_HEIGHT = 1_940
 
 export const skillTreeNodesById = new Map(SKILL_TREE_NODES.map((node) => [node.id, node]))
 
-const highRarityDropPressure: Partial<Record<Rarity, number>> = {
-  [Rarity.Covert]: 0.04,
-  [Rarity.SpecialItem]: 0.08,
-  [Rarity.Contraband]: 0.08,
-}
-
-function hasSkill(learnedSkillNodeIds: SkillNodeId[], skillNodeId: SkillNodeId) {
-  return learnedSkillNodeIds.includes(skillNodeId)
-}
-
 function getLearnedBranchTier(learnedSkillNodeIds: SkillNodeId[], branchId: SkillBranchId) {
   const prefix = `${branchId}_`
 
@@ -420,94 +409,88 @@ export function getSkillNodeStatus(
 }
 
 export function getSkillSellMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  const baseBonus = hasSkill(learnedSkillNodeIds, SkillNodeId.SellSpecialist) ? 0.02 : 0
-  const autoSellBonus = getLearnedBranchTier(learnedSkillNodeIds, 'auto_sell') * 0.006
-  const marketBonus = getLearnedBranchTier(learnedSkillNodeIds, 'market') * 0.003
-
-  return 1 + baseBonus + autoSellBonus + marketBonus
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillAutomationIntervalMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  const baseReduction = hasSkill(learnedSkillNodeIds, SkillNodeId.BulkAutomation) ? 0.05 : 0
-  const branchReduction =
-    getLearnedBranchTier(learnedSkillNodeIds, 'automation') * 0.012 +
-    getLearnedBranchTier(learnedSkillNodeIds, 'opening') * 0.004
-
-  return 1 - Math.min(0.24, baseReduction + branchReduction)
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillAuctionDealSlotBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  const baseSlots = hasSkill(learnedSkillNodeIds, SkillNodeId.BulkAutomation) ? 1 : 0
-
-  return baseSlots + Math.floor(getLearnedBranchTier(learnedSkillNodeIds, 'automation') / 4)
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillWearBonusWeight(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.WearWhisperer) ? 3 : 0) +
-    getLearnedBranchTier(learnedSkillNodeIds, 'wear')
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillTradeUpInputCostMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  const baseReduction = hasSkill(learnedSkillNodeIds, SkillNodeId.TradeUpEdge) ? 0.05 : 0
-  const branchReduction = Math.min(0.15, getLearnedBranchTier(learnedSkillNodeIds, 'trade_up') * 0.015)
-
-  return 1 - Math.min(0.22, baseReduction + branchReduction)
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillMarketKnowledgeBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.MarketOracle) ? 0.01 : 0) +
-    getLearnedBranchTier(learnedSkillNodeIds, 'market') * 0.003
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillOfflineEarningsMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.OfflineOperator) ? 1.15 : 1) *
-    (1 + getLearnedBranchTier(learnedSkillNodeIds, 'passive_income') * 0.05)
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillEventChanceBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.EventHunter) ? 0.02 : 0) +
-    getLearnedBranchTier(learnedSkillNodeIds, 'market') * 0.002
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillPrestigePointMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.PrestigeScholar) ? 1.15 : 1) *
-    (1 + getLearnedBranchTier(learnedSkillNodeIds, 'prestige') * 0.02)
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillSpecialDropPressure(learnedSkillNodeIds: SkillNodeId[]) {
-  return (hasSkill(learnedSkillNodeIds, SkillNodeId.GoldenTouch) ? 0.08 : 0) +
-    getLearnedBranchTier(learnedSkillNodeIds, 'luck') * 0.006
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillLicenseDiscount(learnedSkillNodeIds: SkillNodeId[]) {
-  return Math.min(0.25, getLearnedBranchTier(learnedSkillNodeIds, 'license') * 0.015)
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillMinigameRewardMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  return 1 + getLearnedBranchTier(learnedSkillNodeIds, 'minigame') * 0.12
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillPassiveIncomeMultiplier(learnedSkillNodeIds: SkillNodeId[]) {
-  return 1 + getLearnedBranchTier(learnedSkillNodeIds, 'passive_income') * 0.05
+  void learnedSkillNodeIds
+  return 1
 }
 
 export function getSkillInventoryCapacityBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  return getLearnedBranchTier(learnedSkillNodeIds, 'inventory') * 150
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillTrophySlotBonus(learnedSkillNodeIds: string[]) {
-  return getLearnedBranchTier(learnedSkillNodeIds as SkillNodeId[], 'inventory') * 4
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillOpeningFlowBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  return getLearnedBranchTier(learnedSkillNodeIds, 'opening') * 0.04
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillMultiOpenBatchBonus(learnedSkillNodeIds: SkillNodeId[]) {
-  // Every other Opening Line tier grants another ten-case batch button. Keeping
-  // the bonus here makes the expanded skill tree part of the case-opening cap
-  // without forcing the base upgrade shop to show late-game buttons immediately.
-  return Math.floor(getLearnedBranchTier(learnedSkillNodeIds, 'opening') / 2) * 10
+  void learnedSkillNodeIds
+  return 0
 }
 
 export function getSkillCosmeticTier(learnedSkillNodeIds: SkillNodeId[]) {
@@ -527,26 +510,9 @@ export function randomWearConditionForSkinWithSkills(
   learnedSkillNodeIds: SkillNodeId[],
   prng: Prng = Math.random,
 ) {
-  const bonusWeight = getSkillWearBonusWeight(learnedSkillNodeIds)
   const distribution = WEAR_DISTRIBUTIONS_BY_RARITY[skin.rarity]
-
-  if (bonusWeight <= 0) {
-    return weightedWearPick(distribution, prng)
-  }
-
-  const adjustedDistribution = distribution.map((entry) => {
-    if (entry.condition === WearCondition.FactoryNew || entry.condition === WearCondition.MinimalWear) {
-      return { ...entry, weight: entry.weight + bonusWeight }
-    }
-
-    if (entry.condition === WearCondition.WellWorn || entry.condition === WearCondition.BattleScarred) {
-      return { ...entry, weight: Math.max(1, entry.weight - bonusWeight) }
-    }
-
-    return entry
-  })
-
-  return weightedWearPick(adjustedDistribution, prng)
+  void learnedSkillNodeIds
+  return weightedWearPick(distribution, prng)
 }
 
 export function applySkillLuckToDropTable(
@@ -554,35 +520,9 @@ export function applySkillLuckToDropTable(
   learnedSkillNodeIds: SkillNodeId[],
   skinsById: Map<string, SkinBase>,
 ) {
-  const specialDropPressure = getSkillSpecialDropPressure(learnedSkillNodeIds)
-  const originalTotal = dropTable.reduce((total, drop) => total + Math.max(0, drop.weight), 0)
-
-  if (specialDropPressure <= 0 || originalTotal <= 0) {
-    return dropTable
-  }
-
-  const boostedTable = dropTable.map((drop) => {
-    const skin = skinsById.get(drop.skinId)
-    const rarityPressure = skin ? highRarityDropPressure[skin.rarity] ?? 0 : 0
-    const pressureRatio = specialDropPressure > 0 ? rarityPressure / 0.08 : 0
-
-    return {
-      ...drop,
-      weight: Math.max(0, drop.weight) * (1 + specialDropPressure * pressureRatio),
-    }
-  })
-  const boostedTotal = boostedTable.reduce((total, drop) => total + drop.weight, 0)
-
-  if (boostedTotal <= 0) {
-    return dropTable
-  }
-
-  const normalizationFactor = originalTotal / boostedTotal
-
-  return boostedTable.map((drop) => ({
-    ...drop,
-    weight: drop.weight * normalizationFactor,
-  }))
+  void learnedSkillNodeIds
+  void skinsById
+  return dropTable
 }
 
 export function applySkillEffectsToCase(

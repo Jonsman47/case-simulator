@@ -10,7 +10,6 @@ import {
   type SkinBase,
   type UpgradeLevels,
 } from './models'
-import { getSkillMultiOpenBatchBonus } from './skills'
 import { WEAR_DISTRIBUTIONS_BY_RARITY, type WearDistributionEntry } from '../utils/wear'
 
 export interface UpgradeCost {
@@ -109,7 +108,8 @@ export function getUpgradeLevel(upgrades: UpgradeLevels, upgradeId: UpgradeId) {
 }
 
 export function getCaseCostReduction(upgrades: UpgradeLevels) {
-  return Math.min(0.3, getUpgradeLevel(upgrades, UpgradeId.CaseContract) * 0.02)
+  void upgrades
+  return 0
 }
 
 export function getMaxMultiOpenBatch(
@@ -119,38 +119,44 @@ export function getMaxMultiOpenBatch(
   // Bulk Loader is the visible shop path; Opening Line skill tiers layer extra
   // late-game buttons on top so progression can continue 10 -> 20 -> 30 -> ...
   // without showing high-volume actions to brand-new players.
-  const upgradeBatch = 10 + getUpgradeLevel(upgrades, UpgradeId.BulkLoader) * 10
-  const skillBatchBonus = getSkillMultiOpenBatchBonus(learnedSkillNodeIds)
-
-  return Math.min(MAX_MULTI_OPEN_BATCH, upgradeBatch + skillBatchBonus)
+  void upgrades
+  void learnedSkillNodeIds
+  return 10
 }
 
 export function getOpeningAnimationSpeedBonus(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.OpeningMotor) * 0.15
+  void upgrades
+  return 0
 }
 
 export function getClickIncomeMultiplier(upgrades: UpgradeLevels) {
-  return 1 + getUpgradeLevel(upgrades, UpgradeId.ClickIncome) * 0.25
+  void upgrades
+  return 1
 }
 
 export function getUpgradeSellValueMultiplier(upgrades: UpgradeLevels) {
-  return 1 + getUpgradeLevel(upgrades, UpgradeId.MarketSignal) * 0.015
+  void upgrades
+  return 1
 }
 
 export function getTrendPredictionBonus(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.TrendScanner) * 0.005
+  void upgrades
+  return 0
 }
 
 export function getUpgradeAutomationIntervalMultiplier(upgrades: UpgradeLevels) {
-  return 1 - Math.min(0.35, getUpgradeLevel(upgrades, UpgradeId.AutomationServos) * 0.05)
+  void upgrades
+  return 1
 }
 
 export function getWarehouseUpgradeCapacityBonus(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.WarehouseRows) * 100
+  void upgrades
+  return 0
 }
 
 export function getModuleBaySlots(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.ModuleBay)
+  void upgrades
+  return 0
 }
 
 export function getAutomationModuleCapacity(upgrades: UpgradeLevels) {
@@ -158,7 +164,8 @@ export function getAutomationModuleCapacity(upgrades: UpgradeLevels) {
 }
 
 export function getRarityLuckBonus(upgrades: UpgradeLevels) {
-  return getUpgradeLevel(upgrades, UpgradeId.RarityLuck) * 0.02
+  void upgrades
+  return 0
 }
 
 export const UPGRADE_DEFINITIONS: UpgradeDefinition[] = [
@@ -376,27 +383,10 @@ export function randomWearConditionForSkinWithUpgrades(
   prng: Prng = Math.random,
   extraBonusWeight = 0,
 ) {
-  const level = getUpgradeLevel(upgrades, UpgradeId.WearTuning)
   const distribution = WEAR_DISTRIBUTIONS_BY_RARITY[skin.rarity]
-  const bonusWeight = level * 2 + Math.max(0, extraBonusWeight)
-
-  if (bonusWeight <= 0) {
-    return weightedWearPick(distribution, prng)
-  }
-
-  const adjustedDistribution = distribution.map((entry) => {
-    if (entry.condition === WearCondition.FactoryNew || entry.condition === WearCondition.MinimalWear) {
-      return { ...entry, weight: entry.weight + bonusWeight }
-    }
-
-    if (entry.condition === WearCondition.WellWorn || entry.condition === WearCondition.BattleScarred) {
-      return { ...entry, weight: Math.max(1, entry.weight - bonusWeight) }
-    }
-
-    return entry
-  })
-
-  return weightedWearPick(adjustedDistribution, prng)
+  void upgrades
+  void extraBonusWeight
+  return weightedWearPick(distribution, prng)
 }
 
 export function applyUpgradeCaseCost(caseDef: CaseDefinition, upgrades: UpgradeLevels) {

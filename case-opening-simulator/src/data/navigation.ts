@@ -64,9 +64,7 @@ export const primaryNavigationItems: NavigationItem[] = [
     items: [
       { label: 'Career & Upgrades', path: '/career', icon: BadgeCheck },
       { label: 'Business', path: '/business', icon: BriefcaseBusiness },
-      { label: 'Upgrades', path: '/upgrades' },
       { label: 'Prestige', path: '/prestige' },
-      { label: 'Skill Tree', path: '/skill-tree' },
       { label: 'Achievements', path: '/achievements' },
       { label: 'Stats', path: '/stats' },
     ],

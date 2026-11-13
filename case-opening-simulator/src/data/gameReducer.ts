@@ -1,5 +1,22 @@
 import { nanoid } from 'nanoid'
 import { recordCareerAction, startNextCareerRun } from '../career/careerProgress'
+import {
+  careerUpgradesById,
+  getCareerBusinessIntervalMultiplier,
+  getCareerCaseOperatorBatchBonus,
+  getCareerListingCapacityBonus,
+  getCareerOperatingCapacityBonus,
+  getCareerPayrollDiscount,
+  getCareerScoutCandidateBonus,
+  getCareerScoutWatchlistBonus,
+  getCareerSellerFeeDiscount,
+  getCareerTradeUpApprovalBonus,
+  getCareerTradeUpContractBonus,
+  getCareerTrainingDiscount,
+  getCareerUpgradeEffect,
+  getCareerUpgradeStatus,
+  resetCareerUpgradesForPrestige,
+} from '../career/careerUpgrades'
 import { CASE_DEFINITIONS, unlockCasesForProgress } from './cases'
 import { getCaseLicenseCost, requiresCaseLicense } from './casePricing'
 import { pickDrop, type Prng } from './dropLogic'
@@ -84,13 +101,11 @@ import {
 } from '../utils/collectionRewards'
 import {
   applyUpgradeEffectsToCase,
-  canPurchaseUpgrade,
   getAutomationModuleCapacity,
   getClickIncomeMultiplier,
   getTrendPredictionBonus,
   getUpgradeAutomationIntervalMultiplier,
   getUpgradeSellValueMultiplier,
-  upgradesById,
 } from './upgrades'
 import {
   applyPrestigeEffectsToCase,
@@ -112,11 +127,9 @@ import {
   getSkillMarketKnowledgeBonus,
   getSkillMinigameRewardMultiplier,
   getSkillPassiveIncomeMultiplier,
-  getSkillNodeStatus,
   getSkillPrestigePointMultiplier,
   getSkillSellMultiplier,
   getSkillTradeUpInputCostMultiplier,
-  skillTreeNodesById,
 } from './skills'
 import {
   applyGameEventEffectsToCase,
@@ -1170,53 +1183,52 @@ function purchaseAutomationModule(
   }
 }
 
-function purchaseUpgrade(state: GameState, upgradeId: UpgradeId): GameState {
-  const definition = upgradesById.get(upgradeId)
-
-  if (!definition) {
-    return {
-      ...state,
-      lastError: 'Upgrade not found.',
-    }
-  }
-
-  const purchase = canPurchaseUpgrade(definition, state)
-
-  if (purchase.isMaxLevel) {
-    return {
-      ...state,
-      lastError: 'Upgrade is already maxed.',
-    }
-  }
-
-  if (!purchase.requirementsMet) {
-    return {
-      ...state,
-      lastError: 'Upgrade requirements are not met.',
-    }
-  }
-
-  if (!purchase.canAfford) {
-    return {
-      ...state,
-      lastError: 'Not enough resources to purchase upgrade.',
-    }
-  }
-
-  const nextLevel = purchase.level + 1
-
+function purchaseUpgrade(state: GameState, _upgradeId: UpgradeId): GameState {
+  void _upgradeId
   return {
     ...state,
-    money: roundCurrency(clampNumber(state.money) - purchase.cost.money),
-    upgradePoints: state.upgradePoints - purchase.cost.upgradePoints,
-    upgrades: {
-      ...state.upgrades,
-      [definition.id]: nextLevel,
+    lastError: 'Legacy run upgrades are archived. Use Career & Upgrades for active progression.',
+  }
+}
+
+function purchaseCareerUpgrade(state: GameState, upgradeId: string, now = Date.now()): GameState {
+  const definition = careerUpgradesById.get(upgradeId)
+  if (!definition) return { ...state, lastError: 'Career upgrade not found.' }
+  const purchase = getCareerUpgradeStatus(definition, {
+    career: state.career,
+    money: state.money,
+    upgrades: state.careerUpgrades,
+  })
+  if (purchase.isMaxLevel) return { ...state, lastError: 'Career upgrade is already maxed.' }
+  if (!purchase.levelMet) return { ...state, lastError: `Career level ${definition.requiredLevel} is required.` }
+  if (!purchase.activityMet) return { ...state, lastError: 'More activity in this specialization is required.' }
+  if (!purchase.prerequisitesMet) return { ...state, lastError: 'Career upgrade prerequisites are not met.' }
+  if (!purchase.canAfford) return { ...state, lastError: 'Not enough cash or transition credit.' }
+
+  const creditUsed = purchase.creditUsed
+  const cashCost = purchase.cashCost
+  return {
+    ...state,
+    money: roundCurrency(clampNumber(state.money) - cashCost),
+    careerUpgrades: {
+      ...state.careerUpgrades,
+      levels: {
+        ...state.careerUpgrades.levels,
+        [definition.id]: purchase.level + 1,
+      },
+      purchasedAt: {
+        ...state.careerUpgrades.purchasedAt,
+        [definition.id]: now,
+      },
+      migration: {
+        ...state.careerUpgrades.migration,
+        transitionCredit: roundCurrency(state.careerUpgrades.migration.transitionCredit - creditUsed),
+      },
     },
     lastError: undefined,
     statistics: {
       ...state.statistics,
-      moneySpent: roundCurrency(state.statistics.moneySpent + purchase.cost.money),
+      moneySpent: roundCurrency(state.statistics.moneySpent + cashCost),
     },
   }
 }
@@ -1258,44 +1270,11 @@ function purchasePrestigeBonus(state: GameState, bonusId: PrestigeBonusId): Game
   }
 }
 
-function learnSkillNode(state: GameState, nodeId: SkillNodeId): GameState {
-  const definition = skillTreeNodesById.get(nodeId)
-
-  if (!definition) {
-    return {
-      ...state,
-      lastError: 'Skill node not found.',
-    }
-  }
-
-  const status = getSkillNodeStatus(definition, state)
-
-  if (status.isLearned) {
-    return {
-      ...state,
-      lastError: 'Skill node is already learned.',
-    }
-  }
-
-  if (!status.hasPrerequisites) {
-    return {
-      ...state,
-      lastError: 'Skill prerequisites are not met.',
-    }
-  }
-
-  if (!status.canAfford) {
-    return {
-      ...state,
-      lastError: 'Not enough skill points.',
-    }
-  }
-
+function learnSkillNode(state: GameState, _nodeId: SkillNodeId): GameState {
+  void _nodeId
   return {
     ...state,
-    skillPoints: state.skillPoints - definition.cost,
-    learnedSkillNodeIds: [...state.learnedSkillNodeIds, definition.id],
-    lastError: undefined,
+    lastError: 'The legacy Skill Tree is archived. Its investment was converted once in save v37.',
   }
 }
 
@@ -1305,7 +1284,7 @@ function assignTrophyItem(
   itemId: string,
   now = Date.now(),
 ): GameState {
-  if (!isUnlockedTrophySlot(slotId, state.learnedSkillNodeIds)) {
+  if (!isUnlockedTrophySlot(slotId, state.learnedSkillNodeIds, state.careerUpgrades)) {
     return {
       ...state,
       lastError: 'Trophy slot not found.',
@@ -1399,7 +1378,9 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     prestigePoints: state.prestigePoints + awardedPoints,
     prestigeBonuses: state.prestigeBonuses,
     upgradePoints: state.upgradePoints,
-    skillPoints: state.skillPoints + awardedPoints,
+    // Legacy Skill Points remain a historical counter. Prestige no longer
+    // mints an obsolete currency after the v37 Career migration.
+    skillPoints: state.skillPoints,
     learnedSkillNodeIds: state.learnedSkillNodeIds,
     achievements: state.achievements,
     collectionBook: state.collectionBook,
@@ -1417,6 +1398,7 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
       lastSchedulerAt: now,
       dailyUsage: refreshBusinessDay(defaultGameState.business, now).dailyUsage,
     },
+    careerUpgrades: resetCareerUpgradesForPrestige(state.careerUpgrades),
     uiEvents: appendEvents(state, [prestigeEvent]),
     lastError: undefined,
     lastSaved: now,
@@ -1643,7 +1625,7 @@ function tickOpeningDesk(state: GameState, now = Date.now()): GameState {
 function tickCaseFarm(state: GameState, now = Date.now()): GameState {
   const moduleState = state.automation.modules[AutomationModuleId.CaseFarm]
 
-  if (!moduleState.isEnabled || moduleState.level <= 0) {
+  if (state.business.authoritative || !moduleState.isEnabled || moduleState.level <= 0) {
     return state
   }
 
@@ -1958,6 +1940,22 @@ function spendWithTransitionCredit(state: GameState, cost: number) {
   }
 }
 
+function getEffectiveEmployeeInterval(state: GameState, roleId: EmployeeRoleId, trainingLevel: number) {
+  return Math.max(10_000, Math.round(
+    getEmployeeOperationInterval(roleId, trainingLevel) * getCareerBusinessIntervalMultiplier(state.careerUpgrades),
+  ))
+}
+
+function getEffectiveEmployeeHourlyWage(state: GameState, roleId: EmployeeRoleId, trainingLevel: number) {
+  return roundCurrency(
+    getEmployeeHourlyWage(roleId, trainingLevel) * (1 - getCareerPayrollDiscount(state.careerUpgrades)),
+  )
+}
+
+function getEffectiveCaseOperatorBatch(state: GameState, trainingLevel: number) {
+  return Math.min(10, getCaseOperatorMaximumBatch(trainingLevel) + getCareerCaseOperatorBatchBonus(state.careerUpgrades))
+}
+
 function hireBusinessEmployee(state: GameState, roleId: EmployeeRoleId, requestId: string, now: number) {
   if (state.business.processedOperationIds.includes(requestId)) return state
   const employee = state.business.employees[roleId]
@@ -1970,7 +1968,7 @@ function hireBusinessEmployee(state: GameState, roleId: EmployeeRoleId, requestI
     isHired: true,
     status: 'paused' as const,
     payrollSettledThrough: now,
-    nextActionAt: now + getEmployeeOperationInterval(roleId, 0),
+    nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, 0),
     assignment: roleId === 'marketScout' ? 'Scan watchlists' : 'Ready to configure',
   }
   const operation: BusinessOperation = { id: `hire:${requestId}`, employeeRole: roleId, type: 'hire', timestamp: now, description: `Hired ${EMPLOYEE_ROLE_DEFINITIONS[roleId].name}`, grossVolume: 0, revenue: 0, expense: purchase.cashCost, realizedProfit: -purchase.cashCost, relatedItemIds: [] }
@@ -1987,11 +1985,11 @@ function trainBusinessEmployee(state: GameState, roleId: EmployeeRoleId, request
   const employee = state.business.employees[roleId]
   if (!employee?.isHired) return { ...state, lastError: 'Hire this employee before training.' }
   if (employee.trainingLevel >= BUSINESS_MAX_TRAINING_LEVEL) return { ...state, lastError: 'This employee has reached the effective training maximum.' }
-  const cost = getEmployeeTrainingCost(roleId, employee.trainingLevel)
+  const cost = roundCurrency(getEmployeeTrainingCost(roleId, employee.trainingLevel) * (1 - getCareerTrainingDiscount(state.careerUpgrades)))
   const purchase = spendWithTransitionCredit(state, cost)
   if (!purchase) return { ...state, lastError: 'Not enough available cash or transition credit for training.' }
   const nextLevel = employee.trainingLevel + 1
-  const trained = { ...employee, trainingLevel: nextLevel, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEmployeeOperationInterval(roleId, nextLevel)) : employee.nextActionAt }
+  const trained = { ...employee, trainingLevel: nextLevel, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEffectiveEmployeeInterval(state, roleId, nextLevel)) : employee.nextActionAt }
   const operation: BusinessOperation = { id: `training:${requestId}`, employeeRole: roleId, type: 'training', timestamp: now, description: `Trained ${EMPLOYEE_ROLE_DEFINITIONS[roleId].name} to level ${nextLevel}`, grossVolume: 0, revenue: 0, expense: purchase.cashCost, realizedProfit: -purchase.cashCost, relatedItemIds: [] }
   const next = { ...purchase.state, business: rememberBusinessOperation({ ...purchase.state.business, employees: { ...purchase.state.business.employees, [roleId]: trained } }, operation), lastError: undefined }
   return appendBusinessProcessedId(next, requestId)
@@ -2001,13 +1999,13 @@ function toggleBusinessEmployee(state: GameState, roleId: EmployeeRoleId, isEnab
   const employee = state.business.employees[roleId]
   if (!employee?.isHired) return { ...state, lastError: 'Hire this employee first.' }
   const enable = isEnabled ?? !employee.isEnabled
-  if (enable && getActiveEmployeeCount(state.business) >= getOperatingCapacity(state.business) && !employee.isEnabled) return { ...state, lastError: 'Business operating capacity is full. Pause another employee first.' }
-  if (enable && employee.availableCapital < getEmployeeHourlyWage(roleId, employee.trainingLevel)) return { ...state, lastError: 'Allocate enough operating funds to cover at least one hour of wages.' }
+  if (enable && getActiveEmployeeCount(state.business) >= getOperatingCapacity(state.business) + getCareerOperatingCapacityBonus(state.careerUpgrades) && !employee.isEnabled) return { ...state, lastError: 'Business operating capacity is full. Pause another employee first.' }
+  if (enable && employee.availableCapital < getEffectiveEmployeeHourlyWage(state, roleId, employee.trainingLevel)) return { ...state, lastError: 'Allocate enough operating funds to cover at least one hour of wages.' }
   return {
     ...state,
     business: {
       ...state.business,
-      employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: enable, status: enable ? 'running' : 'paused', lastPauseReason: undefined, payrollSettledThrough: enable ? now : employee.payrollSettledThrough, nextActionAt: enable ? now + getEmployeeOperationInterval(roleId, employee.trainingLevel) : employee.nextActionAt } },
+      employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: enable, status: enable ? 'running' : 'paused', lastPauseReason: undefined, payrollSettledThrough: enable ? now : employee.payrollSettledThrough, nextActionAt: enable ? now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel) : employee.nextActionAt } },
     },
     lastError: undefined,
   }
@@ -2026,8 +2024,8 @@ function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId
     const caseId = typeof update.caseId === 'string' && CASE_DEFINITIONS.some((entry) => entry.id === update.caseId) ? update.caseId : caseSettings.caseId
     Object.assign(nextSettings, {
       caseId,
-      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', caseSettings.intervalMs, 10_000, 24 * 60 * 60_000)),
-      batchSize: Math.max(1, Math.min(getCaseOperatorMaximumBatch(employee.trainingLevel), Math.floor(finite('batchSize', caseSettings.batchSize, 1, 5)))),
+      intervalMs: Math.max(getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), finite('intervalMs', caseSettings.intervalMs, 10_000, 24 * 60 * 60_000)),
+      batchSize: Math.max(1, Math.min(getEffectiveCaseOperatorBatch(state, employee.trainingLevel), Math.floor(finite('batchSize', caseSettings.batchSize, 1, 10)))),
       maximumCasesPerShift: Math.floor(finite('maximumCasesPerShift', caseSettings.maximumCasesPerShift, 1, 10_000)),
       minimumWalletReserve: finite('minimumWalletReserve', caseSettings.minimumWalletReserve),
       stopLoss: finite('stopLoss', caseSettings.stopLoss, .01),
@@ -2037,7 +2035,7 @@ function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId
   } else if (roleId === 'salesAssistant') {
     const current = employee.settings as typeof state.business.employees.salesAssistant.settings
     Object.assign(nextSettings, {
-      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      intervalMs: Math.max(getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
       keepBestDuplicates: Math.floor(finite('keepBestDuplicates', current.keepBestDuplicates, 1, 100)),
       allowedWeapons: Array.isArray(update.allowedWeapons) ? update.allowedWeapons.filter((value): value is string => typeof value === 'string').slice(0, 100) : current.allowedWeapons,
       allowedRarities: Array.isArray(update.allowedRarities) ? update.allowedRarities.filter((value): value is Rarity => Object.values(Rarity).includes(value as Rarity)) : current.allowedRarities,
@@ -2046,7 +2044,7 @@ function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId
       minimumListingPrice: finite('minimumListingPrice', current.minimumListingPrice, .01),
       minimumProfitMargin: finite('minimumProfitMargin', current.minimumProfitMargin, -1, 10),
       maximumListingDiscount: finite('maximumListingDiscount', current.maximumListingDiscount, 0, .35),
-      maximumActiveListings: Math.floor(finite('maximumActiveListings', current.maximumActiveListings, 1, 500)),
+      maximumActiveListings: Math.floor(finite('maximumActiveListings', current.maximumActiveListings, 1, 12 + getCareerListingCapacityBonus(state.careerUpgrades))),
       repricingIntervalMs: finite('repricingIntervalMs', current.repricingIntervalMs, 60_000, 30 * 24 * 60 * 60_000),
       relistExpired: typeof update.relistExpired === 'boolean' ? update.relistExpired : current.relistExpired,
       mode: update.mode === 'instant' || update.mode === 'list' || update.mode === 'mixed' ? update.mode : current.mode,
@@ -2055,27 +2053,27 @@ function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId
   } else if (roleId === 'marketScout') {
     const current = employee.settings as typeof state.business.employees.marketScout.settings
     Object.assign(nextSettings, {
-      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      intervalMs: Math.max(getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
       minimumValuationConfidence: finite('minimumValuationConfidence', current.minimumValuationConfidence, 0, 1),
     })
   } else if (roleId === 'tradeUpSpecialist') {
     const current = employee.settings as typeof state.business.employees.tradeUpSpecialist.settings
     Object.assign(nextSettings, {
-      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      intervalMs: Math.max(getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
       maximumInputValue: finite('maximumInputValue', current.maximumInputValue, .01),
       maximumDailyConsumedValue: finite('maximumDailyConsumedValue', current.maximumDailyConsumedValue, .01),
       minimumExpectedProfit: finite('minimumExpectedProfit', current.minimumExpectedProfit, 0),
       minimumExpectedRoi: finite('minimumExpectedRoi', current.minimumExpectedRoi, 0, 10),
       allowedCollections: Array.isArray(update.allowedCollections) ? update.allowedCollections.filter((value): value is string => typeof value === 'string').slice(0, 100) : current.allowedCollections,
       allowedRarities: Array.isArray(update.allowedRarities) ? update.allowedRarities.filter((value): value is Rarity => Object.values(Rarity).includes(value as Rarity)) : current.allowedRarities,
-      maximumContractsPerShift: Math.floor(finite('maximumContractsPerShift', current.maximumContractsPerShift, 1, 100)),
-      confirmationThreshold: finite('confirmationThreshold', current.confirmationThreshold, .01),
+      maximumContractsPerShift: Math.floor(finite('maximumContractsPerShift', current.maximumContractsPerShift, 1, 5 + getCareerTradeUpContractBonus(state.careerUpgrades))),
+      confirmationThreshold: finite('confirmationThreshold', current.confirmationThreshold, .01, 500 + getCareerTradeUpApprovalBonus(state.careerUpgrades)),
     })
   } else {
     const current = employee.settings as typeof state.business.employees.juniorTrader.settings
     const minimumFloat = finite('minimumFloat', current.minimumFloat, 0, 1)
     Object.assign(nextSettings, {
-      intervalMs: Math.max(getEmployeeOperationInterval(roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
+      intervalMs: Math.max(getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), finite('intervalMs', current.intervalMs, 10_000, 24 * 60 * 60_000)),
       maximumPurchasePrice: finite('maximumPurchasePrice', current.maximumPurchasePrice, .01),
       maximumDailyTransactions: Math.floor(finite('maximumDailyTransactions', current.maximumDailyTransactions, 1, 100)),
       minimumDiscount: finite('minimumDiscount', current.minimumDiscount, 0, .9),
@@ -2091,7 +2089,7 @@ function updateBusinessEmployeeSettings(state: GameState, roleId: EmployeeRoleId
       manualApprovalThreshold: finite('manualApprovalThreshold', current.manualApprovalThreshold, .01),
     })
   }
-  return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, settings: nextSettings, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEmployeeOperationInterval(roleId, employee.trainingLevel)) : employee.nextActionAt } } }, lastError: undefined }
+  return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, settings: nextSettings, nextActionAt: employee.isEnabled ? Math.min(employee.nextActionAt || now, now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel)) : employee.nextActionAt } } }, lastError: undefined }
 }
 
 function allocateEmployeeBudget(state: GameState, roleId: EmployeeRoleId, amount: number, requestId: string) {
@@ -2123,7 +2121,7 @@ function settleEmployeePayroll(state: GameState, roleId: EmployeeRoleId, now: nu
   const from = employee.payrollSettledThrough || employee.lastActionAt || now
   const elapsed = Math.min(24 * 60 * 60_000, Math.max(0, now - from))
   if (elapsed < 60_000) return state
-  const wage = getEmployeeHourlyWage(roleId, employee.trainingLevel)
+  const wage = getEffectiveEmployeeHourlyWage(state, roleId, employee.trainingLevel)
   const due = roundCurrency(wage * elapsed / 3_600_000)
   if (due <= 0) return state
   if (employee.availableCapital < due) return pauseEmployee(state, roleId, `Paused: needs $${due.toFixed(2)} payroll, but only $${employee.availableCapital.toFixed(2)} is allocated.`, now)
@@ -2138,7 +2136,7 @@ function trophyItemIds(state: GameState) {
 
 function finishEmployeeOperation(state: GameState, roleId: EmployeeRoleId, operation: BusinessOperation, now: number, recentResult: string) {
   const employee = state.business.employees[roleId]
-  const updated = { ...employee, status: 'running' as const, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), completedOperationCount: employee.completedOperationCount + 1, recentResult, lastPauseReason: undefined }
+  const updated = { ...employee, status: 'running' as const, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), completedOperationCount: employee.completedOperationCount + 1, recentResult, lastPauseReason: undefined }
   return { ...state, business: rememberBusinessOperation({ ...state.business, employees: { ...state.business.employees, [roleId]: updated } }, operation) }
 }
 
@@ -2150,12 +2148,15 @@ function runCaseOperator(state: GameState, now: number, prng: Prng) {
   const caseDef = selectedCase && canOpenCase(selectedCase, state) ? selectedCase : CASE_DEFINITIONS.find((candidate) => canOpenCase(candidate, state))
   if (!caseDef) return pauseEmployee(state, roleId, 'Paused: no case is currently available.', now)
   const effectiveCase = getEffectiveCaseDefinition(state, caseDef, now)
+  const monitoredReserve = settings.inventoryCapacityReserve + Math.floor(
+    getCareerUpgradeEffect(state.careerUpgrades, 'business.caseCapacityReserve'),
+  )
   if (state.money < settings.minimumWalletReserve) return pauseEmployee(state, roleId, 'Paused: player wallet reserve reached.', now)
-  if (getInventoryFreeSlots(state) <= settings.inventoryCapacityReserve) return pauseEmployee(state, roleId, 'Paused: inventory capacity reserve reached.', now)
+  if (getInventoryFreeSlots(state) <= monitoredReserve) return pauseEmployee(state, roleId, 'Paused: inventory capacity reserve reached.', now)
   const shiftRemaining = Math.max(0, settings.maximumCasesPerShift - state.business.dailyUsage.caseOperatorCases)
-  const freeSlots = Math.max(0, getInventoryFreeSlots(state) - settings.inventoryCapacityReserve)
+  const freeSlots = Math.max(0, getInventoryFreeSlots(state) - monitoredReserve)
   const maximumAffordable = Math.floor(employee.availableCapital / effectiveCase.cost)
-  const batch = Math.min(settings.batchSize, getCaseOperatorMaximumBatch(employee.trainingLevel), shiftRemaining, freeSlots, maximumAffordable)
+  const batch = Math.min(settings.batchSize, getEffectiveCaseOperatorBatch(state, employee.trainingLevel), shiftRemaining, freeSlots, maximumAffordable)
   if (batch <= 0) {
     const reason = freeSlots <= 0 ? 'Paused: inventory capacity reserve reached.' : shiftRemaining <= 0 ? 'Paused: shift case limit reached.' : 'Paused: assigned budget cannot cover the selected case.'
     return pauseEmployee(state, roleId, reason, now)
@@ -2214,13 +2215,14 @@ function runSalesAssistant(state: GameState, now: number) {
       const relisted = listItemOnMarket(state, expired.item.instanceId, ask, requestId, now)
       if (relisted.marketplace.playerListings.length > state.marketplace.playerListings.length) return finishEmployeeOperation(relisted, roleId, { id: requestId, employeeRole: roleId, type: 'market-listing', timestamp: now, description: `Relisted expired ${expired.item.weapon} | ${expired.item.finish}`, grossVolume: ask, revenue: 0, expense: 0, realizedProfit: 0, relatedItemIds: [expired.item.instanceId], relatedMarketplaceId: relisted.marketplace.playerListings[0]?.id }, now, 'Relisted an expired ordinary item')
     }
-    return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No eligible ordinary duplicate or listing task found' } } } }
+    return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'No eligible ordinary duplicate or listing task found' } } } }
   }
   if (candidate.marketValue > Math.min(settings.maximumItemValue, settings.confirmationThreshold)) return pauseEmployee(state, roleId, 'Paused: eligible duplicate exceeds the manual confirmation threshold.', now)
-  if (!settings.allowedRarities.includes(candidate.rarity)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed rarities' } } } }
-  if (settings.allowedWeapons.length > 0 && !settings.allowedWeapons.includes(candidate.weapon)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed weapons' } } } }
-  const shouldList = settings.mode === 'list' || (settings.mode === 'mixed' && state.marketplace.playerListings.length < settings.maximumActiveListings && employee.completedOperationCount % 2 === 1)
-  if (shouldList && state.marketplace.playerListings.length < settings.maximumActiveListings) {
+  if (!settings.allowedRarities.includes(candidate.rarity)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed rarities' } } } }
+  if (settings.allowedWeapons.length > 0 && !settings.allowedWeapons.includes(candidate.weapon)) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'Eligible duplicate is outside allowed weapons' } } } }
+  const listingLimit = Math.min(settings.maximumActiveListings, 12 + getCareerListingCapacityBonus(state.careerUpgrades))
+  const shouldList = settings.mode === 'list' || (settings.mode === 'mixed' && state.marketplace.playerListings.length < listingLimit && employee.completedOperationCount % 2 === 1)
+  if (shouldList && state.marketplace.playerListings.length < listingLimit) {
     const fair = getCurrentItemMarketValue(candidate, state.marketValues)
     const ask = roundCurrency(Math.max(settings.minimumListingPrice, fair * (1 - Math.min(.35, settings.maximumListingDiscount))))
     const requestId = `business-list:${candidate.instanceId}:${now}`
@@ -2230,7 +2232,7 @@ function runSalesAssistant(state: GameState, now: number) {
   }
   const quote = getAutomationSaleValue(state, candidate)
   const basis = state.economyLedger.itemCostBasis[candidate.instanceId]
-  if (basis !== undefined && (quote - basis) / Math.max(.01, basis) < settings.minimumProfitMargin) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'Skipped duplicate below configured profit margin' } } } }
+  if (basis !== undefined && (quote - basis) / Math.max(.01, basis) < settings.minimumProfitMargin) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'Skipped duplicate below configured profit margin' } } } }
   if (quote < settings.minimumSaleQuote) return pauseEmployee(state, roleId, 'Paused: instant-sale quote is below the configured floor.', now)
   const sold = sellItem(state, candidate.instanceId)
   if (sold.inventory.length === state.inventory.length) return pauseEmployee(sold, roleId, sold.lastError ?? 'Paused: duplicate could not be sold.', now)
@@ -2251,14 +2253,14 @@ function runMarketScout(state: GameState, now: number) {
   if (!watchlist) return pauseEmployee(state, roleId, 'Paused: create and enable a watchlist first.', now)
   const skinCandidates = watchlist.skinId ? SKIN_DEFINITIONS.filter((skin) => skin.id === watchlist.skinId) : SKIN_DEFINITIONS.filter((skin) => !watchlist.weapon || skin.weapon === watchlist.weapon)
   if (skinCandidates.length === 0) return pauseEmployee(state, roleId, 'Paused: watchlist has no matching catalog skins.', now)
-  const scanLimit = getScoutCandidateLimit(employee.trainingLevel)
+  const scanLimit = getScoutCandidateLimit(employee.trainingLevel) + getCareerScoutCandidateBonus(state.careerUpgrades)
   const skin = skinCandidates[watchlist.scanCursor % skinCandidates.length]
   const filters = { wear: watchlist.wear ?? 'all' as const, minFloat: watchlist.minimumFloat, maxFloat: watchlist.maximumFloat, patternId: watchlist.patternId, patternClassification: watchlist.patternClassification, maxPrice: watchlist.maximumPrice, seller: watchlist.seller, edition: watchlist.statTrak ? 'stattrak' as const : watchlist.souvenir ? 'souvenir' as const : 'all' as const }
   const result = generateVirtualListingPage({ skin, marketValues: state.marketValues, epoch: state.marketplace.virtualMarketEpoch, seed: state.marketplace.virtualMarketSeed, removedListingIds: state.marketplace.removedVirtualListingIds, overrides: state.marketplace.npcListings.filter((listing) => listing.item.id === skin.id), filters, sort: 'best-deals', pageSize: Math.min(100, scanLimit), now })
   const alertedIds = new Set(state.business.alerts.map((alert) => alert.listingId))
   const listing = result.listings.find((candidate) => !alertedIds.has(candidate.id) && watchlistMatchesListing(watchlist, candidate, now))
   const nextWatchlists = state.business.watchlists.map((entry) => entry.id === watchlist.id ? { ...entry, lastScannedAt: now, scanCursor: entry.scanCursor + 1, scannedCandidates: entry.scannedCandidates + result.scanned } : entry)
-  if (!listing) return { ...state, business: { ...state.business, watchlists: nextWatchlists, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: `Scanned ${result.scanned} candidates; no genuine match` } } } }
+  if (!listing) return { ...state, business: { ...state.business, watchlists: nextWatchlists, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: `Scanned ${result.scanned} candidates; no genuine match` } } } }
   const discount = (listing.fairMarketValue - listing.askingPrice) / Math.max(.01, listing.fairMarketValue)
   const alert = { id: `alert:${watchlist.id}:${listing.id}`, watchlistId: watchlist.id, listingId: listing.id, skinId: listing.item.id, skinName: `${listing.item.weapon} | ${listing.item.finish}`, image: listing.item.image, seller: listing.seller.username, price: listing.askingPrice, wear: listing.item.wear, float: listing.item.floatValue, patternId: listing.item.paintSeed, patternClassification: listing.item.pattern?.name, estimatedValue: listing.fairMarketValue, discount, confidence: listing.item.pattern?.referenceConfidence === 'verified' ? 'market' as const : listing.item.pattern?.referenceConfidence === 'estimated' ? 'listing' as const : 'simulator-estimate' as const, expiresAt: listing.expiresAt, discoveredAt: now, status: 'new' as const }
   const next = { ...state, business: { ...state.business, watchlists: nextWatchlists, alerts: [alert, ...state.business.alerts].slice(0, 80) } }
@@ -2269,16 +2271,21 @@ function runTradeUpSpecialist(state: GameState, now: number, prng: Prng) {
   const roleId = 'tradeUpSpecialist' as const
   const employee = state.business.employees[roleId]
   const settings = employee.settings
-  if (state.business.dailyUsage.tradeUpContracts >= settings.maximumContractsPerShift || state.business.dailyUsage.tradeUpInputValue >= settings.maximumDailyConsumedValue) return pauseEmployee(state, roleId, 'Paused: daily contract risk limit reached.', now)
+  const contractLimit = Math.min(settings.maximumContractsPerShift, 5 + getCareerTradeUpContractBonus(state.careerUpgrades))
+  if (state.business.dailyUsage.tradeUpContracts >= contractLimit || state.business.dailyUsage.tradeUpInputValue >= settings.maximumDailyConsumedValue) return pauseEmployee(state, roleId, 'Paused: daily contract risk limit reached.', now)
   const protectedIds = trophyItemIds(state)
-  const suggestions = suggestBestTradeUps({ inventory: state.inventory.filter((item) => !isBusinessProtectedItem(item, protectedIds)), marketValues: state.marketValues, limit: 10 })
+  const candidateLimit = Math.min(50, 10 + Math.floor(
+    getCareerUpgradeEffect(state.careerUpgrades, 'business.tradeUpCandidates'),
+  ))
+  const suggestions = suggestBestTradeUps({ inventory: state.inventory.filter((item) => !isBusinessProtectedItem(item, protectedIds)), marketValues: state.marketValues, limit: candidateLimit })
   const suggestion = suggestions.find(({ analysis, inputItems }) => {
     const roi = analysis.expectedProfit / Math.max(.01, analysis.inputValue)
     return analysis.inputValue <= settings.maximumInputValue && state.business.dailyUsage.tradeUpInputValue + analysis.inputValue <= settings.maximumDailyConsumedValue && analysis.expectedProfit >= settings.minimumExpectedProfit && roi >= settings.minimumExpectedRoi && settings.allowedRarities.includes(inputItems[0]?.rarity) && (settings.allowedCollections.length === 0 || inputItems.every((item) => item.collections?.some((id) => settings.allowedCollections.includes(id))))
   })
-  if (!suggestion) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No genuinely eligible positive-EV contract' } } } }
+  if (!suggestion) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'No genuinely eligible positive-EV contract' } } } }
   const covert = suggestion.inputItems[0]?.rarity === Rarity.Covert
-  if (covert || suggestion.analysis.inputValue >= settings.confirmationThreshold) {
+  const automaticThreshold = Math.min(settings.confirmationThreshold, 500 + getCareerTradeUpApprovalBonus(state.careerUpgrades))
+  if (covert || suggestion.analysis.inputValue >= automaticThreshold) {
     const approval = { id: `trade-approval:${now}:${employee.completedOperationCount}`, inputItemIds: suggestion.inputItems.map((item) => item.instanceId), inputValue: suggestion.analysis.inputValue, expectedOutputValue: suggestion.analysis.expectedValue, expectedProfit: suggestion.analysis.expectedProfit, expectedRoi: suggestion.analysis.expectedProfit / Math.max(.01, suggestion.analysis.inputValue), createdAt: now, reason: covert ? 'Five-Covert special-output contracts require manual confirmation.' : 'Input value exceeds the manual confirmation threshold.' }
     return { ...state, business: { ...state.business, pendingTradeUpApproval: approval, employees: { ...state.business.employees, [roleId]: { ...employee, isEnabled: false, status: 'awaiting-approval' as const, lastPauseReason: approval.reason, lastActionAt: now } } } }
   }
@@ -2301,7 +2308,8 @@ function runJuniorTrader(state: GameState, now: number) {
   if (affordable <= 0) return pauseEmployee(state, roleId, 'Paused: assigned purchase budget is empty.', now)
   const start = employee.completedOperationCount % SKIN_DEFINITIONS.length
   let selected: NpcMarketListing | undefined
-  for (let offset = 0; offset < Math.min(24, SKIN_DEFINITIONS.length); offset += 1) {
+  const juniorCandidateLimit = 24 + Math.floor(getCareerUpgradeEffect(state.careerUpgrades, 'business.juniorCandidates'))
+  for (let offset = 0; offset < Math.min(juniorCandidateLimit, SKIN_DEFINITIONS.length); offset += 1) {
     const skin = SKIN_DEFINITIONS[(start + offset) % SKIN_DEFINITIONS.length]
     if (settings.allowedWeapons.length > 0 && !settings.allowedWeapons.includes(skin.weapon)) continue
     const page = generateVirtualListingPage({ skin, marketValues: state.marketValues, epoch: state.marketplace.virtualMarketEpoch, seed: state.marketplace.virtualMarketSeed, removedListingIds: state.marketplace.removedVirtualListingIds, overrides: state.marketplace.npcListings.filter((listing) => listing.item.id === skin.id), filters: { maxPrice: affordable, minFloat: settings.minimumFloat, maxFloat: settings.maximumFloat }, sort: 'best-deals', pageSize: 8, now })
@@ -2311,7 +2319,7 @@ function runJuniorTrader(state: GameState, now: number) {
     })
     if (selected) break
   }
-  if (!selected) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEmployeeOperationInterval(roleId, employee.trainingLevel), recentResult: 'No credible ordinary bargain within limits' } } } }
+  if (!selected) return { ...state, business: { ...state.business, employees: { ...state.business.employees, [roleId]: { ...employee, lastActionAt: now, nextActionAt: now + getEffectiveEmployeeInterval(state, roleId, employee.trainingLevel), recentResult: 'No credible ordinary bargain within limits' } } } }
   const wallet = state.money
   const beforeFund = employee.availableCapital
   const requestId = `business-buy:${selected.id}`
@@ -2333,7 +2341,8 @@ function tickBusiness(state: GameState, now: number, prng: Prng = Math.random, m
     },
   }
   for (const roleId of EMPLOYEE_ROLE_IDS) next = settleEmployeePayroll(next, roleId, now)
-  for (let count = 0; count < Math.max(1, Math.min(10, maxOperations)); count += 1) {
+  const schedulerCapacity = Math.max(1, Math.min(10, maxOperations + Math.floor(getCareerUpgradeEffect(state.careerUpgrades, 'business.schedulerOperations'))))
+  for (let count = 0; count < schedulerCapacity; count += 1) {
     const due = EMPLOYEE_ROLE_IDS.map((roleId) => next.business.employees[roleId]).filter((employee) => employee.isHired && employee.isEnabled && employee.nextActionAt <= now).sort((a, b) => a.nextActionAt - b.nextActionAt || a.roleId.localeCompare(b.roleId))[0]
     if (!due) break
     if (due.roleId === 'caseOperator') next = runCaseOperator(next, now, prng)
@@ -2347,8 +2356,8 @@ function tickBusiness(state: GameState, now: number, prng: Prng = Math.random, m
 
 function createScoutWatchlist(state: GameState, watchlist: ScoutWatchlist, requestId: string) {
   if (state.business.processedOperationIds.includes(requestId)) return state
-  const limit = 1 + Math.max(0, state.business.employees.marketScout.trainingLevel)
-  if (state.business.watchlists.length >= Math.min(12, limit)) return { ...state, lastError: `Market Scout training currently supports ${Math.min(12, limit)} watchlist${limit === 1 ? '' : 's'}.` }
+  const limit = Math.min(12, 1 + Math.max(0, state.business.employees.marketScout.trainingLevel) + getCareerScoutWatchlistBonus(state.careerUpgrades))
+  if (state.business.watchlists.length >= limit) return { ...state, lastError: `Market Scout training and Career upgrades currently support ${limit} watchlist${limit === 1 ? '' : 's'}.` }
   if (state.business.watchlists.some((entry) => entry.id === watchlist.id)) return appendBusinessProcessedId(state, requestId)
   return appendBusinessProcessedId({ ...state, business: { ...state.business, watchlists: [...state.business.watchlists, { ...watchlist, lastScannedAt: 0, scanCursor: 0, scannedCandidates: 0 }] }, lastError: undefined }, requestId)
 }
@@ -2714,6 +2723,7 @@ function completePlayerMarketSale(
   const listing = state.marketplace.playerListings.find((candidate) => candidate.id === listingId)
   if (!listing) return { ...state, lastError: 'That listing is no longer active.' }
   const price = roundCurrency(priceOverride ?? listing.askingPrice)
+  const netPrice = roundCurrency(price * (1 - Math.max(0.025, 0.05 - getCareerSellerFeeDiscount(state.careerUpgrades))))
   const marketplace = rememberMarketplaceRequest({
     ...state.marketplace,
     playerListings: state.marketplace.playerListings.filter((candidate) => candidate.id !== listingId),
@@ -2726,21 +2736,22 @@ function completePlayerMarketSale(
   }, requestId)
   return {
     ...state,
-    money: roundCurrency(clampNumber(state.money) + price),
+    money: roundCurrency(clampNumber(state.money) + netPrice),
     marketplace,
     lastError: undefined,
     statistics: {
       ...state.statistics,
       marketSales: state.statistics.marketSales + 1,
       itemsSold: state.statistics.itemsSold + 1,
-      moneyEarned: roundCurrency(state.statistics.moneyEarned + price),
+      moneyEarned: roundCurrency(state.statistics.moneyEarned + netPrice),
     },
   }
 }
 
 function tickMarketplaceState(state: GameState, now = Date.now(), prng: Prng = Math.random) {
   const result = tickMarketplace(state.marketplace, state.marketValues, now, prng)
-  const revenue = roundCurrency(result.completedSales.reduce((sum, listing) => sum + listing.askingPrice, 0))
+  const feeRate = Math.max(0.025, 0.05 - getCareerSellerFeeDiscount(state.careerUpgrades))
+  const revenue = roundCurrency(result.completedSales.reduce((sum, listing) => sum + listing.askingPrice * (1 - feeRate), 0))
   const saleTransactions = result.completedSales.map((listing) => ({
     id: nanoid(),
     type: 'player-sale' as const,
@@ -3267,6 +3278,8 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return toggleAutomationModule(state, action.moduleId, action.isEnabled, action.now)
     case 'PURCHASE_UPGRADE':
       return withProgressionUnlocks(purchaseUpgrade(state, action.upgradeId), action.now)
+    case 'PURCHASE_CAREER_UPGRADE':
+      return withProgressionUnlocks(purchaseCareerUpgrade(state, action.upgradeId, action.now), action.now)
     case 'PRESTIGE':
       return withProgressionUnlocks(prestigeRun(state, action.now), action.now)
     case 'PURCHASE_PRESTIGE_BONUS':
