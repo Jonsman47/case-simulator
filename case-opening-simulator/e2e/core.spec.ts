@@ -137,7 +137,7 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
     envelope.state.career.currentRunXp = rankXp
     envelope.state.career.lifetimeXp = Math.max(envelope.state.career.lifetimeXp, rankXp)
     localStorage.setItem(key, JSON.stringify(envelope))
-  }, { key: saveKey, rankXp: 93_614 })
+  }, { key: saveKey, rankXp: 67_919 })
   await page.reload()
   await expect(page.getByTestId('career-level')).toHaveText('15')
   await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
@@ -183,8 +183,8 @@ test('Business hires, funds, schedules, and persists a paid Case Operator', asyn
   await dismissTutorial(page)
   const seeded = await readSave(page)
   seeded.state.money = 10_000
-  seeded.state.career.currentRunXp = 93_614
-  seeded.state.career.lifetimeXp = Math.max(seeded.state.career.lifetimeXp, 93_614)
+  seeded.state.career.currentRunXp = 67_919
+  seeded.state.career.lifetimeXp = Math.max(seeded.state.career.lifetimeXp, 67_919)
   await page.addInitScript(({ envelope, key }) => {
     if (sessionStorage.getItem('business-career-seeded')) return
     localStorage.setItem(key, JSON.stringify(envelope))

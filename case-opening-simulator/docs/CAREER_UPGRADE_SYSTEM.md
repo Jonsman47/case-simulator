@@ -157,7 +157,7 @@ Mechanical Business effects are used by both the live reducer scheduler and the 
 
 ## Preliminary balance and deferrals
 
-The level gates cover beginner (1–14), intermediate (15–34), professional (35–54), Business Owner (55–74), and elite (75+) progression. Each branch has useful independent entries and no cross-branch prerequisite. High-impact capacity, fee, payroll, and scheduler effects are bounded. Prompt 5 remains responsible for scripted 500–800-hour multi-strategy calibration and evidence-based cost tuning. Prompt 6 remains responsible for final Prestige and Legacy Vault behavior, including All Time/Current Run Collection Book presentation.
+The level gates cover beginner (1–14), intermediate (15–34), professional (35–54), Business Owner (55–74), and elite (75+) progression. Each branch has useful independent entries and no cross-branch prerequisite. High-impact capacity, fee, payroll, and scheduler effects are bounded. Prompt 5 calibration is complete: the executable audit covered all 95 definitions and every live level cost, and no cost was changed because the branch-specific gates, opportunity costs and bounded effects remained defensible. The complete total-cost table and strategy analysis are in `CAREER_ECONOMY_BALANCE_REPORT.md`. Prompt 6 remains responsible for final Prestige and Legacy Vault behavior, including All Time/Current Run Collection Book presentation.
 
 ## Verification map
 

@@ -387,6 +387,10 @@ Migrate existing upgrades/skills/automation benefits into the five specializatio
 
 Build scripted careers and Monte Carlo suites, calibrate XP/cost/wage/profit curves, verify all five viable strategies and 500–800 hour target. Depends on the complete mechanics from Prompts 2–4.
 
+Implementation decision (2026-11-13): complete. The production curve is now `round(850 × (L-1)^1.66 + 5000 × max(0,L-25)^1.30)`. Deterministic seed `3308146696` covered 300,000 aggregate careers and 500,000 production-data openings. A competent regular profile reached level 15 in 25.82 median engaged hours and the proposed level-25 first Prestige gate in 63.17 hours. Legitimate offline Business operations now feed the same exact-once bounded XP engine as online operations. All 95 upgrades retained their production cost curves after audit; all five employees retained cost/wage formulas because their hard budgets, daily limits and zero-direct-cash model remained safe. See `CAREER_ECONOMY_BALANCE_REPORT.md`.
+
+The validated Prompt-6 direction replaces universal 3.2× scaling with tier level gates 25/30/36/45/55, path alternatives and bounded 1.00×–1.40× repeat-run XP acceleration. The modeled competent-regular five-run journey is 781.10 hours. Level 100 remains optional legendary single-run mastery. See `PRESTIGE_BALANCE_SPEC.md`.
+
 ### Prompt 6 — Prestige and legacy systems
 
 New eligibility, PP formula, reset policy, Legacy Vault, run archival, All Time/Current Run Collection Book. Depends on calibrated career/economy data.

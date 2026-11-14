@@ -17,10 +17,10 @@ describe('preliminary Career progression projections', () => {
     expect(projections.every((projection) => projection.hoursToRanks['cs2-trading-legend'] > 0)).toBe(true)
   })
 
-  it('shows the deliberate preliminary balance range before employees and upgrades', () => {
+  it('shows the tuned single-run level-100 range without making it a first-Prestige requirement', () => {
     const byId = new Map(projectCareerArchetypes().map((projection) => [projection.id, projection]))
-    expect(byId.get('dedicated')?.hoursToRanks['cs2-trading-legend']).toBe(794.1)
-    expect(byId.get('trading-focused')?.hoursToRanks['cs2-trading-legend']).toBe(725)
+    expect(byId.get('dedicated')?.hoursToRanks['cs2-trading-legend']).toBe(741.9)
+    expect(byId.get('trading-focused')?.hoursToRanks['cs2-trading-legend']).toBe(677.4)
     expect(byId.get('casual')?.hoursToRanks['cs2-trading-legend']).toBeGreaterThan(3_000)
     expect(byId.get('opening-focused')?.hoursToRanks['cs2-trading-legend']).toBeGreaterThan(1_000)
   })

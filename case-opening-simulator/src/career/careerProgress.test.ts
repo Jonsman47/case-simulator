@@ -55,12 +55,12 @@ function makeItem(overrides: Partial<SkinInstance> = {}): SkinInstance {
 }
 
 describe('Career XP curve and ranks', () => {
-  it('uses the documented cumulative formula monotonically through level 100', () => {
+  it('uses the balanced cumulative formula monotonically through level 100', () => {
     expect(getCumulativeXpForLevel(1)).toBe(0)
     for (let level = 1; level <= CAREER_LEVEL_CAP; level += 1) {
       const expected = Math.round(
-        1_000 * Math.pow(level - 1, 1.72) +
-        2_500 * Math.pow(Math.max(0, level - 25), 1.28),
+        850 * Math.pow(level - 1, 1.66) +
+        5_000 * Math.pow(Math.max(0, level - 25), 1.3),
       )
       expect(getCumulativeXpForLevel(level)).toBe(expected)
       if (level > 1) {

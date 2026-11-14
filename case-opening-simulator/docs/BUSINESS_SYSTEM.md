@@ -13,7 +13,7 @@ Employee roles have a fixed acquisition tier `T` from 1 through 5. Training leve
 - Hourly wage: `round(25 × roleFactor × (1 + 0.32 × L)^1.35)`
 - Training maximum: 8. Every level improves operation frequency and, where relevant, batch size or search coverage.
 
-Role factors are 1.00 Case Operator, 1.15 Sales Assistant, 1.35 Market Scout, 1.60 Trade-Up Specialist, and 1.80 Junior Trader. These values remain provisional until Career Prompt 5's full economy simulations.
+Role factors are 1.00 Case Operator, 1.15 Sales Assistant, 1.35 Market Scout, 1.60 Trade-Up Specialist, and 1.80 Junior Trader. Prompt 5 evaluated all 45 role/training-level points. Costs and wages were retained: each employee creates zero direct cash, high throughput remains constrained by budgets/daily limits/supply, and active expert play outperforms passive operation.
 
 ## Shared scheduler and money model
 
@@ -23,7 +23,7 @@ Operating allocations are real reserved funds. Allocation removes cash from the 
 
 Payroll is proportional to eligible elapsed time, capped by the offline window. The watermark advances only when a period is settled. If the allocation cannot pay a due wage, the employee pauses without a negative balance. Hiring, training, transfers, payroll, idle scans, and failed searches award no Career XP.
 
-Business Career XP is generated only by completed real operations and uses the master-plan baseline `min(160, max(1, round(8 × ln(1 + grossVolume))))`, subject to the persisted hourly anti-farm window and exact operation IDs.
+Business Career XP is generated only by completed real operations and uses the master-plan baseline `min(160, max(1, round(8 × ln(1 + grossVolume))))`, subject to the persisted hourly anti-farm window and exact operation IDs. Prompt 5 applies this same rule to legitimate offline operations; replayed offline state and duplicate operation IDs award nothing.
 
 ## Employees
 
@@ -66,4 +66,4 @@ Recent operations are capped at 80, processed employee/request IDs at 800, alert
 
 Prompt 4 replaces the remaining legacy Upgrades and Skill Tree authority with the v37 Career specialization system. Business consumes Career effects for operating capacity, training price, payroll, scheduler interval and per-pass throughput, Warehouse capacity, listing limits, Case Operator batches/reserves, Scout watchlists/scans, Trade-Up Specialist scans/contracts/approval thresholds, Junior Trader scans and seller fees. These values are calculated by the same reducer helpers online and offline and are visible in employee panels. Full catalog and caps are documented in `CAREER_UPGRADE_SYSTEM.md`.
 
-Prompt 5 will calibrate employee acquisition, wages, frequency, capacity, upgrade costs and ROI with multi-strategy simulations. Prompt 6 will replace the transitional Prestige reset policy and add the Legacy Vault.
+Prompt 5 calibrated acquisition, wages, frequency, capacity and upgrade interactions with 300,000 aggregate careers and 45 employee role/level audits. Values were retained; role-specific utility and residual uncertainty are documented in `CAREER_ECONOMY_BALANCE_REPORT.md`. Prompt 6 will replace the transitional Prestige reset policy and add the Legacy Vault using `PRESTIGE_BALANCE_SPEC.md`.

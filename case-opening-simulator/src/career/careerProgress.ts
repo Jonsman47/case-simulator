@@ -232,8 +232,8 @@ function createSpecializations(): Record<CareerSpecializationId, CareerSpecializ
 export function getCumulativeXpForLevel(rawLevel: number) {
   const level = Math.min(CAREER_LEVEL_CAP, Math.max(1, Math.floor(rawLevel)))
   return Math.round(
-    1_000 * Math.pow(level - 1, 1.72) +
-    2_500 * Math.pow(Math.max(0, level - 25), 1.28),
+    850 * Math.pow(level - 1, 1.66) +
+    5_000 * Math.pow(Math.max(0, level - 25), 1.3),
   )
 }
 
@@ -661,7 +661,7 @@ function getTradeUpEvents(before: GameState, after: GameState, action: GameActio
 }
 
 function getBusinessEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
-  if (action.type !== 'TICK_BUSINESS' && action.type !== 'CONFIRM_BUSINESS_TRADE_UP') return []
+  if (action.type !== 'TICK_BUSINESS' && action.type !== 'CONFIRM_BUSINESS_TRADE_UP' && action.type !== 'APPLY_OFFLINE_PROGRESS') return []
   const beforeIds = new Set(before.business.processedOperationIds)
   return after.business.recentOperations.flatMap((operation): PendingCareerEvent[] => {
     if (beforeIds.has(operation.id) || !['case-opened', 'instant-sale', 'market-listing', 'trade-up', 'market-purchase'].includes(operation.type)) return []
@@ -874,7 +874,6 @@ function applyPendingEvents(career: CareerState, pending: PendingCareerEvent[]) 
 
 export function recordCareerAction(before: GameState, after: GameState, action: GameAction): GameState {
   if (
-    action.type === 'APPLY_OFFLINE_PROGRESS' ||
     action.type === 'REPLACE_GAME_STATE' ||
     action.type === 'RESET_GAME' ||
     action.type === 'PRESTIGE'

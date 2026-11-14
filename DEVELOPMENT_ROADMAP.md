@@ -156,11 +156,10 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | 2. Career ranks and specialization foundation | v35 Career XP event pipeline, anti-farming, six ranks, five specialization foundations, Career dashboard, legacy-safe migration | **COMPLETE — 399 unit tests, lint, build, release and 17 browser journeys passed** |
 | 3. Business and employees | v36 five-role Business system, reserved budgets, payroll, shared online/offline scheduler, real operations, legacy conversion and Case Farm retirement | **COMPLETE — 415 unit tests, lint, TypeScript, build, release and 19 browser journeys passed** |
 | 4. Upgrade consolidation | v37 migration; 95 typed five-specialization upgrades; legacy Skill Tree/run-upgrade retirement; Career explorer; Business/runtime integration | **COMPLETE — 427 unit tests, lint, TypeScript, build, release and 20 browser journeys passed** |
-| 5. Economy simulation and balance | Multi-strategy scripted careers, XP/cash/wage/profit calibration, exploit search, 500–800-hour target | **PLANNED** |
-| 6. Prestige and legacy systems | New eligibility/PP, reset policy, Legacy Vault, archived runs, All Time/Current Run Collection Book | **PLANNED** |
-| 7. Achievements, Stats, navigation integration | Four final progression destinations, career achievements/statistics, clarity/accessibility pass | **PLANNED** |
-| 8. Final career QA and release | Save/cloud migration matrix, full unit/E2E/performance/economy validation, documentation and release | **PLANNED** |
-
+| 5. Economy simulation and balance | Deterministic production-linked framework; 300,000 careers; 500,000 openings; XP/employee/upgrade/exploit calibration; Prompt-6 Prestige specification | **COMPLETE — 434 unit tests, lint, TypeScript, build, release, full simulations and 20 browser journeys passed** |
+| 6. Prestige and legacy systems | Implement tier/path score, PP, bounded acceleration, Legacy Vault, run archives and All Time/Current Run collection from the validated specification | **PLANNED** |
+| 7. Achievements, Stats and navigation | Consolidate progression destinations, final career achievements/reporting and legacy-field migration | **PLANNED** |
+| 8. Release hardening | Full migration matrix, cloud conflicts, performance/accessibility/browser release sweep | **PLANNED** |
 The old progression systems remain available until their replacement is implemented and migrated. No player-facing placeholder controls are scheduled ahead of working mechanics.
 
 ### Prompt 3 implementation notes
