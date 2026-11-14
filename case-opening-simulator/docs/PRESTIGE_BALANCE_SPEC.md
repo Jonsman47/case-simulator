@@ -1,6 +1,6 @@
 # Prestige Balance Specification (Prompt 6 Input)
 
-Status: approved design input from Career Economy Prompt 5; not yet implemented.
+Status: implemented in save schema v38. Runtime details and migration policy are documented in `PRESTIGE_SYSTEM.md`.
 
 Evidence: `CAREER_ECONOMY_BALANCE_REPORT.md`, seed `3308146696`, 300,000 aggregate careers and 500,000 item-level case openings.
 

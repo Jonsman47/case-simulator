@@ -157,7 +157,7 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | 3. Business and employees | v36 five-role Business system, reserved budgets, payroll, shared online/offline scheduler, real operations, legacy conversion and Case Farm retirement | **COMPLETE — 415 unit tests, lint, TypeScript, build, release and 19 browser journeys passed** |
 | 4. Upgrade consolidation | v37 migration; 95 typed five-specialization upgrades; legacy Skill Tree/run-upgrade retirement; Career explorer; Business/runtime integration | **COMPLETE — 427 unit tests, lint, TypeScript, build, release and 20 browser journeys passed** |
 | 5. Economy simulation and balance | Deterministic production-linked framework; 300,000 careers; 500,000 openings; XP/employee/upgrade/exploit calibration; Prompt-6 Prestige specification | **COMPLETE — 434 unit tests, lint, TypeScript, build, release, full simulations and 20 browser journeys passed** |
-| 6. Prestige and legacy systems | Implement tier/path score, PP, bounded acceleration, Legacy Vault, run archives and All Time/Current Run collection from the validated specification | **PLANNED** |
+| 6. Prestige and legacy systems | v38 five-tier/path score, bounded PP/perks, exact-once recovery-backed reset, Legacy Vault, run archives and All Time/Current Run Collection | **COMPLETE — 438 unit tests, lint, TypeScript, build, release, full simulation and 22 browser journeys passed** |
 | 7. Achievements, Stats and navigation | Consolidate progression destinations, final career achievements/reporting and legacy-field migration | **PLANNED** |
 | 8. Release hardening | Full migration matrix, cloud conflicts, performance/accessibility/browser release sweep | **PLANNED** |
 The old progression systems remain available until their replacement is implemented and migrated. No player-facing placeholder controls are scheduled ahead of working mechanics.
@@ -169,3 +169,13 @@ The old progression systems remain available until their replacement is implemen
 - Allocated employee funds are reserved out of the wallet; timestamp payroll, daily risk limits, capacity, inventory rules and the 24-hour offline cap apply through the same scheduler online and offline.
 - The old free-money Case Farm is retired. Legacy automation receives a one-time, capped, noncash conversion; Warehouse and Auction House remain facilities.
 - Full specialization upgrades, calibrated employee economics, final Prestige/Legacy Vault behavior, and final progression navigation remain correctly scheduled for Prompts 4–8.
+# Career Overhaul status
+
+- Prompt 1/8 — Economy ledger and critical exploit fixes: complete.
+- Prompt 2/8 — Career XP, levels and ranks: complete.
+- Prompt 3/8 — Business employees: complete.
+- Prompt 4/8 — Career upgrade consolidation: complete.
+- Prompt 5/8 — Economy simulation and calibration: complete.
+- Prompt 6/8 — Prestige, Legacy Vault, Career History and Collection split: complete and verified.
+- Prompt 7/8 — Achievements, Stats, navigation and migration completion: planned.
+- Prompt 8/8 — Release hardening: planned.

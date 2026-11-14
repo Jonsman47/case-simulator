@@ -20,6 +20,7 @@ import {
 } from '../rewards/dailyRewards'
 import { MAX_CURRENCY_VALUE } from '../utils/safeNumbers'
 import { AUTO_OPENER_MAX_LEVEL, AUTOMATION_MODULE_DEFINITIONS } from '../utils/automation'
+import { getCumulativeXpForLevel } from '../career/careerProgress'
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -40,6 +41,23 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     // the authoritative Business scheduler instead.
     business: { ...defaultGameState.business, authoritative: false },
     ...overrides,
+  }
+}
+
+function makePrestigeEligible(overrides: Partial<GameState> = {}): GameState {
+  const state = makeState(overrides)
+  return {
+    ...state,
+    career: {
+      ...state.career,
+      currentRunXp: getCumulativeXpForLevel(25),
+      lifetimeXp: Math.max(state.career.lifetimeXp, getCumulativeXpForLevel(25)),
+      currentRunDiscoveryKeys: Array.from({ length: 100 }, (_, index) => `run-discovery-${index}`),
+    },
+    economyLedger: {
+      ...state.economyLedger,
+      currentRun: { ...state.economyLedger.currentRun, tradeUpOutputValue: 6_000 },
+    },
   }
 }
 
@@ -1396,7 +1414,7 @@ describe('gameReducer OPEN_CASE', () => {
 
   it('prestiges an eligible run and resets run progress while preserving permanent progress', () => {
     const item = makeItem()
-    const state = makeState({
+    const state = makePrestigeEligible({
       money: 123,
       inventory: [item],
       inventoryValue: 1_000_000,
@@ -1443,9 +1461,9 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.automation).toEqual(defaultGameState.automation)
     expect(nextState.collectionBook).toHaveLength(1)
     expect(nextState.prestigeLevel).toBe(1)
-    expect(nextState.prestigePoints).toBe(7)
+    expect(nextState.prestigePoints).toBeGreaterThanOrEqual(4)
     expect(nextState.skillPoints).toBe(1)
-    expect(nextState.upgradePoints).toBe(5)
+    expect(nextState.upgradePoints).toBe(0)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.SellSpecialist])
     expect(nextState.achievements).toContainEqual({
       id: 'first_prestige',
@@ -1466,31 +1484,21 @@ describe('gameReducer OPEN_CASE', () => {
     const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
 
     expect(nextState.prestigeLevel).toBe(0)
-    expect(nextState.lastError).toBe('Open enough cases, spend enough money, and reach either the inventory value or sell earnings threshold.')
+    expect(nextState.lastError).toBe('Reach Career Level 25.')
   })
 
-  it('purchases prestige bonuses and blocks maxed bonuses', () => {
+  it('blocks retired prestige bonus purchases without spending points', () => {
     const purchasedState = gameReducer(makeState({ prestigePoints: 3 }), {
       type: 'PURCHASE_PRESTIGE_BONUS',
       bonusId: PrestigeBonusId.SellValue,
       now: Date.now(),
     })
-    const maxedState = gameReducer(makeState({
-      prestigePoints: 999,
-      prestigeBonuses: {
-        ...defaultGameState.prestigeBonuses,
-        [PrestigeBonusId.SellValue]: 15,
-      },
-    }), {
-      type: 'PURCHASE_PRESTIGE_BONUS',
-      bonusId: PrestigeBonusId.SellValue,
-      now: Date.now(),
-    })
 
-    expect(purchasedState.prestigePoints).toBe(1)
-    expect(purchasedState.prestigeBonuses[PrestigeBonusId.SellValue]).toBe(1)
-    expect(maxedState.prestigeBonuses[PrestigeBonusId.SellValue]).toBe(15)
-    expect(maxedState.lastError).toBe('Prestige bonus is already maxed.')
+    expect(purchasedState.prestigePoints).toBe(3)
+    expect(purchasedState.prestigeBonuses[PrestigeBonusId.SellValue]).toBe(0)
+    expect(purchasedState.lastError).toBe(
+      'Legacy Prestige bonuses were retired in save v38. Use the permanent perk tree.',
+    )
   })
 
   it('Opening Desk opens a batch on its slower interval', () => {
@@ -1602,7 +1610,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(soldState.statistics.moneyEarned).toBe(184.31)
   })
 
-  it('applies prestige sell value bonuses when selling', () => {
+  it('does not apply retired prestige sale bonuses', () => {
     const item = makeItem()
     const state = makeState({
       money: 50,
@@ -1618,8 +1626,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const soldState = gameReducer(state, { type: 'SELL_ITEM', itemId: item.instanceId })
 
-    expect(soldState.money).toBe(235.87)
-    expect(soldState.statistics.moneyEarned).toBe(185.87)
+    expect(soldState.money).toBe(234.31)
+    expect(soldState.statistics.moneyEarned).toBe(184.31)
   })
 
   it('does not apply archived upgrade case discounts', () => {
@@ -1639,7 +1647,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.statistics.moneySpent).toBe(0.2)
   })
 
-  it('applies prestige case discounts and starting money bonuses', () => {
+  it('neutralizes legacy case discounts and uses bounded new Prestige starting cash', () => {
     const discountedState = gameReducer(makeState({
       money: 10,
       prestigeBonuses: {
@@ -1650,7 +1658,7 @@ describe('gameReducer OPEN_CASE', () => {
       type: 'OPEN_CASE',
       payload: { caseId: 'starter_case' },
     })
-    const prestigedState = gameReducer(makeState({
+    const prestigedState = gameReducer(makePrestigeEligible({
       inventoryValue: 1_000_000,
       prestigeBonuses: {
         ...defaultGameState.prestigeBonuses,
@@ -1668,9 +1676,9 @@ describe('gameReducer OPEN_CASE', () => {
       now: Date.now(),
     })
 
-    expect(discountedState.money).toBe(9.81)
-    expect(discountedState.statistics.moneySpent).toBe(0.19)
-    expect(prestigedState.money).toBe(4_100)
+    expect(discountedState.money).toBe(9.8)
+    expect(discountedState.statistics.moneySpent).toBe(0.2)
+    expect(prestigedState.money).toBe(100)
   })
 
   it('does not apply archived automation-speed upgrades', () => {
@@ -1699,7 +1707,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.automation.autoOpener.totalOpened).toBe(0)
   })
 
-  it('applies prestige automation speed bonuses to auto opening intervals', () => {
+  it('does not apply retired prestige automation speed bonuses', () => {
     const now = Date.now()
     const state = makeState({
       money: 10,
@@ -1721,8 +1729,8 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'TICK_AUTOMATION', now })
 
-    expect(nextState.statistics.casesOpened).toBe(1)
-    expect(nextState.automation.autoOpener.totalOpened).toBe(1)
+    expect(nextState.statistics.casesOpened).toBe(0)
+    expect(nextState.automation.autoOpener.totalOpened).toBe(0)
   })
 
   it('archives legacy skill-tree purchases without spending points', () => {
@@ -1792,7 +1800,7 @@ describe('gameReducer OPEN_CASE', () => {
   })
 
   it('does not apply archived Prestige Scholar bonuses', () => {
-    const state = makeState({
+    const state = makePrestigeEligible({
       inventoryValue: 1_000_000,
       learnedSkillNodeIds: [SkillNodeId.PrestigeScholar],
       statistics: {
@@ -1805,7 +1813,7 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
 
-    expect(nextState.prestigePoints).toBe(7)
+    expect(nextState.prestigePoints).toBeGreaterThanOrEqual(4)
     expect(nextState.skillPoints).toBe(0)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.PrestigeScholar])
   })

@@ -82,31 +82,38 @@ export function getPrestigeBonusLevel(prestigeBonuses: PrestigeBonusLevels, bonu
 }
 
 export function getPrestigeSellMultiplier(prestigeBonuses: PrestigeBonusLevels) {
-  return 1 + getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.SellValue) * 0.04
+  void prestigeBonuses
+  return 1
 }
 
 export function getPrestigeCaseDiscount(prestigeBonuses: PrestigeBonusLevels) {
-  return Math.min(0.4, getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.CaseDiscount) * 0.025)
+  void prestigeBonuses
+  return 0
 }
 
 export function getPrestigeLuckBonus(prestigeBonuses: PrestigeBonusLevels) {
-  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.DropLuck) * 0.025
+  void prestigeBonuses
+  return 0
 }
 
 export function getPrestigeAutomationIntervalMultiplier(prestigeBonuses: PrestigeBonusLevels) {
-  return 1 - Math.min(0.4, getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.AutomationSpeed) * 0.05)
+  void prestigeBonuses
+  return 1
 }
 
 export function getPrestigeStartingMoneyBonus(prestigeBonuses: PrestigeBonusLevels) {
-  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.StartingMoney) * 2_000
+  void prestigeBonuses
+  return 0
 }
 
 export function getPrestigeInventoryCapacityBonus(prestigeBonuses: PrestigeBonusLevels) {
-  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.InventoryCapacity) * 1_000
+  void prestigeBonuses
+  return 0
 }
 
 export function getPrestigeMarketKnowledgeBonus(prestigeBonuses: PrestigeBonusLevels) {
-  return getPrestigeBonusLevel(prestigeBonuses, PrestigeBonusId.MarketKnowledge) * 0.01
+  void prestigeBonuses
+  return 0
 }
 
 export const PRESTIGE_BONUS_DEFINITIONS: PrestigeBonusDefinition[] = [

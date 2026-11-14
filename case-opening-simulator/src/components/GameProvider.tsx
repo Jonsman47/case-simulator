@@ -40,7 +40,8 @@ import {
   getGameEventCollectionRewardMultiplier,
   type GameEventType,
 } from '../events/eventManager'
-import { loadGameStateOrDefault, saveGame } from '../utils/save'
+import { loadGameStateOrDefault, saveGame, serializeGameState } from '../utils/save'
+import type { PrestigePerkId } from '../prestige/prestigeSystem'
 import {
   calculateOfflineProgress,
   type OfflineProgressResult,
@@ -553,12 +554,28 @@ export function GameProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'PURCHASE_UPGRADE', upgradeId, now: Date.now() })
   }, [])
 
-  const prestige = useCallback(() => {
-    dispatch({ type: 'PRESTIGE', now: Date.now() })
-  }, [])
+  const prestige = useCallback((vaultItemIds: string[] = []) => {
+    if (cloudConflict) return false
+    const requestId = `prestige:${stateRef.current.economyLedger.currentRunId}:${nanoid(8)}`
+    try {
+      const serialized = serializeGameState(stateRef.current)
+      const key = 'case-opening-simulator:prestige-recovery:latest'
+      window.localStorage.setItem(key, serialized)
+      const verified = window.localStorage.getItem(key)
+      if (!verified || !JSON.parse(verified)?.state) return false
+      dispatch({ type: 'PRESTIGE', requestId, vaultItemIds, backupVerified: true, now: Date.now() })
+      return true
+    } catch {
+      return false
+    }
+  }, [cloudConflict])
 
   const purchasePrestigeBonus = useCallback((bonusId: PrestigeBonusId) => {
     dispatch({ type: 'PURCHASE_PRESTIGE_BONUS', bonusId, now: Date.now() })
+  }, [])
+
+  const purchasePrestigePerk = useCallback((perkId: PrestigePerkId) => {
+    dispatch({ type: 'PURCHASE_PRESTIGE_PERK', perkId, now: Date.now() })
   }, [])
 
   const learnSkillNode = useCallback((nodeId: SkillNodeId) => {
@@ -1140,6 +1157,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       purchaseUpgrade,
       prestige,
       purchasePrestigeBonus,
+      purchasePrestigePerk,
       learnSkillNode,
       triggerGameEvent,
       tickEventsNow,
@@ -1219,6 +1237,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       purchaseAuctionDeal,
       purchaseCaseLicense,
       purchasePrestigeBonus,
+      purchasePrestigePerk,
       purchaseUpgrade,
       requestCloudPasswordReset,
       resolveCloudConflict,

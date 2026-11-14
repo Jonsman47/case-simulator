@@ -1,400 +1,60 @@
-import {
-  AlertTriangle,
-  CheckCircle,
-  Gem,
-  Lock,
-  RotateCcw,
-  Shield,
-  ShoppingCart,
-  Sparkles,
-  Trophy,
-} from 'lucide-react'
+import { Archive, BriefcaseBusiness, CheckCircle2, CircleDollarSign, Crown, Gem, Lock, PackageCheck, RotateCcw, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { defaultGameState } from '../data/gameState'
-import type { ComponentType } from 'react'
-import { PrestigeBonusId, type PrestigeBonusLevels } from '../data/models'
-import {
-  PRESTIGE_BONUS_DEFINITIONS,
-  PRESTIGE_CASES_OPENED_THRESHOLD,
-  PRESTIGE_MONEY_EARNED_THRESHOLD,
-  PRESTIGE_MONEY_SPENT_THRESHOLD,
-  calculatePrestigePointAward,
-  canPurchasePrestigeBonus,
-  getPrestigeAutomationIntervalMultiplier,
-  getPrestigeBonusLevel,
-  getPrestigeCaseDiscount,
-  getPrestigeEligibility,
-  getPrestigeInventoryCapacityBonus,
-  getPrestigeLuckBonus,
-  getPrestigeMarketKnowledgeBonus,
-  getPrestigeSellMultiplier,
-  getPrestigeStartingMoneyBonus,
-  type PrestigeBonusDefinition,
-} from '../data/prestige'
-import { getSkillPrestigePointMultiplier } from '../data/skills'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
-import { PRESTIGE_INVENTORY_VALUE_THRESHOLD } from '../utils/inventory'
+import { PRESTIGE_PERKS, calculatePrestigePointsV2, getLegacyVaultCapacity, getNextPrestigeTier, getPrestigeEligibilityV2, getPrestigePerkCost, type PrestigePathId, type PrestigePerkId } from '../prestige/prestigeSystem'
 
-function formatPercent(value: number) {
-  return `${Number((value * 100).toFixed(1))}%`
+const pathIcons = { opening: PackageCheck, trading: TrendingUp, patterns: Gem, tradeUps: Sparkles, business: BriefcaseBusiness }
+
+function Meter({ label, value }: { label: string; value: number }) {
+  const clamped = Math.max(0, Math.min(100, value))
+  return <div><div className="flex justify-between gap-3 text-xs"><span className="text-cs-muted">{label}</span><span className="font-mono text-cs-text">{clamped.toFixed(1)}</span></div><div className="mt-1.5 h-2 border border-cs-border bg-cs-surface"><div className="h-full bg-rarity-special" style={{ width: `${clamped}%` }} /></div></div>
 }
 
-function ProgressMeter({
-  current,
-  formatValue = formatCurrency,
-  label,
-  target,
-}: {
-  current: number
-  formatValue?: (value: number) => string
-  label: string
-  target: number
-}) {
-  const progress = Math.min(100, (current / target) * 100)
-
-  return (
-    <div className="border border-cs-border bg-cs-panel p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-mono text-xs uppercase text-cs-muted">{label}</p>
-        <p className="font-mono text-xs uppercase text-cs-text">{Math.floor(progress)}%</p>
-      </div>
-      <div className="mt-3 h-3 border border-cs-border bg-cs-surface">
-        <div className="h-full bg-rarity-special transition-[width]" style={{ width: `${progress}%` }} />
-      </div>
-      <div className="mt-2 flex justify-between gap-3 text-sm">
-        <span className="text-cs-muted">{formatValue(current)}</span>
-        <span className="text-cs-text">{formatValue(target)}</span>
-      </div>
-    </div>
-  )
+function PathCard({ path }: { path: ReturnType<typeof getPrestigeEligibilityV2>['paths'][number] }) {
+  const Icon = pathIcons[path.id as PrestigePathId]
+  const primaryPercent = Math.min(100, path.primaryValue / Math.max(1, path.primaryTarget) * 100)
+  const supportPercent = Math.min(100, path.supportValue / Math.max(1, path.supportTarget) * 100)
+  return <article className={`border p-4 ${path.primaryMet ? 'border-cs-green bg-cs-green/5' : 'border-cs-border bg-cs-panel'}`}>
+    <div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center border border-cs-border bg-cs-surface text-rarity-special"><Icon size={18} /></div><div className="min-w-0"><h3 className="font-semibold text-cs-text">{path.name}</h3><p className="mt-1 text-xs leading-5 text-cs-muted">{path.description}</p></div>{path.primaryMet ? <CheckCircle2 className="ml-auto shrink-0 text-cs-green" size={18} /> : null}</div>
+    <div className="mt-4 space-y-3"><div><div className="flex justify-between text-xs"><span className="text-cs-muted">Primary objective</span><span className="font-mono text-cs-text">{Math.floor(path.primaryValue).toLocaleString()} / {path.primaryTarget.toLocaleString()}</span></div><div className="mt-1 h-2 bg-cs-surface"><div className="h-full bg-rarity-special" style={{ width: `${primaryPercent}%` }} /></div></div><div><div className="flex justify-between text-xs"><span className="text-cs-muted">Support objective</span><span className="font-mono text-cs-text">{Math.floor(path.supportValue).toLocaleString()} / {path.supportTarget.toLocaleString()}</span></div><div className="mt-1 h-2 bg-cs-surface"><div className="h-full bg-cs-blue" style={{ width: `${supportPercent}%` }} /></div></div></div>
+  </article>
 }
 
-function BonusStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-cs-border bg-cs-panel px-3 py-2">
-      <p className="font-mono text-[10px] uppercase text-cs-muted">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-cs-text">{value}</p>
-    </div>
-  )
-}
-
-const prestigeBonusIcons: Record<PrestigeBonusId, ComponentType<{ className?: string; size?: number }>> = {
-  [PrestigeBonusId.AutomationSpeed]: Shield,
-  [PrestigeBonusId.CaseDiscount]: Shield,
-  [PrestigeBonusId.DropLuck]: Sparkles,
-  [PrestigeBonusId.InventoryCapacity]: Shield,
-  [PrestigeBonusId.MarketKnowledge]: Gem,
-  [PrestigeBonusId.SellValue]: Sparkles,
-  [PrestigeBonusId.StartingMoney]: Gem,
-}
-
-function PrestigeBonusCard({
-  definition,
-  onPurchase,
-  points,
-  prestigeBonuses,
-}: {
-  definition: PrestigeBonusDefinition
-  onPurchase: (bonusId: PrestigeBonusId) => void
-  points: number
-  prestigeBonuses: PrestigeBonusLevels
-}) {
-  const Icon = prestigeBonusIcons[definition.id]
-  const purchase = canPurchasePrestigeBonus(definition, {
-    prestigeBonuses,
-    prestigePoints: points,
-  })
-  const level = getPrestigeBonusLevel(prestigeBonuses, definition.id)
-  const progress = (level / definition.maxLevel) * 100
-  const disabled = purchase.isMaxLevel || !purchase.canAfford
-
-  return (
-    <article className="flex min-h-72 flex-col border border-cs-border bg-cs-panel p-4" title={definition.description}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special">
-            <Icon size={18} />
-          </div>
-          <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase text-cs-muted">Permanent Bonus</p>
-            <h3 className="mt-1 truncate text-lg font-semibold text-cs-text">{definition.name}</h3>
-          </div>
-        </div>
-        <span className="shrink-0 border border-cs-border bg-cs-surface px-2 py-1 font-mono text-[10px] uppercase text-cs-muted">
-          Lv {level}/{definition.maxLevel}
-        </span>
-      </div>
-
-      <p className="mt-4 text-sm leading-6 text-cs-muted">{definition.description}</p>
-
-      <div className="mt-4 h-2 border border-cs-border bg-cs-surface">
-        <div className="h-full bg-rarity-special transition-[width]" style={{ width: `${progress}%` }} />
-      </div>
-
-      <dl className="mt-4 grid gap-2 text-sm">
-        <div className="border border-cs-border bg-cs-surface px-3 py-2">
-          <dt className="font-mono text-[10px] uppercase text-cs-muted">Current</dt>
-          <dd className="mt-1 text-cs-text">{definition.getCurrentEffect(level)}</dd>
-        </div>
-        {!purchase.isMaxLevel ? (
-          <div className="border border-cs-border bg-cs-surface px-3 py-2">
-            <dt className="font-mono text-[10px] uppercase text-cs-muted">Next</dt>
-            <dd className="mt-1 text-cs-green">{definition.getNextEffect(level)}</dd>
-          </div>
-        ) : null}
-      </dl>
-
-      <div className="mt-auto flex items-center justify-between gap-3 border-t border-cs-border pt-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase text-cs-muted">Cost</p>
-          <p className="mt-1 text-sm font-semibold text-cs-text">
-            {purchase.isMaxLevel ? 'Complete' : `${purchase.cost} PP`}
-          </p>
-        </div>
-        <button
-          className="inline-flex items-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted"
-          disabled={disabled}
-          onClick={() => onPurchase(definition.id)}
-          type="button"
-        >
-          {disabled ? <Lock size={16} /> : <ShoppingCart size={16} />}
-          {purchase.isMaxLevel ? 'Maxed' : purchase.canAfford ? 'Buy' : 'Need PP'}
-        </button>
-      </div>
-    </article>
-  )
-}
-
-function PrestigeConfirmModal({
-  award,
-  onCancel,
-  onConfirm,
-}: {
-  award: number
-  onCancel: () => void
-  onConfirm: () => void
-}) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/75 p-0 sm:p-4">
-      <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-rarity-special bg-cs-panel p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl">
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center border border-rarity-special bg-rarity-special/10 text-rarity-special">
-            <RotateCcw size={22} />
-          </div>
-          <div>
-            <h3 className="text-2xl font-semibold text-cs-text">Confirm Prestige</h3>
-            <p className="mt-2 text-sm leading-6 text-cs-muted">
-              This reset clears the current run and grants {award} prestige point{award === 1 ? '' : 's'}.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="border border-rarity-covert bg-rarity-covert/10 p-3">
-            <p className="font-mono text-xs uppercase text-rarity-covert">Reset</p>
-            <p className="mt-2 text-sm text-cs-muted">
-              Money, inventory, unlocked cases, automation, run upgrades, recent drops, market events, and run stats.
-            </p>
-          </div>
-          <div className="border border-cs-green bg-cs-green/10 p-3">
-            <p className="font-mono text-xs uppercase text-cs-green">Preserved</p>
-            <p className="mt-2 text-sm text-cs-muted">
-              Prestige level, prestige points, permanent bonuses, achievements, collection book, and collection rewards.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <button
-            className="border border-cs-border px-4 py-2 text-sm font-semibold text-cs-muted transition-colors hover:text-cs-text"
-            onClick={onCancel}
-            type="button"
-          >
-            Cancel
-          </button>
-          <button
-            className="inline-flex items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20"
-            onClick={onConfirm}
-            type="button"
-          >
-            <RotateCcw size={16} />
-            Prestige
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+function PrestigeModal({ onClose }: { onClose: () => void }) {
+  const { cloud, prestige, state } = useGame()
+  const eligibility = useMemo(() => getPrestigeEligibilityV2(state), [state])
+  const capacity = getLegacyVaultCapacity(state.prestigeSystem)
+  const [selected, setSelected] = useState<string[]>([])
+  const [confirmed, setConfirmed] = useState(false)
+  const [backupFailed, setBackupFailed] = useState(false)
+  const candidates = [...state.inventory].sort((a, b) => b.marketValue - a.marketValue)
+  function toggle(id: string) { setSelected((current) => current.includes(id) ? current.filter((entry) => entry !== id) : current.length < capacity ? [...current, id] : current) }
+  function finish() { setBackupFailed(false); if (prestige(selected)) onClose(); else setBackupFailed(true) }
+  return <div aria-modal="true" className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-0 sm:p-4" role="dialog"><div className="mx-auto min-h-dvh w-full max-w-4xl border border-rarity-special bg-cs-panel p-5 sm:min-h-0">
+    <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-xs uppercase text-rarity-special">Final review</p><h2 className="mt-1 text-2xl font-semibold text-cs-text">Prestige into {eligibility.tier.name}</h2><p className="mt-2 text-sm text-cs-muted">A verified local recovery backup is created before the atomic reset.</p></div><button className="border border-cs-border px-3 py-2 text-cs-muted hover:text-cs-text" onClick={onClose} type="button">Close</button></div>
+    <section className="mt-5 border border-cs-border bg-cs-surface p-4"><div className="flex items-center gap-2"><Archive className="text-rarity-special" size={18} /><h3 className="font-semibold text-cs-text">Legacy Vault · {selected.length}/{capacity}</h3></div><p className="mt-2 text-sm text-cs-muted">Selected items keep their exact instance ID, Pattern, float, edition, flags, and acquisition cost basis. Everything else in the run inventory resets.</p>{candidates.length ? <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2">{candidates.map((item) => <button aria-pressed={selected.includes(item.instanceId)} className={`flex min-w-0 items-center gap-3 border p-2 text-left ${selected.includes(item.instanceId) ? 'border-rarity-special bg-rarity-special/10' : 'border-cs-border bg-cs-panel'}`} key={item.instanceId} onClick={() => toggle(item.instanceId)} type="button"><img alt="" className="h-12 w-16 object-contain" loading="lazy" src={item.image} /><span className="min-w-0"><span className="block truncate text-sm font-semibold text-cs-text">{item.weapon} | {item.finish}</span><span className="block text-xs text-cs-muted">Pattern #{item.paintSeed ?? 'Legacy'} · {formatCurrency(item.marketValue)}</span></span></button>)}</div> : <p className="mt-3 text-sm text-cs-muted">No items are currently eligible for the Vault.</p>}</section>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="border border-rarity-covert/60 bg-rarity-covert/5 p-3"><p className="font-mono text-xs uppercase text-rarity-covert">Reset</p><p className="mt-2 text-sm leading-6 text-cs-muted">Cash, non-vault inventory, current-run XP, run upgrades, employees and budgets, licenses, current-run discoveries, events, and run counters.</p></div><div className="border border-cs-green/60 bg-cs-green/5 p-3"><p className="font-mono text-xs uppercase text-cs-green">Preserved</p><p className="mt-2 text-sm leading-6 text-cs-muted">Prestige Points and perks, lifetime XP, achievements, All Time Collection, lifetime ledger, run history, settings, cloud lineage, and exact Vault items.</p></div></div>
+    {cloud.conflict ? <p className="mt-4 border border-rarity-covert bg-rarity-covert/10 p-3 text-sm text-rarity-covert">Resolve the cloud-save conflict before prestiging.</p> : null}
+    {backupFailed ? <p className="mt-4 border border-rarity-covert bg-rarity-covert/10 p-3 text-sm text-rarity-covert">Prestige did not start. The recovery backup could not be verified or the run changed during review.</p> : null}
+    <label className="mt-4 flex items-start gap-3 border border-cs-border p-3 text-sm text-cs-muted"><input checked={confirmed} className="mt-1" onChange={(event) => setConfirmed(event.target.checked)} type="checkbox" /><span>I understand the reset list and have reviewed my Legacy Vault selection.</span></label>
+    <div className="mt-4 flex justify-end"><button className="inline-flex items-center gap-2 border border-rarity-special bg-rarity-special/10 px-5 py-3 font-semibold text-rarity-special disabled:opacity-40" disabled={!confirmed || !eligibility.canPrestige || Boolean(cloud.conflict)} onClick={finish} type="button"><RotateCcw size={17} /> Confirm Prestige · +{calculatePrestigePointsV2(state)} PP</button></div>
+  </div></div>
 }
 
 export function PrestigeView() {
-  const { prestige, purchasePrestigeBonus, state } = useGame()
-  const [isConfirming, setIsConfirming] = useState(false)
-  const snapshot = useMemo(() => ({
-    achievements: state.achievements,
-    casesOpened: state.statistics.casesOpened,
-    collectionRewards: state.collectionRewards,
-    inventoryValue: state.inventoryValue,
-    moneyEarned: state.statistics.moneyEarned,
-    moneySpent: state.statistics.moneySpent,
-    prestigeBonuses: state.prestigeBonuses,
-    prestigeLevel: state.prestigeLevel,
-    prestigePoints: state.prestigePoints,
-  }), [
-    state.achievements,
-    state.collectionRewards,
-    state.inventoryValue,
-    state.prestigeBonuses,
-    state.prestigeLevel,
-    state.prestigePoints,
-    state.statistics.casesOpened,
-    state.statistics.moneyEarned,
-    state.statistics.moneySpent,
-  ])
-  const eligibility = useMemo(() => getPrestigeEligibility(snapshot), [snapshot])
-  const pointAward = useMemo(() => {
-    const baseAward = calculatePrestigePointAward(snapshot)
-
-    return Math.max(1, Math.ceil(baseAward * getSkillPrestigePointMultiplier(state.learnedSkillNodeIds)))
-  }, [snapshot, state.learnedSkillNodeIds])
-  const automationSpeedBonus = 1 - getPrestigeAutomationIntervalMultiplier(state.prestigeBonuses)
-
-  function confirmPrestige() {
-    prestige()
-    setIsConfirming(false)
-  }
-
-  return (
-    <section className="w-full border border-cs-border bg-cs-surface p-5 sm:p-7">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="border-l-4 border-rarity-special pl-4">
-          <p className="font-mono text-xs uppercase text-rarity-special">Long Run Reset</p>
-          <h2 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Prestige</h2>
-          <p className="mt-2 max-w-2xl text-sm text-cs-muted">
-            Convert a strong run into permanent power, then start again with a sharper baseline.
-          </p>
-        </div>
-        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3">
-          <BonusStat label="Prestige" value={String(state.prestigeLevel)} />
-          <BonusStat label="Points" value={String(state.prestigePoints)} />
-          <BonusStat label="Next Award" value={String(pointAward)} />
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="space-y-5">
-          <section className="border border-cs-border bg-cs-panel p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="font-mono text-xs uppercase text-cs-muted">Eligibility</p>
-                <h3 className="mt-1 text-2xl font-semibold text-cs-text">
-                  {eligibility.canPrestige ? 'Prestige Ready' : 'Build The Run'}
-                </h3>
-                <p className="mt-2 text-sm text-cs-muted">{eligibility.reason}</p>
-              </div>
-              <button
-                className="inline-flex items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-3 font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted"
-                disabled={!eligibility.canPrestige}
-                onClick={() => setIsConfirming(true)}
-                type="button"
-              >
-                {eligibility.canPrestige ? <RotateCcw size={18} /> : <Lock size={18} />}
-                Prestige Run
-              </button>
-            </div>
-
-            <div className="mt-5 grid gap-3 lg:grid-cols-2">
-              <ProgressMeter
-                current={state.statistics.casesOpened}
-                formatValue={(value) => Math.floor(value).toLocaleString()}
-                label="Cases Opened"
-                target={PRESTIGE_CASES_OPENED_THRESHOLD}
-              />
-              <ProgressMeter
-                current={state.statistics.moneySpent}
-                label="Money Spent"
-                target={PRESTIGE_MONEY_SPENT_THRESHOLD}
-              />
-              <ProgressMeter
-                current={state.inventoryValue}
-                label="Inventory Value"
-                target={PRESTIGE_INVENTORY_VALUE_THRESHOLD}
-              />
-              <ProgressMeter
-                current={state.statistics.moneyEarned}
-                label="Sell Earnings"
-                target={PRESTIGE_MONEY_EARNED_THRESHOLD}
-              />
-            </div>
-
-            {state.lastError ? (
-              <div className="mt-4 flex items-start gap-2 border border-rarity-covert bg-rarity-covert/10 p-3 text-sm text-rarity-covert">
-                <AlertTriangle className="mt-0.5 shrink-0" size={16} />
-                <span>{state.lastError}</span>
-              </div>
-            ) : null}
-          </section>
-
-          <section className="border border-cs-border bg-cs-panel p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="font-mono text-xs uppercase text-cs-muted">Prestige Shop</p>
-                <h3 className="mt-1 text-2xl font-semibold text-cs-text">Permanent Bonuses</h3>
-              </div>
-              <Trophy className="text-rarity-special" size={22} />
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {PRESTIGE_BONUS_DEFINITIONS.map((definition) => (
-                <PrestigeBonusCard
-                  definition={definition}
-                  key={definition.id}
-                  onPurchase={purchasePrestigeBonus}
-                  points={state.prestigePoints}
-                  prestigeBonuses={state.prestigeBonuses}
-                />
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-4">
-          <section className="border border-cs-border bg-cs-panel p-4">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-xl font-semibold text-cs-text">Permanent Effects</h3>
-              <CheckCircle className="text-cs-green" size={20} />
-            </div>
-            <div className="mt-4 grid gap-2">
-              <BonusStat label="Sell Value" value={`${formatPercent(getPrestigeSellMultiplier(state.prestigeBonuses) - 1)} bonus`} />
-              <BonusStat label="Case Discount" value={formatPercent(getPrestigeCaseDiscount(state.prestigeBonuses))} />
-              <BonusStat label="Drop Luck" value={`${formatPercent(getPrestigeLuckBonus(state.prestigeBonuses))} pressure`} />
-              <BonusStat label="Automation" value={`${formatPercent(automationSpeedBonus)} faster`} />
-              <BonusStat label="Starting Cash" value={formatCurrency(defaultGameState.money + getPrestigeStartingMoneyBonus(state.prestigeBonuses))} />
-              <BonusStat label="Inventory Slots" value={`+${getPrestigeInventoryCapacityBonus(state.prestigeBonuses)}`} />
-              <BonusStat label="Market Knowledge" value={`${formatPercent(getPrestigeMarketKnowledgeBonus(state.prestigeBonuses))} event chance`} />
-            </div>
-          </section>
-
-          <section className="border border-cs-border bg-cs-panel p-4">
-            <h3 className="text-xl font-semibold text-cs-text">Point Formula</h3>
-            <p className="mt-3 text-sm leading-6 text-cs-muted">
-              Award uses run value, cases opened, achievement count, and collection prestige bonuses.
-            </p>
-            <div className="mt-4 border border-cs-border bg-cs-surface p-3">
-              <p className="font-mono text-[10px] uppercase text-cs-muted">Projected Award</p>
-              <p className="mt-1 text-3xl font-semibold text-rarity-special">{pointAward} PP</p>
-            </div>
-          </section>
-        </aside>
-      </div>
-
-      {isConfirming ? (
-        <PrestigeConfirmModal
-          award={pointAward}
-          onCancel={() => setIsConfirming(false)}
-          onConfirm={confirmPrestige}
-        />
-      ) : null}
-    </section>
-  )
+  const { purchasePrestigePerk, state } = useGame()
+  const [showModal, setShowModal] = useState(false)
+  const eligibility = useMemo(() => getPrestigeEligibilityV2(state), [state])
+  const award = calculatePrestigePointsV2(state)
+  const tier = getNextPrestigeTier(state.prestigeSystem)
+  return <section className="w-full border border-cs-border bg-cs-surface p-5 sm:p-7">
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="border-l-4 border-rarity-special pl-4"><p className="font-mono text-xs uppercase text-rarity-special">Career Legacy</p><h1 className="mt-1 text-3xl font-semibold text-cs-text">Prestige</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-cs-muted">Archive a proven run, keep a carefully limited legacy, and begin a deeper career tier.</p></div><div className="grid grid-cols-3 gap-2 border border-cs-border bg-cs-panel p-3 text-center"><div><p className="text-xs text-cs-muted">Runs</p><p className="font-semibold text-cs-text">{state.prestigeSystem.completedRuns}</p></div><div><p className="text-xs text-cs-muted">Highest Tier</p><p className="font-semibold text-cs-text">{state.prestigeSystem.highestTier}/5</p></div><div><p className="text-xs text-cs-muted">Points</p><p className="font-semibold text-rarity-special">{state.prestigePoints}</p></div></div></header>
+    <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]"><main className="space-y-5"><section className="border border-cs-border bg-cs-panel p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-xs uppercase text-cs-muted">Tier {tier.tier} · {tier.name}</p><h2 className="mt-1 text-2xl font-semibold text-cs-text">Run Score {eligibility.score.total.toFixed(1)} / {tier.minimumScore}</h2><p className="mt-2 text-sm text-cs-muted">Level {eligibility.level}/{tier.minimumLevel} · {eligibility.primaryCount}/{tier.requiredPrimaryPaths} primary · {eligibility.supportCount}/{tier.requiredSupportPaths} support</p></div><button className="inline-flex items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-3 font-semibold text-rarity-special disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted" disabled={!eligibility.canPrestige} onClick={() => setShowModal(true)} type="button">{eligibility.canPrestige ? <RotateCcw size={17} /> : <Lock size={17} />} Prestige · +{award} PP</button></div>
+      {!eligibility.canPrestige ? <ul className="mt-4 grid gap-2 text-sm text-cs-muted sm:grid-cols-2">{eligibility.reasons.map((reason) => <li className="border border-cs-border bg-cs-surface px-3 py-2" key={reason}>{reason}</li>)}</ul> : <p className="mt-4 border border-cs-green/50 bg-cs-green/5 p-3 text-sm text-cs-green">All tier requirements and transaction-safety checks are complete.</p>}
+    </section><section><div className="flex items-center gap-2"><ShieldCheck className="text-rarity-special" size={20} /><h2 className="text-xl font-semibold text-cs-text">Prestige Paths</h2></div><div className="mt-3 grid gap-3 lg:grid-cols-2">{eligibility.paths.map((path) => <PathCard key={path.id} path={path} />)}</div></section>
+    <section className="border border-cs-border bg-cs-panel p-5"><div className="flex items-center gap-2"><Crown className="text-rarity-special" size={20} /><h2 className="text-xl font-semibold text-cs-text">Permanent Perks</h2></div><div className="mt-4 grid gap-3 md:grid-cols-2">{PRESTIGE_PERKS.map((perk) => { const level = state.prestigeSystem.perkLevels[perk.id]; const cost = getPrestigePerkCost(perk.id, level); const maxed = level >= perk.maxLevel; return <article className="border border-cs-border bg-cs-surface p-4" key={perk.id}><div className="flex justify-between gap-3"><div><h3 className="font-semibold text-cs-text">{perk.name}</h3><p className="mt-1 text-xs leading-5 text-cs-muted">{perk.description}</p></div><span className="shrink-0 font-mono text-xs text-rarity-special">{level}/{perk.maxLevel}</span></div><button className="mt-3 w-full border border-rarity-special/70 px-3 py-2 text-sm font-semibold text-rarity-special disabled:border-cs-border disabled:text-cs-muted" disabled={maxed || state.prestigePoints < cost || !purchasePrestigePerk} onClick={() => purchasePrestigePerk?.(perk.id as PrestigePerkId)} type="button">{maxed ? 'Complete' : `Buy · ${cost} PP`}</button></article>})}</div></section></main>
+      <aside className="space-y-4"><section className="border border-cs-border bg-cs-panel p-4"><div className="flex items-center gap-2"><CircleDollarSign className="text-rarity-special" size={18} /><h2 className="font-semibold text-cs-text">Score Breakdown</h2></div><div className="mt-4 space-y-3"><Meter label="Career level · 35%" value={eligibility.score.level} /><Meter label="Best path · 25%" value={eligibility.score.bestPath} /><Meter label="Second path · 15%" value={eligibility.score.secondPath} /><Meter label="Breadth · 10%" value={eligibility.score.breadth} /><Meter label="Solvency · 10%" value={eligibility.score.solvency} /><Meter label="Stewardship · 5%" value={eligibility.score.stewardship} /></div></section><section className="border border-cs-border bg-cs-panel p-4"><div className="flex items-center gap-2"><Archive className="text-rarity-special" size={18} /><h2 className="font-semibold text-cs-text">Career History</h2></div><div className="mt-3 space-y-2">{state.prestigeSystem.runHistory.slice(0, 6).map((run) => <div className="border border-cs-border bg-cs-surface p-3" key={run.id}><div className="flex justify-between gap-2 text-sm"><span className="font-semibold text-cs-text">Tier {run.tier}</span><span className="text-rarity-special">+{run.awardedPoints} PP</span></div><p className="mt-1 text-xs text-cs-muted">Score {run.score.toFixed(1)} · {run.vaultedItemIds.length} vaulted · {new Date(run.endedAt).toLocaleDateString()}</p></div>)}{state.prestigeSystem.runHistory.length === 0 ? <p className="text-sm text-cs-muted">Completed runs will be archived here without growing the save indefinitely.</p> : null}</div></section></aside></div>
+    {showModal ? <PrestigeModal onClose={() => setShowModal(false)} /> : null}
+  </section>
 }

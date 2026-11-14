@@ -578,7 +578,8 @@ function getCaseOpeningEvents(before: GameState, after: GameState, action: GameA
 
 function getPatternDiscoveryKey(item: SkinInstance) {
   if (!item.pattern || !isSpecialPattern(item)) return undefined
-  return `pattern:${item.id}:${item.pattern.family}:${item.pattern.name}:${item.pattern.tier}`
+  const edition = item.souvenir ? 'souvenir' : item.statTrak ? 'stattrak' : 'standard'
+  return `pattern:${item.id}:${edition}:${item.wear}:${item.pattern.family}:${item.pattern.tier}:${item.pattern.name}`
 }
 
 function getCollectionEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
@@ -761,7 +762,7 @@ function getAchievementEvents(before: GameState, after: GameState, action: GameA
   })
 }
 
-function applyPendingEvents(career: CareerState, pending: PendingCareerEvent[]) {
+function applyPendingEvents(career: CareerState, pending: PendingCareerEvent[], permanentMultiplier = 1) {
   const next = career
   const processed = new Set(next.processedEventIds)
   const lifetimeDiscoveryKeys = new Set(next.lifetimeDiscoveryKeys)
@@ -790,14 +791,15 @@ function applyPendingEvents(career: CareerState, pending: PendingCareerEvent[]) 
       }
       multiplier = getDiminishingXpMultiplier(count, candidate.softCap)
     }
-    const xp = Math.max(1, Math.round(candidate.baseXp * multiplier))
+    const boundedPermanentMultiplier = Math.min(1.4, Math.max(1, permanentMultiplier))
+    const xp = Math.max(1, Math.round(candidate.baseXp * multiplier * boundedPermanentMultiplier))
     const event: CareerXpEvent = {
       id: candidate.id,
       type: candidate.type,
       category: candidate.category,
       xp,
       baseXp: candidate.baseXp,
-      multiplier: Number(multiplier.toFixed(4)),
+      multiplier: Number((multiplier * boundedPermanentMultiplier).toFixed(4)),
       reason: candidate.reason,
       timestamp: candidate.timestamp,
       runId: next.runId,
@@ -887,7 +889,8 @@ export function recordCareerAction(before: GameState, after: GameState, action: 
     ...getAchievementEvents(before, after, action),
     ...getBusinessEvents(before, after, action),
   ]
-  const career = applyPendingEvents(after.career, pending)
+  const prestigeXpMultiplier = 1 + Math.min(.4, Math.max(0, after.prestigeSystem.perkLevels.xpAcceleration) * .05)
+  const career = applyPendingEvents(after.career, pending, prestigeXpMultiplier)
   return career === after.career ? after : { ...after, career }
 }
 

@@ -173,6 +173,14 @@ describe('career specialization upgrades', () => {
         ...createLegacyCareerUpgradeState({ now: 1, skillPoints: 1, upgradePoints: 1, learnedSkillCount: 1, legacyUpgradeLevels: 1 }),
         levels: { 'case-opening.presentation-drive': 2 },
       },
+      career: {
+        ...state.career,
+        currentRunDiscoveryKeys: Array.from({ length: 100 }, (_, index) => `run-discovery-${index}`),
+      },
+      economyLedger: {
+        ...state.economyLedger,
+        currentRun: { ...state.economyLedger.currentRun, tradeUpOutputValue: 6_000 },
+      },
     }
     const credit = eligible.careerUpgrades.migration.transitionCredit
     const prestiged = gameReducer(eligible, { type: 'PRESTIGE', now: 2 })

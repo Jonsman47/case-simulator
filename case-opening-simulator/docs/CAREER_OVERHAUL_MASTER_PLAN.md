@@ -475,3 +475,15 @@ Prompt 4 advances saves to v37 and makes the five Career specializations the onl
 - Mechanical upgrades are consumed by opening presentation/batch controls, inventory and Trophy Room capacity, CSWEAR player-sale fees, and the shared online/offline employee scheduler. Business panels expose role-specific Career effects.
 - Every run specialization level resets on Prestige. Lifetime Career XP, collection discoveries, achievements, Prestige records, migration metadata and remaining transition credit are preserved.
 - Cost and 500–800-hour economy calibration remain provisional until Prompt 5. Prompt 6 still owns the new Prestige formula, Legacy Vault and All Time/Current Run Collection Book presentation.
+
+## 28. Prompt 6 implementation decisions
+
+Prompt 6 advances saves to v38 and replaces the legacy threshold reset with the five-tier career Prestige system specified by Prompt 5. The authoritative runtime and migration reference is `PRESTIGE_SYSTEM.md`.
+
+- Eligibility uses current-run level, a clamped six-component score, five typed activity paths, and explicit transaction-safety blockers.
+- PP awards use bounded tier bases and score/path bonuses. Events and retired Skill Tree nodes cannot multiply the award, and first-time tier bonuses cannot repeat.
+- A verified local recovery save is created before the reducer receives the atomic exact-once request.
+- Legacy Vault selection is explicit and preserves exact item identity and cost basis, with one base slot and a ten-slot permanent cap.
+- The Collection Book now separates permanent All Time discoveries from a persisted Current Run set. Pre-v38 run attribution remains honestly unknown.
+- Career run history and processed request IDs are bounded. Lifetime Career XP, achievements, collection records and financial aggregates remain permanent.
+- Permanent perks improve rebuild convenience with hard caps; none changes official case odds or Pattern valuation.

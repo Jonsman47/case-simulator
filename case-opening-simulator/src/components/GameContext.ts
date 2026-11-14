@@ -12,6 +12,7 @@ import type {
 } from '../data/models'
 import type { GameEventType } from '../events/eventManager'
 import type { InventoryViewUiState } from '../utils/inventoryFilters'
+import type { PrestigePerkId } from '../prestige/prestigeSystem'
 import type {
   CloudConflict,
   CloudConflictResolution,
@@ -56,8 +57,9 @@ export interface GameContextValue {
   purchaseAuctionDeal: (dealId: string) => void
   toggleAutomationModule: (moduleId: AutomationModuleId, isEnabled?: boolean) => void
   purchaseUpgrade: (upgradeId: UpgradeId) => void
-  prestige: () => void
+  prestige: (vaultItemIds?: string[]) => boolean | void
   purchasePrestigeBonus: (bonusId: PrestigeBonusId) => void
+  purchasePrestigePerk?: (perkId: PrestigePerkId) => void
   learnSkillNode: (nodeId: SkillNodeId) => void
   triggerGameEvent: (eventType: GameEventType) => void
   tickEventsNow: () => void

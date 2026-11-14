@@ -86,7 +86,7 @@ describe('prestige helpers', () => {
     expect(award).toBe(11)
   })
 
-  it('derives permanent bonus effects from levels', () => {
+  it('keeps legacy levels readable but neutralizes their retired economic effects', () => {
     const bonuses = {
       ...createDefaultPrestigeBonusLevels(),
       [PrestigeBonusId.SellValue]: 2,
@@ -96,13 +96,13 @@ describe('prestige helpers', () => {
     }
 
     expect(getPrestigeBonusLevel(bonuses, PrestigeBonusId.SellValue)).toBe(2)
-    expect(getPrestigeSellMultiplier(bonuses)).toBe(1.08)
-    expect(getPrestigeCaseDiscount(bonuses)).toBeCloseTo(0.075)
-    expect(getPrestigeAutomationIntervalMultiplier(bonuses)).toBe(0.9)
-    expect(getPrestigeStartingMoneyBonus(bonuses)).toBe(8_000)
+    expect(getPrestigeSellMultiplier(bonuses)).toBe(1)
+    expect(getPrestigeCaseDiscount(bonuses)).toBe(0)
+    expect(getPrestigeAutomationIntervalMultiplier(bonuses)).toBe(1)
+    expect(getPrestigeStartingMoneyBonus(bonuses)).toBe(0)
   })
 
-  it('applies case discounts without changing official rarity odds', () => {
+  it('does not apply retired case or luck bonuses to official case economics', () => {
     const bonuses = {
       ...createDefaultPrestigeBonusLevels(),
       [PrestigeBonusId.CaseDiscount]: 2,
@@ -125,7 +125,7 @@ describe('prestige helpers', () => {
       [rareSkin.id, rareSkin],
     ]))
 
-    expect(discountedCase.cost).toBe(9.5)
+    expect(discountedCase.cost).toBe(10)
     expect(Number(boostedTable.reduce((total, drop) => total + drop.weight, 0).toFixed(6))).toBe(101)
     expect(boostedTable).toEqual(dropTable)
   })

@@ -60,6 +60,11 @@ import {
   type EmployeeRoleId,
   type ScoutWatchlist,
 } from '../business/business'
+import {
+  createDefaultPrestigeSystem,
+  type PrestigePerkId,
+  type PrestigeSystemState,
+} from '../prestige/prestigeSystem'
 
 export type RarityKey =
   | 'consumer'
@@ -329,6 +334,7 @@ export interface GameState {
   trophyAssignments: TrophyAssignments
   dailyRewards: DailyRewardsState
   collectionBook: CollectionEntry[]
+  currentRunCollectionBook: CollectionEntry[]
   collectionRewards: CollectionRewardProgress[]
   recentDrops: SkinInstance[]
   lastOpenedItems: SkinInstance[]
@@ -340,6 +346,7 @@ export interface GameState {
   prestigeLevel: number
   prestigePoints: number
   prestigeBonuses: PrestigeBonusLevels
+  prestigeSystem: PrestigeSystemState
   upgradePoints: number
   skillPoints: number
   learnedSkillNodeIds: SkillNodeId[]
@@ -394,8 +401,9 @@ export type GameAction =
   | { type: 'TOGGLE_AUTOMATION_MODULE'; moduleId: AutomationModuleId; isEnabled?: boolean; now?: number }
   | { type: 'PURCHASE_UPGRADE'; upgradeId: UpgradeId; now?: number }
   | { type: 'PURCHASE_CAREER_UPGRADE'; upgradeId: string; now?: number }
-  | { type: 'PRESTIGE'; now?: number }
+  | { type: 'PRESTIGE'; requestId?: string; vaultItemIds?: string[]; backupVerified?: boolean; now?: number }
   | { type: 'PURCHASE_PRESTIGE_BONUS'; bonusId: PrestigeBonusId; now?: number }
+  | { type: 'PURCHASE_PRESTIGE_PERK'; perkId: PrestigePerkId; now?: number }
   | { type: 'LEARN_SKILL_NODE'; nodeId: SkillNodeId; now?: number }
   | { type: 'ASSIGN_TROPHY_ITEM'; slotId: string; itemId: string; now?: number }
   | { type: 'REMOVE_TROPHY_ITEM'; slotId: string }
@@ -478,6 +486,7 @@ export const defaultGameState: GameState = {
   trophyAssignments: createDefaultTrophyAssignments(),
   dailyRewards: createDefaultDailyRewardsState(),
   collectionBook: [],
+  currentRunCollectionBook: [],
   collectionRewards: [],
   recentDrops: [],
   lastOpenedItems: [],
@@ -488,6 +497,7 @@ export const defaultGameState: GameState = {
   prestigeLevel: 0,
   prestigePoints: 0,
   prestigeBonuses: createDefaultPrestigeBonusLevels(),
+  prestigeSystem: createDefaultPrestigeSystem(),
   upgradePoints: 0,
   skillPoints: 0,
   learnedSkillNodeIds: createDefaultLearnedSkillNodeIds(),

@@ -100,9 +100,10 @@ import {
   normalizeBusinessState,
   retireLegacyAutomation,
 } from '../business/business'
+import { createDefaultPrestigeSystem, normalizePrestigeSystem } from '../prestige/prestigeSystem'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 37
+export const CURRENT_SAVE_VERSION = 38
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1655,6 +1656,19 @@ function migrateV36ToV37(value: unknown): unknown {
   }
 }
 
+function migrateV37ToV38(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const legacyLevel = Math.max(0, Math.floor(normalizeNumber(value.prestigeLevel, 0)))
+  return {
+    ...value,
+    prestigeSystem: createDefaultPrestigeSystem(
+      legacyLevel,
+      isRecord(value.prestigeBonuses) ? value.prestigeBonuses : {},
+    ),
+    currentRunCollectionBook: [],
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1693,6 +1707,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   34: migrateV34ToV35,
   35: migrateV35ToV36,
   36: migrateV36ToV37,
+  37: migrateV37ToV38,
 }
 
 function getEnvelope(value: unknown) {
@@ -1753,6 +1768,7 @@ export function toPlayerState(state: GameState): PlayerState {
     trophyAssignments: state.trophyAssignments,
     dailyRewards: state.dailyRewards,
     collectionBook: state.collectionBook,
+    currentRunCollectionBook: state.currentRunCollectionBook,
     collectionRewards: state.collectionRewards,
     hasUsedFirstCaseHook: state.hasUsedFirstCaseHook,
     lastPoopCleaningAt: state.lastPoopCleaningAt,
@@ -1760,6 +1776,7 @@ export function toPlayerState(state: GameState): PlayerState {
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: state.prestigeBonuses,
+    prestigeSystem: state.prestigeSystem,
     upgradePoints: state.upgradePoints,
     skillPoints: state.skillPoints,
     learnedSkillNodeIds: state.learnedSkillNodeIds,
@@ -1812,6 +1829,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     trophyAssignments: normalizeTrophyAssignments(state.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(state.dailyRewards),
     collectionBook,
+    currentRunCollectionBook: normalizeCollectionBook(state.currentRunCollectionBook),
     collectionRewards: state.collectionRewards,
     hasUsedFirstCaseHook: typeof state.hasUsedFirstCaseHook === 'boolean'
       ? state.hasUsedFirstCaseHook
@@ -1824,6 +1842,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: normalizePrestigeBonusLevels(state.prestigeBonuses),
+    prestigeSystem: normalizePrestigeSystem(state.prestigeSystem, state.prestigeLevel),
     upgradePoints: state.upgradePoints,
     skillPoints: state.skillPoints,
     learnedSkillNodeIds: normalizeLearnedSkillNodeIds(state.learnedSkillNodeIds),
@@ -1914,6 +1933,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
     dailyRewards: normalizeDailyRewardsState(value.dailyRewards),
     collectionBook,
+    currentRunCollectionBook: normalizeCollectionBook(value.currentRunCollectionBook),
     collectionRewards: normalizeCollectionRewards(value.collectionRewards),
     hasUsedFirstCaseHook: typeof value.hasUsedFirstCaseHook === 'boolean'
       ? value.hasUsedFirstCaseHook
@@ -1927,6 +1947,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     prestigeLevel: normalizeNumber(value.prestigeLevel, defaultGameState.prestigeLevel),
     prestigePoints: normalizeNumber(value.prestigePoints, defaultGameState.prestigePoints),
     prestigeBonuses: normalizePrestigeBonusLevels(value.prestigeBonuses),
+    prestigeSystem: normalizePrestigeSystem(value.prestigeSystem, normalizeNumber(value.prestigeLevel, 0)),
     upgradePoints: normalizeNumber(value.upgradePoints, defaultGameState.upgradePoints),
     skillPoints: normalizeNumber(value.skillPoints, defaultGameState.skillPoints),
     learnedSkillNodeIds: normalizeLearnedSkillNodeIds(value.learnedSkillNodeIds),
@@ -2038,6 +2059,7 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       economyLedger: persistedEconomyLedger,
       career: persistedCareer,
       careerUpgrades: normalizeCareerUpgradeState(gameState.careerUpgrades, currentTime),
+      prestigeSystem: normalizePrestigeSystem(gameState.prestigeSystem, gameState.prestigeLevel),
       business: normalizeBusinessState(gameState.business, currentTime),
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),

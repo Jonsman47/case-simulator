@@ -109,14 +109,9 @@ import {
 } from './upgrades'
 import {
   applyPrestigeEffectsToCase,
-  calculatePrestigePointAward,
-  canPurchasePrestigeBonus,
   getPrestigeAutomationIntervalMultiplier,
   getPrestigeMarketKnowledgeBonus,
   getPrestigeSellMultiplier,
-  getPrestigeStartingMoneyBonus,
-  getPrestigeEligibility,
-  prestigeBonusesById,
 } from './prestige'
 import {
   applySkillEffectsToCase,
@@ -127,7 +122,6 @@ import {
   getSkillMarketKnowledgeBonus,
   getSkillMinigameRewardMultiplier,
   getSkillPassiveIncomeMultiplier,
-  getSkillPrestigePointMultiplier,
   getSkillSellMultiplier,
   getSkillTradeUpInputCostMultiplier,
 } from './skills'
@@ -136,10 +130,18 @@ import {
   eventManager,
   gameEventsToMarketEvents,
   getGameEventCollectionRewardMultiplier,
-  getGameEventPrestigePointMultiplier,
   getGameEventTradeUpInputCostMultiplier,
   type ActiveGameEvent,
 } from '../events/eventManager'
+import {
+  calculatePrestigePointsV2,
+  cloneVaultItems,
+  getPrestigeEligibilityV2,
+  getPrestigeStartingCash as getCareerPrestigeStartingCash,
+  getPrestigeBusinessCostMultiplier,
+  purchasePrestigePerk,
+  validateVaultSelection,
+} from '../prestige/prestigeSystem'
 import { getInventoryFreeSlots, hasInventorySpace } from '../utils/inventoryCapacity'
 import { isUnlockedTrophySlot } from '../utils/trophyRoom'
 import {
@@ -1003,6 +1005,7 @@ function openCase(
     money,
     inventory,
     collectionBook,
+    currentRunCollectionBook: openedItems.reduce(updateCollectionBook, state.currentRunCollectionBook),
     recentDrops: [...openedItems, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: openedItems,
     hasUsedFirstCaseHook: state.hasUsedFirstCaseHook || Boolean(firstCaseHook),
@@ -1233,40 +1236,11 @@ function purchaseCareerUpgrade(state: GameState, upgradeId: string, now = Date.n
   }
 }
 
-function purchasePrestigeBonus(state: GameState, bonusId: PrestigeBonusId): GameState {
-  const definition = prestigeBonusesById.get(bonusId)
-
-  if (!definition) {
-    return {
-      ...state,
-      lastError: 'Prestige bonus not found.',
-    }
-  }
-
-  const purchase = canPurchasePrestigeBonus(definition, state)
-
-  if (purchase.isMaxLevel) {
-    return {
-      ...state,
-      lastError: 'Prestige bonus is already maxed.',
-    }
-  }
-
-  if (!purchase.canAfford) {
-    return {
-      ...state,
-      lastError: 'Not enough prestige points.',
-    }
-  }
-
+function purchasePrestigeBonus(state: GameState, _bonusId: PrestigeBonusId): GameState {
+  void _bonusId
   return {
     ...state,
-    prestigePoints: state.prestigePoints - purchase.cost,
-    prestigeBonuses: {
-      ...state.prestigeBonuses,
-      [definition.id]: purchase.level + 1,
-    },
-    lastError: undefined,
+    lastError: 'Legacy Prestige bonuses were retired in save v38. Use the permanent perk tree.',
   }
 }
 
@@ -1330,39 +1304,24 @@ function removeTrophyItem(state: GameState, slotId: string): GameState {
   }
 }
 
-function prestigeRun(state: GameState, now = Date.now()): GameState {
-  const snapshot = {
-    achievements: state.achievements,
-    casesOpened: state.statistics.casesOpened,
-    collectionRewards: state.collectionRewards,
-    inventoryValue: state.inventoryValue,
-    moneyEarned: state.statistics.moneyEarned,
-    moneySpent: state.statistics.moneySpent,
-    prestigeBonuses: state.prestigeBonuses,
-    prestigeLevel: state.prestigeLevel,
-    prestigePoints: state.prestigePoints,
-  }
-  const eligibility = getPrestigeEligibility(snapshot)
-
-  if (!eligibility.canPrestige) {
-    return {
-      ...state,
-      lastError: eligibility.reason,
-    }
-  }
-
-  const baseAwardedPoints = calculatePrestigePointAward(snapshot)
-  const awardedPoints = Math.max(
-    1,
-    Math.ceil(
-      baseAwardedPoints *
-        getSkillPrestigePointMultiplier(state.learnedSkillNodeIds) *
-        getGameEventPrestigePointMultiplier(state.activeEvents),
-    ),
-  )
-  const startingMoney = roundCurrency(
-    defaultGameState.money + getPrestigeStartingMoneyBonus(state.prestigeBonuses),
-  )
+function prestigeRun(
+  state: GameState,
+  requestId: string,
+  vaultItemIds: string[],
+  backupVerified: boolean,
+  now = Date.now(),
+): GameState {
+  if (!requestId || state.prestigeSystem.completedRequestIds.includes(requestId)) return state
+  if (!backupVerified) return { ...state, lastError: 'Prestige recovery backup was not verified. No progress was reset.' }
+  const eligibility = getPrestigeEligibilityV2(state)
+  if (!eligibility.canPrestige) return { ...state, lastError: eligibility.reasons[0] ?? 'Prestige requirements are not complete.' }
+  const vaultSelection = validateVaultSelection(state, vaultItemIds)
+  if (!vaultSelection.valid) return { ...state, lastError: `Choose no more than ${vaultSelection.capacity} owned Legacy Vault items.` }
+  const selectedIds = new Set(vaultSelection.unique)
+  const vaultedItems = cloneVaultItems(state.inventory.filter((item) => selectedIds.has(item.instanceId)))
+  const awardedPoints = calculatePrestigePointsV2(state)
+  const tier = eligibility.tier
+  const startingMoney = roundCurrency(getCareerPrestigeStartingCash(state.prestigeSystem))
   const prestigeEvent: GameUiEvent = {
     id: nanoid(),
     type: 'prestige_completed',
@@ -1374,10 +1333,34 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
   const prestigedState = withInventoryValuation({
     ...defaultGameState,
     money: startingMoney,
+    inventory: vaultedItems,
     prestigeLevel: state.prestigeLevel + 1,
     prestigePoints: state.prestigePoints + awardedPoints,
     prestigeBonuses: state.prestigeBonuses,
-    upgradePoints: state.upgradePoints,
+    prestigeSystem: {
+      ...state.prestigeSystem,
+      highestTier: Math.max(state.prestigeSystem.highestTier, tier.tier),
+      completedRuns: state.prestigeSystem.completedRuns + 1,
+      completedRequestIds: [...state.prestigeSystem.completedRequestIds, requestId].slice(-96),
+      lastCompletion: { requestId, completedAt: now, tier: tier.tier, score: eligibility.score.total, awardedPoints },
+      runHistory: [{
+        id: `prestige-run:${requestId}`,
+        requestId,
+        runId: state.economyLedger.currentRunId,
+        startedAt: state.economyLedger.currentRunStartedAt,
+        endedAt: now,
+        durationMs: Math.max(0, now - state.economyLedger.currentRunStartedAt),
+        tier: tier.tier,
+        tierName: tier.name,
+        score: eligibility.score.total,
+        awardedPoints,
+        endingCash: state.money,
+        endingInventoryValue: state.inventoryValue,
+        careerXp: state.career.currentRunXp,
+        pathsCompleted: eligibility.paths.filter((path) => path.primaryMet).map((path) => path.id),
+        vaultedItemIds: vaultedItems.map((item) => item.instanceId),
+      }, ...state.prestigeSystem.runHistory].slice(0, 24),
+    },
     // Legacy Skill Points remain a historical counter. Prestige no longer
     // mints an obsolete currency after the v37 Career migration.
     skillPoints: state.skillPoints,
@@ -1385,7 +1368,7 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
     achievements: state.achievements,
     collectionBook: state.collectionBook,
     collectionRewards: state.collectionRewards,
-    trophyAssignments: state.trophyAssignments,
+    trophyAssignments: Object.fromEntries(Object.entries(state.trophyAssignments).filter(([, assignment]) => assignment && selectedIds.has(assignment.itemId))),
     settings: state.settings,
     ui: state.ui,
     business: {
@@ -1398,13 +1381,20 @@ function prestigeRun(state: GameState, now = Date.now()): GameState {
       lastSchedulerAt: now,
       dailyUsage: refreshBusinessDay(defaultGameState.business, now).dailyUsage,
     },
-    careerUpgrades: resetCareerUpgradesForPrestige(state.careerUpgrades),
+    careerUpgrades: resetCareerUpgradesForPrestige(
+      state.careerUpgrades,
+      Math.min(.25, state.prestigeSystem.perkLevels.researchRetention * .05),
+    ),
     uiEvents: appendEvents(state, [prestigeEvent]),
     lastError: undefined,
     lastSaved: now,
   }, now)
 
   const economyLedger = startNextEconomyRun(state, prestigedState, now)
+  economyLedger.itemCostBasis = Object.fromEntries(vaultedItems.flatMap((item) => {
+    const basis = state.economyLedger.itemCostBasis[item.instanceId]
+    return basis === undefined ? [] : [[item.instanceId, basis]]
+  }))
   return {
     ...prestigedState,
     economyLedger,
@@ -1879,6 +1869,7 @@ function purchaseAuctionDeal(state: GameState, dealId: string, now = Date.now())
     money: roundCurrency(clampNumber(state.money) - deal.price),
     inventory: [purchasedItem, ...state.inventory],
     collectionBook: updateCollectionBook(state.collectionBook, purchasedItem),
+    currentRunCollectionBook: updateCollectionBook(state.currentRunCollectionBook, purchasedItem),
     recentDrops: [purchasedItem, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: [purchasedItem],
     automation: {
@@ -1948,7 +1939,9 @@ function getEffectiveEmployeeInterval(state: GameState, roleId: EmployeeRoleId, 
 
 function getEffectiveEmployeeHourlyWage(state: GameState, roleId: EmployeeRoleId, trainingLevel: number) {
   return roundCurrency(
-    getEmployeeHourlyWage(roleId, trainingLevel) * (1 - getCareerPayrollDiscount(state.careerUpgrades)),
+    getEmployeeHourlyWage(roleId, trainingLevel) *
+      (1 - getCareerPayrollDiscount(state.careerUpgrades)) *
+      getPrestigeBusinessCostMultiplier(state.prestigeSystem),
   )
 }
 
@@ -2426,6 +2419,7 @@ function tradeUpItems(state: GameState, itemIds: string[], now = Date.now(), prn
       ...state.inventory.filter((item) => !selectedIdSet.has(item.instanceId)),
     ],
     collectionBook: updateCollectionBook(state.collectionBook, outputItem),
+    currentRunCollectionBook: updateCollectionBook(state.currentRunCollectionBook, outputItem),
     recentDrops: [outputItem, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: [outputItem],
     marketplace: {
@@ -2629,6 +2623,7 @@ function buyMarketListing(
     money: roundCurrency(clampNumber(state.money) - price),
     inventory: [listing.item, ...state.inventory],
     collectionBook: updateCollectionBook(state.collectionBook, listing.item),
+    currentRunCollectionBook: updateCollectionBook(state.currentRunCollectionBook, listing.item),
     recentDrops: [listing.item, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     marketplace,
     lastError: undefined,
@@ -2972,6 +2967,7 @@ function claimDailyReward(state: GameState, now = Date.now()): GameState {
       ...nextState,
       inventory: [item, ...nextState.inventory],
       collectionBook: updateCollectionBook(nextState.collectionBook, item),
+      currentRunCollectionBook: updateCollectionBook(nextState.currentRunCollectionBook, item),
       recentDrops: [item, ...nextState.recentDrops].slice(0, RECENT_DROPS_LIMIT),
       lastOpenedItems: [item],
       statistics: {
@@ -3281,9 +3277,17 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
     case 'PURCHASE_CAREER_UPGRADE':
       return withProgressionUnlocks(purchaseCareerUpgrade(state, action.upgradeId, action.now), action.now)
     case 'PRESTIGE':
-      return withProgressionUnlocks(prestigeRun(state, action.now), action.now)
+      return withProgressionUnlocks(prestigeRun(
+        state,
+        action.requestId ?? `legacy-prestige:${state.economyLedger.currentRunId}`,
+        action.vaultItemIds ?? [],
+        action.backupVerified ?? true,
+        action.now,
+      ), action.now)
     case 'PURCHASE_PRESTIGE_BONUS':
       return purchasePrestigeBonus(state, action.bonusId)
+    case 'PURCHASE_PRESTIGE_PERK':
+      return purchasePrestigePerk(state, action.perkId)
     case 'LEARN_SKILL_NODE':
       return learnSkillNode(state, action.nodeId)
     case 'ASSIGN_TROPHY_ITEM':

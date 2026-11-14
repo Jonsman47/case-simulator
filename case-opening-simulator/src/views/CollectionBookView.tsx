@@ -478,33 +478,38 @@ function clampPage(page: number, pageCount: number) {
 export function CollectionBookView() {
   const { assignTrophyItem, sellItem, state, toggleItemFavorite, toggleItemLock } = useGame()
   const [hideUndiscovered, setHideUndiscovered] = useState(true)
+  const [scope, setScope] = useState<'allTime' | 'currentRun'>('allTime')
   const [completedOnly, setCompletedOnly] = useState(false)
   const [sortCriterion, setSortCriterion] = useState<CollectionSortCriterion>('catalog')
   const [page, setPage] = useState(1)
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined)
   const [dismissedRewardEventId, setDismissedRewardEventId] = useState<string | undefined>()
+  const activeCollectionBook = scope === 'allTime' ? state.collectionBook : state.currentRunCollectionBook
+  const activeInventory = scope === 'allTime'
+    ? state.inventory
+    : state.inventory.filter((item) => item.discoveredAt >= state.career.runStartedAt)
   const latestAcquiredBySkinId = useMemo(() => {
     const timestampsBySkinId = new Map<string, number>()
 
-    for (const entry of state.collectionBook) {
+    for (const entry of activeCollectionBook) {
       timestampsBySkinId.set(entry.skinId, entry.firstFoundAt)
     }
 
-    for (const item of state.inventory) {
+    for (const item of activeInventory) {
       const currentTimestamp = timestampsBySkinId.get(item.id) ?? 0
 
       timestampsBySkinId.set(item.id, Math.max(currentTimestamp, item.discoveredAt))
     }
 
     return timestampsBySkinId
-  }, [state.collectionBook, state.inventory])
+  }, [activeCollectionBook, activeInventory])
   const rows = useMemo(() => {
     return sortSkinRows(
-      buildSkinCollectionRows(SKIN_DEFINITIONS, state.collectionBook, state.inventory),
+      buildSkinCollectionRows(SKIN_DEFINITIONS, activeCollectionBook, activeInventory),
       sortCriterion,
       latestAcquiredBySkinId,
     )
-  }, [latestAcquiredBySkinId, sortCriterion, state.collectionBook, state.inventory])
+  }, [activeCollectionBook, activeInventory, latestAcquiredBySkinId, sortCriterion])
   const filteredRows = useMemo(() => {
     return rows.filter((row) => {
       if (hideUndiscovered && !row.isDiscovered) {
@@ -529,8 +534,8 @@ export function CollectionBookView() {
   const lastVisibleItem = Math.min(filteredRows.length, currentPage * CARDS_PER_PAGE)
 
   const progress = useMemo(
-    () => calculateCollectionCompletion(SKIN_DEFINITIONS, state.collectionBook),
-    [state.collectionBook],
+    () => calculateCollectionCompletion(SKIN_DEFINITIONS, activeCollectionBook),
+    [activeCollectionBook],
   )
   const rewardStatuses = useMemo(
     () => getCollectionRewardStatuses({
@@ -550,16 +555,16 @@ export function CollectionBookView() {
         .filter((event) => event.type === 'drop_revealed')
         .map((event) => event.item.id)
         .filter((skinId) => {
-          const entry = state.collectionBook.find((collectionEntry) => collectionEntry.skinId === skinId)
+          const entry = activeCollectionBook.find((collectionEntry) => collectionEntry.skinId === skinId)
 
           return entry?.timesFound === 1
         }),
     )
-  }, [state.collectionBook, state.uiEvents])
+  }, [activeCollectionBook, state.uiEvents])
   const previewItemsBySkinId = useMemo(() => {
     const itemsBySkinId = new Map<string, SkinInstance>()
 
-    for (const item of state.inventory) {
+    for (const item of activeInventory) {
       const currentPreviewItem = itemsBySkinId.get(item.id)
 
       if (
@@ -572,7 +577,7 @@ export function CollectionBookView() {
     }
 
     return itemsBySkinId
-  }, [state.inventory])
+  }, [activeInventory])
   const activeItem = useMemo(() => {
     if (!activeItemId) {
       return undefined
@@ -597,7 +602,13 @@ export function CollectionBookView() {
             {progress.discovered} of {progress.total} skins discovered
           </p>
         </div>
+        <div className="grid grid-cols-2 border border-cs-border bg-cs-panel p-1" aria-label="Collection scope">
+          <button className={`px-4 py-2 text-sm font-semibold ${scope === 'allTime' ? 'bg-rarity-classified/15 text-rarity-classified' : 'text-cs-muted'}`} onClick={() => { setScope('allTime'); setPage(1) }} type="button">All Time</button>
+          <button className={`px-4 py-2 text-sm font-semibold ${scope === 'currentRun' ? 'bg-rarity-classified/15 text-rarity-classified' : 'text-cs-muted'}`} onClick={() => { setScope('currentRun'); setPage(1) }} type="button">Current Run</button>
+        </div>
       </div>
+
+      {scope === 'currentRun' ? <p className="mt-3 border border-cs-border bg-cs-panel px-3 py-2 text-xs text-cs-muted">Current Run began {new Date(state.career.runStartedAt).toLocaleDateString()}. Pre-v38 discoveries could not be assigned reliably and remain visible only under All Time.</p> : null}
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[14rem_1fr]">
         <div className="border border-cs-border bg-cs-panel p-3">

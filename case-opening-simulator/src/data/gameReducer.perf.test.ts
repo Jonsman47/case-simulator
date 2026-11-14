@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defaultDropsByRarity, defaultGameState, type GameState } from './gameState'
 import { gameReducer } from './gameReducer'
-import { PrestigeBonusId } from './models'
+import { AutomationModuleId } from './models'
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -47,9 +47,15 @@ describe('case opening performance', () => {
 
     const state = makeState({
       money: 100_000,
-      prestigeBonuses: {
-        ...defaultGameState.prestigeBonuses,
-        [PrestigeBonusId.InventoryCapacity]: 1,
+      automation: {
+        ...defaultGameState.automation,
+        modules: {
+          ...defaultGameState.automation.modules,
+          [AutomationModuleId.WarehouseSystem]: {
+            ...defaultGameState.automation.modules[AutomationModuleId.WarehouseSystem],
+            level: 3,
+          },
+        },
       },
     })
     const start = performance.now()

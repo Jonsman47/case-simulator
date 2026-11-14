@@ -509,6 +509,7 @@ export interface PlayerState {
   trophyAssignments: TrophyAssignments
   dailyRewards: DailyRewardsState
   collectionBook: CollectionEntry[]
+  currentRunCollectionBook?: CollectionEntry[]
   collectionRewards: CollectionRewardProgress[]
   hasUsedFirstCaseHook: boolean
   lastPoopCleaningAt: number
@@ -516,6 +517,7 @@ export interface PlayerState {
   prestigeLevel: number
   prestigePoints: number
   prestigeBonuses: PrestigeBonusLevels
+  prestigeSystem?: import('../prestige/prestigeSystem').PrestigeSystemState
   upgradePoints: number
   skillPoints: number
   learnedSkillNodeIds: SkillNodeId[]

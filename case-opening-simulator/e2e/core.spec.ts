@@ -143,6 +143,56 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
   await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
 })
 
+test('Prestige review preserves a selected Legacy Vault item exactly once', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await dismissEventPopup(page)
+  await openBatch(page, 1)
+  const before = await readSave(page)
+  const kept = before.state.inventory[0]
+  const level = 25
+  const xp = Math.round(850 * Math.pow(level - 1, 1.66) + 5_000 * Math.pow(Math.max(0, level - 25), 1.3))
+  before.state.money = 20_000
+  before.state.inventoryValue = Math.max(25_000, before.state.inventoryValue)
+  before.state.statistics.casesOpened = 800
+  before.state.career.currentRunXp = xp
+  before.state.career.lifetimeXp = Math.max(before.state.career.lifetimeXp, xp)
+  before.state.career.currentRunDiscoveryKeys = Array.from({ length: 100 }, (_, index) => `e2e-discovery-${index}`)
+  before.state.economyLedger.currentRun.tradeUpOutputValue = 6_000
+  before.state.economyLedger.itemCostBasis[kept.instanceId] = 123.45
+  await page.addInitScript(({ key, envelope }) => {
+    if (sessionStorage.getItem('prestige-e2e-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('prestige-e2e-seeded', 'true')
+  }, { key: saveKey, envelope: before })
+  await page.reload()
+  await page.goto('/prestige')
+  await dismissTutorial(page)
+  await page.getByRole('button', { name: /Prestige · \+\d+ PP/ }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText(/Legacy Vault · 0\/1/)).toBeVisible()
+  await dialog.locator('section button').first().click()
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button', { name: /Confirm Prestige/ }).click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.prestigeLevel === 1, saveKey)
+  const after = await readSave(page)
+  expect(after.state.inventory).toHaveLength(1)
+  expect(after.state.inventory[0]).toMatchObject({ instanceId: kept.instanceId, paintSeed: kept.paintSeed, floatValue: kept.floatValue })
+  expect(after.state.economyLedger.itemCostBasis[kept.instanceId]).toBe(123.45)
+  expect(after.state.prestigeSystem.runHistory).toHaveLength(1)
+  expect(await page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith('case-opening-simulator:prestige-recovery:')))).toBe(true)
+})
+
+test('Collection Book switches between permanent and Current Run scopes', async ({ page }) => {
+  await page.goto('/collection-book')
+  await dismissTutorial(page)
+  await expect(page.getByRole('button', { name: 'All Time' })).toBeVisible()
+  await page.getByRole('button', { name: 'Current Run' }).click()
+  await expect(page.getByText(/Pre-v38 discoveries could not be assigned reliably/)).toBeVisible()
+  await page.getByRole('button', { name: 'All Time' }).click()
+  await expect(page.getByText('Collection Rewards')).toBeVisible()
+})
+
 test('Career specializations purchase, activate, and persist an upgrade', async ({ page }) => {
   await page.goto('/career')
   await dismissTutorial(page)

@@ -359,11 +359,16 @@ export function getCareerUpgradeNextEffect(definition: CareerUpgradeDefinition, 
   return level >= definition.maxLevel ? 'Maximum level reached' : formatMagnitude(definition, level + 1)
 }
 
-export function resetCareerUpgradesForPrestige(state: CareerUpgradeState): CareerUpgradeState {
+export function resetCareerUpgradesForPrestige(state: CareerUpgradeState, retentionRate = 0): CareerUpgradeState {
+  const boundedRate = Math.min(.25, Math.max(0, retentionRate))
+  const levels = Object.fromEntries(Object.entries(state.levels).flatMap(([id, level]) => {
+    const retained = Math.floor(Math.max(0, level) * boundedRate)
+    return retained > 0 ? [[id, retained]] : []
+  }))
   return {
     ...state,
-    levels: {},
-    purchasedAt: {},
+    levels,
+    purchasedAt: Object.fromEntries(Object.entries(state.purchasedAt).filter(([id]) => levels[id] > 0)),
   }
 }
 
