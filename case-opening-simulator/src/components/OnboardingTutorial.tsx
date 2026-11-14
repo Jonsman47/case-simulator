@@ -78,7 +78,7 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     body: 'Work provides early cash. Upgrades, skills, prestige, and automation improve your run later, but each purchase should fit your current budget.',
-    clickHint: 'Try a Work job, then explore Upgrades and Automation.',
+    clickHint: 'Try a Work job, then explore Career & Upgrades and the employee Business.',
     icon: Sparkles,
     id: 'earn_and_upgrade',
     path: '/work',

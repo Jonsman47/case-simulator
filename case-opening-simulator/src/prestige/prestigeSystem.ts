@@ -51,6 +51,10 @@ export interface PrestigeRunArchive {
   endingCash: number
   endingInventoryValue: number
   careerXp: number
+  highestCareerLevel?: number
+  realizedProfit?: number
+  collectionDiscoveries?: number
+  businessResult?: number
   pathsCompleted: PrestigePathId[]
   vaultedItemIds: string[]
 }
@@ -67,6 +71,8 @@ export interface PrestigeSystemState {
   schemaVersion: 1
   highestTier: number
   completedRuns: number
+  totalPointsEarned: number
+  totalPointsSpent: number
   perkLevels: Record<PrestigePerkId, number>
   completedRequestIds: string[]
   runHistory: PrestigeRunArchive[]
@@ -109,6 +115,8 @@ export function createDefaultPrestigeSystem(legacyLevel = 0, legacyBonuses: Reco
     schemaVersion: 1,
     highestTier: Math.min(5, Math.max(0, Math.floor(legacyLevel))),
     completedRuns: Math.max(0, Math.floor(legacyLevel)),
+    totalPointsEarned: 0,
+    totalPointsSpent: 0,
     perkLevels: {
       xpAcceleration: Math.min(8, Math.ceil((legacy('drop_luck') + legacy('market_knowledge')) / 3)),
       startingCash: Math.min(5, Math.ceil(legacy('starting_money') / 3)),
@@ -138,6 +146,8 @@ export function normalizePrestigeSystem(value: unknown, legacyLevel = 0): Presti
     schemaVersion: 1,
     highestTier: Math.min(5, Math.max(defaults.highestTier, Math.floor(Number(source.highestTier) || 0))),
     completedRuns: Math.max(defaults.completedRuns, Math.floor(Number(source.completedRuns) || 0)),
+    totalPointsEarned: Math.max(0, Math.floor(Number(source.totalPointsEarned) || 0)),
+    totalPointsSpent: Math.max(0, Math.floor(Number(source.totalPointsSpent) || 0)),
     perkLevels,
     completedRequestIds: Array.isArray(source.completedRequestIds) ? Array.from(new Set(source.completedRequestIds.filter((id): id is string => typeof id === 'string'))).slice(-PRESTIGE_REQUEST_LIMIT) : [],
     runHistory: history,
@@ -234,6 +244,14 @@ export function getPrestigePerkCost(id: PrestigePerkId, currentLevel: number) {
   return perk ? Math.ceil(perk.baseCost * Math.pow(1.65, Math.max(0, currentLevel))) : Number.POSITIVE_INFINITY
 }
 
+export function getTotalPrestigePerkSpend(levels: Record<PrestigePerkId, number>) {
+  return PRESTIGE_PERKS.reduce((total, perk) => {
+    const level = Math.min(perk.maxLevel, Math.max(0, Math.floor(levels[perk.id] ?? 0)))
+    return total + Array.from({ length: level }, (_, index) => getPrestigePerkCost(perk.id, index))
+      .reduce((subtotal, cost) => subtotal + cost, 0)
+  }, 0)
+}
+
 export function purchasePrestigePerk(state: GameState, id: PrestigePerkId): GameState {
   const perk = PRESTIGE_PERKS.find((entry) => entry.id === id)
   if (!perk) return { ...state, lastError: 'Unknown Prestige perk.' }
@@ -241,7 +259,16 @@ export function purchasePrestigePerk(state: GameState, id: PrestigePerkId): Game
   if (level >= perk.maxLevel) return { ...state, lastError: 'That Prestige perk is already complete.' }
   const cost = getPrestigePerkCost(id, level)
   if (state.prestigePoints < cost) return { ...state, lastError: `You need ${cost} Prestige Points.` }
-  return { ...state, prestigePoints: state.prestigePoints - cost, prestigeSystem: { ...state.prestigeSystem, perkLevels: { ...state.prestigeSystem.perkLevels, [id]: level + 1 } }, lastError: undefined }
+  return {
+    ...state,
+    prestigePoints: state.prestigePoints - cost,
+    prestigeSystem: {
+      ...state.prestigeSystem,
+      totalPointsSpent: state.prestigeSystem.totalPointsSpent + cost,
+      perkLevels: { ...state.prestigeSystem.perkLevels, [id]: level + 1 },
+    },
+    lastError: undefined,
+  }
 }
 
 export function validateVaultSelection(state: GameState, itemIds: string[]) {

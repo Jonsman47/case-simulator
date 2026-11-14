@@ -91,7 +91,7 @@ export const CAREER_RANKS: CareerRankDefinition[] = [
     minimumLevel: 75,
     description: 'A large-scale operator prepared for advanced strategies and capital allocation.',
     milestone: 'Reach Career Level 75.',
-    futureCapability: 'Large-scale business upgrades arrive in Prompt 4.',
+    futureCapability: 'Unlocks elite Career research and larger-scale operating tools.',
   },
   {
     id: 'cs2-trading-legend',
@@ -99,7 +99,7 @@ export const CAREER_RANKS: CareerRankDefinition[] = [
     minimumLevel: 100,
     description: 'The highest career milestone, earned through sustained economic mastery.',
     milestone: 'Reach Career Level 100.',
-    futureCapability: 'Legend prestige goals arrive in Prompt 6.',
+    futureCapability: 'Marks the highest Career milestone and supports Legendary Legacy goals.',
   },
 ]
 
@@ -332,6 +332,9 @@ function collectionDiscoveryKeys(entries: CollectionEntry[]) {
 export function getAchievementCareerXp(achievementId: string) {
   const achievement = achievementsById.get(achievementId)
   if (!achievement) return 0
+  if (achievement.reward?.careerXp !== undefined) {
+    return Math.max(0, Math.round(achievement.reward.careerXp))
+  }
   const byCategory: Record<AchievementCategory, number> = {
     Opening: 70,
     Drops: 90,
@@ -736,14 +739,15 @@ function getTradingEvents(before: GameState, after: GameState): PendingCareerEve
 
 function getAchievementEvents(before: GameState, after: GameState, action: GameAction): PendingCareerEvent[] {
   if (action.type !== 'CLAIM_ACHIEVEMENT_REWARD' && action.type !== 'CLAIM_ALL_ACHIEVEMENT_REWARDS') return []
-  const claimedBefore = new Set(before.achievements.filter((entry) => entry.isClaimed).map((entry) => entry.id))
+  const claimKey = (entry: AchievementProgress) => `${entry.id}:${entry.runId ?? 'lifetime'}`
+  const claimedBefore = new Set(before.achievements.filter((entry) => entry.isClaimed).map(claimKey))
   return after.achievements.flatMap((entry): PendingCareerEvent[] => {
-    if (!entry.isClaimed || claimedBefore.has(entry.id) || before.career.legacyAchievementIds.includes(entry.id)) return []
+    if (!entry.isClaimed || claimedBefore.has(claimKey(entry)) || before.career.legacyAchievementIds.includes(entry.id)) return []
     const xp = getAchievementCareerXp(entry.id)
     const achievement = achievementsById.get(entry.id)
     if (!achievement || xp <= 0) return []
     return [{
-      id: `achievement:${entry.id}`,
+      id: `achievement:${entry.id}:${entry.runId ?? 'lifetime'}`,
       type: 'achievement',
       category: achievement.category === 'Trade Ups'
         ? 'tradeUps'

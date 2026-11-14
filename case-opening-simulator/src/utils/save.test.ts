@@ -697,6 +697,32 @@ describe('save system', () => {
     expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
   })
 
+  it('migrates v38 achievement scope and Prestige point accounting without changing inventory', () => {
+    const item = makeItem({ instanceId: 'v38-vault-item', paintSeed: 661 })
+    const state = makeState({
+      inventory: [item],
+      prestigePoints: 7,
+      achievements: [{ id: 'first_case_opened', isClaimed: true, unlockedAt: 10 }],
+      prestigeSystem: {
+        ...defaultGameState.prestigeSystem,
+        perkLevels: { ...defaultGameState.prestigeSystem.perkLevels, startingCash: 2 },
+      },
+    })
+    const migrated = parseGameSaveText(JSON.stringify({ version: 38, savedAt: 20, state }))
+
+    expect(migrated.inventory[0]).toMatchObject({ instanceId: 'v38-vault-item', paintSeed: 661 })
+    expect(migrated.achievements).toContainEqual(expect.objectContaining({
+      id: 'first_case_opened',
+      isClaimed: true,
+      scope: 'lifetime',
+    }))
+    expect(migrated.prestigeSystem.totalPointsSpent).toBeGreaterThan(0)
+    expect(migrated.prestigeSystem.totalPointsEarned).toBe(
+      migrated.prestigePoints + migrated.prestigeSystem.totalPointsSpent,
+    )
+    expect(createSaveEnvelope(migrated).version).toBe(39)
+  })
+
   it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {
     const marketItem = makeItem({ instanceId: 'market-instance', paintSeed: 661 })
     const state = makeState({

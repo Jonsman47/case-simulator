@@ -100,10 +100,14 @@ import {
   normalizeBusinessState,
   retireLegacyAutomation,
 } from '../business/business'
-import { createDefaultPrestigeSystem, normalizePrestigeSystem } from '../prestige/prestigeSystem'
+import {
+  createDefaultPrestigeSystem,
+  getTotalPrestigePerkSpend,
+  normalizePrestigeSystem,
+} from '../prestige/prestigeSystem'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 38
+export const CURRENT_SAVE_VERSION = 39
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -945,7 +949,7 @@ function normalizeAchievements(value: unknown, fallbackUnlockedAt: number): Achi
 
   for (const entry of value) {
     if (typeof entry === 'string') {
-      achievementsById.set(entry, {
+      achievementsById.set(`${entry}:lifetime`, {
         id: entry,
         isClaimed: false,
         unlockedAt: fallbackUnlockedAt,
@@ -954,10 +958,14 @@ function normalizeAchievements(value: unknown, fallbackUnlockedAt: number): Achi
     }
 
     if (isAchievementProgress(entry)) {
-      achievementsById.set(entry.id, {
+      const scope = entry.scope === 'currentRun' ? 'currentRun' : 'lifetime'
+      const runId = scope === 'currentRun' && typeof entry.runId === 'string' ? entry.runId : undefined
+      achievementsById.set(`${entry.id}:${runId ?? 'lifetime'}`, {
         id: entry.id,
         isClaimed: entry.isClaimed,
         unlockedAt: entry.unlockedAt,
+        scope,
+        runId,
       })
     }
   }
@@ -1669,6 +1677,26 @@ function migrateV37ToV38(value: unknown): unknown {
   }
 }
 
+function migrateV38ToV39(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const legacyLevel = Math.max(0, Math.floor(normalizeNumber(value.prestigeLevel, 0)))
+  const normalizedPrestige = normalizePrestigeSystem(value.prestigeSystem, legacyLevel)
+  const spent = getTotalPrestigePerkSpend(normalizedPrestige.perkLevels)
+  const unspent = Math.max(0, Math.floor(normalizeNumber(value.prestigePoints, 0)))
+  return {
+    ...value,
+    prestigeSystem: {
+      ...normalizedPrestige,
+      totalPointsSpent: Math.max(normalizedPrestige.totalPointsSpent, spent),
+      totalPointsEarned: Math.max(normalizedPrestige.totalPointsEarned, spent + unspent),
+      migrationNote: normalizedPrestige.migrationNote ?? 'v39 preserved existing Prestige Points and perk investment without fabricating run details.',
+    },
+    achievements: Array.isArray(value.achievements)
+      ? value.achievements.map((entry) => isRecord(entry) ? { ...entry, scope: entry.scope === 'currentRun' ? 'currentRun' : 'lifetime' } : entry)
+      : value.achievements,
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1708,6 +1736,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   35: migrateV35ToV36,
   36: migrateV36ToV37,
   37: migrateV37ToV38,
+  38: migrateV38ToV39,
 }
 
 function getEnvelope(value: unknown) {

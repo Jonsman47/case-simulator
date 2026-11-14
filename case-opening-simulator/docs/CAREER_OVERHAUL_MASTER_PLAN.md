@@ -2,7 +2,11 @@
 
 Status: authoritative design reference for Career Overhaul Prompts 1–8
 Created: 2026-11-11
-Implementation baseline: save schema v35 (Career Overhaul Prompt 2)
+Implementation baseline: save schema v39 (Career Overhaul Prompt 7)
+
+## Prompt 7 integration decision (2026-11-14)
+
+The Career-era systems are now exposed through four progression destinations: Business, Career & Upgrades, Prestige, and Achievements & Stats. The achievement catalog has explicit Lifetime and Current Run scopes; run rewards are keyed to Career run ID and remain bounded. Financial, Career, Business, Prestige, and Collection reporting uses the shared selectors in `src/career/progressionReporting.ts`. Save v39 preserves historic claim states and adds cumulative PP accounting without fabricating historic transactions or XP. Full audit and migration details are in `CAREER_INTEGRATION_REPORT.md`.
 
 This document defines the intended career economy. It supersedes conflicting progression proposals, but it does not claim that provisional numbers are balanced before the simulations listed in section 21 pass. Existing CS2 case odds, item identity, paint seeds, pattern premiums, inventory, marketplace state, and cloud compatibility remain authoritative.
 

@@ -332,7 +332,7 @@ function getActionTimestamp(action: GameAction) {
   return Date.now()
 }
 
-function getDeterministicTransactionId(action: GameAction, timestamp: number) {
+function getDeterministicTransactionId(action: GameAction, timestamp: number, runId: string) {
   if ('requestId' in action && typeof action.requestId === 'string') {
     return `${action.type.toLowerCase()}:${action.requestId}`
   }
@@ -340,7 +340,7 @@ function getDeterministicTransactionId(action: GameAction, timestamp: number) {
     return `case-opening:${action.payload.openingEventId}`
   }
   if (action.type === 'CLAIM_ACHIEVEMENT_REWARD') {
-    return `achievement:${action.achievementId}`
+    return `achievement:${action.achievementId}:${runId}`
   }
   if (action.type === 'CLAIM_DAILY_CHALLENGE') {
     return `daily-challenge:${action.challengeId}:${timestamp}`
@@ -605,7 +605,7 @@ export function recordEconomyAction(before: GameState, after: GameState, action:
   const itemDeltas = buildItemDeltas(before, after, action)
   if (moneyDelta === 0 && itemDeltas.length === 0 && !isBusinessTransfer) return after
   const timestamp = getActionTimestamp(action)
-  const id = getDeterministicTransactionId(action, timestamp)
+  const id = getDeterministicTransactionId(action, timestamp, after.economyLedger.currentRunId)
   const ledger = after.economyLedger
   if (ledger.processedTransactionIds.includes(id)) return after
   const classification = classifyAction(action)

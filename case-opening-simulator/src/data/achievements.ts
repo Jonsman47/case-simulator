@@ -4,14 +4,17 @@ import {
   WearCondition,
   type Achievement,
   type AchievementCategory,
+  type AchievementDisplayCategory,
   type AchievementProgress,
   type PlayerState,
 } from './models'
 import { SKIN_DEFINITIONS } from './skins'
 import { createTrophySlotDefinitions, getTrophyAssignmentsList, getTrophyRoomSlotCount } from '../utils/trophyRoom'
 import { isExceptionalPattern } from '../utils/skinPatterns'
+import { getPossibleWearFloatRangesForSkin } from '../utils/wear'
+import { getCareerLevelFromXp } from '../career/careerProgress'
+import { EMPLOYEE_ROLE_IDS } from '../business/business'
 
-const allWearConditions = Object.values(WearCondition)
 const skinDefinitionsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 
 export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
@@ -24,6 +27,34 @@ export const ACHIEVEMENT_CATEGORIES: AchievementCategory[] = [
   'Automation',
   'Trophy Room',
 ]
+
+export const ACHIEVEMENT_DISPLAY_CATEGORIES: AchievementDisplayCategory[] = [
+  'Case Opening',
+  'Trading',
+  'Collecting',
+  'Trade-Ups',
+  'Business',
+  'Career & Prestige',
+]
+
+const displayCategoryByLegacyCategory: Record<AchievementCategory, AchievementDisplayCategory> = {
+  Opening: 'Case Opening',
+  Drops: 'Collecting',
+  Inventory: 'Collecting',
+  'Trade Ups': 'Trade-Ups',
+  Progression: 'Career & Prestige',
+  Collection: 'Collecting',
+  Automation: 'Business',
+  'Trophy Room': 'Collecting',
+}
+
+export function getAchievementDisplayCategory(achievement: Achievement) {
+  return achievement.displayCategory ?? displayCategoryByLegacyCategory[achievement.category]
+}
+
+export function getAchievementScope(achievement: Achievement) {
+  return achievement.scope ?? 'lifetime'
+}
 
 function hasDiscoveredRarity(state: PlayerState, rarity: Rarity) {
   return state.collectionBook.some((entry) => skinDefinitionsById.get(entry.skinId)?.rarity === rarity)
@@ -45,19 +76,6 @@ function hasItemValueAtLeast(state: PlayerState, value: number) {
   )
 }
 
-function hasAnyAutomationUpgrade(state: PlayerState) {
-  return (
-    state.automation.autoOpener.level > 0 ||
-    Object.values(state.automation.modules).some((moduleState) => moduleState.level > 0)
-  )
-}
-
-function getAutomationRunCount(state: PlayerState) {
-  return (
-    state.automation.autoOpener.totalOpened +
-    Object.values(state.automation.modules).reduce((total, moduleState) => total + moduleState.totalRuns, 0)
-  )
-}
 
 function isCatalogComplete(state: PlayerState) {
   const discoveredSkinIds = new Set(state.collectionBook.map((entry) => entry.skinId))
@@ -71,8 +89,25 @@ function isWearCatalogComplete(state: PlayerState) {
   return SKIN_DEFINITIONS.every((skin) => {
     const entry = entriesBySkinId.get(skin.id)
 
-    return allWearConditions.every((wear) => entry?.foundWearConditions.includes(wear))
+    const obtainableWear = Object.keys(getPossibleWearFloatRangesForSkin(skin)) as WearCondition[]
+    return obtainableWear.every((wear) => entry?.foundWearConditions.includes(wear))
   })
+}
+
+export function getObtainableWearVariantCount() {
+  return SKIN_DEFINITIONS.reduce(
+    (total, skin) => total + Object.keys(getPossibleWearFloatRangesForSkin(skin)).length,
+    0,
+  )
+}
+
+export function getDiscoveredObtainableWearVariantCount(state: PlayerState) {
+  const entriesBySkinId = new Map(state.collectionBook.map((entry) => [entry.skinId, entry]))
+  return SKIN_DEFINITIONS.reduce((total, skin) => {
+    const entry = entriesBySkinId.get(skin.id)
+    const obtainableWear = Object.keys(getPossibleWearFloatRangesForSkin(skin)) as WearCondition[]
+    return total + obtainableWear.filter((wear) => entry?.foundWearConditions.includes(wear)).length
+  }, 0)
 }
 
 function hasFilledAllTrophySlots(state: PlayerState) {
@@ -102,6 +137,74 @@ function hasEliteTrophyRoom(state: PlayerState) {
   )
 }
 
+function getLedgerValue(
+  state: PlayerState,
+  scope: 'lifetime' | 'currentRun',
+  key: 'realizedTradingProfit' | 'tradeUpInputValue' | 'tradeUpOutputValue' | 'businessRevenue' | 'businessExpenses',
+) {
+  return state.economyLedger?.[scope]?.[key] ?? 0
+}
+
+function getMarketplaceNegotiationCount(state: PlayerState) {
+  return state.marketplace?.transactions.filter((transaction) => (
+    transaction.type === 'negotiated-purchase' || transaction.type === 'negotiated-sale'
+  )).length ?? 0
+}
+
+function getHiredEmployeeCount(state: PlayerState) {
+  return state.business
+    ? EMPLOYEE_ROLE_IDS.filter((roleId) => state.business?.employees[roleId].isHired).length
+    : 0
+}
+
+function getBusinessOperationCount(state: PlayerState) {
+  return state.business
+    ? EMPLOYEE_ROLE_IDS.reduce(
+        (total, roleId) => total + state.business!.employees[roleId].completedOperationCount,
+        0,
+      )
+    : 0
+}
+
+function getBusinessTrainingLevels(state: PlayerState) {
+  return state.business
+    ? EMPLOYEE_ROLE_IDS.reduce(
+        (total, roleId) => total + state.business!.employees[roleId].trainingLevel,
+        0,
+      )
+    : 0
+}
+
+function getCareerHighestLevel(state: PlayerState) {
+  const historyLevel = state.career?.rankHistory.reduce((highest, entry) => Math.max(highest, entry.level), 1) ?? 1
+  return Math.max(historyLevel, getCareerLevelFromXp(state.career?.currentRunXp ?? 0))
+}
+
+function getCareerCurrentLevel(state: PlayerState) {
+  return getCareerLevelFromXp(state.career?.currentRunXp ?? 0)
+}
+
+function getUniqueCurrentRunDiscoveries(state: PlayerState) {
+  return new Set((state.currentRunCollectionBook ?? []).map((entry) => entry.skinId)).size
+}
+
+function getUniqueLifetimeDiscoveries(state: PlayerState) {
+  return new Set(state.collectionBook.map((entry) => entry.skinId)).size
+}
+
+function getPrestigePerkLevels(state: PlayerState) {
+  return state.prestigeSystem
+    ? Object.values(state.prestigeSystem.perkLevels).reduce((total, level) => total + level, 0)
+    : 0
+}
+
+function getLegacyVaultRecord(state: PlayerState) {
+  return state.prestigeSystem?.runHistory.reduce(
+    (highest, run) => Math.max(highest, run.vaultedItemIds.length),
+    0,
+  ) ?? 0
+}
+
 const BASE_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'first_case_opened',
@@ -129,10 +232,13 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   },
   {
     id: 'first_profit_case',
-    name: 'Green Tick',
-    description: 'Earn money from a sale or auto-sale.',
+    name: 'First Realized Profit',
+    description: 'Complete a sale with positive realized profit after known acquisition cost.',
     category: 'Progression',
-    condition: (state) => state.statistics.moneyEarned > 0,
+    displayCategory: 'Trading',
+    condition: (state) => getLedgerValue(state, 'lifetime', 'realizedTradingProfit') > 0,
+    getProgress: (state) => Math.max(0, getLedgerValue(state, 'lifetime', 'realizedTradingProfit')),
+    target: 0.01,
     reward: { money: 25 },
   },
   {
@@ -238,25 +344,31 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'collection_wear_master',
     name: 'Wear Master',
-    description: 'Discover every catalog skin in every wear condition.',
+    description: 'Discover every genuinely obtainable catalog wear variant.',
     category: 'Collection',
     condition: isWearCatalogComplete,
+    getProgress: getDiscoveredObtainableWearVariantCount,
+    target: getObtainableWearVariantCount(),
     reward: { upgradePoints: 8, badge: 'Wear Master' },
   },
   {
     id: 'automation_started',
-    name: 'Hands Off',
-    description: 'Purchase any automation upgrade.',
+    name: 'Hands Off (Legacy)',
+    description: 'Purchased an automation upgrade before employees replaced legacy automation.',
     category: 'Automation',
-    condition: hasAnyAutomationUpgrade,
+    condition: () => false,
+    isRetired: true,
+    getBlockedReason: () => 'Retired legacy milestone. Previously completed records remain permanent.',
     reward: { money: 100 },
   },
   {
     id: 'automation_100_runs',
-    name: 'Factory Floor',
-    description: 'Reach 100 automation runs or auto opens.',
+    name: 'Factory Floor (Legacy)',
+    description: 'Reached 100 legacy automation runs before the Business migration.',
     category: 'Automation',
-    condition: (state) => getAutomationRunCount(state) >= 100,
+    condition: () => false,
+    isRetired: true,
+    getBlockedReason: () => 'Retired legacy milestone. Business operations use new achievements.',
     reward: { upgradePoints: 2 },
   },
   {
@@ -321,15 +433,6 @@ function getCollectionCompletionRatio(state: PlayerState) {
   }
 
   return new Set(state.collectionBook.map((entry) => entry.skinId)).size / SKIN_DEFINITIONS.length
-}
-
-function getTotalUpgradeLevels(state: PlayerState) {
-  return Object.values(state.upgrades).reduce((total, level) => total + (level ?? 0), 0)
-}
-
-function getAutomationModuleLevels(state: PlayerState) {
-  return Object.values(state.automation.modules).reduce((total, moduleState) => total + moduleState.level, 0) +
-    state.automation.autoOpener.level
 }
 
 function hasDiscoveredAllCovertAndSpecial(state: PlayerState) {
@@ -446,7 +549,9 @@ const automationAchievements: Achievement[] = automationMilestones.map((target) 
   name: `${formatMilestone(target)} Automated Runs`,
   description: `Reach ${target.toLocaleString()} automation runs or auto opens.`,
   category: 'Automation',
-  condition: (state) => getAutomationRunCount(state) >= target,
+  condition: () => false,
+  isRetired: true,
+  getBlockedReason: () => 'Legacy automation was replaced by Business employees in save v36.',
   reward: target >= 100_000 ? { skillPoints: 3, badge: `${formatMilestone(target)} Runs` } : { upgradePoints: 1 },
 }))
 
@@ -455,7 +560,9 @@ const upgradeAchievements: Achievement[] = totalUpgradeMilestones.map((target) =
   name: `${target} Upgrade Levels`,
   description: `Buy ${target} total run upgrade levels.`,
   category: 'Progression',
-  condition: (state) => getTotalUpgradeLevels(state) >= target,
+  condition: () => false,
+  isRetired: true,
+  getBlockedReason: () => 'The legacy Upgrade Shop was converted to Career Upgrades in save v37.',
   reward: { skillPoints: target >= 30 ? 2 : 1 },
 }))
 
@@ -464,7 +571,9 @@ const skillAchievements: Achievement[] = skillMilestones.map((target) => ({
   name: `${target} Skills Learned`,
   description: `Learn ${target} skill tree nodes.`,
   category: 'Progression',
-  condition: (state) => state.learnedSkillNodeIds.length >= target,
+  condition: () => false,
+  isRetired: true,
+  getBlockedReason: () => 'The legacy Skill Tree was converted to Career Upgrades in save v37.',
   reward: target >= 100 ? { badge: 'Skill Tree Master', upgradePoints: 5 } : { money: target * 25 },
 }))
 
@@ -473,7 +582,11 @@ const prestigeAchievements: Achievement[] = prestigeMilestones.map((target) => (
   name: `Prestige ${target}`,
   description: `Reach prestige level ${target}.`,
   category: 'Progression',
-  condition: (state) => state.prestigeLevel >= target,
+  condition: target <= 5 ? (state) => state.prestigeLevel >= target : () => false,
+  isRetired: target > 5,
+  getBlockedReason: target > 5
+    ? () => 'The legacy unbounded Prestige ladder was replaced by five typed tiers.'
+    : undefined,
   reward: target >= 25 ? { skillPoints: 5, badge: `Prestige ${target}` } : { upgradePoints: 3, skillPoints: 2 },
 }))
 
@@ -538,8 +651,283 @@ const hiddenAchievements: Achievement[] = [
     description: 'Max out automation module progress.',
     category: 'Automation',
     isHidden: true,
-    condition: (state) => getAutomationModuleLevels(state) >= 25,
+    condition: () => false,
+    isRetired: true,
+    getBlockedReason: () => 'Legacy automation was retired and converted to employees.',
     reward: { skillPoints: 3, badge: 'No Hands Left' },
+  },
+]
+
+const careerIntegrationAchievements: Achievement[] = [
+  {
+    id: 'trading_realized_profit_1000',
+    name: 'Proven Margin',
+    description: 'Earn $1,000 in ledger-backed realized trading profit.',
+    category: 'Progression',
+    displayCategory: 'Trading',
+    condition: (state) => getLedgerValue(state, 'lifetime', 'realizedTradingProfit') >= 1_000,
+    getProgress: (state) => Math.max(0, getLedgerValue(state, 'lifetime', 'realizedTradingProfit')),
+    target: 1_000,
+    reward: { money: 150, careerXp: 180, badge: 'Proven Margin' },
+  },
+  {
+    id: 'trading_negotiations_10',
+    name: 'Across the Table',
+    description: 'Complete 10 negotiated CSWEAR transactions.',
+    category: 'Progression',
+    displayCategory: 'Trading',
+    scope: 'currentRun',
+    condition: (state) => getMarketplaceNegotiationCount(state) >= 10,
+    getProgress: getMarketplaceNegotiationCount,
+    target: 10,
+    reward: { money: 100, careerXp: 140 },
+  },
+  {
+    id: 'trading_market_sales_25',
+    name: 'Reliable Seller',
+    description: 'Complete 25 CSWEAR sales.',
+    category: 'Progression',
+    displayCategory: 'Trading',
+    scope: 'currentRun',
+    condition: (state) => state.statistics.marketSales >= 25,
+    getProgress: (state) => state.statistics.marketSales,
+    target: 25,
+    reward: { money: 125, careerXp: 150 },
+  },
+  ...([25, 100, 500, 1_000] as const).map((target): Achievement => ({
+    id: `career_collection_unique_${target}`,
+    name: `${target.toLocaleString()} Lifetime Discoveries`,
+    description: `Discover ${target.toLocaleString()} unique skins across all Career runs.`,
+    category: 'Collection',
+    displayCategory: 'Collecting',
+    condition: (state) => getUniqueLifetimeDiscoveries(state) >= target,
+    getProgress: getUniqueLifetimeDiscoveries,
+    target,
+    reward: target >= 500
+      ? { careerXp: 220, badge: `${target.toLocaleString()} Discoveries` }
+      : { money: Math.min(150, target), careerXp: 100 + Math.round(target / 4) },
+  })),
+  {
+    id: 'career_pattern_special_10',
+    name: 'Run Pattern Researcher',
+    description: 'Record 10 special Pattern discoveries during the current Career run.',
+    category: 'Collection',
+    displayCategory: 'Collecting',
+    scope: 'currentRun',
+    condition: (state) => state.statistics.patternDrops >= 10,
+    getProgress: (state) => state.statistics.patternDrops,
+    target: 10,
+    reward: { careerXp: 180, badge: 'Pattern Researcher' },
+  },
+  {
+    id: 'trade_up_profitable_lifetime',
+    name: 'Contract Edge',
+    description: 'Achieve positive realized Trade-Up output value over consumed input value.',
+    category: 'Trade Ups',
+    displayCategory: 'Trade-Ups',
+    condition: (state) => getLedgerValue(state, 'lifetime', 'tradeUpOutputValue') > getLedgerValue(state, 'lifetime', 'tradeUpInputValue'),
+    getProgress: (state) => Math.max(0, getLedgerValue(state, 'lifetime', 'tradeUpOutputValue') - getLedgerValue(state, 'lifetime', 'tradeUpInputValue')),
+    target: 0.01,
+    reward: { money: 100, careerXp: 180, badge: 'Contract Edge' },
+  },
+  {
+    id: 'business_first_employee',
+    name: 'First Hire',
+    description: 'Hire your first Business employee.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => getHiredEmployeeCount(state) >= 1,
+    getProgress: getHiredEmployeeCount,
+    target: 1,
+    reward: { careerXp: 110, badge: 'First Hire' },
+  },
+  {
+    id: 'business_first_operation',
+    name: 'Open for Business',
+    description: 'Complete the first legitimate employee operation.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => getBusinessOperationCount(state) >= 1,
+    getProgress: getBusinessOperationCount,
+    target: 1,
+    reward: { money: 50, careerXp: 110 },
+  },
+  {
+    id: 'business_first_scout_match',
+    name: 'Scout Report',
+    description: 'Have the Market Scout find a genuine watchlist match.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => state.business?.recentOperations.some((operation) => operation.type === 'scout-match') ?? false,
+    getProgress: (state) => state.business?.recentOperations.some((operation) => operation.type === 'scout-match') ? 1 : 0,
+    target: 1,
+    reward: { careerXp: 160, badge: 'Scout Report' },
+  },
+  {
+    id: 'business_first_junior_purchase',
+    name: 'Junior Deal',
+    description: 'Complete a bounded ordinary purchase through the Junior Trader.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => state.business?.recentOperations.some((operation) => operation.type === 'market-purchase' && operation.employeeRole === 'juniorTrader') ?? false,
+    getProgress: (state) => state.business?.recentOperations.some((operation) => operation.type === 'market-purchase' && operation.employeeRole === 'juniorTrader') ? 1 : 0,
+    target: 1,
+    reward: { careerXp: 180, badge: 'Junior Deal' },
+  },
+  {
+    id: 'business_team_three',
+    name: 'Trading Team',
+    description: 'Hire three different employees.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => getHiredEmployeeCount(state) >= 3,
+    getProgress: getHiredEmployeeCount,
+    target: 3,
+    reward: { careerXp: 180, badge: 'Trading Team' },
+  },
+  {
+    id: 'business_training_10',
+    name: 'Staff Development',
+    description: 'Reach 10 combined employee training levels.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => getBusinessTrainingLevels(state) >= 10,
+    getProgress: getBusinessTrainingLevels,
+    target: 10,
+    reward: { careerXp: 180 },
+  },
+  {
+    id: 'business_positive_result',
+    name: 'Sustainable Operation',
+    description: 'Reach a positive ledger-backed Business result after operating expenses.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    condition: (state) => getLedgerValue(state, 'lifetime', 'businessRevenue') > getLedgerValue(state, 'lifetime', 'businessExpenses'),
+    getProgress: (state) => Math.max(0, getLedgerValue(state, 'lifetime', 'businessRevenue') - getLedgerValue(state, 'lifetime', 'businessExpenses')),
+    target: 0.01,
+    reward: { careerXp: 220, badge: 'Sustainable Operation' },
+  },
+  ...([
+    [15, 'Independent Trader'],
+    [35, 'Professional Trader'],
+    [55, 'Business Owner'],
+    [75, 'Market Mogul'],
+    [100, 'CS2 Trading Legend'],
+  ] as const).map(([target, name]): Achievement => ({
+    id: `career_rank_${target}`,
+    name,
+    description: `Reach Career Level ${target} for the first time.`,
+    category: 'Progression',
+    displayCategory: 'Career & Prestige',
+    condition: (state) => getCareerHighestLevel(state) >= target,
+    getProgress: getCareerHighestLevel,
+    target,
+    reward: { careerXp: target >= 75 ? 300 : 180, badge: name },
+  })),
+  ...([1, 2, 3, 4, 5] as const).map((target): Achievement => ({
+    id: `career_prestige_tier_${target}`,
+    name: `Prestige Tier ${target}`,
+    description: `Complete Prestige Tier ${target}.`,
+    category: 'Progression',
+    displayCategory: 'Career & Prestige',
+    condition: (state) => (state.prestigeSystem?.highestTier ?? 0) >= target,
+    getProgress: (state) => state.prestigeSystem?.highestTier ?? 0,
+    target,
+    reward: { careerXp: 200 + target * 40, badge: target === 5 ? 'Legendary Legacy' : `Prestige Tier ${target}` },
+  })),
+  {
+    id: 'career_prestige_perks_5',
+    name: 'Permanent Foundation',
+    description: 'Purchase five permanent Prestige perk levels.',
+    category: 'Progression',
+    displayCategory: 'Career & Prestige',
+    condition: (state) => getPrestigePerkLevels(state) >= 5,
+    getProgress: getPrestigePerkLevels,
+    target: 5,
+    reward: { careerXp: 200, badge: 'Permanent Foundation' },
+  },
+  {
+    id: 'career_legacy_vault_5',
+    name: 'Legacy Curator',
+    description: 'Complete a Career chapter while preserving five exact items in the Legacy Vault.',
+    category: 'Progression',
+    displayCategory: 'Career & Prestige',
+    condition: (state) => getLegacyVaultRecord(state) >= 5,
+    getProgress: getLegacyVaultRecord,
+    target: 5,
+    reward: { careerXp: 220, badge: 'Legacy Curator' },
+  },
+  {
+    id: 'run_cases_250',
+    name: 'Run Opening Plan',
+    description: 'Open 250 paid cases during the current Career run.',
+    category: 'Opening',
+    displayCategory: 'Case Opening',
+    scope: 'currentRun',
+    condition: (state) => state.statistics.casesOpened >= 250,
+    getProgress: (state) => state.statistics.casesOpened,
+    target: 250,
+    reward: { money: 40, careerXp: 80 },
+  },
+  {
+    id: 'run_tradeups_20',
+    name: 'Run Contract Plan',
+    description: 'Complete 20 Trade-Up contracts during the current Career run.',
+    category: 'Trade Ups',
+    displayCategory: 'Trade-Ups',
+    scope: 'currentRun',
+    condition: (state) => state.statistics.tradeUpsCompleted >= 20,
+    getProgress: (state) => state.statistics.tradeUpsCompleted,
+    target: 20,
+    reward: { money: 50, careerXp: 90 },
+  },
+  {
+    id: 'run_discoveries_50',
+    name: 'Run Discovery Plan',
+    description: 'Discover 50 unique skins during the current Career run.',
+    category: 'Collection',
+    displayCategory: 'Collecting',
+    scope: 'currentRun',
+    condition: (state) => getUniqueCurrentRunDiscoveries(state) >= 50,
+    getProgress: getUniqueCurrentRunDiscoveries,
+    target: 50,
+    reward: { money: 50, careerXp: 100 },
+  },
+  {
+    id: 'run_business_operations_25',
+    name: 'Run Operations Plan',
+    description: 'Complete 25 legitimate employee operations during the current Career run.',
+    category: 'Automation',
+    displayCategory: 'Business',
+    scope: 'currentRun',
+    condition: (state) => getBusinessOperationCount(state) >= 25,
+    getProgress: getBusinessOperationCount,
+    target: 25,
+    reward: { money: 50, careerXp: 100 },
+  },
+  {
+    id: 'run_career_level_25',
+    name: 'Run Career Foundation',
+    description: 'Reach Career Level 25 during the current run.',
+    category: 'Progression',
+    displayCategory: 'Career & Prestige',
+    scope: 'currentRun',
+    condition: (state) => getCareerCurrentLevel(state) >= 25,
+    getProgress: getCareerCurrentLevel,
+    target: 25,
+    reward: { careerXp: 100 },
+  },
+  {
+    id: 'run_realized_profit_5000',
+    name: 'Run Trading Plan',
+    description: 'Earn $5,000 realized trading profit during the current Career run.',
+    category: 'Progression',
+    displayCategory: 'Trading',
+    scope: 'currentRun',
+    condition: (state) => getLedgerValue(state, 'currentRun', 'realizedTradingProfit') >= 5_000,
+    getProgress: (state) => Math.max(0, getLedgerValue(state, 'currentRun', 'realizedTradingProfit')),
+    target: 5_000,
+    reward: { money: 75, careerXp: 120 },
   },
 ]
 
@@ -557,6 +945,7 @@ const generatedAchievements = [
   ...prestigeAchievements,
   ...collectionPercentAchievements,
   ...hiddenAchievements,
+  ...careerIntegrationAchievements,
 ]
 
 export const ACHIEVEMENTS: Achievement[] = Array.from(
@@ -564,6 +953,20 @@ export const ACHIEVEMENTS: Achievement[] = Array.from(
 )
 
 export const achievementsById = new Map(ACHIEVEMENTS.map((achievement) => [achievement.id, achievement]))
+
+export function getAchievementProgressValue(achievement: Achievement, state: GameState) {
+  if (getAchievementProgress(state.achievements, achievement.id, state.career.runId)) {
+    return achievement.target ?? 1
+  }
+  return Math.max(0, achievement.getProgress?.(toAchievementPlayerState(state)) ?? 0)
+}
+
+export function getAchievementBlockedReason(achievement: Achievement, state: GameState) {
+  if (achievement.isRetired) {
+    return achievement.getBlockedReason?.(toAchievementPlayerState(state)) ?? 'This legacy milestone is retired.'
+  }
+  return achievement.getBlockedReason?.(toAchievementPlayerState(state))
+}
 
 export function toAchievementPlayerState(state: GameState): PlayerState {
   return {
@@ -573,11 +976,17 @@ export function toAchievementPlayerState(state: GameState): PlayerState {
     inventoryValueHistory: state.inventoryValueHistory,
     unlockedCases: state.casesUnlocked,
     autoSellRules: state.autoSellRules,
+    marketplace: state.marketplace,
+    economyLedger: state.economyLedger,
     automation: state.automation,
+    business: state.business,
+    career: state.career,
+    careerUpgrades: state.careerUpgrades,
     upgrades: state.upgrades,
     trophyAssignments: state.trophyAssignments,
     dailyRewards: state.dailyRewards,
     collectionBook: state.collectionBook,
+    currentRunCollectionBook: state.currentRunCollectionBook,
     collectionRewards: state.collectionRewards,
     hasUsedFirstCaseHook: state.hasUsedFirstCaseHook,
     lastPoopCleaningAt: state.lastPoopCleaningAt,
@@ -585,6 +994,7 @@ export function toAchievementPlayerState(state: GameState): PlayerState {
     prestigeLevel: state.prestigeLevel,
     prestigePoints: state.prestigePoints,
     prestigeBonuses: state.prestigeBonuses,
+    prestigeSystem: state.prestigeSystem,
     upgradePoints: state.upgradePoints,
     skillPoints: state.skillPoints,
     learnedSkillNodeIds: state.learnedSkillNodeIds,
@@ -603,20 +1013,29 @@ export function toAchievementPlayerState(state: GameState): PlayerState {
 export function getAchievementProgress(
   achievements: AchievementProgress[],
   achievementId: string,
+  currentRunId?: string,
 ) {
-  return achievements.find((achievement) => achievement.id === achievementId)
+  const definition = achievementsById.get(achievementId)
+  const scope = definition ? getAchievementScope(definition) : 'lifetime'
+  return achievements.find((achievement) => (
+    achievement.id === achievementId &&
+    (scope === 'lifetime' || achievement.runId === currentRunId)
+  ))
 }
 
 export function getNewAchievementUnlocks(state: GameState, unlockedAt = Date.now()) {
   const playerState = toAchievementPlayerState(state)
-  const unlockedAchievementIds = new Set(state.achievements.map((achievement) => achievement.id))
   const unlockedDefinitions = ACHIEVEMENTS.filter((achievement) => {
-    return !unlockedAchievementIds.has(achievement.id) && achievement.condition(playerState)
+    if (achievement.isRetired) return false
+    const existing = getAchievementProgress(state.achievements, achievement.id, state.career.runId)
+    return !existing && achievement.condition(playerState)
   })
-  const progress = unlockedDefinitions.map((achievement) => ({
+  const progress = unlockedDefinitions.map((achievement): AchievementProgress => ({
     id: achievement.id,
     isClaimed: false,
     unlockedAt,
+    scope: getAchievementScope(achievement),
+    runId: getAchievementScope(achievement) === 'currentRun' ? state.career.runId : undefined,
   }))
 
   return {

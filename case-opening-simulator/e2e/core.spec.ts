@@ -464,6 +464,22 @@ test('Achievements Claim All grants unlocked rewards once', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Claim All (0)' })).toBeDisabled()
 })
 
+test('progression navigation consolidates achievements, statistics, and legacy deep links', async ({ page }) => {
+  await page.goto('/achievements')
+  await dismissTutorial(page)
+  await expect(page).toHaveURL(/\/progress\?tab=achievements$/)
+  await expect(page.getByRole('heading', { name: 'Achievements' })).toBeVisible()
+  await page.getByRole('button', { name: 'Statistics & Career History' }).click()
+  await expect(page).toHaveURL(/\/progress\?tab=stats$/)
+  await expect(page.getByRole('heading', { name: 'Stats' })).toBeVisible()
+
+  await page.goto('/skill-tree')
+  await expect(page).toHaveURL(/\/career$/)
+  await expect(page.getByRole('heading', { name: 'Career & Upgrades' })).toBeVisible()
+  await page.goBack()
+  await expect(page).toHaveURL(/\/progress\?tab=stats$/)
+})
+
 test('focused Precision Strike remains fully visible at laptop height', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/work')
@@ -516,7 +532,7 @@ test('every player-facing route renders without console errors or horizontal cli
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
   await page.setViewportSize({ width: 1366, height: 768 })
-  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
+  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/progress', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
     await expect(page.locator('main'), `route ${route} should render its application shell`).toBeVisible({ timeout: 15_000 })

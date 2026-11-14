@@ -2,7 +2,6 @@ import type { ChartOptions } from 'chart.js'
 import {
   BarChart3,
   BadgeDollarSign,
-  Bot,
   Clipboard,
   Clock3,
   Download,
@@ -13,6 +12,7 @@ import {
   Repeat2,
   Sparkles,
   Trophy,
+  Users,
   Wallet,
 } from 'lucide-react'
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
@@ -21,6 +21,7 @@ import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getRarityLabel } from '../utils/itemLabels'
 import { getCareerSnapshot } from '../career/careerProgress'
+import { getProgressionReport, type ProgressionReportScope } from '../career/progressionReporting'
 import {
   buildInventoryValueLineChartData,
   buildMoneyFlowChartData,
@@ -287,7 +288,13 @@ function Comparatives({ summary }: { summary: StatsDashboardSummary }) {
   )
 }
 
-function FinancialBreakdown({ summary }: { summary: StatsDashboardSummary }) {
+function FinancialBreakdown({
+  business,
+  summary,
+}: {
+  business: ReturnType<typeof getProgressionReport>['business']
+  summary: StatsDashboardSummary
+}) {
   return (
     <section className="border border-cs-border bg-cs-panel p-4">
       <div className="flex items-center justify-between gap-3">
@@ -304,8 +311,9 @@ function FinancialBreakdown({ summary }: { summary: StatsDashboardSummary }) {
         <SmallStat label="Current Run Trading Profit" value={formatCurrency(summary.currentRunRealizedTradingProfit)} valueClass={summary.currentRunRealizedTradingProfit >= 0 ? 'text-cs-green' : 'text-rarity-covert'} />
         <SmallStat label="Case Spend" value={formatCurrency(summary.caseOpeningSpend)} />
         <SmallStat label="Case Sale Returns" value={formatCurrency(summary.caseOpeningReturns)} />
-        <SmallStat label="Automation Revenue" value={formatCurrency(summary.automationIncome)} />
-        <SmallStat label="Automation Expenses" value={formatCurrency(summary.automationExpenses)} />
+        <SmallStat label="Business Revenue" value={formatCurrency(business.revenue)} />
+        <SmallStat label="Business Expenses" value={formatCurrency(business.expenses)} />
+        <SmallStat label="Payroll" value={formatCurrency(business.payroll)} />
         <SmallStat label="Work Income" value={formatCurrency(summary.workIncome)} />
         <SmallStat label="Unrealized Inventory" value={formatCurrency(summary.inventoryValue)} />
       </div>
@@ -333,6 +341,8 @@ function SmallStat({
 export function StatsView() {
   const { state } = useGame()
   const careerSnapshot = getCareerSnapshot(state.career)
+  const progression = useMemo(() => getProgressionReport(state), [state])
+  const [reportScope, setReportScope] = useState<ProgressionReportScope>('lifetime')
   const [range, setRange] = useState<StatsTimeRange>('all')
   const [session] = useState(() => {
     const startedAt = Date.now()
@@ -356,6 +366,15 @@ export function StatsView() {
     () => calculateStatsDashboardSummary({ baseline, now, range, state }),
     [baseline, now, range, state],
   )
+  const scopedFinancials = reportScope === 'lifetime'
+    ? state.economyLedger.lifetime
+    : state.economyLedger.currentRun
+  const scopedCollectionCount = reportScope === 'lifetime'
+    ? progression.collection.allTimeUnique
+    : progression.collection.currentRunUnique
+  const scopedCareerXp = reportScope === 'lifetime'
+    ? progression.career.lifetimeXp
+    : progression.career.currentRunXp
   const rarityBarData = useMemo(() => buildRarityDistributionChartData(summary), [summary])
   const rarityPieData = useMemo(() => buildRarityPieChartData(summary), [summary])
   const moneyFlowData = useMemo(() => buildMoneyFlowChartData(summary), [summary])
@@ -505,6 +524,22 @@ export function StatsView() {
           ) : null}
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+          <div className="grid grid-cols-2 border border-cs-border bg-cs-panel p-1" aria-label="Reporting scope">
+            {(['lifetime', 'currentRun'] as const).map((scope) => (
+              <button
+                aria-pressed={reportScope === scope}
+                className={[
+                  'px-3 py-2 font-mono text-[10px] uppercase',
+                  reportScope === scope ? 'bg-rarity-special/10 text-rarity-special' : 'text-cs-muted',
+                ].join(' ')}
+                key={scope}
+                onClick={() => setReportScope(scope)}
+                type="button"
+              >
+                {scope === 'lifetime' ? 'All Time' : 'Current Run'}
+              </button>
+            ))}
+          </div>
           <RangeControl range={range} setRange={setRange} />
           <div className="flex gap-2">
             <button
@@ -582,9 +617,9 @@ export function StatsView() {
         <MetricCard
           icon={Landmark}
           label="Economic Net Worth"
-          subLabel="Cash plus current inventory value"
+          subLabel={`${formatCurrency(progression.finances.reservedCapital)} reserved / ${formatCurrency(progression.finances.escrowValue)} escrow`}
           tone="green"
-          value={formatCurrency(summary.totalEconomicNetWorth)}
+          value={formatCurrency(progression.finances.netWorth)}
         />
         <MetricCard
           icon={Repeat2}
@@ -593,10 +628,10 @@ export function StatsView() {
           value={summary.tradeUpsCompleted.toLocaleString()}
         />
         <MetricCard
-          icon={Bot}
-          label="Automation"
-          subLabel={`Auto Opener L${summary.autoOpenerLevel} / ${summary.automationModulesPurchased} modules`}
-          value={`${summary.automationModuleLevels} lvls`}
+          icon={Users}
+          label="Business"
+          subLabel={`${progression.business.active} active / ${formatCurrency(progression.business.reservedCapital)} reserved`}
+          value={`${progression.business.hired} hired`}
         />
         <MetricCard
           icon={Clock3}
@@ -671,8 +706,78 @@ export function StatsView() {
         <Comparatives summary={summary} />
       </div>
       <div className="mt-4">
-        <FinancialBreakdown summary={summary} />
+        <FinancialBreakdown business={progression.business} summary={summary} />
       </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        <section className="border border-cs-border bg-cs-panel p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-cs-text">Career & Collection</h3>
+              <p className="mt-1 text-xs text-cs-muted">{reportScope === 'lifetime' ? 'All Time permanent records' : 'Progress since the latest Prestige'}</p>
+            </div>
+            <Medal className="text-rarity-special" size={18} />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <SmallStat label="Career XP" value={scopedCareerXp.toLocaleString()} />
+            <SmallStat label="Career Level" value={`L${careerSnapshot.level}`} />
+            <SmallStat label="Highest Level" value={`L${progression.career.highestLevel}`} />
+            <SmallStat label="Unique Discoveries" value={scopedCollectionCount.toLocaleString()} />
+            <SmallStat label="Career Upgrade Levels" value={progression.career.ownedUpgradeLevels.toLocaleString()} />
+            <SmallStat label="Current Rank" value={careerSnapshot.rank.name} />
+          </div>
+        </section>
+
+        <section className="border border-cs-border bg-cs-panel p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-cs-text">Business & Prestige</h3>
+              <p className="mt-1 text-xs text-cs-muted">Revenue remains separate from realized result and reserved capital.</p>
+            </div>
+            <Landmark className="text-rarity-special" size={18} />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <SmallStat label="Business Revenue" value={formatCurrency(reportScope === 'lifetime' ? progression.business.revenue : progression.business.currentRunRevenue)} />
+            <SmallStat label="Business Expenses" value={formatCurrency(reportScope === 'lifetime' ? progression.business.expenses : progression.business.currentRunExpenses)} />
+            <SmallStat label="Business Result" value={formatCurrency(reportScope === 'lifetime' ? progression.business.realizedResult : progression.business.currentRunResult)} />
+            <SmallStat label="Payroll" value={formatCurrency(scopedFinancials.businessPayroll)} />
+            <SmallStat label="Prestige Tier / Runs" value={`${progression.prestige.tier} / ${progression.prestige.completedRuns}`} />
+            <SmallStat label="PP Earned / Spent" value={`${progression.prestige.pointsEarned} / ${progression.prestige.pointsSpent}`} />
+          </div>
+        </section>
+      </div>
+
+      <section className="mt-4 border border-cs-border bg-cs-panel p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-cs-text">Recent Career Chapters</h3>
+            <p className="mt-1 text-xs text-cs-muted">The latest {progression.prestige.history.length} detailed summaries are retained; the history is capped at 24.</p>
+          </div>
+          <Trophy className="text-rarity-special" size={18} />
+        </div>
+        {progression.prestige.history.length > 0 ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+            {progression.prestige.history.slice(0, 6).map((run) => (
+              <article className="border border-cs-border bg-cs-surface p-3" key={run.id}>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-semibold text-cs-text">Tier {run.tier} · {run.tierName}</p>
+                  <span className="font-mono text-xs text-rarity-special">+{run.awardedPoints} PP</span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-cs-muted">
+                  <span>Score {run.score.toFixed(1)}</span>
+                  <span>{formatDuration(run.durationMs)}</span>
+                  <span>L{run.highestCareerLevel ?? '—'} · {run.careerXp.toLocaleString()} XP</span>
+                  <span>{run.collectionDiscoveries ?? '—'} discoveries</span>
+                  <span>{run.realizedProfit === undefined ? 'Historic P/L unavailable' : `${formatCurrency(run.realizedProfit)} trading P/L`}</span>
+                  <span>{run.vaultedItemIds.length} vaulted</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 border border-cs-border bg-cs-surface p-4 text-sm text-cs-muted">No completed Career chapters yet. Prestige remains optional.</p>
+        )}
+      </section>
     </section>
   )
 }

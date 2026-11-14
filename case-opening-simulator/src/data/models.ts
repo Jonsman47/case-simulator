@@ -427,17 +427,30 @@ export type AchievementCategory =
   | 'Automation'
   | 'Trophy Room'
 
+export type AchievementDisplayCategory =
+  | 'Case Opening'
+  | 'Trading'
+  | 'Collecting'
+  | 'Trade-Ups'
+  | 'Business'
+  | 'Career & Prestige'
+
+export type AchievementScope = 'lifetime' | 'currentRun'
+
 export interface AchievementReward {
   money?: number
   upgradePoints?: number
   skillPoints?: number
   badge?: string
+  careerXp?: number
 }
 
 export interface AchievementProgress {
   id: string
   isClaimed: boolean
   unlockedAt: number
+  scope?: AchievementScope
+  runId?: string
 }
 
 export interface AutoOpenerState {
@@ -502,6 +515,7 @@ export interface PlayerState {
   unlockedCases: string[]
   autoSellRules: AutoSellRule[]
   marketplace?: MarketplaceState
+  economyLedger?: import('../economy/economyLedger').EconomyLedgerState
   automation: AutomationState
   business?: import('../business/business').BusinessState
   careerUpgrades?: import('../career/careerUpgrades').CareerUpgradeState
@@ -564,6 +578,12 @@ export interface Achievement {
   description: string
   category: AchievementCategory
   condition: (state: PlayerState) => boolean
+  displayCategory?: AchievementDisplayCategory
+  scope?: AchievementScope
+  target?: number
+  getProgress?: (state: PlayerState) => number
+  getBlockedReason?: (state: PlayerState) => string | undefined
+  isRetired?: boolean
   isHidden?: boolean
   reward?: AchievementReward
   unlockedAt?: number

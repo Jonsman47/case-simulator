@@ -1,4 +1,4 @@
-# Prestige System (Save Schema v38)
+# Prestige System (Save Schema v39)
 
 ## Purpose
 
@@ -30,7 +30,7 @@ The one-point first-time bonus is granted only while advancing the highest compl
 
 ## Atomic reset and safety
 
-The UI creates a full v38 save envelope in a dedicated local recovery key and reads/parses it back before dispatching the reset. If storage or verification fails, nothing resets. The reducer additionally requires `backupVerified`, a stable request ID, and a valid Vault selection. Completed request IDs are retained in a bounded exact-once ledger.
+The UI creates a full current-schema (v39) save envelope in a dedicated local recovery key and reads/parses it back before dispatching the reset. If storage or verification fails, nothing resets. The reducer additionally requires `backupVerified`, a stable request ID, and a valid Vault selection. Completed request IDs are retained in a bounded exact-once ledger.
 
 Prestige is blocked while any player listing is in escrow, a marketplace acquisition is awaiting claim, a negotiation is open, an employee contract awaits approval, or the provider has a cloud conflict. The reducer rechecks gameplay blockers at commit time.
 
@@ -63,4 +63,6 @@ Prestige history stores only 24 compact run summaries: run/request IDs, timing, 
 
 ## Migration and cloud compatibility
 
-v37→v38 creates the Prestige state and empty Current Run Collection without changing money or item identity. Existing prestige count maps to completed runs and highest tier (capped at five); old bonus levels remain loadable for compatibility. Cloud envelopes use v38 and preserve the same request/run lineage. Real Supabase operation still requires configured credentials and is not implied by local-backend tests.
+v37→v38 creates the Prestige state and empty Current Run Collection without changing money or item identity. Existing prestige count maps to completed runs and highest tier (capped at five); old bonus levels remain loadable for compatibility. Current cloud envelopes use v39 and preserve the same request/run lineage. Real Supabase operation still requires configured credentials and is not implied by local-backend tests.
+
+Prompt 7 adds the idempotent v38→v39 integration migration. It records cumulative PP earned and spent from authoritative current PP plus existing permanent perk levels, while preserving the tier, completed runs, Vault, request lineage, and all inventory identity. New run archives also record highest Career level, realized profit, discovery count, and Business result; older archives display unavailable fields honestly. Lifetime achievements survive Prestige. Current Run achievements carry the Career run ID, are removed only after a successful reset, and may pay their bounded reward once in the new run. Achievement rewards never mint PP. The complete integration policy is documented in `CAREER_INTEGRATION_REPORT.md`.

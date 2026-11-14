@@ -473,8 +473,6 @@ export function buildStatsCsv(summary: StatsDashboardSummary) {
     ['total_economic_net_worth', summary.totalEconomicNetWorth],
     ['case_opening_spend', summary.caseOpeningSpend],
     ['case_opening_returns', summary.caseOpeningReturns],
-    ['automation_income', summary.automationIncome],
-    ['automation_expenses', summary.automationExpenses],
     ['work_income', summary.workIncome],
     ['total_drops', summary.totalDrops],
     ['rare_drops_classified_plus', summary.rareDropsClassifiedPlus],
@@ -483,9 +481,6 @@ export function buildStatsCsv(summary: StatsDashboardSummary) {
     ['trade_ups_completed', summary.tradeUpsCompleted],
     ['cases_unlocked', summary.casesUnlocked],
     ['achievements_unlocked', summary.achievementsUnlocked],
-    ['auto_opener_level', summary.autoOpenerLevel],
-    ['automation_modules_purchased', summary.automationModulesPurchased],
-    ['automation_module_levels', summary.automationModuleLevels],
     ['prestige_level', summary.prestigeLevel],
   ]
   const rarityRows = summary.rarityBuckets.map((bucket) => [

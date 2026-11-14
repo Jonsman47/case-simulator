@@ -7,7 +7,7 @@ import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 import { useGame } from './hooks/useGame'
 import { isAdminSession } from './utils/admin'
 
-const Achievements = lazy(() => import('./views/Achievements').then((module) => ({ default: module.Achievements })))
+const AchievementsStats = lazy(() => import('./views/AchievementsStats').then((module) => ({ default: module.AchievementsStats })))
 const AdminPanel = lazy(() => import('./views/AdminPanel').then((module) => ({ default: module.AdminPanel })))
 const Business = lazy(() => import('./views/Business').then((module) => ({ default: module.Business })))
 const CaseSelectionView = lazy(() => import('./views/CaseSelectionView').then((module) => ({ default: module.CaseSelectionView })))
@@ -24,7 +24,6 @@ const Prestige = lazy(() => import('./views/Prestige').then((module) => ({ defau
 const PlayerProfileView = lazy(() => import('./views/PlayerProfileView').then((module) => ({ default: module.PlayerProfileView })))
 const RewardsView = lazy(() => import('./views/RewardsView').then((module) => ({ default: module.RewardsView })))
 const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
-const Stats = lazy(() => import('./views/Stats').then((module) => ({ default: module.Stats })))
 const TradeUps = lazy(() => import('./views/TradeUps').then((module) => ({ default: module.TradeUps })))
 const TrophyRoom = lazy(() => import('./views/TrophyRoom').then((module) => ({ default: module.TrophyRoom })))
 const WorkView = lazy(() => import('./views/WorkView').then((module) => ({ default: module.WorkView })))
@@ -82,8 +81,10 @@ function App() {
               <Route path="upgrades" element={<Navigate to="/career" replace />} />
               <Route path="prestige" element={<Suspense fallback={<RouteFallback />}><Prestige /></Suspense>} />
               <Route path="skill-tree" element={<Navigate to="/career" replace />} />
-              <Route path="achievements" element={<Suspense fallback={<RouteFallback />}><Achievements /></Suspense>} />
-              <Route path="stats" element={<Suspense fallback={<RouteFallback />}><Stats /></Suspense>} />
+              <Route path="progress" element={<Suspense fallback={<RouteFallback />}><AchievementsStats /></Suspense>} />
+              <Route path="achievements" element={<Navigate to="/progress?tab=achievements" replace />} />
+              <Route path="stats" element={<Navigate to="/progress?tab=stats" replace />} />
+              <Route path="achievements-stats" element={<Navigate to="/progress" replace />} />
               <Route path="work" element={<Suspense fallback={<RouteFallback />}><WorkView /></Suspense>} />
               <Route path="credits" element={<Suspense fallback={<RouteFallback />}><CreditsView /></Suspense>} />
               <Route path="leaderboards" element={<Suspense fallback={<RouteFallback />}><LeaderboardView /></Suspense>} />

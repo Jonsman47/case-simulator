@@ -282,11 +282,12 @@ describe('gameReducer OPEN_CASE', () => {
     })
     const achievementEvent = findUiEvent(firstOpenState, 'achievement_unlocked')
 
-    expect(firstOpenState.achievements).toContainEqual({
+    expect(firstOpenState.achievements).toContainEqual(expect.objectContaining({
       id: 'first_case_opened',
       isClaimed: false,
       unlockedAt: Date.now(),
-    })
+      scope: 'lifetime',
+    }))
     expect(achievementEvent).toMatchObject({
       achievementId: 'first_case_opened',
       name: 'First Crack',
@@ -363,11 +364,12 @@ describe('gameReducer OPEN_CASE', () => {
     })
 
     expect(moneyClaimedState.money).toBe(20)
-    expect(pointsClaimedState.upgradePoints).toBe(1)
-    expect(pointsClaimedState.skillPoints).toBe(1)
-    expect(repeatClaimState.money).toBe(20)
-    expect(repeatClaimState.upgradePoints).toBe(1)
-    expect(repeatClaimState.skillPoints).toBe(1)
+    expect(pointsClaimedState.money).toBe(170)
+    expect(pointsClaimedState.upgradePoints).toBe(0)
+    expect(pointsClaimedState.skillPoints).toBe(0)
+    expect(repeatClaimState.money).toBe(170)
+    expect(repeatClaimState.upgradePoints).toBe(0)
+    expect(repeatClaimState.skillPoints).toBe(0)
     expect(repeatClaimState.lastError).toBe('Achievement reward already claimed.')
     expect(
       repeatClaimState.achievements.find((achievement) => achievement.id === 'first_case_opened'),
@@ -385,11 +387,11 @@ describe('gameReducer OPEN_CASE', () => {
     const claimed = gameReducer(state, { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS', now: 3 })
     const repeated = gameReducer(claimed, { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS', now: 4 })
 
-    expect(claimed.money).toBe(20)
-    expect(claimed.upgradePoints).toBe(1)
-    expect(claimed.skillPoints).toBe(1)
+    expect(claimed.money).toBe(170)
+    expect(claimed.upgradePoints).toBe(0)
+    expect(claimed.skillPoints).toBe(0)
     expect(claimed.achievements.every((entry) => entry.isClaimed)).toBe(true)
-    expect(repeated.money).toBe(20)
+    expect(repeated.money).toBe(170)
     expect(repeated.lastError).toBe('No achievement rewards are ready to claim.')
   })
 
@@ -1452,7 +1454,13 @@ describe('gameReducer OPEN_CASE', () => {
         dropsByRarity: { ...defaultDropsByRarity },
       },
     })
-    const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
+    const nextState = gameReducer({
+      ...state,
+      achievements: [
+        { id: 'first_case_opened', isClaimed: true, unlockedAt: 1, scope: 'lifetime' },
+        { id: 'run_cases_250', isClaimed: true, unlockedAt: 2, scope: 'currentRun', runId: state.career.runId },
+      ],
+    }, { type: 'PRESTIGE', now: Date.now() })
 
     expect(nextState.money).toBe(defaultGameState.money)
     expect(nextState.inventory).toEqual([])
@@ -1465,11 +1473,14 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.skillPoints).toBe(1)
     expect(nextState.upgradePoints).toBe(0)
     expect(nextState.learnedSkillNodeIds).toEqual([SkillNodeId.SellSpecialist])
-    expect(nextState.achievements).toContainEqual({
+    expect(nextState.achievements).toContainEqual(expect.objectContaining({ id: 'first_case_opened', isClaimed: true }))
+    expect(nextState.achievements.some((entry) => entry.id === 'run_cases_250')).toBe(false)
+    expect(nextState.achievements).toContainEqual(expect.objectContaining({
       id: 'first_prestige',
       isClaimed: false,
       unlockedAt: Date.now(),
-    })
+      scope: 'lifetime',
+    }))
   })
 
   it('blocks prestige before thresholds are reached', () => {

@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { recordCareerAction, startNextCareerRun } from '../career/careerProgress'
+import { getCareerLevelFromXp, recordCareerAction, startNextCareerRun } from '../career/careerProgress'
 import {
   careerUpgradesById,
   getCareerBusinessIntervalMultiplier,
@@ -65,7 +65,7 @@ import {
   rememberMarketplaceRequest,
   tickMarketplace,
 } from '../marketplace/marketplace'
-import { achievementsById, getNewAchievementUnlocks } from './achievements'
+import { achievementsById, getAchievementProgress, getAchievementScope, getNewAchievementUnlocks } from './achievements'
 import { getMarketAdjustedSkinConditionPrice } from './skinPrices'
 import {
   applyPatternPremium,
@@ -1341,6 +1341,7 @@ function prestigeRun(
       ...state.prestigeSystem,
       highestTier: Math.max(state.prestigeSystem.highestTier, tier.tier),
       completedRuns: state.prestigeSystem.completedRuns + 1,
+      totalPointsEarned: state.prestigeSystem.totalPointsEarned + awardedPoints,
       completedRequestIds: [...state.prestigeSystem.completedRequestIds, requestId].slice(-96),
       lastCompletion: { requestId, completedAt: now, tier: tier.tier, score: eligibility.score.total, awardedPoints },
       runHistory: [{
@@ -1357,6 +1358,10 @@ function prestigeRun(
         endingCash: state.money,
         endingInventoryValue: state.inventoryValue,
         careerXp: state.career.currentRunXp,
+        highestCareerLevel: getCareerLevelFromXp(state.career.currentRunXp),
+        realizedProfit: state.economyLedger.currentRun.realizedTradingProfit,
+        collectionDiscoveries: state.currentRunCollectionBook.length,
+        businessResult: state.economyLedger.currentRun.businessRevenue - state.economyLedger.currentRun.businessExpenses,
         pathsCompleted: eligibility.paths.filter((path) => path.primaryMet).map((path) => path.id),
         vaultedItemIds: vaultedItems.map((item) => item.instanceId),
       }, ...state.prestigeSystem.runHistory].slice(0, 24),
@@ -1365,7 +1370,10 @@ function prestigeRun(
     // mints an obsolete currency after the v37 Career migration.
     skillPoints: state.skillPoints,
     learnedSkillNodeIds: state.learnedSkillNodeIds,
-    achievements: state.achievements,
+    achievements: state.achievements.filter((progress) => {
+      const definition = achievementsById.get(progress.id)
+      return !definition || getAchievementScope(definition) === 'lifetime'
+    }),
     collectionBook: state.collectionBook,
     collectionRewards: state.collectionRewards,
     trophyAssignments: Object.fromEntries(Object.entries(state.trophyAssignments).filter(([, assignment]) => assignment && selectedIds.has(assignment.itemId))),
@@ -2790,7 +2798,7 @@ function claimAchievementReward(
   now = Date.now(),
 ): GameState {
   const achievement = achievementsById.get(achievementId)
-  const progress = state.achievements.find((entry) => entry.id === achievementId)
+  const progress = getAchievementProgress(state.achievements, achievementId, state.career.runId)
 
   if (!achievement || !progress) {
     return {
@@ -2815,13 +2823,13 @@ function claimAchievementReward(
     }
   }
 
+  const convertedLegacyCash = (reward.upgradePoints ?? 0) * 100 + (reward.skillPoints ?? 0) * 50
+
   return {
     ...state,
-    money: roundCurrency(clampNumber(state.money) + (reward.money ?? 0)),
-    upgradePoints: state.upgradePoints + (reward.upgradePoints ?? 0),
-    skillPoints: state.skillPoints + (reward.skillPoints ?? 0),
+    money: roundCurrency(clampNumber(state.money) + (reward.money ?? 0) + convertedLegacyCash),
     achievements: state.achievements.map((entry) => {
-      if (entry.id !== achievementId) {
+      if (entry !== progress) {
         return entry
       }
 
@@ -2836,32 +2844,30 @@ function claimAchievementReward(
 }
 
 function claimAllAchievementRewards(state: GameState, now = Date.now()): GameState {
-  const claimableIds = new Set(
+  const claimableKeys = new Set(
     state.achievements.flatMap((progress) => {
       const reward = achievementsById.get(progress.id)?.reward
-      return !progress.isClaimed && reward ? [progress.id] : []
+      return !progress.isClaimed && reward ? [`${progress.id}:${progress.runId ?? 'lifetime'}`] : []
     }),
   )
 
-  if (claimableIds.size === 0) {
+  if (claimableKeys.size === 0) {
     return { ...state, lastError: 'No achievement rewards are ready to claim.' }
   }
 
-  const totals = [...claimableIds].reduce((rewardTotals, achievementId) => {
-    const reward = achievementsById.get(achievementId)?.reward
+  const totals = state.achievements.reduce((rewardTotals, progress) => {
+    const key = `${progress.id}:${progress.runId ?? 'lifetime'}`
+    if (!claimableKeys.has(key)) return rewardTotals
+    const reward = achievementsById.get(progress.id)?.reward
     return {
-      money: rewardTotals.money + (reward?.money ?? 0),
-      skillPoints: rewardTotals.skillPoints + (reward?.skillPoints ?? 0),
-      upgradePoints: rewardTotals.upgradePoints + (reward?.upgradePoints ?? 0),
+      money: rewardTotals.money + (reward?.money ?? 0) + (reward?.upgradePoints ?? 0) * 100 + (reward?.skillPoints ?? 0) * 50,
     }
-  }, { money: 0, skillPoints: 0, upgradePoints: 0 })
+  }, { money: 0 })
 
   return {
     ...state,
     money: roundCurrency(clampNumber(state.money) + totals.money),
-    skillPoints: state.skillPoints + totals.skillPoints,
-    upgradePoints: state.upgradePoints + totals.upgradePoints,
-    achievements: state.achievements.map((entry) => claimableIds.has(entry.id)
+    achievements: state.achievements.map((entry) => claimableKeys.has(`${entry.id}:${entry.runId ?? 'lifetime'}`)
       ? { ...entry, isClaimed: true, unlockedAt: entry.unlockedAt || now }
       : entry),
     lastError: undefined,

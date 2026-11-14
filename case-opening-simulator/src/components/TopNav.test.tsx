@@ -36,6 +36,19 @@ describe('TopNav', () => {
     )
   })
 
+  it('exposes exactly four consolidated progression destinations', () => {
+    const progression = getPrimaryNavigationItems().find((item) => item.label === 'Progression')
+    expect(progression?.items?.map((item) => [item.label, item.path])).toEqual([
+      ['Business', '/business'],
+      ['Career & Upgrades', '/career'],
+      ['Prestige', '/prestige'],
+      ['Achievements & Stats', '/progress'],
+    ])
+    expect(progression?.items?.some((item) => item.path === '/automation')).toBe(false)
+    expect(progression?.items?.some((item) => item.path === '/skill-tree')).toBe(false)
+    expect(progression?.items?.some((item) => item.path === '/upgrades')).toBe(false)
+  })
+
   it('opens a mobile navigation drawer and closes it after route selection', () => {
     render(
       <MemoryRouter initialEntries={['/inventory']}>

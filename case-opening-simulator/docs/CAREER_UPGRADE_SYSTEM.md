@@ -162,3 +162,7 @@ The level gates cover beginner (1–14), intermediate (15–34), professional (3
 ## Verification map
 
 `src/career/careerUpgrades.test.ts` generates registry-wide checks for unique IDs, counts, monotonic costs, meaningful per-level output, runtime consumer exposure, branch independence, finite rank-gated costs, reducer validation, v33–v37 migration identity, idempotent credit, and Prestige reset. Concrete integration tests cover opening batch/animation, capacity, seller fees, Business scheduling and limits, legacy neutralization, cloud round trips, and UI/browser persistence.
+
+## Prompt 7 navigation and reporting integration
+
+All 95 upgrades remain on Career & Upgrades; obsolete `/upgrades` and `/skill-tree` deep links redirect there and no legacy purchase surface is shown. Career reporting counts owned upgrade levels from the v37 registry, while Current Run correctly reflects the active run because Prestige resets run upgrade levels under the documented policy. Achievement rewards no longer mint the retired Upgrade Point or Skill Point currencies; unclaimed legacy point rewards convert to bounded transitional cash without reactivating old modifiers. See `CAREER_INTEGRATION_REPORT.md`.

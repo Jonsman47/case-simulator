@@ -89,7 +89,7 @@ describe('Prestige v38', () => {
       },
     }
     const loaded = parseGameSaveText(JSON.stringify({ version: 37, savedAt: 100, state: legacy }))
-    expect(createSaveEnvelope(loaded).version).toBe(38)
+    expect(createSaveEnvelope(loaded).version).toBe(39)
     expect(loaded.inventory.map((entry) => entry.instanceId)).toEqual(['keep', 'reset'])
     expect(loaded.prestigeSystem.highestTier).toBe(3)
     expect(loaded.prestigeSystem.perkLevels).toMatchObject({

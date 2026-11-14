@@ -1,40 +1,41 @@
-import { ArrowUpDown, Bot, Boxes, Check, Crosshair, Gem, Gift, Library, Lock, Medal, PackageCheck, TrendingUp, Trophy, type LucideIcon } from 'lucide-react'
+import { ArrowUpDown, BriefcaseBusiness, Check, Crosshair, Gift, Library, Lock, Medal, PackageCheck, TrendingUp, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useAchievements } from '../hooks/useAchievements'
 import { useGame } from '../hooks/useGame'
-import type { Achievement, AchievementCategory } from '../data/models'
+import type { Achievement, AchievementDisplayCategory } from '../data/models'
 import { formatCurrency } from '../utils/format'
 import { getAchievementCareerXp } from '../career/careerProgress'
+import {
+  getAchievementBlockedReason,
+  getAchievementProgressValue,
+  getAchievementScope,
+} from '../data/achievements'
 
-const categoryAccentClasses: Record<AchievementCategory, string> = {
-  Opening: 'border-rarity-mil-spec text-rarity-mil-spec',
-  Drops: 'border-rarity-covert text-rarity-covert',
-  Inventory: 'border-cs-green text-cs-green',
-  'Trade Ups': 'border-rarity-restricted text-rarity-restricted',
-  Progression: 'border-rarity-special text-rarity-special',
-  Collection: 'border-rarity-classified text-rarity-classified',
-  Automation: 'border-rarity-industrial text-rarity-industrial',
-  'Trophy Room': 'border-rarity-contraband text-rarity-contraband',
+const categoryAccentClasses: Record<AchievementDisplayCategory, string> = {
+  'Case Opening': 'border-rarity-mil-spec text-rarity-mil-spec',
+  Trading: 'border-cs-green text-cs-green',
+  Collecting: 'border-rarity-classified text-rarity-classified',
+  'Trade-Ups': 'border-rarity-restricted text-rarity-restricted',
+  Business: 'border-rarity-industrial text-rarity-industrial',
+  'Career & Prestige': 'border-rarity-special text-rarity-special',
 }
 
-const categoryIcons: Record<AchievementCategory, LucideIcon> = {
-  Opening: Crosshair,
-  Drops: Gem,
-  Inventory: Boxes,
-  'Trade Ups': ArrowUpDown,
-  Progression: TrendingUp,
-  Collection: Library,
-  Automation: Bot,
-  'Trophy Room': Trophy,
+const categoryIcons: Record<AchievementDisplayCategory, LucideIcon> = {
+  'Case Opening': Crosshair,
+  Trading: TrendingUp,
+  Collecting: Library,
+  'Trade-Ups': ArrowUpDown,
+  Business: BriefcaseBusiness,
+  'Career & Prestige': Medal,
 }
 
 function formatReward(achievement: Achievement, careerXp = 0) {
   const reward = achievement.reward
 
   return [
-    reward?.money ? formatCurrency(reward.money) : undefined,
-    reward?.upgradePoints ? `${reward.upgradePoints} upgrade point${reward.upgradePoints === 1 ? '' : 's'}` : undefined,
-    reward?.skillPoints ? `${reward.skillPoints} skill point${reward.skillPoints === 1 ? '' : 's'}` : undefined,
+    (reward?.money || reward?.upgradePoints || reward?.skillPoints)
+      ? formatCurrency((reward?.money ?? 0) + (reward?.upgradePoints ?? 0) * 100 + (reward?.skillPoints ?? 0) * 50)
+      : undefined,
     reward?.badge ? `${reward.badge} badge` : undefined,
     careerXp > 0 ? `${careerXp} Career XP` : undefined,
     !reward && careerXp <= 0 ? 'Cosmetic record' : undefined,
@@ -60,22 +61,40 @@ export function Achievements() {
     claimableCount,
     getProgress,
     groupedAchievements,
-    unlockedCount,
   } = useAchievements()
   const [claimSummary, setClaimSummary] = useState<string>()
+  const [filter, setFilter] = useState<'all' | 'available' | 'inProgress' | 'completed' | 'claimable' | 'lifetime' | 'currentRun'>('all')
+  const visibleAchievements = useMemo(() => achievements.filter((achievement) => {
+    const progress = getProgress(achievement.id)
+    if (achievement.isRetired && !progress) return false
+    const value = getAchievementProgressValue(achievement, state)
+    const target = achievement.target ?? 1
+    if (filter === 'available') return !progress && !achievement.isHidden && !achievement.isRetired
+    if (filter === 'inProgress') return !progress && value > 0 && value < target
+    if (filter === 'completed') return Boolean(progress)
+    if (filter === 'claimable') return Boolean(progress && !progress.isClaimed && achievement.reward)
+    if (filter === 'lifetime') return getAchievementScope(achievement) === 'lifetime'
+    if (filter === 'currentRun') return getAchievementScope(achievement) === 'currentRun'
+    return true
+  }), [achievements, filter, getProgress, state])
+  const visibleByCategory = useMemo(() => Object.fromEntries(categories.map((category) => [
+    category,
+    groupedAchievements[category].filter((achievement) => visibleAchievements.includes(achievement)),
+  ])) as typeof groupedAchievements, [categories, groupedAchievements, visibleAchievements])
   const claimableSummary = useMemo(() => achievements.reduce((summary, achievement) => {
     const progress = getProgress(achievement.id)
     if (!progress || progress.isClaimed || !achievement.reward) return summary
     summary.money += achievement.reward.money ?? 0
-    summary.skillPoints += achievement.reward.skillPoints ?? 0
-    summary.upgradePoints += achievement.reward.upgradePoints ?? 0
+    summary.money += (achievement.reward.skillPoints ?? 0) * 50 + (achievement.reward.upgradePoints ?? 0) * 100
     summary.badges += achievement.reward.badge ? 1 : 0
     if (!state.career.legacyAchievementIds.includes(achievement.id)) {
       summary.careerXp += getAchievementCareerXp(achievement.id)
     }
     return summary
-  }, { badges: 0, careerXp: 0, money: 0, skillPoints: 0, upgradePoints: 0 }), [achievements, getProgress, state.career.legacyAchievementIds])
-  const completion = achievements.length > 0 ? Math.round((unlockedCount / achievements.length) * 100) : 0
+  }, { badges: 0, careerXp: 0, money: 0 }), [achievements, getProgress, state.career.legacyAchievementIds])
+  const activeAchievementCount = achievements.filter((achievement) => !achievement.isRetired).length
+  const activeUnlockedCount = achievements.filter((achievement) => !achievement.isRetired && getProgress(achievement.id)).length
+  const completion = activeAchievementCount > 0 ? Math.round((activeUnlockedCount / activeAchievementCount) * 100) : 0
 
   return (
     <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5">
@@ -84,15 +103,15 @@ export function Achievements() {
           <p className="font-mono text-xs uppercase text-rarity-special">Milestones</p>
           <h2 className="mt-1 text-2xl font-semibold text-cs-text sm:text-3xl">Achievements</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">
-            Track collection, opening, trade-up, automation, and prestige milestones.
+            Lifetime accomplishments and bounded Current Run goals across the complete trading career.
           </p>
         </div>
         <div className="grid gap-2 border border-cs-border bg-cs-panel p-2 sm:grid-cols-5">
-          <SummaryPill label="Unlocked" value={`${unlockedCount}/${achievements.length}`} />
+          <SummaryPill label="Completed" value={`${activeUnlockedCount}/${activeAchievementCount}`} />
           <SummaryPill label="Complete" value={`${completion}%`} />
           <SummaryPill label="Claimable" value={String(claimableCount)} />
-          <SummaryPill label="Upgrade Points" value={String(state.upgradePoints)} />
-          <SummaryPill label="Skill Points" value={String(state.skillPoints)} />
+          <SummaryPill label="Lifetime" value={String(achievements.filter((achievement) => getAchievementScope(achievement) === 'lifetime' && getProgress(achievement.id)).length)} />
+          <SummaryPill label="Current Run" value={String(achievements.filter((achievement) => getAchievementScope(achievement) === 'currentRun' && getProgress(achievement.id)).length)} />
         </div>
       </div>
 
@@ -107,8 +126,6 @@ export function Achievements() {
           onClick={() => {
             const parts = [
               claimableSummary.money ? formatCurrency(claimableSummary.money) : '',
-              claimableSummary.upgradePoints ? `${claimableSummary.upgradePoints} upgrade points` : '',
-              claimableSummary.skillPoints ? `${claimableSummary.skillPoints} skill points` : '',
               claimableSummary.badges ? `${claimableSummary.badges} badges` : '',
               claimableSummary.careerXp ? `${claimableSummary.careerXp} Career XP` : '',
             ].filter(Boolean)
@@ -126,10 +143,38 @@ export function Achievements() {
         <div className="h-full bg-rarity-special" style={{ width: `${completion}%` }} />
       </div>
 
+      <div aria-label="Achievement filters" className="mt-4 flex flex-wrap gap-2">
+        {([
+          ['all', 'All'],
+          ['available', 'Available'],
+          ['inProgress', 'In Progress'],
+          ['completed', 'Completed'],
+          ['claimable', 'Claimable'],
+          ['lifetime', 'Lifetime'],
+          ['currentRun', 'Current Run'],
+        ] as const).map(([value, label]) => (
+          <button
+            aria-pressed={filter === value}
+            className={[
+              'min-h-10 border px-3 py-2 text-xs font-semibold transition-colors',
+              filter === value
+                ? 'border-rarity-special bg-rarity-special/10 text-rarity-special'
+                : 'border-cs-border bg-cs-panel text-cs-muted hover:text-cs-text',
+            ].join(' ')}
+            key={value}
+            onClick={() => setFilter(value)}
+            type="button"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <div className="mt-4 space-y-5">
         {categories.map((category) => {
           const CategoryIcon = categoryIcons[category]
-          const categoryAchievements = groupedAchievements[category]
+          const categoryAchievements = visibleByCategory[category]
+          if (categoryAchievements.length === 0) return null
           const unlockedInCategory = categoryAchievements.filter((achievement) =>
             getProgress(achievement.id),
           ).length
@@ -149,6 +194,11 @@ export function Achievements() {
                   const progress = getProgress(achievement.id)
                   const isUnlocked = Boolean(progress)
                   const isClaimable = Boolean(progress && !progress.isClaimed && achievement.reward)
+                  const scope = getAchievementScope(achievement)
+                  const progressValue = getAchievementProgressValue(achievement, state)
+                  const target = achievement.target ?? 1
+                  const progressPercent = Math.min(100, Math.max(0, progressValue / Math.max(1, target) * 100))
+                  const blockedReason = !isUnlocked ? getAchievementBlockedReason(achievement, state) : undefined
                   const displayName = achievement.isHidden && !isUnlocked
                     ? 'Hidden Achievement'
                     : achievement.name
@@ -175,7 +225,7 @@ export function Achievements() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="font-mono text-[10px] uppercase text-cs-muted">
-                            {isUnlocked ? 'Unlocked' : 'Locked'}
+                            {achievement.isRetired ? 'Legacy record' : scope === 'currentRun' ? 'Current Run' : 'Lifetime'}
                           </p>
                           <h4 className="mt-1 text-lg font-semibold text-cs-text">
                             {displayName}
@@ -187,6 +237,18 @@ export function Achievements() {
                       </div>
 
                       <p className="mt-2 line-clamp-2 min-h-10 text-sm text-cs-muted">{displayDescription}</p>
+                      {!achievement.isHidden || isUnlocked ? (
+                        <div className="mt-3">
+                          <div className="flex justify-between gap-3 font-mono text-[10px] uppercase text-cs-muted">
+                            <span>{isUnlocked ? 'Completed' : progressValue > 0 ? 'In progress' : 'Available'}</span>
+                            <span>{Math.min(progressValue, target).toLocaleString()} / {target.toLocaleString()}</span>
+                          </div>
+                          <div className="mt-1 h-2 border border-cs-border bg-cs-surface">
+                            <div className="h-full bg-current" style={{ width: `${isUnlocked ? 100 : progressPercent}%` }} />
+                          </div>
+                          {blockedReason ? <p className="mt-2 text-xs text-cs-muted">{blockedReason}</p> : null}
+                        </div>
+                      ) : null}
                       <div className="mt-3 border border-cs-border bg-cs-surface p-2">
                         <div className="flex items-center gap-2">
                           <Gift size={15} />

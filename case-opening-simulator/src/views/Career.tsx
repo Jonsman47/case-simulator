@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CAREER_RANKS,
   getCareerSnapshot,
@@ -34,6 +35,7 @@ import {
 } from '../career/careerUpgrades'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
+import { getPrestigeEligibilityV2 } from '../prestige/prestigeSystem'
 
 type UpgradeFilter = 'all' | 'available' | 'affordable' | 'locked' | 'purchased' | 'maxed'
 
@@ -120,6 +122,11 @@ export function Career() {
   const rankRecord = [...state.career.rankHistory].reverse().find((entry) => entry.rankId === snapshot.rank.id)
   const selectedSpecialization = specializationCards.find((entry) => entry.id === specialization) ?? specializationCards[0]
   const activeCapabilities = getActiveCareerUpgradeCapabilities(state.careerUpgrades, specialization)
+  const prestigeEligibility = getPrestigeEligibilityV2(state)
+  const availableUpgradeCount = CAREER_UPGRADE_DEFINITIONS.filter((definition) => {
+    const status = getCareerUpgradeStatus(definition, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
+    return !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet && status.canAfford
+  }).length
 
   const visibleDefinitions = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -162,6 +169,21 @@ export function Career() {
           <div className="border border-cs-border bg-cs-panel p-4"><p className="font-mono text-[10px] uppercase text-cs-muted">Next rank</p><p className="mt-1 font-semibold text-cs-text">{snapshot.nextRank?.name ?? 'CS2 Trading Legend'}</p><p className="mt-2 text-xs leading-5 text-cs-muted">{snapshot.nextRank ? `Reach Career level ${snapshot.nextRank.minimumLevel}. Ranks are earned through XP, not forced waiting.` : `Highest career rank reached ${rankRecord ? `on ${new Date(rankRecord.earnedAt).toLocaleDateString()}` : ''}.`}</p></div>
         </div>
       </header>
+
+      <section className="border border-cs-border bg-cs-surface p-4 sm:p-5" aria-labelledby="next-career-goals">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="font-mono text-xs uppercase text-rarity-special">What to do next</p>
+            <h2 className="mt-1 text-xl font-semibold text-cs-text" id="next-career-goals">Career goals</h2>
+          </div>
+          <Link className="border border-cs-border px-3 py-2 text-xs font-semibold text-cs-muted hover:text-cs-text" to="/progress">View achievements &amp; stats</Link>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <Metric label="Next level" value={snapshot.level >= 100 ? 'Level cap reached' : `${snapshot.xpForNextLevel.toLocaleString()} XP remaining`} />
+          <Metric label="Available upgrades" value={availableUpgradeCount > 0 ? `${availableUpgradeCount} affordable now` : 'Build branch XP or cash'} />
+          <Metric label="Next Prestige goal" value={prestigeEligibility.canPrestige ? `${prestigeEligibility.tier.name} is optional and ready` : prestigeEligibility.reasons[0] ?? 'Review Prestige paths'} />
+        </div>
+      </section>
 
       <section className="border border-cs-border bg-cs-surface p-4 sm:p-6" aria-labelledby="specializations-title">
         <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-xs uppercase text-rarity-special">Choose a path</p><h2 className="mt-1 text-xl font-semibold text-cs-text" id="specializations-title">Specializations</h2></div><p className="text-xs text-cs-muted">{CAREER_UPGRADE_COUNTS.total} nodes · flexible cross-training</p></div>
