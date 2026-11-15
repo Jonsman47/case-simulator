@@ -1,5 +1,7 @@
 # Career Upgrade System
 
+> Prompt 8 release audit: the catalog remains exactly 95 nodes (18/22/16/18/21). Registry identity, gates, prerequisites, costs, maximum levels, current/next effects, Prestige reset and declared runtime consumers pass. Mechanical selectors remain connected to openings, inventory/Trophy capacity, selling and all employee schedulers; information/workflow nodes remain visible through the Career toolkit. No official case odds changed. See `CAREER_OVERHAUL_FINAL_RELEASE_REPORT.md`.
+
 This document is the authoritative human-readable companion to the typed registry in `src/career/careerUpgrades.ts`. Save schema v37 stores only stable upgrade IDs, levels, purchase timestamps, and one-time migration metadata; definitions and unlock state remain derived.
 
 ## Architecture

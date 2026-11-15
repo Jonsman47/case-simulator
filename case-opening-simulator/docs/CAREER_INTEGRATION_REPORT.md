@@ -117,4 +117,4 @@ Known limitations:
 - Pre-v34 financial history and pre-v39 chapter fields cannot be reconstructed exactly and are shown as unavailable.
 - Offline operations are reported from bounded retained operation records; permanent financial totals remain ledger-backed.
 - Live Supabase Auth/RLS/RPC and real multi-device conflicts require deployment credentials and are not claimed from local/mock tests.
-- Prompt 8 remains responsible for final migration-matrix hardening, cloud/security/performance/accessibility sweep, and release cleanup.
+- Prompt 8 completed the migration-matrix hardening, cloud/security/performance/accessibility sweep, and local/offline release cleanup. Prestige recovery now uses a state-bound proof and source-run request identity instead of a boolean, and Settings can replace the current lineage with the verified pre-Prestige snapshot. Save validation rejects duplicate item identity and corrupt escrow without silently deleting an item. See `CAREER_OVERHAUL_FINAL_RELEASE_REPORT.md` and `CAREER_OVERHAUL_RECOVERY_AND_ROLLBACK.md`. Live Supabase verification remains blocked on credentials.

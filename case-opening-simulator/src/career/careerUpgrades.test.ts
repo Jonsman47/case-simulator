@@ -4,6 +4,7 @@ import { gameReducer } from '../data/gameReducer'
 import { Rarity, WearCondition } from '../data/models'
 import { createSaveEnvelope, parseGameSaveText } from '../utils/save'
 import { getCumulativeXpForLevel } from './careerProgress'
+import { createPrestigeRecoveryProof } from '../prestige/prestigeSystem'
 import {
   CAREER_UPGRADE_COUNTS,
   CAREER_UPGRADE_DEFINITIONS,
@@ -183,7 +184,8 @@ describe('career specialization upgrades', () => {
       },
     }
     const credit = eligible.careerUpgrades.migration.transitionCredit
-    const prestiged = gameReducer(eligible, { type: 'PRESTIGE', now: 2 })
+    const sourceRunId = eligible.economyLedger.currentRunId
+    const prestiged = gameReducer(eligible, { type: 'PRESTIGE', requestId: `test:${sourceRunId}`, sourceRunId, backupProof: createPrestigeRecoveryProof(eligible), now: 2 })
     expect(prestiged.careerUpgrades.levels).toEqual({})
     expect(prestiged.careerUpgrades.migration.transitionCredit).toBe(credit)
   })

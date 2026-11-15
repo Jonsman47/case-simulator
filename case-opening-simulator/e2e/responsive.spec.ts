@@ -4,6 +4,9 @@ for (const viewport of [
   { name: 'desktop-1920', width: 1920, height: 1080 },
   { name: 'laptop-1366', width: 1366, height: 768 },
   { name: 'laptop-1280', width: 1280, height: 720 },
+  { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'mobile-375', width: 375, height: 812 },
+  { name: 'mobile-320', width: 320, height: 720 },
   { name: 'mobile-390', width: 390, height: 844 },
 ]) {
   test(`${viewport.name} keeps Work and opening controls inside the viewport`, async ({ page }) => {
@@ -17,7 +20,7 @@ for (const viewport of [
     }
     await expect(page.getByRole('heading', { name: 'Precision Strike' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-    if (viewport.name === 'mobile-390') {
+    if (viewport.width <= 390) {
       await page.getByRole('button', { name: 'Play Memory Circuit' }).click()
       await page.getByRole('button', { name: 'Start Memory Circuit' }).click()
       const gameBox = await page.getByTestId('memoryCircuit-game').boundingBox()

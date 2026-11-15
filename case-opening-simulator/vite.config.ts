@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import { pwaOptions } from './pwa.config'
+import { pwaOptions } from './pwa.config.ts'
 
 // https://vite.dev/config/
 export default defineConfig({

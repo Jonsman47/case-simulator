@@ -29,6 +29,10 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - name: Deterministic career simulation smoke test
+        run: npm run simulate:career:ci
+      - name: Production dependency security audit
+        run: npm audit --omit=dev --audit-level=high
       - run: npm run build
       - run: npm run test:e2e
       - run: npm run verify:pwa

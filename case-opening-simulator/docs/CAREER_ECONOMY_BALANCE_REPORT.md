@@ -4,6 +4,8 @@ Date: 2026-11-14
 
 Game/save baseline: Career Overhaul Prompt 5, schema v37
 
+Prompt 8 revalidation: schema v39 reran the same seed after release hardening. The result remained 300,000 careers, 500,000 openings, 63.17 competent-regular median hours to the first gate and 781.10 modeled hours across the five tiers. Simulation work completed in 6.07 seconds on the audit machine. Recovery/save/cloud fixes did not change case odds, Career XP, employee economics, upgrade costs or Prestige formulas.
+
 Reproduction: `npm run simulate:career`
 
 Seed: `3308146696` (`0xC52E5008`)

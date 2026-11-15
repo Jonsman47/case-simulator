@@ -16,6 +16,7 @@ import {
   Sparkles,
   Upload,
   ShieldCheck,
+  History,
   User,
   Volume2,
   VolumeX,
@@ -41,6 +42,7 @@ import {
   parseGameSaveText,
   shouldPromptForBackup,
 } from '../utils/save'
+import { loadPrestigeRecoveryBackup, type PrestigeRecoveryBackup } from '../utils/prestigeRecovery'
 
 const animationSpeeds: { label: string; value: AnimationSpeed }[] = [
   { label: 'Normal', value: 'normal' },
@@ -137,6 +139,14 @@ export function Settings() {
   const [isError, setIsError] = useState(false)
   const [pendingImportState, setPendingImportState] = useState<GameState | undefined>()
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
+  const [pendingRecovery, setPendingRecovery] = useState<PrestigeRecoveryBackup | undefined>()
+  const [recoveryBackup, setRecoveryBackup] = useState<PrestigeRecoveryBackup | undefined>(() => {
+    try {
+      return loadPrestigeRecoveryBackup()
+    } catch {
+      return undefined
+    }
+  })
   const [cloudEmail, setCloudEmail] = useState('')
   const [cloudPassword, setCloudPassword] = useState('')
   const [cloudUsername, setCloudUsername] = useState('')
@@ -208,6 +218,16 @@ export function Settings() {
     resetGame()
     setIsResetConfirmOpen(false)
     showMessage('Progress reset. New run started.')
+  }
+
+  function confirmRecoveryRestore() {
+    if (!pendingRecovery) return
+    // Recovery is deliberately replace-only. Combining pre- and post-Prestige
+    // lineages would duplicate cash, items, PP, and exact-once rewards.
+    replaceGameState(pendingRecovery.state)
+    setRecoveryBackup(pendingRecovery)
+    setPendingRecovery(undefined)
+    showMessage('Pre-Prestige recovery save restored. The newer local lineage was replaced, not merged.')
   }
 
   function updateRarityColor(rarity: Rarity, color: string) {
@@ -374,6 +394,26 @@ export function Settings() {
         </div>
       ) : null}
 
+
+      {pendingRecovery ? (
+        <div aria-modal="true" className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/70 p-0 sm:p-4" role="dialog">
+          <div className="min-h-dvh w-full max-w-none overflow-y-auto border border-rarity-special bg-cs-surface p-5 shadow-glow sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-1 shrink-0 text-rarity-special" size={22} />
+              <div>
+                <h3 className="text-xl font-semibold text-cs-text">Restore Pre-Prestige Save?</h3>
+                <p className="mt-2 text-sm leading-relaxed text-cs-muted">This replaces the current local save with the verified snapshot from {formatSavedAt(pendingRecovery.state.lastSaved)}. Progress made after that snapshot is discarded. The two run lineages are never merged because doing so could duplicate items, money, XP, or Prestige Points.</p>
+                {cloud.session ? <p className="mt-2 text-sm text-rarity-special">Your next cloud sync may require an explicit conflict choice.</p> : null}
+              </div>
+            </div>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button className="min-h-11 border border-cs-border px-4 py-2 text-sm font-semibold text-cs-muted" onClick={() => setPendingRecovery(undefined)} type="button">Cancel</button>
+              <button className="min-h-11 border border-rarity-special bg-rarity-special/10 px-4 py-2 text-sm font-semibold text-rarity-special" onClick={confirmRecoveryRestore} type="button">Replace With Recovery Save</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-8 grid gap-5 xl:grid-cols-[1fr_1fr]">
         <SettingsPanel icon={Save} title="Save Management">
           <div className="grid gap-3 md:grid-cols-2">
@@ -429,6 +469,23 @@ export function Settings() {
               >
                 <Compass size={16} />
                 Review Tutorial
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 border border-cs-border bg-cs-surface p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted"><History size={15} /> Prestige Recovery</p>
+                <p className="mt-1 text-sm text-cs-muted">{recoveryBackup ? `Verified pre-Prestige snapshot from ${formatSavedAt(recoveryBackup.state.lastSaved)}.` : 'No verified pre-Prestige recovery snapshot is available.'}</p>
+              </div>
+              <button
+                className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!recoveryBackup}
+                onClick={() => setPendingRecovery(recoveryBackup)}
+                type="button"
+              >
+                <RotateCcw size={16} />
+                Restore Snapshot
               </button>
             </div>
           </div>

@@ -83,6 +83,55 @@ export interface PrestigeSystemState {
 export const PRESTIGE_HISTORY_LIMIT = 24
 export const PRESTIGE_REQUEST_LIMIT = 96
 
+/**
+ * Deterministically fingerprints the state a destructive Prestige reset will
+ * replace. This is not an anti-cheat secret: a local PWA cannot prevent a
+ * player modifying its JavaScript. It does prove that the snapshot read back
+ * from storage belongs to the exact run and critical state being reset.
+ */
+export function createPrestigeRecoveryProof(state: GameState) {
+  const criticalState = {
+    version: 1,
+    runId: state.economyLedger.currentRunId,
+    runStartedAt: state.economyLedger.currentRunStartedAt,
+    money: state.money,
+    inventory: [...state.inventory].sort((left, right) => left.instanceId.localeCompare(right.instanceId)),
+    playerListings: [...state.marketplace.playerListings].sort((left, right) => left.id.localeCompare(right.id)),
+    pendingAcquisition: state.marketplace.pendingAcquisition,
+    economyCurrentRun: state.economyLedger.currentRun,
+    itemCostBasis: state.economyLedger.itemCostBasis,
+    career: state.career,
+    careerUpgrades: state.careerUpgrades,
+    business: state.business,
+    prestigeLevel: state.prestigeLevel,
+    prestigePoints: state.prestigePoints,
+    prestigeSystem: state.prestigeSystem,
+    collectionBook: state.collectionBook,
+    currentRunCollectionBook: state.currentRunCollectionBook,
+  }
+  const serialized = stableStringify(criticalState)
+  let first = 0x811c9dc5
+  let second = 0x9e3779b9
+
+  for (let index = 0; index < serialized.length; index += 1) {
+    const code = serialized.charCodeAt(index)
+    first = Math.imul(first ^ code, 0x01000193) >>> 0
+    second = Math.imul(second ^ (code + index), 0x85ebca6b) >>> 0
+  }
+
+  return `prestige-recovery:v1:${state.economyLedger.currentRunId}:${first.toString(16).padStart(8, '0')}${second.toString(16).padStart(8, '0')}`
+}
+
+function stableStringify(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value)
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+  return `{${Object.entries(value as Record<string, unknown>)
+    .filter(([, entry]) => entry !== undefined)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, entry]) => `${JSON.stringify(key)}:${stableStringify(entry)}`)
+    .join(',')}}`
+}
+
 export const PRESTIGE_TIERS: PrestigeTierDefinition[] = [
   { tier: 1, name: 'Fresh Start', minimumLevel: 25, minimumScore: 70, requiredPrimaryPaths: 1, requiredSupportPaths: 1, basePoints: 3 },
   { tier: 2, name: 'Established Operator', minimumLevel: 30, minimumScore: 74, requiredPrimaryPaths: 1, requiredSupportPaths: 1, basePoints: 5 },

@@ -407,6 +407,8 @@ Consolidated four-destination progression navigation, career achievements, compl
 
 Full browser walkthrough, accessibility/responsiveness, long-session performance, save/cloud conflict tests, economy exploit suite, documentation, release and migration rollback plan.
 
+Implementation decision (2026-11-14): complete for local/offline release. Destructive Prestige requires an exact state-bound recovery proof and source-run identity, with replace-only restoration in Settings. Save imports reject duplicate owned IDs, invalid numeric item identity and corrupt escrow without data deletion. The v31–v39 matrix, cross-device lineage conflict test, deterministic CI simulation smoke, production dependency audit, 463 unit tests and 26 browser journeys form the final release gate. Live Supabase Auth/RLS/RPC remains a deployment blocker for a full-cloud verdict; local/mock evidence does not waive that requirement.
+
 ## 23. Prompt 1 implementation decisions
 
 - Economy ledger detailed history is capped at 160 records; processed IDs at 480; archived summaries at 24. Lifetime and current-run aggregates remain compact and permanent.

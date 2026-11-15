@@ -441,14 +441,11 @@ describe('save system', () => {
     expect(loadedState?.lastPoopCleaningAt).toBe(0)
   })
 
-  it('deduplicates inventory instance ids when saving and loading', () => {
+  it('rejects duplicate inventory identities without silently deleting a valuable copy', () => {
     installLocalStorage()
     const item = makeItem({ instanceId: 'duplicate-item', marketValue: 10 })
     const duplicate = makeItem({ instanceId: 'duplicate-item', marketValue: 999 })
-
-    saveGame(makeState({ inventory: [item, duplicate] }))
-
-    expect(loadGameState()?.inventory.map((inventoryItem) => inventoryItem.instanceId)).toEqual(['duplicate-item'])
+    expect(() => saveGame(makeState({ inventory: [item, duplicate] }))).toThrow('duplicate item identity')
   })
 
   it('bounds persisted market history and keeps compact autosaves below browser quota pressure', () => {

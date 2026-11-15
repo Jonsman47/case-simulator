@@ -136,6 +136,7 @@ import {
 import {
   calculatePrestigePointsV2,
   cloneVaultItems,
+  createPrestigeRecoveryProof,
   getPrestigeEligibilityV2,
   getPrestigeStartingCash as getCareerPrestigeStartingCash,
   getPrestigeBusinessCostMultiplier,
@@ -1307,12 +1308,18 @@ function removeTrophyItem(state: GameState, slotId: string): GameState {
 function prestigeRun(
   state: GameState,
   requestId: string,
+  sourceRunId: string,
   vaultItemIds: string[],
-  backupVerified: boolean,
+  backupProof: string,
   now = Date.now(),
 ): GameState {
   if (!requestId || state.prestigeSystem.completedRequestIds.includes(requestId)) return state
-  if (!backupVerified) return { ...state, lastError: 'Prestige recovery backup was not verified. No progress was reset.' }
+  if (sourceRunId !== state.economyLedger.currentRunId || !requestId.includes(sourceRunId)) {
+    return { ...state, lastError: 'Prestige request belongs to a different run. No progress was reset.' }
+  }
+  if (!backupProof || backupProof !== createPrestigeRecoveryProof(state)) {
+    return { ...state, lastError: 'Prestige recovery backup was not verified for this exact run state. No progress was reset.' }
+  }
   const eligibility = getPrestigeEligibilityV2(state)
   if (!eligibility.canPrestige) return { ...state, lastError: eligibility.reasons[0] ?? 'Prestige requirements are not complete.' }
   const vaultSelection = validateVaultSelection(state, vaultItemIds)
@@ -3286,8 +3293,9 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return withProgressionUnlocks(prestigeRun(
         state,
         action.requestId ?? `legacy-prestige:${state.economyLedger.currentRunId}`,
+        action.sourceRunId ?? '',
         action.vaultItemIds ?? [],
-        action.backupVerified ?? true,
+        action.backupProof ?? '',
         action.now,
       ), action.now)
     case 'PURCHASE_PRESTIGE_BONUS':

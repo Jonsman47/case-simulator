@@ -159,8 +159,8 @@ The authoritative formulas, reset policy, employee boundaries, migration rules, 
 | 5. Economy simulation and balance | Deterministic production-linked framework; 300,000 careers; 500,000 openings; XP/employee/upgrade/exploit calibration; Prompt-6 Prestige specification | **COMPLETE — 434 unit tests, lint, TypeScript, build, release, full simulations and 20 browser journeys passed** |
 | 6. Prestige and legacy systems | v38 five-tier/path score, bounded PP/perks, exact-once recovery-backed reset, Legacy Vault, run archives and All Time/Current Run Collection | **COMPLETE — 438 unit tests, lint, TypeScript, build, release, full simulation and 22 browser journeys passed** |
 | 7. Achievements, Stats and navigation | v39 scoped achievements, six-category Career catalog, shared financial/Career/Business/Prestige/Collection reporting, four-destination progression navigation, history and legacy-safe migration | **COMPLETE — 447 unit tests, lint, TypeScript, build, release, simulation and 23 browser journeys passed** |
-| 8. Release hardening | Full migration matrix, cloud conflicts, performance/accessibility/browser release sweep | **PLANNED** |
-Legacy progression fields remain loadable for migration history, but retired purchase controls and duplicate navigation are no longer player-facing. Prompt 8 will perform the final release hardening without reviving those systems.
+| 8. Release hardening | Full migration matrix, state-bound Prestige recovery, corruption handling, cloud lineage conflicts, security/performance/accessibility/browser release sweep and rollback documentation | **COMPLETE FOR LOCAL/OFFLINE RELEASE — LIVE SUPABASE VERIFICATION BLOCKED** |
+Legacy progression fields remain loadable for migration history, but retired purchase controls and duplicate navigation are no longer player-facing. The eight-prompt Career Overhaul is complete for local/offline release without reviving those systems.
 
 ### Prompt 3 implementation notes
 
@@ -178,4 +178,4 @@ Legacy progression fields remain loadable for migration history, but retired pur
 - Prompt 5/8 — Economy simulation and calibration: complete.
 - Prompt 6/8 — Prestige, Legacy Vault, Career History and Collection split: complete and verified.
 - Prompt 7/8 — Achievements, Stats, navigation and migration completion: complete and locally verified; GitHub CI result is recorded with the release commit.
-- Prompt 8/8 — Release hardening: planned.
+- Prompt 8/8 — Release hardening: complete for local/offline release; 463 unit tests, 26 browser journeys, v31–v39 migration matrix, deterministic economy simulation, production/PWA build and production-dependency audit pass. Full audit retains 12 documented low/moderate development-tool findings after all safe updates. Live Supabase deployment remains unverified and blocks a full-cloud verdict.

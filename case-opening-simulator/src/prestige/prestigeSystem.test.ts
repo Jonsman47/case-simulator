@@ -4,7 +4,7 @@ import { gameReducer } from '../data/gameReducer'
 import { defaultGameState, type GameState } from '../data/gameState'
 import { Rarity, WearCondition, type SkinInstance } from '../data/models'
 import { createSaveEnvelope, parseGameSaveText } from '../utils/save'
-import { calculatePrestigePointsV2, getLegacyVaultCapacity, getPrestigeEligibilityV2, getPrestigeXpMultiplier } from './prestigeSystem'
+import { calculatePrestigePointsV2, createPrestigeRecoveryProof, getLegacyVaultCapacity, getPrestigeEligibilityV2, getPrestigeXpMultiplier } from './prestigeSystem'
 
 function item(id: string, value = 1_000): SkinInstance {
   return {
@@ -43,6 +43,11 @@ function eligibleState(overrides: Partial<GameState> = {}): GameState {
   return state
 }
 
+function prestigeAction(state: GameState, requestId: string, now: number, vaultItemIds: string[] = []) {
+  const sourceRunId = state.economyLedger.currentRunId
+  return { type: 'PRESTIGE' as const, requestId: `${requestId}:${sourceRunId}`, sourceRunId, vaultItemIds, backupProof: createPrestigeRecoveryProof(state), now }
+}
+
 describe('Prestige v38', () => {
   it('uses clamped score components and bounded tier-one points', () => {
     const state = eligibleState()
@@ -55,22 +60,28 @@ describe('Prestige v38', () => {
 
   it('preserves exact Vault identity and cost basis while resetting non-vault run state', () => {
     const state = eligibleState()
-    const next = gameReducer(state, { type: 'PRESTIGE', requestId: 'prestige-request-1', vaultItemIds: ['keep'], backupVerified: true, now: 10_000 })
+    const action = prestigeAction(state, 'prestige-request-1', 10_000, ['keep'])
+    const next = gameReducer(state, action)
     expect(next.inventory).toHaveLength(1)
     expect(next.inventory[0]).toMatchObject({ instanceId: 'keep', paintSeed: 661, floatValue: .12, isLocked: true, isFavorited: true })
     expect(next.economyLedger.itemCostBasis).toEqual({ keep: 2_500 })
     expect(next.career.currentRunXp).toBe(0)
     expect(next.currentRunCollectionBook).toEqual([])
     expect(next.prestigeSystem.runHistory[0].vaultedItemIds).toEqual(['keep'])
-    const replay = gameReducer(next, { type: 'PRESTIGE', requestId: 'prestige-request-1', vaultItemIds: ['keep'], backupVerified: true, now: 10_001 })
+    const replay = gameReducer(next, action)
     expect(replay.prestigeLevel).toBe(1)
     expect(replay.prestigePoints).toBe(next.prestigePoints)
   })
 
   it('blocks unsafe resets and unverified backups', () => {
-    const unverified = gameReducer(eligibleState(), { type: 'PRESTIGE', requestId: 'unverified', vaultItemIds: [], backupVerified: false, now: 10 })
+    const unverifiedState = eligibleState()
+    const unverified = gameReducer(unverifiedState, { type: 'PRESTIGE', requestId: `unverified:${unverifiedState.economyLedger.currentRunId}`, sourceRunId: unverifiedState.economyLedger.currentRunId, vaultItemIds: [], now: 10 })
     expect(unverified.prestigeLevel).toBe(0)
     expect(unverified.lastError).toContain('backup')
+    const staleProofState = { ...unverifiedState, money: unverifiedState.money + 1 }
+    const stale = gameReducer(staleProofState, prestigeAction(unverifiedState, 'stale', 11))
+    expect(stale.prestigeLevel).toBe(0)
+    expect(stale.lastError).toContain('exact run state')
     const listed = item('listed')
     const blocked = eligibleState({ marketplace: { ...defaultGameState.marketplace, playerListings: [{ id: 'listing', item: listed, askingPrice: 100, fairMarketValue: 100, createdAt: 1, expiresAt: 2, status: 'active' }] } })
     expect(getPrestigeEligibilityV2(blocked).blockers).toContain('Cancel or complete all player market listings.')

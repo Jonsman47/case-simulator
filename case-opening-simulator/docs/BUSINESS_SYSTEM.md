@@ -1,5 +1,7 @@
 # Business and Employee System
 
+> Prompt 8 release audit: all five employees, reserved capital, payroll watermark, daily limits, protection rules and the shared online/offline scheduler remain verified. No balance formula changed. Long-run operation IDs stay bounded; scheduler timestamps and authoritative state prevent offline replay. Final evidence is in `CAREER_OVERHAUL_FINAL_RELEASE_REPORT.md`.
+
 Implementation baseline: save schema v36 (Career Overhaul Prompt 3)
 
 The Business system is the only authority for employee automation. The v35 Auto Opener, Opening Desk, Case Farm, Trading Bot, and Market Analyst schedulers are disabled by the v36 migration and cannot run beside employees. Warehouse capacity and the independent Auction House remain available as Business facilities.

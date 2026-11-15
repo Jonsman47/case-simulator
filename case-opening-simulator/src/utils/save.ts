@@ -86,7 +86,7 @@ import {
   readPoopCleanupLastCompleted,
   writePoopCleanupLastCompleted,
 } from './poopCleanupMinigame'
-import { normalizeMoney } from './safeNumbers'
+import { MAX_CURRENCY_VALUE, normalizeMoney } from './safeNumbers'
 import { WORK_MINIGAMES, type WorkMiniGameCooldowns } from './workMinigames'
 import { createDefaultMarketplaceState, MARKETPLACE_EPOCH_MS } from '../marketplace/marketplace'
 import { createEconomyLedger, normalizeEconomyLedger } from '../economy/economyLedger'
@@ -111,6 +111,9 @@ export const CURRENT_SAVE_VERSION = 39
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
+export const MAX_IMPORTED_SAVE_BYTES = 50 * 1024 * 1024
+export const MAX_PERSISTED_INVENTORY_ITEMS = 50_000
+export const MAX_PLAYER_MARKET_LISTINGS = 5_000
 
 export interface SaveEnvelope {
   version: number
@@ -159,16 +162,19 @@ function isSkinInstance(value: unknown): value is SkinInstance {
     typeof value.weapon === 'string' &&
     typeof value.finish === 'string' &&
     isEnumValue(Object.values(Rarity), value.rarity) &&
-    isNumber(value.baseValue) &&
+    isNumber(value.baseValue) && value.baseValue >= 0 && value.baseValue <= MAX_CURRENCY_VALUE &&
     isStringArray(value.caseIds) &&
     typeof value.image === 'string' &&
     typeof value.instanceId === 'string' &&
     isEnumValue(Object.values(WearCondition), value.wear) &&
-    isNumber(value.floatValue) &&
-    isNumber(value.marketValue) &&
+    isNumber(value.floatValue) && value.floatValue >= 0 && value.floatValue <= 1 &&
+    isNumber(value.marketValue) && value.marketValue >= 0 && value.marketValue <= MAX_CURRENCY_VALUE &&
+    (value.baseMarketValue === undefined || (isNumber(value.baseMarketValue) && value.baseMarketValue >= 0 && value.baseMarketValue <= MAX_CURRENCY_VALUE)) &&
+    (value.patternPremium === undefined || (isNumber(value.patternPremium) && value.patternPremium >= 0 && value.patternPremium <= MAX_CURRENCY_VALUE)) &&
+    (value.paintSeed === undefined || (Number.isInteger(value.paintSeed) && Number(value.paintSeed) >= 0 && Number(value.paintSeed) <= 1000)) &&
     typeof value.isLocked === 'boolean' &&
     typeof value.isFavorited === 'boolean' &&
-    isNumber(value.discoveredAt)
+    isNumber(value.discoveredAt) && value.discoveredAt >= 0
   )
 }
 
@@ -615,8 +621,11 @@ function readSkinInstances(value: unknown, fieldName: string) {
   if (!Array.isArray(value) || !value.every(isSkinInstance)) {
     throw new SaveGameError(`Save file has invalid ${fieldName}.`)
   }
-
-  return dedupeSkinInstances(value)
+  if (value.length > MAX_PERSISTED_INVENTORY_ITEMS) {
+    throw new SaveGameError(`Save file ${fieldName} is too large to load safely.`)
+  }
+  assertUniqueSkinInstanceIds(value, fieldName)
+  return value
 }
 
 function normalizeOptionalSkinInstances(value: unknown) {
@@ -634,6 +643,16 @@ function dedupeSkinInstances(items: SkinInstance[]) {
     seenIds.add(item.instanceId)
     return true
   })
+}
+
+function assertUniqueSkinInstanceIds(items: SkinInstance[], fieldName: string) {
+  const seenIds = new Set<string>()
+  for (const item of items) {
+    if (seenIds.has(item.instanceId)) {
+      throw new SaveGameError(`Save file has duplicate item identity in ${fieldName}: ${item.instanceId}. No items were removed.`)
+    }
+    seenIds.add(item.instanceId)
+  }
 }
 
 function readTrophyAssignment(value: unknown, fallbackSlotId: string): TrophyAssignment | undefined {
@@ -892,13 +911,19 @@ function normalizeMarketplace(value: unknown): MarketplaceState {
         isNumber(entry.createdAt) && isNumber(entry.expiresAt)
       ))
     : []
-  const playerListings = Array.isArray(value.playerListings)
-    ? value.playerListings.filter((entry): entry is PlayerMarketListing => (
+  if (Array.isArray(value.playerListings) && value.playerListings.length > MAX_PLAYER_MARKET_LISTINGS) {
+    throw new SaveGameError('Save file has too many player marketplace listings to load safely.')
+  }
+  const playerListingIsValid = (entry: unknown): entry is PlayerMarketListing => (
         isRecord(entry) && typeof entry.id === 'string' && isSkinInstance(entry.item) &&
         isNumber(entry.askingPrice) && isNumber(entry.fairMarketValue) &&
         isNumber(entry.createdAt) && isNumber(entry.expiresAt) && typeof entry.status === 'string'
-      ))
-    : []
+      )
+  if (Array.isArray(value.playerListings) && !value.playerListings.every(playerListingIsValid)) {
+    throw new SaveGameError('Save file has invalid player marketplace escrow. No listed items were removed.')
+  }
+  const playerListings = Array.isArray(value.playerListings) ? value.playerListings as PlayerMarketListing[] : []
+  assertUniqueSkinInstanceIds(playerListings.map((listing) => listing.item), 'player marketplace escrow')
   const transactions = Array.isArray(value.transactions)
     ? value.transactions.filter((entry): entry is MarketplaceTransaction => (
         isRecord(entry) && typeof entry.id === 'string' && typeof entry.type === 'string' && transactionTypes.has(entry.type) &&
@@ -1468,9 +1493,9 @@ function migrateV24ToV25(value: unknown): unknown {
 
   return {
     ...value,
-    inventory: Array.isArray(value.inventory) && value.inventory.every(isSkinInstance)
-      ? dedupeSkinInstances(value.inventory)
-      : value.inventory,
+    // Preserve item bytes. Current validation rejects duplicate instance IDs
+    // instead of silently deleting one potentially valuable copy.
+    inventory: value.inventory,
     money: normalizeMoney(value.money, defaultGameState.money),
     trophyAssignments: normalizeTrophyAssignments(value.trophyAssignments),
   }
@@ -1925,6 +1950,11 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
   const activeMarketEvents = normalizeActiveMarketEvents(value.activeMarketEvents, lastSaved)
   const upcomingMarketEvents = normalizeActiveMarketEvents(value.upcomingMarketEvents, lastSaved)
   const marketplace = normalizeMarketplace(value.marketplace)
+  const inventoryIds = new Set(inventory.map((item) => item.instanceId))
+  const duplicatedEscrowItem = marketplace.playerListings.find((listing) => inventoryIds.has(listing.item.instanceId))
+  if (duplicatedEscrowItem) {
+    throw new SaveGameError(`Save file contains item ${duplicatedEscrowItem.item.instanceId} in both inventory and marketplace escrow. No item was removed.`)
+  }
   const economyLedger = normalizeEconomyLedger(
     value.economyLedger,
     statistics,
@@ -2005,6 +2035,9 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
 
 export function parseGameSaveText(text: string): GameState {
   try {
+    if (new TextEncoder().encode(text).byteLength > MAX_IMPORTED_SAVE_BYTES) {
+      throw new SaveGameError('Save file is too large to load safely. The original file was not changed.')
+    }
     const migrated = migrateToCurrent(JSON.parse(text))
 
     return normalizeGameState(migrated.state, migrated.savedAt)
@@ -2020,7 +2053,11 @@ export function parseGameSaveText(text: string): GameState {
 export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope {
   const currentTime = Date.now()
   const gameState = isGameState(state) ? state : playerStateToGameState(state)
-  const inventory = dedupeSkinInstances(gameState.inventory)
+  assertUniqueSkinInstanceIds(gameState.inventory, 'inventory')
+  if (gameState.inventory.length > MAX_PERSISTED_INVENTORY_ITEMS) {
+    throw new SaveGameError('Inventory is too large to save safely.')
+  }
+  const inventory = gameState.inventory
   const inventoryValue = getInventoryValue(inventory, gameState.marketValues)
   const persistedEconomyLedger = normalizeEconomyLedger(
     gameState.economyLedger,

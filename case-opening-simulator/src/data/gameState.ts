@@ -401,7 +401,7 @@ export type GameAction =
   | { type: 'TOGGLE_AUTOMATION_MODULE'; moduleId: AutomationModuleId; isEnabled?: boolean; now?: number }
   | { type: 'PURCHASE_UPGRADE'; upgradeId: UpgradeId; now?: number }
   | { type: 'PURCHASE_CAREER_UPGRADE'; upgradeId: string; now?: number }
-  | { type: 'PRESTIGE'; requestId?: string; vaultItemIds?: string[]; backupVerified?: boolean; now?: number }
+  | { type: 'PRESTIGE'; requestId?: string; sourceRunId?: string; vaultItemIds?: string[]; backupProof?: string; now?: number }
   | { type: 'PURCHASE_PRESTIGE_BONUS'; bonusId: PrestigeBonusId; now?: number }
   | { type: 'PURCHASE_PRESTIGE_PERK'; perkId: PrestigePerkId; now?: number }
   | { type: 'LEARN_SKILL_NODE'; nodeId: SkillNodeId; now?: number }

@@ -160,6 +160,33 @@ describe('cloud save backend', () => {
     expect(parseCloudSaveEnvelope((await backend.loadSave(session))!.envelope).money).toBe(200)
   })
 
+  it('rejects cross-device pre/post-Prestige lineage and PP conflicts without merging', async () => {
+    const backend = new LocalCloudBackend('cloud-lineage-conflict-test')
+    const session = await backend.signUp('lineage@example.com', 'secret-pass', 'LineageAce')
+    const original = makeState({ money: 20_000, prestigePoints: 8 })
+    const first = await backend.saveSave(session, createCloudSaveEnvelope(original), 0)
+    const oldRunId = original.economyLedger.currentRunId
+    const postPrestige = makeState({
+      money: 350,
+      prestigeLevel: 1,
+      prestigePoints: 4,
+      economyLedger: { ...original.economyLedger, currentRunId: 'run-after-prestige' },
+    })
+    const deviceA = await backend.saveSave(session, createCloudSaveEnvelope(postPrestige), first.revision)
+    const staleDeviceB = makeState({
+      money: 19_000,
+      prestigePoints: 3,
+      economyLedger: { ...original.economyLedger, currentRunId: oldRunId },
+    })
+
+    await expect(backend.saveSave(session, createCloudSaveEnvelope(staleDeviceB), first.revision))
+      .rejects.toMatchObject({ name: 'CloudRevisionConflictError', remoteRecord: { revision: deviceA.revision } })
+    const remote = parseCloudSaveEnvelope((await backend.loadSave(session))!.envelope)
+    expect(remote.economyLedger.currentRunId).toBe('run-after-prestige')
+    expect(remote.prestigePoints).toBe(4)
+    expect(remote.money).toBe(350)
+  })
+
   it('publishes only opted-in summaries and only selected trophy snapshots', async () => {
     const backend = new LocalCloudBackend('cloud-profile-privacy-test')
     const owner = await backend.signUp('private@example.com', 'secret-pass', 'PrivateAce')

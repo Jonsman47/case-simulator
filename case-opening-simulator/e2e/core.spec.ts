@@ -143,7 +143,7 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
   await expect(page.getByTestId('career-rank')).toHaveText('Independent Trader')
 })
 
-test('Prestige review preserves a selected Legacy Vault item exactly once', async ({ page }) => {
+test('Prestige preserves a Vault item and verified recovery replaces rather than merges lineages', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
   await dismissEventPopup(page)
@@ -181,6 +181,18 @@ test('Prestige review preserves a selected Legacy Vault item exactly once', asyn
   expect(after.state.economyLedger.itemCostBasis[kept.instanceId]).toBe(123.45)
   expect(after.state.prestigeSystem.runHistory).toHaveLength(1)
   expect(await page.evaluate(() => Object.keys(localStorage).some((key) => key.startsWith('case-opening-simulator:prestige-recovery:')))).toBe(true)
+
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Restore Snapshot' }).click()
+  const recoveryDialog = page.getByRole('dialog')
+  await expect(recoveryDialog.getByText('Restore Pre-Prestige Save?')).toBeVisible()
+  await recoveryDialog.getByRole('button', { name: 'Replace With Recovery Save' }).click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.prestigeLevel === 0, saveKey)
+  const restored = await readSave(page)
+  expect(restored.state.prestigeLevel).toBe(0)
+  expect(restored.state.prestigeSystem.runHistory).toHaveLength(0)
+  expect(restored.state.inventory.some((item: { instanceId: string }) => item.instanceId === kept.instanceId)).toBe(true)
+  expect(restored.state.money).toBe(20_000)
 })
 
 test('Collection Book switches between permanent and Current Run scopes', async ({ page }) => {

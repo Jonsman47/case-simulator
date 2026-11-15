@@ -21,6 +21,7 @@ import {
 import { MAX_CURRENCY_VALUE } from '../utils/safeNumbers'
 import { AUTO_OPENER_MAX_LEVEL, AUTOMATION_MODULE_DEFINITIONS } from '../utils/automation'
 import { getCumulativeXpForLevel } from '../career/careerProgress'
+import { createPrestigeRecoveryProof } from '../prestige/prestigeSystem'
 
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
@@ -59,6 +60,11 @@ function makePrestigeEligible(overrides: Partial<GameState> = {}): GameState {
       currentRun: { ...state.economyLedger.currentRun, tradeUpOutputValue: 6_000 },
     },
   }
+}
+
+function prestigeAction(state: GameState, now = Date.now()) {
+  const sourceRunId = state.economyLedger.currentRunId
+  return { type: 'PRESTIGE' as const, requestId: `test-prestige:${sourceRunId}`, sourceRunId, backupProof: createPrestigeRecoveryProof(state), now }
 }
 
 function makeItem(overrides: Partial<SkinInstance> = {}): SkinInstance {
@@ -1454,13 +1460,14 @@ describe('gameReducer OPEN_CASE', () => {
         dropsByRarity: { ...defaultDropsByRarity },
       },
     })
-    const nextState = gameReducer({
+    const stateWithAchievements = {
       ...state,
       achievements: [
         { id: 'first_case_opened', isClaimed: true, unlockedAt: 1, scope: 'lifetime' },
         { id: 'run_cases_250', isClaimed: true, unlockedAt: 2, scope: 'currentRun', runId: state.career.runId },
       ],
-    }, { type: 'PRESTIGE', now: Date.now() })
+    } satisfies GameState
+    const nextState = gameReducer(stateWithAchievements, prestigeAction(stateWithAchievements))
 
     expect(nextState.money).toBe(defaultGameState.money)
     expect(nextState.inventory).toEqual([])
@@ -1492,7 +1499,7 @@ describe('gameReducer OPEN_CASE', () => {
         dropsByRarity: { ...defaultDropsByRarity },
       },
     })
-    const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
+    const nextState = gameReducer(state, prestigeAction(state))
 
     expect(nextState.prestigeLevel).toBe(0)
     expect(nextState.lastError).toBe('Reach Career Level 25.')
@@ -1669,7 +1676,7 @@ describe('gameReducer OPEN_CASE', () => {
       type: 'OPEN_CASE',
       payload: { caseId: 'starter_case' },
     })
-    const prestigedState = gameReducer(makePrestigeEligible({
+    const prestigeState = makePrestigeEligible({
       inventoryValue: 1_000_000,
       prestigeBonuses: {
         ...defaultGameState.prestigeBonuses,
@@ -1682,10 +1689,8 @@ describe('gameReducer OPEN_CASE', () => {
         moneySpent: 250_000,
         dropsByRarity: { ...defaultDropsByRarity },
       },
-    }), {
-      type: 'PRESTIGE',
-      now: Date.now(),
     })
+    const prestigedState = gameReducer(prestigeState, prestigeAction(prestigeState))
 
     expect(discountedState.money).toBe(9.8)
     expect(discountedState.statistics.moneySpent).toBe(0.2)
@@ -1822,7 +1827,7 @@ describe('gameReducer OPEN_CASE', () => {
         dropsByRarity: { ...defaultDropsByRarity },
       },
     })
-    const nextState = gameReducer(state, { type: 'PRESTIGE', now: Date.now() })
+    const nextState = gameReducer(state, prestigeAction(state))
 
     expect(nextState.prestigePoints).toBeGreaterThanOrEqual(4)
     expect(nextState.skillPoints).toBe(0)

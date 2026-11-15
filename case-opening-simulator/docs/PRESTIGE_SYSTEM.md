@@ -30,7 +30,9 @@ The one-point first-time bonus is granted only while advancing the highest compl
 
 ## Atomic reset and safety
 
-The UI creates a full current-schema (v39) save envelope in a dedicated local recovery key and reads/parses it back before dispatching the reset. If storage or verification fails, nothing resets. The reducer additionally requires `backupVerified`, a stable request ID, and a valid Vault selection. Completed request IDs are retained in a bounded exact-once ledger.
+The UI creates a full current-schema (v39) save envelope in a dedicated local recovery key and reads/parses it back before dispatching the reset. If storage or verification fails, nothing resets. The reducer requires a deterministic proof of that exact critical snapshot, a request bound to the current source run, and a valid Vault selection. A caller-provided boolean is not accepted. Completed request IDs remain bounded, while source-run binding makes an old request invalid permanently after the run changes.
+
+Settings exposes the parsed pre-Prestige snapshot through an explicit replace-only recovery flow. Restoration never merges the old lineage with post-Prestige money, items, XP or PP. Local proof prevents accidental/stale application state; it is not a claim of tamper-proof client-side security.
 
 Prestige is blocked while any player listing is in escrow, a marketplace acquisition is awaiting claim, a negotiation is open, an employee contract awaits approval, or the provider has a cloud conflict. The reducer rechecks gameplay blockers at commit time.
 
