@@ -179,3 +179,17 @@ Legacy progression fields remain loadable for migration history, but retired pur
 - Prompt 6/8 — Prestige, Legacy Vault, Career History and Collection split: complete and verified.
 - Prompt 7/8 — Achievements, Stats, navigation and migration completion: complete and locally verified; GitHub CI result is recorded with the release commit.
 - Prompt 8/8 — Release hardening: complete for local/offline release; 463 unit tests, 26 browser journeys, v31–v39 migration matrix, deterministic economy simulation, production/PWA build and production-dependency audit pass. Full audit retains 12 documented low/moderate development-tool findings after all safe updates. Live Supabase deployment remains unverified and blocks a full-cloud verdict.
+
+## Post-Career visual overhaul and Work expansion
+
+Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**
+
+- Integrates a small, documented CC0 sprite selection for Work and Business without external hotlinks.
+- Fixes the case-opening center marker stacking/contrast issue for single and multi openings.
+- Adds a compact responsive density layer plus targeted Inventory, Work, and Business overflow/proportion fixes without changing the established visual identity.
+- Improves Poop Cleaning, Sort Boxes, Precision Strike, and Memory Circuit with recognizable local graphics.
+- Adds exactly four skill games: Diamond Miner, Package Delivery, Warehouse Rush, and Circuit Repair.
+- Preserves the existing exact-once Work reducer, ledger, Career XP, statistics, cooldown, persistence, and accessibility systems.
+- Adds deterministic mechanics, balance, asset, component, and browser coverage.
+
+Exit evidence: standalone TypeScript and ESLint passed; 82 Vitest files / 484 tests passed; all 2,134 generated CS2 assets (197.4 MiB), Vite production bundling, PWA generation, and `npm run verify:release` passed; the deterministic 300,000-career / 500,000-opening simulation retained the 781.1-hour five-tier projection; and all 28 serial Chromium journeys passed in 5.1 minutes. Browser coverage includes the eight Work jobs, exact-once expansion-job settlement, roulette-marker geometry, Inventory overflow, route-wide console/overflow checks, and responsive layouts from 1920×1080 through 320×568. Live Supabase deployment remains unverified without credentials.

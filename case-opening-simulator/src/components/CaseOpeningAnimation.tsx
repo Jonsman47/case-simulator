@@ -689,6 +689,19 @@ function HiddenBatchBadge({ count }: { count: number }) {
   )
 }
 
+function WinningMarker() {
+  return (
+    <div
+      aria-hidden="true"
+      className="roulette-center-marker pointer-events-none absolute inset-y-0 left-1/2 z-30 w-[3px] -translate-x-1/2 bg-rarity-special"
+      data-testid="roulette-center-marker"
+    >
+      <span className="absolute left-1/2 top-0 h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[10px] border-x-transparent border-t-rarity-special" />
+      <span className="absolute bottom-0 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[7px] border-b-[10px] border-x-transparent border-b-rarity-special" />
+    </div>
+  )
+}
+
 function ReelGrid({
   batchSize,
   hiddenItemCount,
@@ -714,8 +727,8 @@ function ReelGrid({
     }
 
     return (
-      <div className="relative overflow-hidden border border-cs-border bg-cs-bg py-5">
-        <div className="pointer-events-none absolute bottom-2 left-1/2 top-2 z-10 w-px -translate-x-1/2 bg-rarity-special shadow-glow" />
+      <div className="relative isolate overflow-hidden border border-cs-border bg-cs-bg py-5">
+        <WinningMarker />
         <div
           className="roulette-track flex gap-3 will-change-transform"
           data-after-target-count={layout.afterCount}
@@ -760,8 +773,8 @@ function ReelGrid({
             key={reel.item.instanceId}
           >
             <div className="z-20 flex items-center justify-between border-b border-cs-border bg-cs-bg/95 px-2 py-1 font-mono text-[10px] uppercase text-cs-muted"><span className="text-rarity-special">{formatOpeningLabel(index)}</span><span>Rolling</span></div>
-            <div className="relative min-h-0 overflow-hidden">
-              <div className="pointer-events-none absolute inset-y-0 left-1/2 z-10 w-px -translate-x-1/2 bg-rarity-special shadow-glow"><span className="absolute left-1/2 top-0 h-0 w-0 -translate-x-1/2 border-x-[5px] border-t-[7px] border-x-transparent border-t-rarity-special" /><span className="absolute bottom-0 left-1/2 h-0 w-0 -translate-x-1/2 border-x-[5px] border-b-[7px] border-x-transparent border-b-rarity-special" /></div>
+            <div className="relative isolate min-h-0 overflow-hidden">
+              <WinningMarker />
               <div
               className="roulette-track flex h-full items-stretch gap-2 will-change-transform"
               data-after-target-count={layout.afterCount}

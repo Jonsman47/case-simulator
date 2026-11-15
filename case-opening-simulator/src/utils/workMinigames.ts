@@ -1,4 +1,12 @@
-export type WorkMiniGameId = 'poopCleaning' | 'sortBoxes' | 'precisionStrike' | 'memoryCircuit'
+export type WorkMiniGameId =
+  | 'poopCleaning'
+  | 'sortBoxes'
+  | 'precisionStrike'
+  | 'memoryCircuit'
+  | 'diamondMiner'
+  | 'packageDelivery'
+  | 'warehouseRush'
+  | 'circuitRepair'
 
 export interface WorkMiniGameDefinition {
   cooldownMs: number
@@ -51,6 +59,38 @@ export const WORK_MINIGAMES: WorkMiniGameDefinition[] = [
     performanceMaxMultiplier: 1.3,
     performanceMinMultiplier: 0.7,
     reward: 18,
+  },
+  {
+    cooldownMs: 20 * 60 * 1_000,
+    id: 'diamondMiner',
+    name: 'Diamond Miner',
+    performanceMaxMultiplier: 1.3,
+    performanceMinMultiplier: 0.6,
+    reward: 20,
+  },
+  {
+    cooldownMs: 15 * 60 * 1_000,
+    id: 'packageDelivery',
+    name: 'Package Delivery',
+    performanceMaxMultiplier: 1.25,
+    performanceMinMultiplier: 0.65,
+    reward: 14,
+  },
+  {
+    cooldownMs: 18 * 60 * 1_000,
+    id: 'warehouseRush',
+    name: 'Warehouse Rush',
+    performanceMaxMultiplier: 1.3,
+    performanceMinMultiplier: 0.55,
+    reward: 17,
+  },
+  {
+    cooldownMs: 18 * 60 * 1_000,
+    id: 'circuitRepair',
+    name: 'Circuit Repair',
+    performanceMaxMultiplier: 1.25,
+    performanceMinMultiplier: 0.65,
+    reward: 16,
   },
 ]
 

@@ -96,6 +96,43 @@ a {
 [data-large-text='true'] :where(button, input, select, textarea) { line-height: 1.35; }
 [data-large-text='true'] :where(p, span, label, button, a) { overflow-wrap: anywhere; }
 
+/* Compact desktop density: reduce structural whitespace without scaling the
+   rendered page, controls, or media. Large Text intentionally opts out. */
+@media (min-width: 640px) {
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-7, .p-6) { padding: 1.125rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-5, .p-4) { padding: 0.875rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-6, .gap-5) { gap: 1rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-6 > :not([hidden]) ~ :not([hidden]),
+  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
+}
+
+@keyframes work-package-arrival {
+  from { opacity: 0; transform: translateX(-7rem) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes work-conveyor-scroll {
+  from { background-position-x: 0; }
+  to { background-position-x: 32px; }
+}
+
+@keyframes work-trash-ready {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  50% { transform: rotate(2deg) scale(1.06); }
+}
+
+@keyframes employee-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(var(--cs-green) / 0.15); }
+  50% { box-shadow: 0 0 0 4px rgb(var(--cs-green) / 0.08); }
+}
+
+.work-package-arrival { animation: work-package-arrival 320ms ease-out both; }
+.work-conveyor > div:first-child { animation: work-conveyor-scroll 620ms linear infinite; }
+.work-trash-ready { animation: work-trash-ready 700ms ease-in-out infinite; }
+.employee-status-dot { animation: employee-status-pulse 1.6s ease-in-out infinite; }
+.employee-card { transition: border-color 180ms ease, transform 180ms ease; }
+.employee-card:hover { border-color: rgb(var(--rarity-mil-spec) / 0.65); transform: translateY(-2px); }
+
 .simplified-motion *,
 .simplified-motion *::before,
 .simplified-motion *::after {
@@ -304,6 +341,12 @@ a {
   transform: translate3d(0, 0, 0);
   transform-style: preserve-3d;
   width: max-content;
+}
+
+.roulette-center-marker {
+  background: linear-gradient(180deg, rgb(255 244 168), rgb(var(--rarity-special)) 28%, rgb(var(--rarity-special)) 72%, rgb(255 244 168));
+  box-shadow: 0 0 3px rgb(0 0 0 / 0.9), 0 0 10px rgb(var(--rarity-special) / 0.95), 0 0 22px rgb(var(--rarity-special) / 0.55);
+  opacity: 1;
 }
 
 .case-preroll-stage {

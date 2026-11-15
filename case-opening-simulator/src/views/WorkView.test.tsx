@@ -91,19 +91,25 @@ describe('WorkView', () => {
     vi.useRealTimers()
   })
 
-  it('shows the two rescue jobs and two skill-based jobs', () => {
+  it('shows all eight Work games with compact visual launch cards', () => {
     renderWork()
 
     expect(screen.getByText('Poop Cleaning')).toBeInTheDocument()
     expect(screen.getByText('Sort Boxes')).toBeInTheDocument()
     expect(screen.getByText('Precision Strike')).toBeInTheDocument()
     expect(screen.getByText('Memory Circuit')).toBeInTheDocument()
+    expect(screen.getByText('Diamond Miner')).toBeInTheDocument()
+    expect(screen.getByText('Package Delivery')).toBeInTheDocument()
+    expect(screen.getByText('Warehouse Rush')).toBeInTheDocument()
+    expect(screen.getByText('Circuit Repair')).toBeInTheDocument()
     expect(screen.queryByText('Clean The Floor')).not.toBeInTheDocument()
     expect(screen.queryByText('Wash Skins')).not.toBeInTheDocument()
     expect(screen.getByText('+$10')).toBeInTheDocument()
     expect(screen.getByText('+$20')).toBeInTheDocument()
     expect(screen.getByText('+$9.10–$18.90')).toBeInTheDocument()
     expect(screen.getByText('+$12.60–$23.40')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Diamond Miner' })).toHaveAttribute('src', '/assets/work/ore-diamond.png')
+    expect(screen.getAllByRole('button', { name: /^Play / })).toHaveLength(8)
   })
 
   it('keeps Poop Cleaning completing through the reducer once', async () => {
@@ -292,6 +298,29 @@ describe('WorkView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
     expect(screen.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
     expect(screen.getByText('Starting in 3')).toBeInTheDocument()
+  })
+
+  it('launches all four expansion games with genuine interactive controls', () => {
+    renderWork()
+
+    openJob('Diamond Miner')
+    fireEvent.click(screen.getByRole('button', { name: 'Start mining' }))
+    expect(screen.getAllByRole('button', { name: /block at depth 1/i })[0]).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Close Diamond Miner' }))
+
+    openJob('Package Delivery')
+    fireEvent.click(screen.getByRole('button', { name: 'Start route' }))
+    expect(screen.getByRole('button', { name: 'Drive right' })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Close Package Delivery' }))
+
+    openJob('Warehouse Rush')
+    fireEvent.click(screen.getByRole('button', { name: 'Start conveyor' }))
+    expect(screen.getByRole('button', { name: /Sort into red dock/i })).toBeEnabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Close Warehouse Rush' }))
+
+    openJob('Circuit Repair')
+    fireEvent.click(screen.getByRole('button', { name: 'Start repair' }))
+    expect(screen.getByRole('button', { name: 'Rotate circuit piece 1-1' })).toBeEnabled()
   })
 
   it('separates repeated Memory Circuit flashes and rewards a completed game once', async () => {

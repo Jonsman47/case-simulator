@@ -81,7 +81,7 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   await page.goto('/work')
   await dismissTutorial(page)
   await dismissEventPopup(page)
-  await expect(page.getByText('Four available jobs')).toBeVisible()
+  await expect(page.getByText('Eight available jobs')).toBeVisible()
   if (!process.env.CI) {
     await expect(page).toHaveScreenshot('work-page-1366.png', { animations: 'disabled', fullPage: true })
   }
@@ -108,6 +108,79 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   expect(save.state.statistics.workJobsCompleted).toBe(2)
   expect(save.state.money).toBeGreaterThanOrEqual(129.1)
   expect(save.state.money).toBeLessThanOrEqual(138.9)
+})
+
+test('the four expansion Work games accept real input and settle once through the shared reducer', async ({ page }) => {
+  await page.addInitScript(() => { Math.random = () => 0 })
+  await page.goto('/work')
+  await dismissTutorial(page)
+  const before = await readSave(page)
+
+  await page.getByRole('button', { name: 'Play Diamond Miner' }).click()
+  await page.getByRole('button', { name: 'Start mining' }).click()
+  await page.getByRole('button', { name: /dirt block at depth 1/i }).first().click()
+  await page.getByRole('button', { name: 'Cash out safely' }).click()
+  await expect(page.getByText(/Score \d+%/)).toBeVisible()
+  await page.getByRole('button', { name: 'Close Diamond Miner' }).click()
+  await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
+
+  await page.getByRole('button', { name: 'Play Package Delivery' }).click()
+  await page.getByRole('button', { name: 'Start route' }).click()
+  for (let move = 0; move < 22; move += 1) {
+    await page.getByRole('button', { name: move % 2 === 0 ? 'Drive right' : 'Drive left' }).click()
+  }
+  await expect(page.getByText(/Score \d+%/)).toBeVisible()
+  await page.getByRole('button', { name: 'Close Package Delivery' }).click()
+  await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
+
+  await page.getByRole('button', { name: 'Play Warehouse Rush' }).click()
+  await page.getByRole('button', { name: 'Start conveyor' }).click()
+  for (let item = 0; item < 10; item += 1) {
+    const packageImage = page.locator('[data-testid="warehouseRush-game"] img[alt$=" package"]')
+    await expect(packageImage).toBeVisible()
+    const lane = (await packageImage.getAttribute('alt'))!.replace(' package', '')
+    await page.getByRole('button', { name: `Sort into ${lane} dock` }).click()
+  }
+  await expect(page.getByText(/Score 100%/)).toBeVisible()
+  await page.getByRole('button', { name: 'Close Warehouse Rush' }).click()
+  await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
+
+  await page.getByRole('button', { name: 'Play Circuit Repair' }).click()
+  await page.getByRole('button', { name: 'Start repair' }).click()
+  const circuitPiece = page.getByRole('button', { name: 'Rotate circuit piece 1-1' })
+  for (let rotation = 0; rotation < 24 && await circuitPiece.isEnabled(); rotation += 1) await circuitPiece.click()
+  await expect(page.getByText(/Score \d+%/)).toBeVisible()
+
+  await page.waitForFunction(({ key, count }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.workJobsCompleted === count, { key: saveKey, count: before.state.statistics.workJobsCompleted + 4 })
+  const after = await readSave(page)
+  expect(after.state.statistics.workJobsCompleted - before.state.statistics.workJobsCompleted).toBe(4)
+  expect(after.state.money).toBeGreaterThan(before.state.money)
+  for (const gameId of ['diamondMiner', 'packageDelivery', 'warehouseRush', 'circuitRepair']) expect(after.state.workMiniGameCooldowns[gameId]).toBeGreaterThan(0)
+})
+
+test('case roulette center marker stays centered above the animated track', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await page.getByRole('button', { name: 'Open 1', exact: true }).click()
+  const marker = page.getByTestId('roulette-center-marker')
+  await expect(marker).toBeVisible({ timeout: 5_000 })
+  const geometry = await marker.evaluate((element) => {
+    const markerBox = element.getBoundingClientRect()
+    const stageBox = element.parentElement!.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return {
+      markerCenter: markerBox.left + markerBox.width / 2,
+      pointerEvents: style.pointerEvents,
+      stageCenter: stageBox.left + stageBox.width / 2,
+      width: markerBox.width,
+      zIndex: Number(style.zIndex),
+    }
+  })
+  expect(Math.abs(geometry.markerCenter - geometry.stageCenter)).toBeLessThanOrEqual(1)
+  expect(geometry.width).toBeGreaterThanOrEqual(3)
+  expect(geometry.zIndex).toBeGreaterThanOrEqual(30)
+  expect(geometry.pointerEvents).toBe('none')
+  await page.getByRole('button', { name: 'Skip opening animation' }).click()
 })
 
 test('Career XP, rank progress, and save reload remain consistent', async ({ page }) => {
@@ -514,6 +587,8 @@ test('inventory images load, selling is exact once, and the result survives relo
 
   const itemCard = page.locator('article[tabindex="0"]').first()
   await expect(itemCard).toBeVisible()
+  const inventoryGrid = page.getByRole('grid')
+  expect(await inventoryGrid.evaluate((grid) => grid.scrollWidth <= grid.clientWidth + 1)).toBe(true)
   const itemImage = itemCard.locator('img').first()
   await expect(itemImage).toBeVisible()
   expect(await itemImage.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth > 0)).toBe(true)

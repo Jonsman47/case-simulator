@@ -33,6 +33,7 @@ const CARD_ROW_HEIGHT_DESKTOP = 360
 const CARD_ROW_HEIGHT_MOBILE = 336
 const MIN_GRID_HEIGHT = 360
 const MAX_GRID_HEIGHT = 760
+const GRID_SCROLLBAR_GUTTER = 16
 
 function useElementWidth() {
   const [element, setElement] = useState<HTMLDivElement | null>(null)
@@ -375,7 +376,7 @@ export function InventoryView() {
             cellProps={cellProps}
             className="border border-cs-border bg-cs-bg"
             columnCount={columnCount}
-            columnWidth={Math.floor(gridWidth / columnCount)}
+            columnWidth={Math.floor((gridWidth - GRID_SCROLLBAR_GUTTER) / columnCount)}
             defaultHeight={gridHeight}
             defaultWidth={gridWidth}
             overscanCount={2}

@@ -6,7 +6,7 @@ import { getClickIncomeMultiplier, getUpgradeAutomationIntervalMultiplier, getUp
 import { CASE_FARM_INTERVAL_MS, getAuctionHouseDealCount, getAuctionHouseDiscount, getAuctionHouseRefreshMs, getCaseFarmIncomePerTick, getMarketAnalystSellBonus } from './automation'
 import { getWorkBaseReward, workMiniGamesById, type WorkMiniGameId } from './workMinigames'
 
-const workIds: WorkMiniGameId[] = ['poopCleaning', 'sortBoxes', 'precisionStrike', 'memoryCircuit']
+const workIds: WorkMiniGameId[] = ['poopCleaning', 'sortBoxes', 'precisionStrike', 'memoryCircuit', 'diamondMiner', 'packageDelivery', 'warehouseRush', 'circuitRepair']
 
 function workIncomePerHour(upgrades: UpgradeLevels, skills: SkillNodeId[], performance: number) {
   const multiplier = getClickIncomeMultiplier(upgrades) * getSkillMinigameRewardMultiplier(skills)
@@ -22,11 +22,12 @@ describe('economy balance scenarios', () => {
     const mid = workIncomePerHour({ [UpgradeId.ClickIncome]: 3 }, ['minigame_3' as SkillNodeId], 0.6)
     const late = workIncomePerHour({ [UpgradeId.ClickIncome]: 10 }, ['minigame_10' as SkillNodeId], 1)
 
-    expect(early).toBeCloseTo(448.67, 1)
-    expect(mid).toBeCloseTo(448.67, 1)
-    expect(late).toBeCloseTo(495.35, 1)
+    expect(early).toBeCloseTo(676.96, 1)
+    expect(mid).toBeCloseTo(676.96, 1)
+    expect(late).toBeCloseTo(783.68, 1)
     expect(mid).toBe(early)
     expect(late).toBeGreaterThan(mid)
+    expect(early).toBeLessThan(700)
   })
 
   it('keeps Case Farm growth finite and tied to costly progression', () => {

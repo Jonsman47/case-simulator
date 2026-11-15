@@ -93,6 +93,22 @@ describe('CaseOpeningAnimation', () => {
     vi.stubGlobal('Audio', MockAudio)
   })
 
+  it('renders an interaction-safe center marker above both single and multi reels', () => {
+    const finalItem = makeItem({ instanceId: 'marker-single' })
+    const secondItem = makeItem({ instanceId: 'marker-second' })
+    const { rerender } = render(
+      <CaseOpeningAnimation finalItem={finalItem} onComplete={vi.fn()} potentialSkins={[{ skin: fillerSkin, weight: 100 }]} />,
+    )
+
+    act(() => { vi.advanceTimersByTime(1_250) })
+    expect(screen.getByTestId('roulette-center-marker')).toHaveClass('left-1/2', 'z-30', 'pointer-events-none', 'w-[3px]')
+
+    rerender(
+      <CaseOpeningAnimation finalItem={finalItem} finalItems={[finalItem, secondItem]} onComplete={vi.fn()} potentialSkins={[{ skin: fillerSkin, weight: 100 }]} />,
+    )
+    expect(screen.getAllByTestId('roulette-center-marker')).toHaveLength(2)
+  })
+
   afterEach(() => {
     cleanup()
     vi.restoreAllMocks()

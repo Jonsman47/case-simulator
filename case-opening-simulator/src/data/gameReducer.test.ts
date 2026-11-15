@@ -2082,6 +2082,23 @@ describe('gameReducer OPEN_CASE', () => {
     expect(afterBoxes.statistics.moneyEarned).toBe(30)
   })
 
+  it('rewards each expansion game exactly once and records separate cooldowns', () => {
+    const completedAt = 1_782_216_000_000
+    const games = ['diamondMiner', 'packageDelivery', 'warehouseRush', 'circuitRepair'] as const
+    let state = makeState({ money: 0 })
+
+    for (const gameId of games) {
+      const completed = gameReducer(state, { type: 'COMPLETE_WORK_MINIGAME', gameId, now: completedAt, performance: 1 })
+      const replayed = gameReducer(completed, { type: 'COMPLETE_WORK_MINIGAME', gameId, now: completedAt + 1, performance: 1 })
+      expect(replayed.money).toBe(completed.money)
+      expect(replayed.workMiniGameCooldowns[gameId]).toBe(completedAt)
+      state = replayed
+    }
+
+    expect(state.statistics.workJobsCompleted).toBe(4)
+    expect(state.money).toBeCloseTo(85.6)
+  })
+
   it('does not apply archived upgrade or skill modifiers to Work rewards', () => {
     const completedAt = 1_782_216_000_000
     const state = makeState({

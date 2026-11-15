@@ -1,6 +1,7 @@
-import { Box, BrainCircuit, Check, Clock3, Crosshair, Play, RotateCcw, Sparkles, Target, Trash2, Trophy, X } from 'lucide-react'
+import { Box, BrainCircuit, Check, CircuitBoard, Clock3, Crosshair, Gem, Play, RotateCcw, Sparkles, Target, Trash2, Trophy, Truck, Warehouse, X } from 'lucide-react'
 import { Component, useCallback, useEffect, useRef, useState, type DragEvent, type ReactElement, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { CircuitRepairJob, DiamondMinerJob, PackageDeliveryJob, WarehouseRushJob } from '../components/WorkExpansionGames'
 import { getSkillMinigameRewardMultiplier } from '../data/skills'
 import { getClickIncomeMultiplier } from '../data/upgrades'
 import { useGame } from '../hooks/useGame'
@@ -13,6 +14,7 @@ const boxIds = ['red', 'blue', 'green', 'yellow'] as const
 const memoryPadLabels = ['Amber', 'Cyan', 'Violet', 'Green'] as const
 const precisionAttempts = 5
 const memoryRoundLengths = [3, 4, 5] as const
+const workAsset = (name: string) => `/assets/work/${name}`
 type SortBoxId = (typeof boxIds)[number]
 
 const sortBoxStyles: Record<SortBoxId, { box: string; container: string; sorted: string }> = {
@@ -22,11 +24,32 @@ const sortBoxStyles: Record<SortBoxId, { box: string; container: string; sorted:
   yellow: { box: 'border-yellow-200 bg-yellow-400 text-slate-950', container: 'border-yellow-300 bg-yellow-400/15 text-yellow-100', sorted: 'border-yellow-200 bg-yellow-400 text-slate-950' },
 }
 
+const sortCrateImages: Record<SortBoxId, string> = {
+  blue: workAsset('crate-blue.png'),
+  green: workAsset('crate-green.png'),
+  red: workAsset('crate-red.png'),
+  yellow: workAsset('crate-yellow.png'),
+}
+
+const sortDockImages: Record<SortBoxId, string> = {
+  blue: workAsset('sorting-dock-orange.png'),
+  green: workAsset('sorting-dock-green.png'),
+  red: workAsset('sorting-dock-red.png'),
+  yellow: workAsset('sorting-dock-yellow.png'),
+}
+
 const memoryPadStyles = [
   'border-amber-300 bg-amber-400/15 text-amber-100',
   'border-cyan-300 bg-cyan-400/15 text-cyan-100',
   'border-violet-300 bg-violet-400/15 text-violet-100',
   'border-emerald-300 bg-emerald-400/15 text-emerald-100',
+] as const
+
+const memoryPadImages = [
+  workAsset('memory-pad-yellow.png'),
+  workAsset('memory-pad-blue.png'),
+  workAsset('memory-pad-red.png'),
+  workAsset('memory-pad-green.png'),
 ] as const
 
 function getRewardMultiplier(upgrades: Parameters<typeof getClickIncomeMultiplier>[0], learnedSkillNodeIds: Parameters<typeof getSkillMinigameRewardMultiplier>[0]) {
@@ -77,13 +100,17 @@ export function WorkView() {
           <h2 className="mt-1 text-3xl font-semibold text-cs-text">Work</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">Short, cooldown-limited jobs for early-game cash. Better play improves skill-job rewards within a fixed safe cap.</p>
         </div>
-        <div className="inline-flex items-center gap-2 border border-cs-border bg-cs-panel px-3 py-2 font-mono text-xs uppercase text-cs-muted"><Trophy size={15} /> Four available jobs</div>
+        <div className="inline-flex items-center gap-2 border border-cs-border bg-cs-panel px-3 py-2 font-mono text-xs uppercase text-cs-muted"><Trophy size={15} /> Eight available jobs</div>
       </div>
-      <div className="grid min-w-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <JobOverviewCard description="Clear three marked piles" gameId="poopCleaning" icon={<Trash2 size={20} />} onPlay={setActiveJob} />
-        <JobOverviewCard description="Match four crates and docks" gameId="sortBoxes" icon={<Box size={20} />} onPlay={setActiveJob} />
-        <JobOverviewCard description="Five reflex timing attempts" gameId="precisionStrike" icon={<Crosshair size={20} />} onPlay={setActiveJob} />
-        <JobOverviewCard description="Recall three growing sequences" gameId="memoryCircuit" icon={<BrainCircuit size={20} />} onPlay={setActiveJob} />
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <JobOverviewCard description="Clean and dispose" gameId="poopCleaning" icon={<Trash2 size={18} />} onPlay={setActiveJob} thumbnail={workAsset('trash-can.png')} />
+        <JobOverviewCard description="Match crates and docks" gameId="sortBoxes" icon={<Box size={18} />} onPlay={setActiveJob} thumbnail={workAsset('crate-red.png')} />
+        <JobOverviewCard description="Five timing attempts" gameId="precisionStrike" icon={<Crosshair size={18} />} onPlay={setActiveJob} thumbnail={workAsset('precision-target.png')} />
+        <JobOverviewCard description="Recall growing sequences" gameId="memoryCircuit" icon={<BrainCircuit size={18} />} onPlay={setActiveJob} thumbnail={workAsset('memory-pad-blue.png')} />
+        <JobOverviewCard description="Dig for deep ores" gameId="diamondMiner" icon={<Gem size={18} />} onPlay={setActiveJob} thumbnail={workAsset('ore-diamond.png')} />
+        <JobOverviewCard description="Plan an efficient route" gameId="packageDelivery" icon={<Truck size={18} />} onPlay={setActiveJob} thumbnail={workAsset('delivery-van.png')} />
+        <JobOverviewCard description="Sort a moving conveyor" gameId="warehouseRush" icon={<Warehouse size={18} />} onPlay={setActiveJob} thumbnail={workAsset('package.png')} />
+        <JobOverviewCard description="Reconnect the power path" gameId="circuitRepair" icon={<CircuitBoard size={18} />} onPlay={setActiveJob} thumbnail={workAsset('circuit-02.png')} />
       </div>
       {activeJob ? <WorkGameDialog gameId={activeJob} onClose={closeActiveJob} /> : null}
     </section>
@@ -95,6 +122,10 @@ const jobInstructions: Record<WorkMiniGameId, string> = {
   sortBoxes: 'Drag a crate to its matching dock, or select a crate and activate a dock. The orders change each run.',
   precisionStrike: 'Stop the moving marker inside the target. The small bright center is perfect; the larger zone is good.',
   memoryCircuit: 'Watch and repeat three growing light sequences. Use the four buttons or number keys 1–4.',
+  diamondMiner: 'Choose a safe route downward and spend limited pickaxe swings on increasingly valuable ore.',
+  packageDelivery: 'Collect two parcels and plan a short route around obstacles to the delivery beacons.',
+  warehouseRush: 'Sort ten moving packages before the accelerating conveyor carries them away.',
+  circuitRepair: 'Rotate circuit components to connect the input and output in as few moves as possible.',
 }
 
 function useWorkCooldown(gameId: WorkMiniGameId) {
@@ -111,7 +142,7 @@ function useWorkCooldown(gameId: WorkMiniGameId) {
   return cooldownRemaining
 }
 
-function JobOverviewCard({ description, gameId, icon, onPlay }: { description: string; gameId: WorkMiniGameId; icon: ReactNode; onPlay: (gameId: WorkMiniGameId) => void }) {
+function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { description: string; gameId: WorkMiniGameId; icon: ReactNode; onPlay: (gameId: WorkMiniGameId) => void; thumbnail: string }) {
   const { state } = useGame()
   const definition = workMiniGamesById.get(gameId)
   const cooldownRemaining = useWorkCooldown(gameId)
@@ -121,26 +152,26 @@ function JobOverviewCard({ description, gameId, icon, onPlay }: { description: s
   const rewardMax = getWorkBaseReward(gameId, 1) * economyMultiplier
   const isAvailable = cooldownRemaining <= 0
 
-  return <article className="flex min-h-64 min-w-0 flex-col border border-cs-border bg-cs-surface p-4 shadow-[0_14px_40px_rgb(0_0_0_/_0.18)]">
+  return <article className="group flex min-h-0 min-w-0 flex-col overflow-hidden border border-cs-border bg-cs-surface p-3 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60">
     <div className="flex min-w-0 items-start gap-3">
-      <span className="grid h-11 w-11 shrink-0 place-items-center border border-cs-border bg-cs-panel text-rarity-special">{icon}</span>
+      <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-cs-border bg-[radial-gradient(circle,rgb(var(--cs-panel-muted)),rgb(var(--cs-bg)))]"><img alt={definition.name} className="h-12 w-12 object-contain transition group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" src={thumbnail} /><i className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center bg-cs-bg/90 text-rarity-special">{icon}</i></span>
       <div className="min-w-0">
         <p className="font-mono text-[10px] uppercase tracking-wide text-cs-muted">{description}</p>
         <h3 className="mt-1 text-lg font-semibold text-cs-text">{definition.name}</h3>
       </div>
     </div>
-    <p className="mt-3 line-clamp-3 text-sm leading-6 text-cs-muted">{jobInstructions[gameId]}</p>
-    <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
-      <div className="border border-cs-border bg-cs-panel px-3 py-2">
+    <p className="mt-2 line-clamp-2 text-xs leading-5 text-cs-muted">{jobInstructions[gameId]}</p>
+    <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5">
         <p className="font-mono text-[10px] uppercase text-cs-muted">Reward</p>
         <p className="mt-1 whitespace-nowrap font-mono text-xs font-semibold text-cs-green">+{formatWorkReward(rewardMin)}{rewardMax !== rewardMin ? `–${formatWorkReward(rewardMax)}` : ''}</p>
       </div>
-      <div className="border border-cs-border bg-cs-panel px-3 py-2 text-right">
+      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5 text-right">
         <p className="font-mono text-[10px] uppercase text-cs-muted">{isAvailable ? 'Status' : 'Available in'}</p>
         <p className={`mt-1 whitespace-nowrap font-mono text-xs font-semibold ${isAvailable ? 'text-cs-green' : 'text-cs-text'}`}>{isAvailable ? 'Ready' : formatWorkCooldown(cooldownRemaining)}</p>
       </div>
     </div>
-    <button className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 text-sm font-semibold text-rarity-special transition hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-cs-panel disabled:text-cs-muted" disabled={!isAvailable} onClick={() => onPlay(gameId)} type="button"><Play size={16} />{isAvailable ? `Play ${definition.name}` : 'On cooldown'}</button>
+    <button className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special transition hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-cs-panel disabled:text-cs-muted" disabled={!isAvailable} onClick={() => onPlay(gameId)} type="button"><Play size={15} />{isAvailable ? `Play ${definition.name}` : 'On cooldown'}</button>
   </article>
 }
 
@@ -182,6 +213,10 @@ function WorkGameDialog({ gameId, onClose }: { gameId: WorkMiniGameId; onClose: 
             {gameId === 'sortBoxes' ? <SortBoxesJob /> : null}
             {gameId === 'precisionStrike' ? <PrecisionStrikeJob /> : null}
             {gameId === 'memoryCircuit' ? <MemoryCircuitJob /> : null}
+            {gameId === 'diamondMiner' ? <DiamondMinerJob /> : null}
+            {gameId === 'packageDelivery' ? <PackageDeliveryJob /> : null}
+            {gameId === 'warehouseRush' ? <WarehouseRushJob /> : null}
+            {gameId === 'circuitRepair' ? <CircuitRepairJob /> : null}
           </WorkJobErrorBoundary>
         </div>
       </section>
@@ -244,7 +279,7 @@ function PoopCleaningJob() {
     if (completedRef.current || cleanedIds.has(poopId)) return
     setHeldId(poopId); setErrorMessage(undefined)
   }
-  return <JobFrame description="3 targets · 3 minute cooldown" gameId="poopCleaning" icon={<Trash2 size={20} />} instructions="Pick up a pile, then drag it into the trash can. On touch or keyboard, select a pile and activate the trash can." onReset={reset} title="Poop Cleaning">{() => <><div aria-label="Poop cleaning grass field" className="mt-3 grid min-h-44 grid-cols-[1fr_auto] gap-3 overflow-hidden border border-cs-border bg-[linear-gradient(135deg,rgb(44_122_72)_0_25%,rgb(35_104_64)_25%_50%,rgb(44_122_72)_50%_75%,rgb(35_104_64)_75%)] bg-[length:46px_46px] p-3 sm:gap-5"><div className="grid grid-cols-3 items-end gap-2 sm:gap-4">{poopIds.map((poopId, index) => { const isCleaned = cleanedIds.has(poopId); const isHeld = heldId === poopId; return <button aria-label={isCleaned ? `Poop ${index + 1} disposed` : `Pick up poop ${index + 1}`} aria-pressed={isHeld} className={`grid min-h-20 min-w-0 place-items-center border p-2 transition-all ${isCleaned ? 'border-cs-green bg-cs-green/20 text-cs-green' : isHeld ? 'scale-95 border-rarity-special bg-rarity-special/20 shadow-glow' : 'border-cs-border bg-cs-panel/95 shadow-glow hover:-translate-y-1 hover:border-cs-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-cs-green'}`} disabled={isCleaned} draggable={!isCleaned} key={poopId} onClick={() => pickUpPoop(poopId)} onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', poopId); pickUpPoop(poopId) }} type="button">{isCleaned ? <Check size={28} /> : <PoopPileIcon />}</button> })}</div><button aria-label={heldId ? 'Dispose selected poop in trash can' : 'Trash can — select a poop first'} className={`grid min-h-32 w-24 place-items-center border-2 border-dashed p-2 text-center transition sm:w-32 ${heldId ? 'border-rarity-special bg-cs-panel/95 text-rarity-special shadow-glow hover:bg-rarity-special/15' : 'border-cs-border bg-cs-panel/80 text-cs-muted'}`} onClick={() => disposePoop()} onDragOver={(event) => { if (heldId) event.preventDefault() }} onDrop={(event) => { event.preventDefault(); disposePoop(event.dataTransfer.getData('text/plain') || heldId) }} type="button"><span><Trash2 className="mx-auto" size={34} /><span className="mt-2 block font-mono text-[10px] font-bold uppercase">{heldId ? 'Drop here' : 'Trash can'}</span></span></button></div><p aria-live="polite" className="mt-2 text-xs text-cs-muted">{heldId ? 'Pile picked up. Drag it here or activate the trash can.' : 'Select one of the remaining piles.'}</p><ProgressFooter errorMessage={errorMessage} progressLabel={`${cleanedIds.size} / ${poopIds.length} disposed`} successMessage={successMessage} /></>}</JobFrame>
+  return <JobFrame description="3 targets · 3 minute cooldown" gameId="poopCleaning" icon={<Trash2 size={20} />} instructions="Pick up a pile, then drag it into the trash can. On touch or keyboard, select a pile and activate the trash can." onReset={reset} title="Poop Cleaning">{() => <><div aria-label="Poop cleaning grass field" className="mt-3 grid min-h-44 grid-cols-[1fr_auto] gap-3 overflow-hidden border border-cs-border bg-[linear-gradient(135deg,rgb(44_122_72)_0_25%,rgb(35_104_64)_25%_50%,rgb(44_122_72)_50%_75%,rgb(35_104_64)_75%)] bg-[length:46px_46px] p-3 sm:gap-5"><div className="grid grid-cols-3 items-end gap-2 sm:gap-4">{poopIds.map((poopId, index) => { const isCleaned = cleanedIds.has(poopId); const isHeld = heldId === poopId; return <button aria-label={isCleaned ? `Poop ${index + 1} disposed` : `Pick up poop ${index + 1}`} aria-pressed={isHeld} className={`grid min-h-20 min-w-0 place-items-center border p-2 transition-all ${isCleaned ? 'border-cs-green bg-cs-green/20 text-cs-green' : isHeld ? 'scale-95 border-rarity-special bg-rarity-special/20 shadow-glow' : 'border-cs-border bg-cs-panel/95 shadow-glow hover:-translate-y-1 hover:border-cs-green focus-visible:outline focus-visible:outline-2 focus-visible:outline-cs-green'}`} disabled={isCleaned} draggable={!isCleaned} key={poopId} onClick={() => pickUpPoop(poopId)} onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', poopId); pickUpPoop(poopId) }} type="button">{isCleaned ? <Check size={28} /> : <PoopPileIcon />}</button> })}</div><button aria-label={heldId ? 'Dispose selected poop in trash can' : 'Trash can — select a poop first'} className={`grid min-h-32 w-24 place-items-center border-2 border-dashed p-2 text-center transition sm:w-32 ${heldId ? 'border-rarity-special bg-cs-panel/95 text-rarity-special shadow-glow hover:bg-rarity-special/15' : 'border-cs-border bg-cs-panel/80 text-cs-muted'}`} onClick={() => disposePoop()} onDragOver={(event) => { if (heldId) event.preventDefault() }} onDrop={(event) => { event.preventDefault(); disposePoop(event.dataTransfer.getData('text/plain') || heldId) }} type="button"><span><img alt="Green trash can" className={`mx-auto h-20 w-20 object-contain transition [image-rendering:pixelated] ${heldId ? 'work-trash-ready' : ''}`} src={workAsset('trash-can.png')} /><span className="mt-1 block font-mono text-[10px] font-bold uppercase">{heldId ? 'Drop here' : 'Trash can'}</span></span></button></div><p aria-live="polite" className="mt-2 text-xs text-cs-muted">{heldId ? 'Pile picked up. Drag it here or activate the trash can.' : 'Select one of the remaining piles.'}</p><ProgressFooter errorMessage={errorMessage} progressLabel={`${cleanedIds.size} / ${poopIds.length} disposed`} successMessage={successMessage} /></>}</JobFrame>
 }
 
 function SortBoxesJob() {
@@ -269,7 +304,26 @@ function SortBoxesJob() {
     catch { completedRef.current = false; setErrorMessage('Sort Boxes hit a problem. No reward or cooldown was applied.') }
   }
   function onDrop(event: DragEvent<HTMLButtonElement>, containerId: SortBoxId) { event.preventDefault(); const id = getSortBoxId(event.dataTransfer.getData('text/plain')) ?? selectedBox; if (id) dropBox(id, containerId) }
-  return <JobFrame description="Color matching · 20 minute cooldown" gameId="sortBoxes" icon={<Box size={20} />} instructions="Drag a crate to its matching dock, or select a crate and activate a dock. The orders change each run." onReset={reset} title="Sort Boxes">{() => <>{!isStarted ? <StartPanel action="Start Sort Boxes" icon={<Play size={16} />} onStart={startRound} text="Four crates, four clearly separated docks. Wrong matches return safely." /> : <div className="mt-3 grid gap-3 border border-cs-border bg-cs-bg p-3"><p className="font-mono text-[10px] uppercase text-cs-muted">Unsorted crates</p><div aria-label="Sort Boxes crates" className="grid grid-cols-2 gap-2 sm:grid-cols-4">{boxOrder.map((boxId) => <button aria-label={`${capitalize(boxId)} box`} aria-pressed={selectedBox === boxId} className={`grid min-h-16 min-w-0 place-items-center border-2 px-2 font-mono text-xs font-bold uppercase transition ${sortedIds.has(boxId) ? 'pointer-events-none scale-95 opacity-25' : 'hover:-translate-y-1'} ${selectedBox === boxId ? 'ring-2 ring-rarity-special ring-offset-2 ring-offset-cs-bg' : ''} ${sortBoxStyles[boxId].box}`} data-position-key={`box-${boxOrder.indexOf(boxId)}`} draggable={!sortedIds.has(boxId)} key={boxId} onClick={() => { if (!sortedIds.has(boxId)) { setSelectedBox(boxId); setErrorMessage(undefined) } }} onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', boxId); setSelectedBox(boxId) }} type="button">{sortedIds.has(boxId) ? <Check size={20} /> : `${boxId} crate`}</button>)}</div><div className="h-px bg-cs-border" /><p className="font-mono text-[10px] uppercase text-cs-muted">Loading docks</p><div aria-label="Sort Boxes sorting area" className="grid grid-cols-2 gap-2 sm:grid-cols-4">{binOrder.map((boxId) => <button aria-label={`${capitalize(boxId)} container`} className={`grid min-h-20 min-w-0 place-items-center border-2 border-dashed p-2 text-center font-mono text-xs font-bold uppercase transition hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special ${selectedBox && selectedBox !== boxId ? 'opacity-70' : ''} ${sortBoxStyles[boxId].container}`} data-position-key={`container-${binOrder.indexOf(boxId)}`} key={boxId} onClick={() => { if (selectedBox) dropBox(selectedBox, boxId) }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => onDrop(event, boxId)} type="button">{sortedIds.has(boxId) ? <span className={`inline-flex items-center gap-1 border px-2 py-2 ${sortBoxStyles[boxId].sorted}`}><Check size={14} /> loaded</span> : `${boxId} dock`}</button>)}</div></div>}<ProgressFooter errorMessage={errorMessage} progressLabel={`Sorted ${sortedIds.size}/${boxIds.length}`} successMessage={successMessage} /></>}</JobFrame>
+  return <JobFrame description="Color matching · 20 minute cooldown" gameId="sortBoxes" icon={<Box size={20} />} instructions="Drag a crate to its matching dock, or select a crate and activate a dock. The orders change each run." onReset={reset} title="Sort Boxes">{() => <>
+    {!isStarted ? <StartPanel action="Start Sort Boxes" icon={<Play size={16} />} onStart={startRound} text="Four visual crates, four clearly separated docks. Wrong matches return safely." /> : (
+      <div className="mt-3 grid gap-3 border border-cs-border bg-cs-bg p-3">
+        <p className="font-mono text-[10px] uppercase text-cs-muted">Unsorted crates</p>
+        <div aria-label="Sort Boxes crates" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {boxOrder.map((boxId) => <button aria-label={`${capitalize(boxId)} box`} aria-pressed={selectedBox === boxId} className={`grid min-h-20 min-w-0 place-items-center border-2 px-2 font-mono text-xs font-bold uppercase transition ${sortedIds.has(boxId) ? 'pointer-events-none scale-95 opacity-25' : 'hover:-translate-y-1'} ${selectedBox === boxId ? 'ring-2 ring-rarity-special ring-offset-2 ring-offset-cs-bg' : ''} ${sortBoxStyles[boxId].box}`} data-position-key={`box-${boxOrder.indexOf(boxId)}`} draggable={!sortedIds.has(boxId)} key={boxId} onClick={() => { if (!sortedIds.has(boxId)) { setSelectedBox(boxId); setErrorMessage(undefined) } }} onDragStart={(event) => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', boxId); setSelectedBox(boxId) }} type="button">
+            {sortedIds.has(boxId) ? <Check size={20} /> : <span className="grid place-items-center gap-1"><img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src={sortCrateImages[boxId]} /><span>{boxId}</span></span>}
+          </button>)}
+        </div>
+        <div className="h-px bg-cs-border" />
+        <p className="font-mono text-[10px] uppercase text-cs-muted">Loading docks</p>
+        <div aria-label="Sort Boxes sorting area" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {binOrder.map((boxId) => <button aria-label={`${capitalize(boxId)} container`} className={`grid min-h-24 min-w-0 place-items-center border-2 border-dashed p-2 text-center font-mono text-xs font-bold uppercase transition hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special ${selectedBox && selectedBox !== boxId ? 'opacity-70' : ''} ${sortBoxStyles[boxId].container}`} data-position-key={`container-${binOrder.indexOf(boxId)}`} key={boxId} onClick={() => { if (selectedBox) dropBox(selectedBox, boxId) }} onDragOver={(event) => event.preventDefault()} onDrop={(event) => onDrop(event, boxId)} type="button">
+            {sortedIds.has(boxId) ? <span className={`inline-flex items-center gap-1 border px-2 py-2 ${sortBoxStyles[boxId].sorted}`}><Check size={14} /> loaded</span> : <span className="grid place-items-center gap-1"><img alt="" className="h-12 w-12 object-contain [image-rendering:pixelated]" src={sortDockImages[boxId]} /><span>{boxId} dock</span></span>}
+          </button>)}
+        </div>
+      </div>
+    )}
+    <ProgressFooter errorMessage={errorMessage} progressLabel={`Sorted ${sortedIds.size}/${boxIds.length}`} successMessage={successMessage} />
+  </>}</JobFrame>
 }
 
 function PrecisionStrikeJob() {
@@ -303,7 +357,7 @@ function PrecisionStrikeJob() {
   function start() { completedRef.current = false; positionRef.current = 0; directionRef.current = 1; setIndicator(0); setTarget(18 + Math.random() * 64); setAttempt(0); setScores([]); setAccuracies([]); setFeedback(''); setStatus('running') }
   const performanceScore = scores.length ? scores.reduce((sum, value) => sum + value, 0) / precisionAttempts : 0
   const reward = getWorkBaseReward('precisionStrike', performanceScore) * getRewardMultiplier(state.upgrades, state.learnedSkillNodeIds)
-  return <JobFrame description="Reflex timing · 8 minute cooldown" gameId="precisionStrike" icon={<Crosshair size={20} />} instructions="Stop near the center. Bullseye (≤0.75%) earns 100%, Perfect (≤3%) earns 88%, and Good (≤10%) earns 62%. Five attempts set the payout." onReset={reset} title="Precision Strike">{() => status === 'idle' ? <StartPanel action="Start Precision Strike" icon={<Target size={16} />} onStart={start} text="Press Space, click, or tap. Target positions change each attempt; only measured timing accuracy affects the score." /> : <div className="mt-3 flex min-h-64 flex-col justify-center border border-cs-border bg-cs-bg p-3 sm:p-4"><div className="flex min-h-8 flex-wrap items-center justify-between gap-2 font-mono text-xs uppercase text-cs-muted"><span>Attempt {Math.min(attempt + 1, precisionAttempts)} / {precisionAttempts}</span><span aria-live="assertive" className={feedback.startsWith('Bullseye') ? 'font-semibold text-rarity-special' : feedback ? 'font-semibold text-cs-green' : ''} role="status">{feedback || 'Track the marker'}</span></div><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] uppercase text-cs-muted"><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-white" /> Bullseye ≤0.75%</span><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-rarity-special/70" /> Perfect ≤3%</span><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-cs-green/40" /> Good ≤10%</span></div><button aria-label="Stop precision marker" className="relative mt-3 block h-24 w-full touch-manipulation overflow-hidden border border-cs-border bg-cs-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special" disabled={status === 'finished'} onClick={finishAttempt} type="button"><span className="absolute inset-y-0 w-[20%] -translate-x-1/2 bg-cs-green/20" style={{ left: `${target}%` }} /><span className="absolute inset-y-0 w-[6%] -translate-x-1/2 bg-rarity-special/50 shadow-glow" style={{ left: `${target}%` }} /><span className="absolute inset-y-0 w-[1.5%] -translate-x-1/2 bg-white/35" style={{ left: `${target}%` }} /><span className="absolute inset-y-0 w-1 -translate-x-1/2 bg-white shadow-[0_0_12px_white]" style={{ left: `${indicator}%` }} /></button><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><div className="flex gap-1" aria-label="Precision attempt scores">{Array.from({ length: precisionAttempts }, (_, index) => <span aria-label={accuracies[index] === undefined ? `Attempt ${index + 1} pending` : `Attempt ${index + 1}: ${accuracies[index].toFixed(2)} percent from center`} className={`h-2 w-10 max-w-[16vw] ${scores[index] === undefined ? 'bg-cs-border' : scores[index] >= 1 ? 'bg-white shadow-glow' : scores[index] >= 0.88 ? 'bg-rarity-special' : scores[index] >= 0.62 ? 'bg-cs-green' : 'bg-rarity-covert'}`} key={index} />)}</div>{status === 'finished' ? <p className="font-mono text-sm font-semibold text-cs-green">Score {Math.round(performanceScore * 100)}% · +{formatWorkReward(reward)}</p> : <span className="text-xs text-cs-muted">Space / click / tap</span>}</div></div>}</JobFrame>
+  return <JobFrame description="Reflex timing · 8 minute cooldown" gameId="precisionStrike" icon={<Crosshair size={20} />} instructions="Stop near the center. Bullseye (≤0.75%) earns 100%, Perfect (≤3%) earns 88%, and Good (≤10%) earns 62%. Five attempts set the payout." onReset={reset} title="Precision Strike">{() => status === 'idle' ? <StartPanel action="Start Precision Strike" icon={<Target size={16} />} onStart={start} text="Press Space, click, or tap. Target positions change each attempt; only measured timing accuracy affects the score." /> : <div className="mt-3 flex min-h-56 flex-col justify-center border border-cs-border bg-cs-bg p-3 sm:p-4"><div className="flex min-h-8 flex-wrap items-center justify-between gap-2 font-mono text-xs uppercase text-cs-muted"><span>Attempt {Math.min(attempt + 1, precisionAttempts)} / {precisionAttempts}</span><span aria-live="assertive" className={feedback.startsWith('Bullseye') ? 'font-semibold text-rarity-special' : feedback ? 'font-semibold text-cs-green' : ''} role="status">{feedback || 'Track the marker'}</span></div><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] uppercase text-cs-muted"><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-white" /> Bullseye ≤0.75%</span><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-rarity-special/70" /> Perfect ≤3%</span><span className="inline-flex items-center gap-1"><i className="h-2 w-3 bg-cs-green/40" /> Good ≤10%</span></div><button aria-label="Stop precision marker" className="relative mt-3 block h-24 w-full touch-manipulation overflow-hidden border border-cs-border bg-[linear-gradient(90deg,rgb(var(--cs-panel)),rgb(var(--cs-surface)),rgb(var(--cs-panel)))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special" disabled={status === 'finished'} onClick={finishAttempt} type="button"><span className="absolute inset-y-0 w-[20%] -translate-x-1/2 bg-cs-green/20" style={{ left: `${target}%` }} /><span className="absolute inset-y-0 w-[6%] -translate-x-1/2 bg-rarity-special/40 shadow-glow" style={{ left: `${target}%` }} /><img alt="" className="pointer-events-none absolute top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 object-contain opacity-80" src={workAsset('precision-target.png')} style={{ left: `${target}%` }} /><span className="absolute inset-y-0 w-1 -translate-x-1/2 bg-white shadow-[0_0_12px_white]" style={{ left: `${indicator}%` }} /></button><div className="mt-4 flex flex-wrap items-center justify-between gap-3"><div className="flex gap-1" aria-label="Precision attempt scores">{Array.from({ length: precisionAttempts }, (_, index) => <span aria-label={accuracies[index] === undefined ? `Attempt ${index + 1} pending` : `Attempt ${index + 1}: ${accuracies[index].toFixed(2)} percent from center`} className={`h-2 w-10 max-w-[16vw] ${scores[index] === undefined ? 'bg-cs-border' : scores[index] >= 1 ? 'bg-white shadow-glow' : scores[index] >= 0.88 ? 'bg-rarity-special' : scores[index] >= 0.62 ? 'bg-cs-green' : 'bg-rarity-covert'}`} key={index} />)}</div>{status === 'finished' ? <p className="font-mono text-sm font-semibold text-cs-green">Score {Math.round(performanceScore * 100)}% · +{formatWorkReward(reward)}</p> : <span className="text-xs text-cs-muted">Space / click / tap</span>}</div></div>}</JobFrame>
 }
 
 function MemoryCircuitJob() {
@@ -342,7 +396,19 @@ function MemoryCircuitJob() {
   useEffect(() => { if (phase !== 'input') return; const onKeyDown = (event: KeyboardEvent) => { const pad = Number(event.key) - 1; if (pad >= 0 && pad < 4) choosePad(pad) }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown) }, [choosePad, phase])
   const performanceScore = earnedSteps / totalSteps
   const reward = getWorkBaseReward('memoryCircuit', performanceScore) * getRewardMultiplier(state.upgrades, state.learnedSkillNodeIds)
-  return <JobFrame description="Memory sequence · 15 minute cooldown" gameId="memoryCircuit" icon={<BrainCircuit size={20} />} instructions="Watch and repeat three growing light sequences. A 3–2–1 countdown starts every round; input stays locked until YOUR TURN." onReset={reset} title="Memory Circuit">{() => phase === 'idle' ? <StartPanel action="Start Memory Circuit" icon={<Sparkles size={16} />} onStart={() => { completedRef.current = false; setEarnedSteps(0); beginRound(0) }} text="Three rounds: remember sequences of 3, 4, then 5 signals. Use buttons or number keys 1–4." /> : <div className="relative mt-3 flex min-h-[19rem] flex-col border border-cs-border bg-cs-bg p-3 sm:min-h-[21rem] sm:p-4"><div className="flex min-h-10 flex-wrap items-center justify-between gap-2 font-mono text-xs uppercase text-cs-muted"><span>Round {round + 1} / {memoryRoundLengths.length} · Signal {phase === 'showing' ? Math.min(displayIndex + 1, sequence.length) : Math.min(inputIndex + 1, sequence.length)} / {sequence.length}</span><span aria-live="assertive" className={`font-semibold ${phase === 'input' ? 'text-cs-green' : phase === 'showing' || phase === 'countdown' ? 'text-rarity-special' : 'text-cs-muted'}`} role="status">{phase === 'countdown' ? `Starting in ${countdown}` : feedback}</span></div>{phase === 'countdown' ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-cs-bg/75"><span className="grid h-24 w-24 place-items-center border-2 border-rarity-special bg-cs-surface font-mono text-5xl font-bold text-rarity-special shadow-glow">{countdown}</span></div> : null}<div aria-label="Memory Circuit controls" className="mt-3 grid flex-1 grid-cols-2 gap-2 sm:gap-3">{memoryPadLabels.map((label, index) => <button aria-label={`Memory pad ${index + 1}: ${label}`} aria-pressed={litPad === index} data-active={litPad === index ? 'true' : 'false'} className={`min-h-20 border-2 font-mono text-xs font-bold uppercase transition-[background-color,box-shadow,transform,border-color] ${memoryPadStyles[index]} ${litPad === index ? 'z-10 scale-[1.035] border-white bg-white/70 text-slate-950 shadow-[0_0_38px_rgb(255_255_255_/_0.85)] ring-4 ring-white/90' : 'opacity-75'} ${phase !== 'input' ? 'cursor-default' : 'hover:opacity-100 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white'}`} disabled={phase !== 'input'} key={label} onClick={() => choosePad(index)} type="button"><span className="block text-lg">{index + 1}</span>{label}</button>)}</div><div className="mt-3 flex min-h-8 flex-wrap items-center justify-between gap-3"><span className="font-mono text-xs uppercase text-cs-muted">Recall {earnedSteps}/{totalSteps}</span>{phase === 'finished' ? <span className="font-mono text-sm font-semibold text-cs-green">Score {Math.round(performanceScore * 100)}% · +{formatWorkReward(reward)}</span> : <span className="text-xs text-cs-muted">Keyboard 1–4 / tap · input locked while watching</span>}</div></div>}</JobFrame>
+  return <JobFrame description="Memory sequence · 15 minute cooldown" gameId="memoryCircuit" icon={<BrainCircuit size={20} />} instructions="Watch and repeat three growing light sequences. A 3–2–1 countdown starts every round; input stays locked until YOUR TURN." onReset={reset} title="Memory Circuit">{() => phase === 'idle' ? <StartPanel action="Start Memory Circuit" icon={<Sparkles size={16} />} onStart={() => { completedRef.current = false; setEarnedSteps(0); beginRound(0) }} text="Three rounds: remember sequences of 3, 4, then 5 signals. Use buttons or number keys 1–4." /> : (
+    <div className="relative mt-3 flex min-h-[18rem] flex-col border border-cs-border bg-cs-bg p-3 sm:p-4">
+      <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 font-mono text-xs uppercase text-cs-muted"><span>Round {round + 1} / {memoryRoundLengths.length} · Signal {phase === 'showing' ? Math.min(displayIndex + 1, sequence.length) : Math.min(inputIndex + 1, sequence.length)} / {sequence.length}</span><span aria-live="assertive" className={`font-semibold ${phase === 'input' ? 'text-cs-green' : phase === 'showing' || phase === 'countdown' ? 'text-rarity-special' : 'text-cs-muted'}`} role="status">{phase === 'countdown' ? `Starting in ${countdown}` : feedback}</span></div>
+      {phase === 'countdown' ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-cs-bg/75"><span className="grid h-24 w-24 place-items-center border-2 border-rarity-special bg-cs-surface font-mono text-5xl font-bold text-rarity-special shadow-glow">{countdown}</span></div> : null}
+      <div aria-label="Memory Circuit controls" className="mt-3 grid flex-1 grid-cols-2 gap-2 sm:gap-3">
+        {memoryPadLabels.map((label, index) => <button aria-label={`Memory pad ${index + 1}: ${label}`} aria-pressed={litPad === index} data-active={litPad === index ? 'true' : 'false'} className={`relative min-h-20 overflow-hidden border-2 font-mono text-xs font-bold uppercase transition-[background-color,box-shadow,transform,border-color] ${memoryPadStyles[index]} ${litPad === index ? 'z-10 scale-[1.035] border-white bg-white/70 text-slate-950 shadow-[0_0_38px_rgb(255_255_255_/_0.85)] ring-4 ring-white/90' : 'opacity-80'} ${phase !== 'input' ? 'cursor-default' : 'hover:opacity-100 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white'}`} disabled={phase !== 'input'} key={label} onClick={() => choosePad(index)} type="button">
+          <img alt="" className={`absolute inset-0 h-full w-full object-fill transition ${litPad === index ? 'brightness-150 saturate-150' : 'opacity-55'}`} src={memoryPadImages[index]} />
+          <span className="relative z-[1] block text-lg">{index + 1}</span><span className="relative z-[1]">{label}</span>
+        </button>)}
+      </div>
+      <div className="mt-3 flex min-h-8 flex-wrap items-center justify-between gap-3"><span className="font-mono text-xs uppercase text-cs-muted">Recall {earnedSteps}/{totalSteps}</span>{phase === 'finished' ? <span className="font-mono text-sm font-semibold text-cs-green">Score {Math.round(performanceScore * 100)}% · +{formatWorkReward(reward)}</span> : <span className="text-xs text-cs-muted">Keyboard 1–4 / tap · input locked while watching</span>}</div>
+    </div>
+  )}</JobFrame>
 }
 
 function StartPanel({ action, icon, onStart, text }: { action: string; icon: ReactNode; onStart: () => void; text: string }) {

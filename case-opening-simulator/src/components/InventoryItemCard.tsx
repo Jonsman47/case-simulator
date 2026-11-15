@@ -131,7 +131,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
   return (
     <article
       className={[
-        'relative flex h-full min-h-[19rem] cursor-pointer touch-manipulation flex-col border bg-cs-panel p-2.5 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[20rem]',
+        'relative flex h-full min-h-[16.5rem] min-w-0 cursor-pointer touch-manipulation flex-col border bg-cs-panel p-2 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[17.5rem]',
         styles.border,
         isDuplicateSkin ? 'shadow-glow' : '',
         isSelected ? 'ring-2 ring-rarity-special' : '',
@@ -203,14 +203,14 @@ export const InventoryItemCard = memo(function InventoryItemCard({
       </div>
 
       <div
-        className={`mt-2 grid h-24 place-items-center border bg-cs-surface sm:h-28 xl:h-32 ${styles.border}`}
+        className={`mt-1.5 grid h-20 place-items-center border bg-cs-surface sm:h-24 ${styles.border}`}
         style={{
           borderColor: rarityColor,
         }}
       >
         <AssetImage
           alt=""
-          className="h-16 w-16 object-contain opacity-90 sm:h-20 sm:w-20"
+          className="h-14 w-14 object-contain opacity-90 sm:h-16 sm:w-16"
           draggable={false}
           src={item.image}
         />
@@ -239,7 +239,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
 
       <div className="mt-2 border border-cs-border bg-cs-surface px-2 py-1.5">
         <p className="font-mono text-[10px] uppercase text-cs-muted">Estimated Value · {getSkinPriceConfidence(item, item.wear, Boolean(item.statTrak), Boolean(item.souvenir)) === 'market' ? 'Market' : 'Fallback'}</p>
-        <p className="mt-1 text-base font-semibold text-cs-green">{formatCurrency(item.marketValue)}</p>
+        <p className="mt-1 break-words text-base font-semibold tabular-nums text-cs-green">{formatCurrency(item.marketValue)}</p>
       </div>
     </article>
   )
