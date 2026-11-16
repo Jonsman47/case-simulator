@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Lock, LockOpen, Star, Trophy, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ListPlus, Lock, LockOpen, Star, Trophy, X } from 'lucide-react'
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent,
@@ -27,6 +27,7 @@ export interface ItemDetailModalProps {
   onAddToTrophyRoom?: (itemId: string, slotId: string) => void
   onClose: () => void
   onItemChange?: (item: SkinInstance) => void
+  onListOnCSWear?: (itemId: string) => void
   onSell: (itemId: string) => void
   onToggleFavorite: (itemId: string) => void
   onToggleLock: (itemId: string) => void
@@ -161,6 +162,7 @@ export function ItemDetailModal({
   onAddToTrophyRoom,
   onClose,
   onItemChange,
+  onListOnCSWear,
   onSell,
   onToggleFavorite,
   onToggleLock,
@@ -550,7 +552,7 @@ export function ItemDetailModal({
                     onClick={() => setConfirmingSaleForItemId(item.instanceId)}
                     type="button"
                   >
-                    Sell
+                    Sell Instantly
                   </button>
                   {item.isLocked || !isOwned ? (
                     <span
@@ -562,6 +564,18 @@ export function ItemDetailModal({
                     </span>
                   ) : null}
                 </span>
+                {onListOnCSWear ? (
+                  <button
+                    className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/20 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60"
+                    disabled={item.isLocked || !canUseItemActions}
+                    onClick={() => onListOnCSWear(item.instanceId)}
+                    title={item.isLocked ? 'Unlock this item before listing it.' : 'Create a seven-day CSWEAR listing for this exact item.'}
+                    type="button"
+                  >
+                    <ListPlus size={16} />
+                    List on CSWEAR
+                  </button>
+                ) : null}
               </div>
 
               {isTrophySelectorOpen ? (

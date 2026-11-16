@@ -216,22 +216,27 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.statistics.dropsByRarity[Rarity.SpecialItem]).toBe(0)
   })
 
-  it('can force a Special Item on the first fresh-run opening', () => {
+  it('does not let the first-case presentation hook alter the official drop result', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
     const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
-    const nextState = gameReducer(state, {
+    const lowHookState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: {
+        caseId: 'starter_case',
+        firstCaseHookRoll: 0.2,
+      },
+    })
+    const highHookState = gameReducer(state, {
       type: 'OPEN_CASE',
       payload: {
         caseId: 'starter_case',
         firstCaseHookRoll: 0.95,
       },
     })
-    const startedEvent = nextState.uiEvents.find((event) => event.type === 'case_opening_started')
 
-    expect(nextState.hasUsedFirstCaseHook).toBe(true)
-    expect(startedEvent).toMatchObject({ firstCaseHook: 'forcedGold' })
-    expect(nextState.inventory).toHaveLength(1)
-    expect(nextState.inventory[0].rarity).toBe(Rarity.SpecialItem)
-    expect(nextState.statistics.dropsByRarity[Rarity.SpecialItem]).toBe(1)
+    expect(highHookState.lastOpenedItems[0].id).toBe(lowHookState.lastOpenedItems[0].id)
+    expect(highHookState.lastOpenedItems[0].rarity).toBe(lowHookState.lastOpenedItems[0].rarity)
+    random.mockRestore()
   })
 
   it('uses the first-case hook only once in an Open 10 batch', () => {
@@ -247,8 +252,9 @@ describe('gameReducer OPEN_CASE', () => {
 
     expect(nextState.hasUsedFirstCaseHook).toBe(true)
     expect(nextState.inventory).toHaveLength(10)
-    expect(nextState.inventory.filter((item) => item.rarity === Rarity.SpecialItem)).toHaveLength(1)
-    expect(nextState.lastOpenedItems[0].rarity).toBe(Rarity.SpecialItem)
+    expect(nextState.uiEvents.filter((event) => (
+      event.type === 'case_opening_started' && event.firstCaseHook !== undefined
+    ))).toHaveLength(1)
   })
 
   it('does not repeat the first-case hook on the second opening', () => {
@@ -1845,11 +1851,34 @@ describe('gameReducer OPEN_CASE', () => {
     const repeatedState = gameReducer(claimedState, { type: 'CLAIM_DAILY_REWARD', now })
 
     expect(claimedState.money).toBe(1)
+    expect(claimedState.dailyRewards.openingCredits).toBe(2)
     expect(claimedState.dailyRewards.streak).toBe(1)
     expect(claimedState.dailyRewards.lastClaimDayKey).toBe(getLocalDayKey(now))
     expect(findUiEvent(claimedState, 'daily_reward_claimed')).toBeDefined()
     expect(repeatedState.money).toBe(1)
     expect(repeatedState.lastError).toBe('Daily reward already claimed today.')
+  })
+
+  it('spends bounded opening credit on manual low-cost cases without creating cash', () => {
+    const now = Date.now()
+    const state = makeState({
+      money: 0.13,
+      dailyRewards: {
+        ...createDefaultDailyRewardsState(now),
+        openingCredits: 1,
+      },
+    })
+
+    const openedState = gameReducer(state, {
+      type: 'OPEN_CASE',
+      payload: { caseId: 'starter_case', now, openingEventId: 'credit-open' },
+    })
+
+    expect(openedState.inventory).toHaveLength(1)
+    expect(openedState.money).toBe(0)
+    expect(openedState.dailyRewards.openingCredits).toBe(0.93)
+    expect(openedState.statistics.moneySpent).toBe(0.13)
+    expect(openedState.economyLedger.recentTransactions.at(-1)).toMatchObject({ moneyDelta: -0.13 })
   })
 
   it('continues daily streaks from yesterday and grants the day-two case discount', () => {
@@ -1930,7 +1959,7 @@ describe('gameReducer OPEN_CASE', () => {
       id: 'completed',
       target: 3,
       progress: 3,
-      reward: { money: 12, caseDiscountPercent: 0.05, durationMs: 60_000 },
+      reward: { money: 12, openingCredits: 2, caseDiscountPercent: 0.05, durationMs: 60_000 },
     })
     const state = makeState({
       money: 0,
@@ -1952,10 +1981,12 @@ describe('gameReducer OPEN_CASE', () => {
     })
 
     expect(claimedState.money).toBe(12)
+    expect(claimedState.dailyRewards.openingCredits).toBe(2)
     expect(claimedState.dailyRewards.caseDiscountBuff).toMatchObject({ percent: 0.05 })
     expect(claimedState.dailyRewards.challenges[0]?.isClaimed).toBe(true)
     expect(findUiEvent(claimedState, 'daily_challenge_claimed')).toBeDefined()
     expect(repeatedState.money).toBe(12)
+    expect(repeatedState.dailyRewards.openingCredits).toBe(2)
     expect(repeatedState.lastError).toBe('Daily challenge is not ready to claim.')
   })
 

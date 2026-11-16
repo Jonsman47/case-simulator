@@ -12,7 +12,9 @@ import { useDialogFocus } from '../hooks/useDialogFocus'
 export interface BatchOpenSummaryModalProps {
   autoSoldItems: SkinInstance[]
   caseName: string
+  careerXpEarned?: number
   items: SkinInstance[]
+  newDiscoveryItemIds?: string[]
   onClose: () => void
   openedCount: number
   saleValue: number
@@ -57,7 +59,9 @@ function groupItemsByRarity(items: SkinInstance[]) {
 export function BatchOpenSummaryModal({
   autoSoldItems,
   caseName,
+  careerXpEarned = 0,
   items,
+  newDiscoveryItemIds = [],
   onClose,
   openedCount,
   saleValue,
@@ -97,6 +101,8 @@ export function BatchOpenSummaryModal({
               <SummaryPill label="Drops" value={items.length.toLocaleString()} />
               <SummaryPill label="Value" value={formatCurrency(totalValue)} tone="green" />
               <SummaryPill label="Reveal" value={revealMode} />
+              {newDiscoveryItemIds.length > 0 ? <SummaryPill label="New discoveries" value={newDiscoveryItemIds.length.toLocaleString()} tone="green" /> : null}
+              {careerXpEarned > 0 ? <SummaryPill label="Career XP" value={`+${careerXpEarned}`} /> : null}
             </div>
           </div>
           <button

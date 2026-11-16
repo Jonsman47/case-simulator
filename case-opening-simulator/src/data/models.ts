@@ -90,6 +90,11 @@ export enum DailyRewardKind {
 
 export enum DailyChallengeType {
   OpenCases = 'open_cases',
+  OpenDifferentCases = 'open_different_cases',
+  CompleteOpeningSessions = 'complete_opening_sessions',
+  DiscoverSkins = 'discover_skins',
+  EarnCareerXp = 'earn_career_xp',
+  CollectionMilestone = 'collection_milestone',
   SellValue = 'sell_value',
   ObtainRarity = 'obtain_rarity',
   CompleteTradeUps = 'complete_trade_ups',
@@ -104,6 +109,7 @@ export interface DailyRewardDefinition {
   durationMs?: number
   skinRarity?: Rarity
   caseId?: string
+  openingCredits?: number
 }
 
 export interface DailyRewardClaim {
@@ -120,6 +126,7 @@ export interface DailyCaseDiscountBuff {
 
 export interface DailyChallengeReward {
   money?: number
+  openingCredits?: number
   caseDiscountPercent?: number
   durationMs?: number
 }
@@ -135,6 +142,7 @@ export interface DailyChallenge {
   isClaimed: boolean
   rarity?: Rarity
   generatedAt: number
+  progressKeys?: string[]
 }
 
 export interface DailyRewardsState {
@@ -147,6 +155,7 @@ export interface DailyRewardsState {
   caseDiscountBuff?: DailyCaseDiscountBuff
   lastReward?: DailyRewardClaim
   challenges: DailyChallenge[]
+  openingCredits: number
 }
 
 export enum AutoSellRuleType {

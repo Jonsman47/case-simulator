@@ -763,6 +763,7 @@ function isDailyChallengeReward(value: unknown): value is DailyChallengeReward {
 
   return (
     (value.money === undefined || isNumber(value.money)) &&
+    (value.openingCredits === undefined || isNumber(value.openingCredits)) &&
     (value.caseDiscountPercent === undefined || isNumber(value.caseDiscountPercent)) &&
     (value.durationMs === undefined || isNumber(value.durationMs))
   )
@@ -775,6 +776,7 @@ function normalizeDailyChallengeReward(value: unknown): DailyChallengeReward {
 
   return {
     money: value.money,
+    openingCredits: value.openingCredits,
     caseDiscountPercent: value.caseDiscountPercent,
     durationMs: value.durationMs,
   }
@@ -860,6 +862,9 @@ function normalizeDailyChallenges(value: unknown): DailyChallenge[] | undefined 
     isClaimed: challenge.isClaimed,
     rarity: challenge.rarity,
     generatedAt: challenge.generatedAt,
+    progressKeys: Array.isArray(challenge.progressKeys)
+      ? challenge.progressKeys.filter((entry): entry is string => typeof entry === 'string').slice(-100)
+      : undefined,
   }))
 }
 
@@ -883,6 +888,10 @@ function normalizeDailyRewardsState(value: unknown, now = Date.now()): DailyRewa
     caseDiscountBuff: normalizeDailyCaseDiscountBuff(value.caseDiscountBuff, now),
     lastReward: normalizeDailyRewardClaim(value.lastReward),
     challenges: normalizeDailyChallenges(value.challenges) ?? defaults.challenges,
+    openingCredits: Math.max(
+      0,
+      Math.min(20, normalizeNumber(value.openingCredits, defaults.openingCredits)),
+    ),
   }
 
   return refreshDailyRewardsState(baseState, now)

@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { Boxes, CheckSquare, Copy } from 'lucide-react'
 import { Grid } from 'react-window'
+import { useNavigate } from 'react-router-dom'
 import { BulkActionsToolbar } from '../components/BulkActionsToolbar'
 import { InventoryFilterBar } from '../components/InventoryFilterBar'
 import { InventoryItemCard } from '../components/InventoryItemCard'
@@ -148,6 +149,7 @@ function InventoryGridCell({
 }
 
 export function InventoryView() {
+  const navigate = useNavigate()
   const {
     assignTrophyItem,
     getSelectedItemsValue,
@@ -403,6 +405,7 @@ export function InventoryView() {
           item={activeItem}
           onClose={() => setActiveItemId(undefined)}
           onItemChange={(item) => setActiveItemId(item.instanceId)}
+          onListOnCSWear={(itemId) => navigate(`/cswear?tab=sell&item=${encodeURIComponent(itemId)}`)}
           onAddToTrophyRoom={(itemId, slotId) => assignTrophyItem(slotId, itemId)}
           onSell={sellItem}
           onToggleFavorite={toggleItemFavorite}

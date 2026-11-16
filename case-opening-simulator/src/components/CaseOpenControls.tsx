@@ -1,7 +1,8 @@
-import { Lock, PackageOpen } from 'lucide-react'
+import { Lock, PackageOpen, Ticket } from 'lucide-react'
 import { memo, useState } from 'react'
 import type { CaseDefinition } from '../data/models'
 import { formatCurrency } from '../utils/format'
+import { getOpeningCreditQuote } from '../rewards/dailyRewards'
 
 const batchStep = 10
 const maximumDisplayedBatch = 100
@@ -15,6 +16,7 @@ export interface CaseOpenControlsProps {
   caseDef: CaseDefinition
   maxQuantity?: number
   money: number
+  openingCredits?: number
   onOpen: (quantity: number, options: CaseOpenOptions) => void
   requiresLicense?: boolean
 }
@@ -24,11 +26,18 @@ export const CaseOpenControls = memo(function CaseOpenControls({
   caseDef,
   maxQuantity = 10,
   money,
+  openingCredits = 0,
   onOpen,
   requiresLicense = false,
 }: CaseOpenControlsProps) {
   const [skipAnimations, setSkipAnimations] = useState(false)
-  const affordableCount = Math.floor(money / caseDef.cost)
+  let affordableCount = Math.min(1_000_000, Math.floor((money + openingCredits) / caseDef.cost))
+  while (
+    affordableCount > 0 &&
+    getOpeningCreditQuote(caseDef.cost, openingCredits, affordableCount).cashCost > money
+  ) {
+    affordableCount -= 1
+  }
   const canAffordAny = affordableCount > 0
   // Batch buttons expand with upgrades/skills while staying hidden for new players,
   // so Open 100 only appears after progression has explicitly earned it.
@@ -45,8 +54,8 @@ export const CaseOpenControls = memo(function CaseOpenControls({
     <div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-2">
         {openQuantities.map((quantity) => {
-          const totalCost = caseDef.cost * quantity
-          const canAffordQuantity = money >= totalCost
+          const quote = getOpeningCreditQuote(caseDef.cost, openingCredits, quantity)
+          const canAffordQuantity = money >= quote.cashCost
           const disabled = (!canOpen && !requiresLicense) || !canAffordQuantity
 
           return (
@@ -55,7 +64,13 @@ export const CaseOpenControls = memo(function CaseOpenControls({
               disabled={disabled}
               key={quantity}
               onClick={() => onOpen(quantity, { skipAnimations: quantity >= 10 && skipAnimations })}
-              title={disabled && (canOpen || requiresLicense) ? `Need ${formatCurrency(totalCost)}` : undefined}
+              title={
+                quote.creditUsed > 0
+                  ? `${formatCurrency(quote.cashCost)} cash + ${formatCurrency(quote.creditUsed)} opening credit`
+                  : disabled && (canOpen || requiresLicense)
+                    ? `Need ${formatCurrency(quote.cashCost)}`
+                    : undefined
+              }
               type="button"
             >
               {disabled || requiresLicense ? <Lock className="shrink-0" size={16} /> : <PackageOpen className="shrink-0" size={16} />}
@@ -93,6 +108,12 @@ export const CaseOpenControls = memo(function CaseOpenControls({
           </p>
         )}
       </div>
+      {openingCredits > 0 ? (
+        <div className="mt-3 inline-flex items-center gap-2 border border-cs-green/60 bg-cs-green/10 px-3 py-2 text-xs text-cs-green">
+          <Ticket size={14} />
+          {formatCurrency(openingCredits)} opening credit available for eligible cases
+        </div>
+      ) : null}
     </div>
   )
 })

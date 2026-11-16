@@ -30,8 +30,9 @@ function formatCountdown(ms: number) {
 }
 
 function formatDailyReward(reward: DailyRewardDefinition) {
+  const creditText = reward.openingCredits ? ` + ${formatCurrency(reward.openingCredits)} opening credit` : ''
   if (reward.kind === DailyRewardKind.Money) {
-    return formatCurrency(reward.money ?? 0)
+    return `${formatCurrency(reward.money ?? 0)}${creditText}`
   }
 
   if (reward.kind === DailyRewardKind.CaseDiscountBuff) {
@@ -50,6 +51,7 @@ function formatChallengeReward(challenge: DailyChallenge) {
 
   return [
     reward.money ? formatCurrency(reward.money) : undefined,
+    reward.openingCredits ? `${formatCurrency(reward.openingCredits)} opening credit` : undefined,
     reward.caseDiscountPercent ? `${Math.round(reward.caseDiscountPercent * 100)}% case discount` : undefined,
   ]
     .filter(Boolean)
@@ -65,9 +67,19 @@ function formatChallengeProgress(challenge: DailyChallenge) {
 }
 
 function formatChallengeKind(challenge: DailyChallenge) {
-  if (challenge.type === DailyChallengeType.OpenCases) {
+  if (
+    challenge.type === DailyChallengeType.OpenCases ||
+    challenge.type === DailyChallengeType.OpenDifferentCases ||
+    challenge.type === DailyChallengeType.CompleteOpeningSessions
+  ) {
     return 'Opening'
   }
+
+  if (challenge.type === DailyChallengeType.DiscoverSkins || challenge.type === DailyChallengeType.CollectionMilestone) {
+    return 'Collection'
+  }
+
+  if (challenge.type === DailyChallengeType.EarnCareerXp) return 'Career'
 
   if (challenge.type === DailyChallengeType.SellValue) {
     return 'Selling'
@@ -121,9 +133,10 @@ export function RewardsView() {
             Claim a daily streak reward, clear today&apos;s tasks, and build your bankroll.
           </p>
         </div>
-        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-3">
+        <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryPill label="Streak" value={`${state.dailyRewards.streak} day${state.dailyRewards.streak === 1 ? '' : 's'}`} />
           <SummaryPill label="Reset" value={formatCountdown(nextResetAt - now)} />
+          <SummaryPill label="Opening credit" value={formatCurrency(state.dailyRewards.openingCredits)} />
           <SummaryPill label="Rerolls" value={`${rerollsRemaining}/${DAILY_FREE_REROLLS}`} />
         </div>
       </div>
@@ -168,6 +181,17 @@ export function RewardsView() {
               </p>
             </div>
           ) : null}
+
+          <div className="mt-4 border border-cs-green/60 bg-cs-green/10 p-3 text-sm text-cs-muted">
+            <div className="flex items-center gap-2 font-semibold text-cs-green">
+              <Ticket size={16} />
+              Case funding
+            </div>
+            <p className="mt-1">
+              Opening credit covers up to 35% of eligible cases costing $5 or less. It cannot be sold,
+              transferred, used for licenses, or spent by automation.
+            </p>
+          </div>
 
           <div className="mt-5 grid grid-cols-7 gap-2">
             {DAILY_REWARD_SEQUENCE.map((reward) => {

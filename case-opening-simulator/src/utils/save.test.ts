@@ -146,6 +146,7 @@ describe('save system', () => {
       lastClaimTime: 1_782_147_650_000,
       lastClaimDayKey: '2026-06-23',
       freeRerollsUsed: 1,
+      openingCredits: 4.5,
       caseDiscountBuff: {
         percent: 0.05,
         expiresAt: 1_782_148_700_000,

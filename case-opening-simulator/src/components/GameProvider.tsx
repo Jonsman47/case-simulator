@@ -193,6 +193,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
     : undefined
   const activeOpeningSummary = openingSession?.summary ?? latestOpeningSummary
   const activeOpeningItems = openingSession?.items ?? state.lastOpenedItems
+  const openingDiscoveryItemIds = useMemo(() => {
+    const seenSkinIds = new Set<string>()
+    return activeOpeningItems.flatMap((item) => {
+      const entry = state.collectionBook.find((candidate) => candidate.skinId === item.id)
+      if (!entry || entry.firstFoundAt !== item.discoveredAt || seenSkinIds.has(item.id)) return []
+      seenSkinIds.add(item.id)
+      return [item.instanceId]
+    })
+  }, [activeOpeningItems, state.collectionBook])
+  const openingCareerXp = useMemo(() => {
+    if (!openingSession) return 0
+    const prefix = `case-session:${openingSession.id}:`
+    return state.career.recentEvents
+      .filter((event) => event.id.startsWith(prefix))
+      .reduce((total, event) => total + event.xp, 0)
+  }, [openingSession, state.career.recentEvents])
   const summaryCase = activeOpeningSummary
     ? availableCases.find((caseDef) => caseDef.id === activeOpeningSummary.startedEvent.caseId)
     : undefined
@@ -1290,6 +1306,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
           finalItem={openingAnimationItem}
           finalItems={openingAnimationItems}
           firstCaseHook={activeOpeningSummary.startedEvent.firstCaseHook}
+          careerXpEarned={openingCareerXp}
+          newDiscoveryItemIds={openingDiscoveryItemIds}
           key={`${openingSession.id}:${activeOpeningSummary.startedEvent.id}`}
           onComplete={completeOpeningAnimation}
           potentialSkins={openingPotentialSkins}
@@ -1304,6 +1322,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
           autoSoldItems={activeOpeningSummary.autoSoldEvent?.items ?? []}
           caseName={summaryCase?.name ?? activeOpeningSummary.startedEvent.caseId}
           items={activeOpeningItems}
+          careerXpEarned={openingCareerXp}
+          newDiscoveryItemIds={openingDiscoveryItemIds}
           onClose={dismissOpeningSummary}
           openedCount={activeOpeningSummary.startedEvent.quantity}
           saleValue={activeOpeningSummary.autoSoldEvent?.salePrice ?? 0}

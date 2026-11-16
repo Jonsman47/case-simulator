@@ -1,4 +1,4 @@
-import { FastForward, PackageOpen, X } from 'lucide-react'
+import { BookOpenCheck, FastForward, PackageOpen, Sparkles, X } from 'lucide-react'
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { AnimationSpeed } from '../data/gameState'
 import { Rarity, type SkinBase, type SkinInstance } from '../data/models'
@@ -18,9 +18,11 @@ import { PatternBadge } from './PatternInfo'
 export interface CaseOpeningAnimationProps {
   caseImage?: string
   caseName?: string
+  careerXpEarned?: number
   finalItem: SkinInstance
   finalItems?: SkinInstance[]
   firstCaseHook?: 'nearMissGold' | 'forcedGold'
+  newDiscoveryItemIds?: string[]
   onComplete: (item: SkinInstance) => void
   potentialSkins: WeightedSkinOption[]
   soundEnabled?: boolean
@@ -307,9 +309,11 @@ function getGridStyle(batchSize: number) {
 export function CaseOpeningAnimation({
   caseImage = placeholderCaseImage,
   caseName = 'Case Opening',
+  careerXpEarned = 0,
   finalItem,
   finalItems,
   firstCaseHook,
+  newDiscoveryItemIds = [],
   onComplete,
   potentialSkins,
   soundEnabled = false,
@@ -526,7 +530,7 @@ export function CaseOpeningAnimation({
               items={animatedItems}
             />
           ) : phase === 'revealed' ? (
-            <RevealGrid hiddenItemCount={hiddenBatchCount} items={animatedItems} primaryItem={primaryItem} totalCount={batchSize} />
+            <RevealGrid hiddenItemCount={hiddenBatchCount} items={animatedItems} newDiscoveryItemIds={newDiscoveryItemIds} primaryItem={primaryItem} totalCount={batchSize} />
           ) : (
             <ReelGrid
               batchSize={batchSize}
@@ -568,6 +572,10 @@ export function CaseOpeningAnimation({
                     {primaryItem.weapon} | {primaryItem.finish}
                   </h3>
                   <div className="mt-2"><PatternBadge compact item={primaryItem} /></div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {newDiscoveryItemIds.includes(primaryItem.instanceId) ? <span className="inline-flex items-center gap-1 border border-cs-green bg-cs-green/10 px-2 py-1 font-mono text-[10px] uppercase text-cs-green"><BookOpenCheck size={12} /> New discovery</span> : null}
+                    {careerXpEarned > 0 ? <span className="inline-flex items-center gap-1 border border-rarity-special bg-rarity-special/10 px-2 py-1 font-mono text-[10px] uppercase text-rarity-special"><Sparkles size={12} /> +{careerXpEarned} XP</span> : null}
+                  </div>
                 </div>
               </div>
               <div className={isPremiumBatch ? 'shrink-0 font-mono text-lg font-semibold text-rarity-special' : 'shrink-0 font-mono text-lg font-semibold text-cs-green'}>
@@ -813,18 +821,20 @@ function ReelGrid({
 function RevealGrid({
   hiddenItemCount,
   items,
+  newDiscoveryItemIds,
   primaryItem,
   totalCount,
 }: {
   hiddenItemCount: number
   items: SkinInstance[]
+  newDiscoveryItemIds: string[]
   primaryItem: SkinInstance
   totalCount: number
 }) {
   if (totalCount === 1) {
     return (
       <div className="grid min-h-64 place-items-center border border-cs-border bg-cs-bg p-6">
-        <AssetImage alt="" className="h-44 w-44 object-contain" draggable={false} src={primaryItem.image} />
+        <div className="grid place-items-center gap-3"><AssetImage alt="" className="h-44 w-44 object-contain" draggable={false} src={primaryItem.image} />{newDiscoveryItemIds.includes(primaryItem.instanceId) ? <span className="inline-flex items-center gap-2 border border-cs-green bg-cs-green/10 px-3 py-2 text-sm font-semibold text-cs-green"><BookOpenCheck size={16} /> New collection discovery</span> : null}</div>
       </div>
     )
   }
@@ -865,6 +875,7 @@ function RevealGrid({
                     {formatCurrency(item.marketValue)}
                   </p>
                   <div className="mt-1"><PatternBadge compact item={item} /></div>
+                  {newDiscoveryItemIds.includes(item.instanceId) ? <span className="mt-1 inline-flex items-center gap-1 font-mono text-[9px] uppercase text-cs-green"><BookOpenCheck size={10} /> New discovery</span> : null}
                 </div>
               ) : null}
             </article>

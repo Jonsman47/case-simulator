@@ -193,3 +193,16 @@ Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED
 - Adds deterministic mechanics, balance, asset, component, and browser coverage.
 
 Exit evidence: standalone TypeScript and ESLint passed; 82 Vitest files / 484 tests passed; all 2,134 generated CS2 assets (197.4 MiB), Vite production bundling, PWA generation, and `npm run verify:release` passed; the deterministic 300,000-career / 500,000-opening simulation retained the 781.1-hour five-tier projection; and all 28 serial Chromium journeys passed in 5.1 minutes. Browser coverage includes the eight Work jobs, exact-once expansion-job settlement, roulette-marker geometry, Inventory overflow, route-wide console/overflow checks, and responsive layouts from 1920×1080 through 320×568. Live Supabase deployment remains unverified without credentials.
+
+## Gameplay Fun & Early-Game Overhaul
+
+Status: **COMPLETE — VERIFIED 2026-11-16**
+
+- Opening-first daily objectives, rollback-safe exact-once progress, and capped noncash Opening Credit are implemented without changing official case EV or funding automation.
+- The hidden first-opening Special Item odds override is removed; first-open excitement is now presentation-only after authoritative reward selection.
+- Single/batch result feedback now surfaces new discoveries and session Career XP while retaining the existing exact-once opening lifecycle.
+- Package Delivery keyboard/focus/target usability and solver-backed Circuit Repair readability/hints are complete.
+- Owned Inventory items can enter the existing CSWEAR seven-day escrow flow through an exact-instance, fee-aware, two-step listing review.
+- Five deterministic 15/30/60/120-minute playstyles and the full Career/case economy model pass. Detailed rules and results live in `case-opening-simulator/docs/CASE_OPENING_EARLY_GAME_REBALANCE.md`.
+
+Exit evidence: TypeScript and ESLint passed; 83 Vitest files / 489 tests passed; 2,134 generated assets verified; production/PWA build and release verification passed; early-game and full Career simulations passed; and 29/29 Chromium journeys passed, including the new Work, opening, CSWEAR escrow, console, responsive, and exact-once regressions. Live Supabase deployment remains the only credential-dependent release boundary.

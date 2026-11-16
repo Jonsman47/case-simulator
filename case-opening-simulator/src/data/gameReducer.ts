@@ -148,6 +148,8 @@ import { isUnlockedTrophySlot } from '../utils/trophyRoom'
 import {
   applyDailyCaseDiscountToCase,
   applyDailyChallengeProgress,
+  addOpeningCredits,
+  getOpeningCreditQuote,
   getNextDailyRewardInfo,
   markDailyChallengeClaimed,
   refreshDailyRewardsState,
@@ -498,40 +500,8 @@ function getFallbackSkinForCase(dropTable: { skinId: string }[]) {
   return firstCatalogSkin
 }
 
-function filterDropTableByRarity(
-  dropTable: { skinId: string; weight: number }[],
-  predicate: (skin: SkinBase) => boolean,
-) {
-  return dropTable.filter((drop) => {
-    const skin = skinDefinitionsById.get(drop.skinId)
-
-    return skin ? predicate(skin) : false
-  })
-}
-
-function pickDropFromTable(dropTable: { skinId: string; weight: number }[]) {
-  return dropTable.length > 0 ? pickDrop(dropTable) : undefined
-}
-
-function getFirstCaseHookDrop(
-  dropTable: { skinId: string; weight: number }[],
-  hookRoll: number,
-) {
-  const specialDropTable = filterDropTableByRarity(dropTable, (skin) => skin.rarity === Rarity.SpecialItem)
-  const normalDropTable = filterDropTableByRarity(dropTable, (skin) => skin.rarity !== Rarity.SpecialItem)
-  const wantsForcedGold = hookRoll >= 0.8
-
-  if (wantsForcedGold && specialDropTable.length > 0) {
-    return {
-      hook: 'forcedGold' as const,
-      skinId: pickDropFromTable(specialDropTable),
-    }
-  }
-
-  return {
-    hook: 'nearMissGold' as const,
-    skinId: pickDropFromTable(normalDropTable) ?? pickDropFromTable(dropTable),
-  }
+function getFirstCaseHook(rarity: Rarity) {
+  return rarity === Rarity.SpecialItem ? 'forcedGold' as const : 'nearMissGold' as const
 }
 
 function withDailyChallengeProgress(
@@ -864,6 +834,7 @@ function openCase(
   openedAt = Date.now(),
   firstCaseHookRoll?: number,
   openingEventId?: string,
+  useOpeningCredits = false,
 ): GameState {
   const baseCaseDef = CASE_DEFINITIONS.find((definition) => definition.id === caseId)
 
@@ -890,9 +861,19 @@ function openCase(
   }
 
   const currentMoney = clampNumber(state.money)
-  const affordableQuantity = Math.floor(currentMoney / dailyCaseDef.cost)
   const freeSlots = getInventoryFreeSlots(state)
-  const actualQuantity = Math.min(quantity, affordableQuantity, freeSlots)
+  const quantityWithSpace = Math.min(quantity, freeSlots)
+  let actualQuantity = quantityWithSpace
+
+  while (actualQuantity > 0) {
+    const quote = getOpeningCreditQuote(
+      dailyCaseDef.cost,
+      useOpeningCredits ? state.dailyRewards.openingCredits : 0,
+      actualQuantity,
+    )
+    if (quote.cashCost <= currentMoney) break
+    actualQuantity -= 1
+  }
 
   if (actualQuantity <= 0) {
     return failOpenCase(
@@ -911,16 +892,13 @@ function openCase(
   let collectionBook = state.collectionBook
   let inventory = state.inventory
   let firstCaseHook: 'nearMissGold' | 'forcedGold' | undefined
+  const knownSkinIds = new Set(state.collectionBook.map((entry) => entry.skinId))
+  const discoveredSkinIds = new Set<string>()
+
+  void firstCaseHookRoll
 
   for (let index = 0; index < actualQuantity; index += 1) {
-    const hookDrop = !state.hasUsedFirstCaseHook && index === 0
-      ? getFirstCaseHookDrop(
-          dailyCaseDef.dropTable,
-          Math.min(Math.max(firstCaseHookRoll ?? Math.random(), 0), 0.999999),
-        )
-      : undefined
-    const skinId = hookDrop?.skinId ?? pickDrop(dailyCaseDef.dropTable)
-    firstCaseHook = hookDrop?.hook ?? firstCaseHook
+    const skinId = pickDrop(dailyCaseDef.dropTable)
     const skin = skinId ? skinDefinitionsById.get(skinId) : undefined
     const fallbackSkin = skin ?? getFallbackSkinForCase(dailyCaseDef.dropTable)
 
@@ -933,6 +911,8 @@ function openCase(
     }
 
     const item = createSkinInstance(fallbackSkin, state, discoveredAt)
+    if (!knownSkinIds.has(item.id)) discoveredSkinIds.add(item.id)
+    if (!state.hasUsedFirstCaseHook && index === 0) firstCaseHook = getFirstCaseHook(item.rarity)
     openedItems.push(item)
     collectionBook = updateCollectionBook(collectionBook, item)
     inventory = [item, ...inventory]
@@ -953,7 +933,12 @@ function openCase(
     }
   }
 
-  const totalCost = roundCurrency(dailyCaseDef.cost * actualQuantity)
+  const openingCreditQuote = getOpeningCreditQuote(
+    dailyCaseDef.cost,
+    useOpeningCredits ? state.dailyRewards.openingCredits : 0,
+    actualQuantity,
+  )
+  const totalCost = openingCreditQuote.cashCost
   const autoSellValue = roundCurrency(
     autoSoldItems.reduce((total, item) => total + item.marketValue, 0),
   )
@@ -1004,6 +989,12 @@ function openCase(
   const openedState = withInventoryValuation({
     ...state,
     money,
+    dailyRewards: {
+      ...state.dailyRewards,
+      openingCredits: roundCurrency(
+        Math.max(0, state.dailyRewards.openingCredits - openingCreditQuote.creditUsed),
+      ),
+    },
     inventory,
     collectionBook,
     currentRunCollectionBook: openedItems.reduce(updateCollectionBook, state.currentRunCollectionBook),
@@ -1031,21 +1022,42 @@ function openCase(
     {
       type: 'cases_opened',
       amount: actualQuantity,
+      caseId,
+      sessionId: openingEventId,
     },
     discoveredAt,
   )
   const dropProgressState = withDropChallengeProgress(caseProgressState, openedItems, discoveredAt)
+  const discoveryProgressState = discoveredSkinIds.size > 0
+    ? withDailyChallengeProgress(
+        dropProgressState,
+        { type: 'skins_discovered', skinIds: [...discoveredSkinIds] },
+        discoveredAt,
+      )
+    : dropProgressState
+  const sessionProgressState = openingEventId
+    ? withDailyChallengeProgress(
+        discoveryProgressState,
+        { type: 'opening_session', sessionId: openingEventId },
+        discoveredAt,
+      )
+    : discoveryProgressState
+  const collectionProgressState = withDailyChallengeProgress(
+    sessionProgressState,
+    { type: 'collection_size', amount: collectionBook.length },
+    discoveredAt,
+  )
 
   return autoSellValue > 0
     ? withDailyChallengeProgress(
-        dropProgressState,
+        collectionProgressState,
         {
           type: 'sell_value',
           amount: autoSellValue,
         },
         discoveredAt,
       )
-    : dropProgressState
+    : collectionProgressState
 }
 
 function failAutomation(state: GameState, message: string): GameState {
@@ -2956,6 +2968,19 @@ function claimDailyReward(state: GameState, now = Date.now()): GameState {
     uiEvents: appendEvents(state, [rewardEvent]),
   }
 
+  if (rewardInfo.reward.openingCredits) {
+    nextState = {
+      ...nextState,
+      dailyRewards: {
+        ...nextState.dailyRewards,
+        openingCredits: addOpeningCredits(
+          nextState.dailyRewards.openingCredits,
+          rewardInfo.reward.openingCredits,
+        ),
+      },
+    }
+  }
+
   if (rewardInfo.reward.kind === DailyRewardKind.Money) {
     nextState = {
       ...nextState,
@@ -3005,6 +3030,7 @@ function applyChallengeReward(
   state: GameState,
   reward: {
     money?: number
+    openingCredits?: number
     caseDiscountPercent?: number
     durationMs?: number
   },
@@ -3014,6 +3040,13 @@ function applyChallengeReward(
   const rewardedState = {
     ...state,
     money: roundCurrency(clampNumber(state.money) + money),
+    dailyRewards: {
+      ...state.dailyRewards,
+      openingCredits: addOpeningCredits(
+        state.dailyRewards.openingCredits,
+        reward.openingCredits ?? 0,
+      ),
+    },
   }
 
   return applyDailyRewardCaseDiscount(
@@ -3391,6 +3424,7 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
         action.payload.now ?? Date.now(),
         action.payload.firstCaseHookRoll,
         action.payload.openingEventId,
+        true,
       ))
     case 'UPDATE_MARKET_VALUE': {
       const updatedAt = Date.now()
@@ -3735,6 +3769,28 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
 export function gameReducer(state: GameState, action: GameAction): GameState {
   const reducedState = validateGameState(reduceGameState(state, action))
   const withEconomy = recordEconomyAction(state, reducedState, action)
-  return recordCareerAction(state, withEconomy, action)
+  const withCareer = recordCareerAction(state, withEconomy, action)
+  const careerXpGained = Math.max(0, withCareer.career.currentRunXp - state.career.currentRunXp)
+
+  if (
+    careerXpGained <= 0 ||
+    action.type === 'REPLACE_GAME_STATE' ||
+    action.type === 'RESET_GAME' ||
+    action.type === 'APPLY_OFFLINE_PROGRESS'
+  ) {
+    return withCareer
+  }
+
+  const actionNow = action.type === 'OPEN_CASE'
+    ? action.payload.now ?? Date.now()
+    : 'now' in action && typeof action.now === 'number'
+      ? action.now
+      : Date.now()
+
+  return withDailyChallengeProgress(
+    withCareer,
+    { type: 'career_xp', amount: careerXpGained },
+    actionNow,
+  )
 }
 

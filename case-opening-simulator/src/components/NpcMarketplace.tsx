@@ -37,6 +37,7 @@ import {
 } from '../marketplace/virtualMarket'
 import { formatCurrency } from '../utils/format'
 import { getCurrentItemMarketValue } from '../utils/inventory'
+import { getCareerSellerFeeDiscount } from '../career/careerUpgrades'
 import { getSkinRarityLabel, getWearLabel } from '../utils/itemLabels'
 import { AssetImage } from './AssetImage'
 import { PatternBadge } from './PatternInfo'
@@ -55,9 +56,15 @@ export function NpcMarketplace() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedSkinId = searchParams.get('skin') ?? undefined
   const requestedTab = searchParams.get('tab')
+  const requestedItemId = searchParams.get('item') ?? undefined
   const tab: MarketplaceTab = requestedTab === 'sell' || requestedTab === 'history' ? requestedTab : 'browse'
-  const [selectedItemId, setSelectedItemId] = useState('')
-  const [askingPrice, setAskingPrice] = useState('')
+  const initialListingItem = requestedItemId
+    ? state.inventory.find((candidate) => candidate.instanceId === requestedItemId && !candidate.isLocked)
+    : undefined
+  const [selectedItemId, setSelectedItemId] = useState(() => initialListingItem?.instanceId ?? '')
+  const [askingPrice, setAskingPrice] = useState(() => initialListingItem
+    ? (getCurrentItemMarketValue(initialListingItem, state.marketValues) * 1.03).toFixed(2)
+    : '')
   const totalVirtualSupply = useMemo(() => getTotalVirtualMarketSupply(
     SKIN_DEFINITIONS,
     state.marketValues,
@@ -379,11 +386,32 @@ function ContinuousListingBrowser({
 function PlayerSellingPanel({ askingPrice, selectedItemId, setAskingPrice, setSelectedItemId }: { askingPrice: string; selectedItemId: string; setAskingPrice: (value: string) => void; setSelectedItemId: (value: string) => void }) {
   const game = useGame()
   const { state } = game
+  const [isReviewing, setIsReviewing] = useState(false)
   const selectedItem = state.inventory.find((item) => item.instanceId === selectedItemId)
   const selectedFairValue = selectedItem ? getCurrentItemMarketValue(selectedItem, state.marketValues) : 0
   const numericAsk = Number(askingPrice)
+  const feeRate = Math.max(0.025, 0.05 - getCareerSellerFeeDiscount(state.careerUpgrades))
+  const expectedFee = Number.isFinite(numericAsk) ? Math.max(0, numericAsk * feeRate) : 0
+  const expectedProceeds = Math.max(0, (Number.isFinite(numericAsk) ? numericAsk : 0) - expectedFee)
   const draftAttractiveness = selectedItem && numericAsk > 0 ? getPlayerListingAttractiveness({ item: selectedItem, askingPrice: numericAsk, fairMarketValue: selectedFairValue }) : undefined
-  return <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]"><section className="border border-cs-border bg-cs-surface p-4"><h4 className="flex items-center gap-2 text-lg font-semibold text-cs-text"><Tags size={18} className="text-rarity-special" /> List an owned skin</h4><label className="mt-4 block text-sm text-cs-muted">Inventory item<select className="mt-2 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text" onChange={(event) => { setSelectedItemId(event.target.value); const item = state.inventory.find((candidate) => candidate.instanceId === event.target.value); setAskingPrice(item ? getCurrentItemMarketValue(item, state.marketValues).toFixed(2) : '') }} value={selectedItemId}><option value="">Choose an unlocked item</option>{state.inventory.filter((item) => !item.isLocked).sort((a, b) => getCurrentItemMarketValue(b, state.marketValues) - getCurrentItemMarketValue(a, state.marketValues)).map((item) => <option key={item.instanceId} value={item.instanceId}>{item.weapon} | {item.finish} · {getWearLabel(item.wear)} · {formatCurrency(getCurrentItemMarketValue(item, state.marketValues))}</option>)}</select></label><label className="mt-3 block text-sm text-cs-muted">Your asking price<input className="mt-2 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text" min="0.01" onChange={(event) => setAskingPrice(event.target.value)} step="0.01" type="number" value={askingPrice} /></label>{selectedItem ? <div className="mt-3 grid gap-2 sm:grid-cols-2"><Metric label="Market value" value={formatCurrency(selectedFairValue)} /><Metric label="Difference" value={`${numericAsk >= selectedFairValue ? '+' : ''}${formatCurrency((numericAsk || 0) - selectedFairValue)} (${selectedFairValue > 0 ? (((numericAsk || 0) / selectedFairValue - 1) * 100).toFixed(1) : '0'}%)`} /><div className="sm:col-span-2"><Metric label="Expected interest" value={draftAttractiveness?.label ?? 'Enter a price'} /></div></div> : null}<p className="mt-3 text-xs leading-relaxed text-cs-muted">The item moves into marketplace escrow and appears in its dedicated skin market. Refreshing or relaunching cannot remove it.</p><button className="mt-4 inline-flex w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-3 font-semibold text-rarity-special disabled:cursor-not-allowed disabled:opacity-40" disabled={!selectedItem || !Number.isFinite(numericAsk) || numericAsk <= 0} onClick={() => { if (!selectedItem) return; game.listItemOnMarket(selectedItem.instanceId, numericAsk); setSelectedItemId(''); setAskingPrice('') }} type="button"><ListPlus size={17} /> Create Listing</button></section><section className="space-y-3">{state.marketplace.playerListings.map((listing) => <PlayerListingCard key={listing.id} listing={listing} onAccept={() => game.acceptPlayerMarketOffer(listing.id)} onCancel={() => game.cancelPlayerMarketListing(listing.id)} onDecline={() => game.declinePlayerMarketOffer(listing.id)} />)}{state.marketplace.playerListings.length === 0 ? <EmptyState text="You have no active marketplace listings." /> : null}</section></div>
+  const canList = Boolean(selectedItem && Number.isFinite(numericAsk) && numericAsk > 0)
+
+  function selectItem(itemId: string) {
+    setSelectedItemId(itemId)
+    const item = state.inventory.find((candidate) => candidate.instanceId === itemId)
+    setAskingPrice(item ? (getCurrentItemMarketValue(item, state.marketValues) * 1.03).toFixed(2) : '')
+    setIsReviewing(false)
+  }
+
+  function createListing() {
+    if (!selectedItem || !canList) return
+    game.listItemOnMarket(selectedItem.instanceId, numericAsk)
+    setSelectedItemId('')
+    setAskingPrice('')
+    setIsReviewing(false)
+  }
+
+  return <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]"><section className="border border-cs-border bg-cs-surface p-4"><h4 className="flex items-center gap-2 text-lg font-semibold text-cs-text"><Tags size={18} className="text-rarity-special" /> List an owned skin</h4><label className="mt-4 block text-sm text-cs-muted">Inventory item<select className="mt-2 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text" onChange={(event) => selectItem(event.target.value)} value={selectedItemId}><option value="">Choose an unlocked item</option>{state.inventory.filter((item) => !item.isLocked).sort((a, b) => getCurrentItemMarketValue(b, state.marketValues) - getCurrentItemMarketValue(a, state.marketValues)).map((item) => <option key={item.instanceId} value={item.instanceId}>{item.weapon} | {item.finish} · {getWearLabel(item.wear)} · {formatCurrency(getCurrentItemMarketValue(item, state.marketValues))}</option>)}</select></label><label className="mt-3 block text-sm text-cs-muted">Your asking price<input className="mt-2 w-full border border-cs-border bg-cs-panel px-3 py-2 text-cs-text" min="0.01" onChange={(event) => { setAskingPrice(event.target.value); setIsReviewing(false) }} step="0.01" type="number" value={askingPrice} /></label>{selectedItem ? <div className="mt-3 grid gap-2 sm:grid-cols-2"><Metric label="Market estimate" value={formatCurrency(selectedFairValue)} /><Metric label="Difference" value={`${numericAsk >= selectedFairValue ? '+' : ''}${formatCurrency((numericAsk || 0) - selectedFairValue)} (${selectedFairValue > 0 ? (((numericAsk || 0) / selectedFairValue - 1) * 100).toFixed(1) : '0'}%)`} /><Metric label={`Seller fee (${(feeRate * 100).toFixed(1)}%)`} value={formatCurrency(expectedFee)} /><Metric label="Expected proceeds" value={formatCurrency(expectedProceeds)} /><div className="sm:col-span-2"><Metric label="Expected interest" value={draftAttractiveness?.label ?? 'Enter a price'} /></div></div> : null}<p className="mt-3 text-xs leading-relaxed text-cs-muted">The exact item moves into seven-day marketplace escrow only after confirmation. Its Pattern, float, wear, and lock state are preserved.</p>{isReviewing && selectedItem ? <div className="mt-4 border border-rarity-special bg-rarity-special/10 p-3"><p className="font-semibold text-cs-text">Confirm listing</p><p className="mt-1 text-sm text-cs-muted">List {selectedItem.weapon} | {selectedItem.finish} for {formatCurrency(numericAsk)}? Estimated proceeds after fees: <span className="font-semibold text-cs-green">{formatCurrency(expectedProceeds)}</span>.</p><div className="mt-3 grid grid-cols-2 gap-2"><button className="min-h-10 border border-cs-border text-sm text-cs-muted" onClick={() => setIsReviewing(false)} type="button">Back</button><button className="min-h-10 border border-rarity-special bg-rarity-special/10 text-sm font-semibold text-rarity-special" onClick={createListing} type="button">Confirm Listing</button></div></div> : <button className="mt-4 inline-flex w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-3 font-semibold text-rarity-special disabled:cursor-not-allowed disabled:opacity-40" disabled={!canList} onClick={() => setIsReviewing(true)} type="button"><ListPlus size={17} /> Review Listing</button>}</section><section className="space-y-3">{state.marketplace.playerListings.map((listing) => <PlayerListingCard key={listing.id} listing={listing} onAccept={() => game.acceptPlayerMarketOffer(listing.id)} onCancel={() => game.cancelPlayerMarketListing(listing.id)} onDecline={() => game.declinePlayerMarketOffer(listing.id)} />)}{state.marketplace.playerListings.length === 0 ? <EmptyState text="You have no active marketplace listings." /> : null}</section></div>
 }
 
 function TransactionHistory() {

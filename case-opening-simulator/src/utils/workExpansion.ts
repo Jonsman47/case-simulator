@@ -134,6 +134,7 @@ export interface CircuitPiece {
   rotation: number
   row: number
   type: CircuitPieceType
+  solutionRotation: number
 }
 
 const directionOrder: CircuitDirection[] = ['n', 'e', 's', 'w']
@@ -144,18 +145,18 @@ const baseConnections: Record<CircuitPieceType, CircuitDirection[]> = {
 }
 
 const circuitLayout: Omit<CircuitPiece, 'rotation'>[] = [
-  { column: 0, id: 'circuit-0', row: 0, type: 'corner' },
-  { column: 1, id: 'circuit-1', row: 0, type: 'corner' },
-  { column: 2, id: 'circuit-2', row: 0, type: 'straight' },
-  { column: 3, id: 'circuit-3', row: 0, type: 'endpoint' },
-  { column: 0, id: 'circuit-4', row: 1, type: 'corner' },
-  { column: 1, id: 'circuit-5', row: 1, type: 'straight' },
-  { column: 2, id: 'circuit-6', row: 1, type: 'corner' },
-  { column: 3, id: 'circuit-7', row: 1, type: 'corner' },
-  { column: 0, id: 'circuit-8', row: 2, type: 'endpoint' },
-  { column: 1, id: 'circuit-9', row: 2, type: 'corner' },
-  { column: 2, id: 'circuit-10', row: 2, type: 'corner' },
-  { column: 3, id: 'circuit-11', row: 2, type: 'straight' },
+  { column: 0, id: 'circuit-0', row: 0, type: 'straight', solutionRotation: 0 },
+  { column: 1, id: 'circuit-1', row: 0, type: 'straight', solutionRotation: 0 },
+  { column: 2, id: 'circuit-2', row: 0, type: 'straight', solutionRotation: 0 },
+  { column: 3, id: 'circuit-3', row: 0, type: 'corner', solutionRotation: 2 },
+  { column: 0, id: 'circuit-4', row: 1, type: 'corner', solutionRotation: 1 },
+  { column: 1, id: 'circuit-5', row: 1, type: 'straight', solutionRotation: 0 },
+  { column: 2, id: 'circuit-6', row: 1, type: 'straight', solutionRotation: 0 },
+  { column: 3, id: 'circuit-7', row: 1, type: 'corner', solutionRotation: 3 },
+  { column: 0, id: 'circuit-8', row: 2, type: 'corner', solutionRotation: 0 },
+  { column: 1, id: 'circuit-9', row: 2, type: 'straight', solutionRotation: 0 },
+  { column: 2, id: 'circuit-10', row: 2, type: 'straight', solutionRotation: 0 },
+  { column: 3, id: 'circuit-11', row: 2, type: 'straight', solutionRotation: 0 },
 ]
 
 const opposite: Record<CircuitDirection, CircuitDirection> = { e: 'w', n: 's', s: 'n', w: 'e' }
@@ -179,21 +180,17 @@ export function createCircuitPuzzle(seed: number): CircuitPiece[] {
   return pieces
 }
 
-export function isCircuitSolved(pieces: readonly CircuitPiece[]) {
+export function getPoweredCircuitIds(pieces: readonly CircuitPiece[]) {
   const byPosition = new Map(pieces.map((piece) => [`${piece.row}-${piece.column}`, piece]))
   const start = byPosition.get('0-0')
-  const sink = byPosition.get('2-3')
-  if (!start || !sink || !getCircuitConnections(start).includes('w') || !getCircuitConnections(sink).includes('e')) {
-    return false
-  }
+  const visited = new Set<string>()
+  if (!start || !getCircuitConnections(start).includes('w')) return visited
 
   const queue = [start]
-  const visited = new Set<string>()
   while (queue.length > 0) {
     const current = queue.shift()!
     if (visited.has(current.id)) continue
     visited.add(current.id)
-    if (current.id === sink.id) return true
 
     for (const direction of getCircuitConnections(current)) {
       const delta = directionDelta[direction]
@@ -202,7 +199,23 @@ export function isCircuitSolved(pieces: readonly CircuitPiece[]) {
     }
   }
 
-  return false
+  return visited
+}
+
+export function getCircuitHint(pieces: readonly CircuitPiece[]) {
+  return pieces.find((piece) => {
+    const rotationPeriod = piece.type === 'straight' ? 2 : 4
+    return piece.rotation % rotationPeriod !== piece.solutionRotation % rotationPeriod
+  })
+}
+
+export function isCircuitSolved(pieces: readonly CircuitPiece[]) {
+  const sink = pieces.find((piece) => piece.row === 2 && piece.column === 3)
+  return Boolean(
+    sink &&
+    getCircuitConnections(sink).includes('e') &&
+    getPoweredCircuitIds(pieces).has(sink.id),
+  )
 }
 
 export function calculateCircuitPerformance(moves: number, moveLimit = 24) {

@@ -3,9 +3,11 @@ import { DailyChallengeType, Rarity, type DailyChallenge } from '../data/models'
 import {
   applyDailyChallengeProgress,
   applyDailyCaseDiscountToCase,
+  addOpeningCredits,
   createDefaultDailyRewardsState,
   getLocalDayKey,
   getNextDailyRewardInfo,
+  getOpeningCreditQuote,
   getPreviousLocalDayKey,
   refreshDailyRewardsState,
 } from './dailyRewards'
@@ -76,6 +78,25 @@ describe('daily rewards helpers', () => {
     expect(refreshed.challenges[0]?.id).not.toBe(yesterdayState.challenges[0]?.id)
   })
 
+  it('does not regenerate rewards or claims when the local clock moves backward', () => {
+    const future = new Date(2026, 5, 25, 12).getTime()
+    const past = new Date(2026, 5, 24, 12).getTime()
+    const futureState = {
+      ...createDefaultDailyRewardsState(future),
+      streak: 4,
+      lastClaimDayKey: getLocalDayKey(future),
+      freeRerollsUsed: 1,
+    }
+
+    const refreshed = refreshDailyRewardsState(futureState, past)
+    expect(refreshed.lastChallengeResetDayKey).toBe(getLocalDayKey(future))
+    expect(refreshed.challenges.map((challenge) => challenge.id)).toEqual(
+      futureState.challenges.map((challenge) => challenge.id),
+    )
+    expect(refreshed.freeRerollsUsed).toBe(1)
+    expect(getNextDailyRewardInfo(refreshed, past).alreadyClaimedToday).toBe(true)
+  })
+
   it('tracks challenge progress by objective type without exceeding targets', () => {
     const challenges = [
       makeChallenge({ id: 'open', type: DailyChallengeType.OpenCases, target: 10 }),
@@ -98,6 +119,34 @@ describe('daily rewards helpers', () => {
     expect(rarity.find((challenge) => challenge.id === 'open')?.progress).toBe(10)
     expect(rarity.find((challenge) => challenge.id === 'sell')?.progress).toBe(33.33)
     expect(rarity.find((challenge) => challenge.id === 'rarity')?.progress).toBe(1)
+  })
+
+  it('counts distinct cases, discoveries, and sessions exactly once', () => {
+    const challenges = [
+      makeChallenge({ type: DailyChallengeType.OpenDifferentCases, target: 2 }),
+      makeChallenge({ id: 'discover', type: DailyChallengeType.DiscoverSkins, target: 3 }),
+      makeChallenge({ id: 'session', type: DailyChallengeType.CompleteOpeningSessions, target: 2 }),
+    ]
+    const first = applyDailyChallengeProgress(challenges, { type: 'cases_opened', amount: 5, caseId: 'case-a' })
+    const duplicate = applyDailyChallengeProgress(first, { type: 'cases_opened', amount: 3, caseId: 'case-a' })
+    const discovered = applyDailyChallengeProgress(duplicate, { type: 'skins_discovered', skinIds: ['a', 'b', 'a'] })
+    const session = applyDailyChallengeProgress(discovered, { type: 'opening_session', sessionId: 'session-a' })
+    const replayed = applyDailyChallengeProgress(session, { type: 'opening_session', sessionId: 'session-a' })
+
+    expect(replayed[0].progress).toBe(1)
+    expect(replayed[1].progress).toBe(2)
+    expect(replayed[2].progress).toBe(1)
+  })
+
+  it('caps non-cash opening credits and only subsidizes eligible cases', () => {
+    expect(addOpeningCredits(19, 5)).toBe(20)
+    expect(getOpeningCreditQuote(4, 10, 2)).toEqual({
+      eligible: true,
+      fullCost: 8,
+      creditUsed: 2.5,
+      cashCost: 5.5,
+    })
+    expect(getOpeningCreditQuote(6, 10, 1).creditUsed).toBe(0)
   })
 
   it('applies active daily case discounts and drops expired discounts', () => {

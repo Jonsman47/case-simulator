@@ -311,6 +311,13 @@ describe('WorkView', () => {
     openJob('Package Delivery')
     fireEvent.click(screen.getByRole('button', { name: 'Start route' }))
     expect(screen.getByRole('button', { name: 'Drive right' })).toBeEnabled()
+    const deliveryGame = screen.getByTestId('packageDelivery-game')
+    expect(deliveryGame).toHaveAttribute('tabindex', '0')
+    expect(screen.getAllByLabelText('Delivery target')).toHaveLength(2)
+    fireEvent.keyDown(deliveryGame, { key: 'w' })
+    expect(screen.getByText(/Route blocked/)).toBeInTheDocument()
+    fireEvent.keyDown(deliveryGame, { key: 'd' })
+    expect(screen.getByText(/Keep moving/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Close Package Delivery' }))
 
     openJob('Warehouse Rush')
@@ -320,7 +327,8 @@ describe('WorkView', () => {
 
     openJob('Circuit Repair')
     fireEvent.click(screen.getByRole('button', { name: 'Start repair' }))
-    expect(screen.getByRole('button', { name: 'Rotate circuit piece 1-1' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Rotate circuit tile row 1, column 1/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Hint' })).toBeEnabled()
   })
 
   it('separates repeated Memory Circuit flashes and rewards a completed game once', async () => {

@@ -8,9 +8,10 @@ import {
   canMineBlock,
   createCircuitPuzzle,
   generateMiningGrid,
+  getCircuitHint,
+  getPoweredCircuitIds,
   isCircuitSolved,
   moveDeliveryPosition,
-  type CircuitPiece,
 } from './workExpansion'
 
 describe('Work expansion mechanics', () => {
@@ -52,15 +53,12 @@ describe('Work expansion mechanics', () => {
     expect(createCircuitPuzzle(81)).toEqual(createCircuitPuzzle(81))
     expect(isCircuitSolved(createCircuitPuzzle(81))).toBe(false)
 
-    const solvedPath: CircuitPiece[] = [
-      { column: 0, id: 'start', rotation: 2, row: 0, type: 'corner' },
-      { column: 0, id: 'down', rotation: 0, row: 1, type: 'corner' },
-      { column: 1, id: 'middle-a', rotation: 0, row: 1, type: 'straight' },
-      { column: 2, id: 'middle-b', rotation: 2, row: 1, type: 'corner' },
-      { column: 2, id: 'up-sink', rotation: 0, row: 2, type: 'corner' },
-      { column: 3, id: 'sink', rotation: 0, row: 2, type: 'straight' },
-    ]
+    const puzzle = createCircuitPuzzle(81)
+    expect(getCircuitHint(puzzle)).toBeDefined()
+    const solvedPath = puzzle.map((piece) => ({ ...piece, rotation: piece.solutionRotation }))
     expect(isCircuitSolved(solvedPath)).toBe(true)
+    expect(getPoweredCircuitIds(solvedPath).size).toBe(12)
+    expect(getCircuitHint(solvedPath)).toBeUndefined()
     expect(calculateCircuitPerformance(8)).toBe(1)
     expect(calculateCircuitPerformance(24)).toBe(0)
   })

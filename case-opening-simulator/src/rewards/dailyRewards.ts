@@ -1,4 +1,3 @@
-import { nanoid } from 'nanoid'
 import {
   DailyChallengeType,
   DailyRewardKind,
@@ -12,9 +11,17 @@ import {
 
 export const DAILY_REWARD_DISCOUNT_DURATION_MS = 24 * 60 * 60 * 1_000
 export const DAILY_FREE_REROLLS = 1
+export const MAX_OPENING_CREDIT_BALANCE = 20
+export const MAX_OPENING_CREDIT_CASE_COST = 5
+export const MAX_OPENING_CREDIT_SHARE = 0.35
+export const MAX_OPENING_CREDIT_PER_CASE = 1.25
 
 export type DailyChallengeProgressEvent =
-  | { type: 'cases_opened'; amount: number }
+  | { type: 'cases_opened'; amount: number; caseId?: string; sessionId?: string }
+  | { type: 'opening_session'; sessionId: string }
+  | { type: 'skins_discovered'; skinIds: string[] }
+  | { type: 'career_xp'; amount: number }
+  | { type: 'collection_size'; amount: number }
   | { type: 'sell_value'; amount: number }
   | { type: 'rarity_obtained'; rarity: Rarity; amount?: number }
   | { type: 'trade_ups_completed'; amount: number }
@@ -25,6 +32,7 @@ export const DAILY_REWARD_SEQUENCE: DailyRewardDefinition[] = [
     kind: DailyRewardKind.Money,
     label: '$1 cash drop',
     money: 1,
+    openingCredits: 2,
   },
   {
     day: 2,
@@ -43,6 +51,7 @@ export const DAILY_REWARD_SEQUENCE: DailyRewardDefinition[] = [
     kind: DailyRewardKind.Money,
     label: '$10 bankroll boost',
     money: 10,
+    openingCredits: 2,
   },
   {
     day: 5,
@@ -65,63 +74,86 @@ export const DAILY_REWARD_SEQUENCE: DailyRewardDefinition[] = [
   },
 ]
 
-const challengeTemplates: Array<{
+type ChallengeTemplate = {
   type: DailyChallengeType
   title: string
   description: string
   target: number
   reward: DailyChallengeReward
   rarity?: Rarity
-}> = [
+}
+
+const openingChallengeTemplates: ChallengeTemplate[] = [
   {
     type: DailyChallengeType.OpenCases,
-    title: 'Open 50 cases',
-    description: 'Crack open any 50 cases today.',
-    target: 50,
-    reward: { money: 30 },
+    title: 'Open 3 cases',
+    description: 'Open any three eligible cases today.',
+    target: 3,
+    reward: { openingCredits: 2 },
   },
+  {
+    type: DailyChallengeType.DiscoverSkins,
+    title: 'Discover 2 skins',
+    description: 'Add two new skin finishes to your collection book.',
+    target: 2,
+    reward: { openingCredits: 2 },
+  },
+  {
+    type: DailyChallengeType.OpenDifferentCases,
+    title: 'Try 2 different cases',
+    description: 'Open at least one item from two different case types.',
+    target: 2,
+    reward: { money: 2, openingCredits: 1.5 },
+  },
+  {
+    type: DailyChallengeType.CompleteOpeningSessions,
+    title: 'Complete 2 opening sessions',
+    description: 'Finish two separate manual case-opening sessions.',
+    target: 2,
+    reward: { openingCredits: 1.5 },
+  },
+  {
+    type: DailyChallengeType.EarnCareerXp,
+    title: 'Earn 120 Career XP',
+    description: 'Make meaningful progress through openings and discoveries.',
+    target: 120,
+    reward: { openingCredits: 2 },
+  },
+  {
+    type: DailyChallengeType.CollectionMilestone,
+    title: 'Grow your collection to 5',
+    description: 'Reach five unique skin finishes in your collection book.',
+    target: 5,
+    reward: { openingCredits: 2 },
+  },
+]
+
+const supportChallengeTemplates: ChallengeTemplate[] = [
   {
     type: DailyChallengeType.SellValue,
-    title: 'Sell $100 in skins',
-    description: 'Manually, bulk, or auto-sell items worth $100 total.',
-    target: 100,
-    reward: { money: 40 },
-  },
-  {
-    type: DailyChallengeType.ObtainRarity,
-    title: 'Obtain a Classified item',
-    description: 'Pull or trade into any Classified skin.',
-    target: 1,
-    rarity: Rarity.Classified,
-    reward: { money: 60 },
+    title: 'Sell $25 in skins',
+    description: 'Sell skins worth $25 through any supported selling method.',
+    target: 25,
+    reward: { money: 4 },
   },
   {
     type: DailyChallengeType.CompleteTradeUps,
-    title: 'Complete 2 trade-ups',
-    description: 'Finish two valid trade-up contracts.',
-    target: 2,
-    reward: { money: 75 },
-  },
-  {
-    type: DailyChallengeType.OpenCases,
-    title: 'Open 10 cases',
-    description: 'Warm up with any 10 case openings.',
-    target: 10,
-    reward: { money: 8 },
+    title: 'Complete a trade-up',
+    description: 'Finish one valid trade-up contract.',
+    target: 1,
+    reward: { money: 5 },
   },
   {
     type: DailyChallengeType.ObtainRarity,
-    title: 'Obtain a Covert item',
-    description: 'Pull or trade into any Covert skin.',
+    title: 'Find a Restricted item',
+    description: 'Pull or trade into any Restricted skin.',
     target: 1,
-    rarity: Rarity.Covert,
-    reward: {
-      money: 150,
-      caseDiscountPercent: 0.05,
-      durationMs: DAILY_REWARD_DISCOUNT_DURATION_MS,
-    },
+    rarity: Rarity.Restricted,
+    reward: { money: 6 },
   },
 ]
+
+const challengeTemplates = [...openingChallengeTemplates, ...supportChallengeTemplates]
 
 function roundCurrency(value: number) {
   return Number(value.toFixed(2))
@@ -165,7 +197,7 @@ function getDayKeyHash(dayKey: string) {
 }
 
 function createChallengeId(dayKey: string, templateIndex: number) {
-  return `${dayKey}:${templateIndex}:${nanoid(6)}`
+  return `${dayKey}:${templateIndex}`
 }
 
 function createChallenge(templateIndex: number, dayKey: string, generatedAt: number): DailyChallenge {
@@ -186,12 +218,14 @@ function createChallenge(templateIndex: number, dayKey: string, generatedAt: num
 }
 
 export function generateDailyChallenges(dayKey = getLocalDayKey(), generatedAt = Date.now()) {
-  const startIndex = getDayKeyHash(dayKey) % challengeTemplates.length
-  const indices = Array.from({ length: challengeTemplates.length }, (_, index) => {
-    return (startIndex + index) % challengeTemplates.length
-  })
+  const hash = getDayKeyHash(dayKey)
+  const openingStart = hash % openingChallengeTemplates.length
+  const openingIndices = Array.from({ length: 3 }, (_, index) => (
+    (openingStart + index) % openingChallengeTemplates.length
+  ))
+  const supportIndex = openingChallengeTemplates.length + (hash % supportChallengeTemplates.length)
 
-  return indices.slice(0, 4).map((templateIndex) => createChallenge(templateIndex, dayKey, generatedAt))
+  return [...openingIndices, supportIndex].map((templateIndex) => createChallenge(templateIndex, dayKey, generatedAt))
 }
 
 export function createDefaultDailyRewardsState(now = Date.now()): DailyRewardsState {
@@ -203,6 +237,7 @@ export function createDefaultDailyRewardsState(now = Date.now()): DailyRewardsSt
     lastChallengeResetDayKey: dayKey,
     freeRerollDayKey: dayKey,
     freeRerollsUsed: 0,
+    openingCredits: 0,
     challenges: generateDailyChallenges(dayKey, now),
   }
 }
@@ -216,7 +251,9 @@ export function getDailyRewardForStreak(streak: number) {
 export function getNextDailyRewardInfo(dailyRewards: DailyRewardsState, now = Date.now()) {
   const todayKey = getLocalDayKey(now)
   const yesterdayKey = getPreviousLocalDayKey(now)
-  const alreadyClaimedToday = dailyRewards.lastClaimDayKey === todayKey
+  const alreadyClaimedToday = Boolean(
+    dailyRewards.lastClaimDayKey && dailyRewards.lastClaimDayKey >= todayKey,
+  )
   const nextStreak = alreadyClaimedToday
     ? dailyRewards.streak
     : dailyRewards.lastClaimDayKey === yesterdayKey
@@ -242,12 +279,15 @@ export function refreshDailyRewardsState(
       ? dailyRewards.caseDiscountBuff
       : undefined
 
-  if (dailyRewards.lastChallengeResetDayKey === todayKey) {
+  if (dailyRewards.lastChallengeResetDayKey >= todayKey) {
     return {
       ...dailyRewards,
       caseDiscountBuff,
       freeRerollDayKey: dailyRewards.freeRerollDayKey ?? todayKey,
-      freeRerollsUsed: dailyRewards.freeRerollDayKey === todayKey ? dailyRewards.freeRerollsUsed : 0,
+      freeRerollsUsed:
+        dailyRewards.freeRerollDayKey && dailyRewards.freeRerollDayKey >= todayKey
+          ? dailyRewards.freeRerollsUsed
+          : 0,
     }
   }
 
@@ -270,40 +310,97 @@ export function applyDailyChallengeProgress(
       return challenge
     }
 
-    const progressAmount = getChallengeProgressAmount(challenge, progressEvent)
+    const progressResult = getChallengeProgress(challenge, progressEvent)
 
-    if (progressAmount <= 0) {
+    if (progressResult.amount <= 0) {
       return challenge
     }
 
     return {
       ...challenge,
-      progress: Math.min(challenge.target, roundCurrency(challenge.progress + progressAmount)),
+      progress: Math.min(challenge.target, roundCurrency(challenge.progress + progressResult.amount)),
+      progressKeys: progressResult.progressKeys ?? challenge.progressKeys,
     }
   })
 }
 
-function getChallengeProgressAmount(
+function addUniqueProgressKeys(challenge: DailyChallenge, keys: string[]) {
+  const existingKeys = new Set(challenge.progressKeys ?? [])
+  const newKeys = [...new Set(keys)].filter((key) => key && !existingKeys.has(key))
+
+  return {
+    amount: newKeys.length,
+    progressKeys: [...existingKeys, ...newKeys].slice(-100),
+  }
+}
+
+function getChallengeProgress(
   challenge: DailyChallenge,
   progressEvent: DailyChallengeProgressEvent,
-) {
+): { amount: number; progressKeys?: string[] } {
   if (challenge.type === DailyChallengeType.OpenCases && progressEvent.type === 'cases_opened') {
-    return progressEvent.amount
+    return { amount: progressEvent.amount }
+  }
+
+  if (challenge.type === DailyChallengeType.OpenDifferentCases && progressEvent.type === 'cases_opened') {
+    return progressEvent.caseId
+      ? addUniqueProgressKeys(challenge, [progressEvent.caseId])
+      : { amount: 0 }
+  }
+
+  if (challenge.type === DailyChallengeType.CompleteOpeningSessions && progressEvent.type === 'opening_session') {
+    return addUniqueProgressKeys(challenge, [progressEvent.sessionId])
+  }
+
+  if (challenge.type === DailyChallengeType.DiscoverSkins && progressEvent.type === 'skins_discovered') {
+    return addUniqueProgressKeys(challenge, progressEvent.skinIds)
+  }
+
+  if (challenge.type === DailyChallengeType.EarnCareerXp && progressEvent.type === 'career_xp') {
+    return { amount: progressEvent.amount }
+  }
+
+  if (challenge.type === DailyChallengeType.CollectionMilestone && progressEvent.type === 'collection_size') {
+    return { amount: Math.max(0, progressEvent.amount - challenge.progress) }
   }
 
   if (challenge.type === DailyChallengeType.SellValue && progressEvent.type === 'sell_value') {
-    return progressEvent.amount
+    return { amount: progressEvent.amount }
   }
 
   if (challenge.type === DailyChallengeType.CompleteTradeUps && progressEvent.type === 'trade_ups_completed') {
-    return progressEvent.amount
+    return { amount: progressEvent.amount }
   }
 
   if (challenge.type === DailyChallengeType.ObtainRarity && progressEvent.type === 'rarity_obtained') {
-    return progressEvent.rarity === challenge.rarity ? progressEvent.amount ?? 1 : 0
+    return { amount: progressEvent.rarity === challenge.rarity ? progressEvent.amount ?? 1 : 0 }
   }
 
-  return 0
+  return { amount: 0 }
+}
+
+export function addOpeningCredits(currentBalance: number, amount: number) {
+  return roundCurrency(Math.min(
+    MAX_OPENING_CREDIT_BALANCE,
+    Math.max(0, currentBalance) + Math.max(0, amount),
+  ))
+}
+
+export function getOpeningCreditQuote(caseCost: number, creditBalance: number, quantity = 1) {
+  const safeQuantity = Math.max(1, Math.floor(quantity))
+  const fullCost = roundCurrency(Math.max(0, caseCost) * safeQuantity)
+  const eligible = caseCost > 0 && caseCost <= MAX_OPENING_CREDIT_CASE_COST && creditBalance > 0
+  const perCaseCredit = eligible
+    ? Math.min(caseCost * MAX_OPENING_CREDIT_SHARE, MAX_OPENING_CREDIT_PER_CASE)
+    : 0
+  const creditUsed = roundCurrency(Math.min(Math.max(0, creditBalance), perCaseCredit * safeQuantity))
+
+  return {
+    eligible,
+    fullCost,
+    creditUsed,
+    cashCost: roundCurrency(Math.max(0, fullCost - creditUsed)),
+  }
 }
 
 export function getClaimableDailyChallenges(dailyRewards: DailyRewardsState) {
@@ -347,7 +444,10 @@ export function rerollDailyChallenge(
 ) {
   const todayKey = getLocalDayKey(now)
   const refreshedState = refreshDailyRewardsState(dailyRewards, now)
-  const freeRerollsUsed = refreshedState.freeRerollDayKey === todayKey ? refreshedState.freeRerollsUsed : 0
+  const freeRerollsUsed =
+    refreshedState.freeRerollDayKey && refreshedState.freeRerollDayKey >= todayKey
+      ? refreshedState.freeRerollsUsed
+      : 0
 
   if (freeRerollsUsed >= DAILY_FREE_REROLLS) {
     return undefined

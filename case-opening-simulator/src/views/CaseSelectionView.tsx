@@ -511,6 +511,7 @@ function CaseDetailPanel({
           caseDef={caseDef}
           maxQuantity={getCareerMultiOpenBatch(state.careerUpgrades)}
           money={state.money}
+          openingCredits={state.dailyRewards.openingCredits}
           onOpen={handleOpenFromControls}
           requiresLicense={needsLicense}
         />

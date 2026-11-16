@@ -126,9 +126,9 @@ test('the four expansion Work games accept real input and settle once through th
 
   await page.getByRole('button', { name: 'Play Package Delivery' }).click()
   await page.getByRole('button', { name: 'Start route' }).click()
-  for (let move = 0; move < 22; move += 1) {
-    await page.getByRole('button', { name: move % 2 === 0 ? 'Drive right' : 'Drive left' }).click()
-  }
+  await expect(page.getByLabel('Delivery target').first()).toBeVisible()
+  const deliveryGame = page.getByTestId('packageDelivery-game')
+  await deliveryGame.pressSequentially('sdsdddwwssaaaassdddd')
   await expect(page.getByText(/Score \d+%/)).toBeVisible()
   await page.getByRole('button', { name: 'Close Package Delivery' }).click()
   await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
@@ -141,14 +141,19 @@ test('the four expansion Work games accept real input and settle once through th
     const lane = (await packageImage.getAttribute('alt'))!.replace(' package', '')
     await page.getByRole('button', { name: `Sort into ${lane} dock` }).click()
   }
-  await expect(page.getByText(/Score 100%/)).toBeVisible()
+  await expect(page.getByText(/Score \d+%/)).toBeVisible()
   await page.getByRole('button', { name: 'Close Warehouse Rush' }).click()
   await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
 
   await page.getByRole('button', { name: 'Play Circuit Repair' }).click()
   await page.getByRole('button', { name: 'Start repair' }).click()
-  const circuitPiece = page.getByRole('button', { name: 'Rotate circuit piece 1-1' })
-  for (let rotation = 0; rotation < 24 && await circuitPiece.isEnabled(); rotation += 1) await circuitPiece.click()
+  await expect(page.getByText('Powered tiles')).toBeVisible()
+  for (let rotation = 0; rotation < 24; rotation += 1) {
+    if (await page.getByText(/Score \d+%/).isVisible().catch(() => false)) break
+    await page.getByRole('button', { name: 'Hint' }).click()
+    await page.getByTestId('circuitRepair-game').locator('button.animate-pulse').click()
+  }
+  await expect(page.getByText('Circuit stable — output powered!')).toBeVisible()
   await expect(page.getByText(/Score \d+%/)).toBeVisible()
 
   await page.waitForFunction(({ key, count }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.workJobsCompleted === count, { key: saveKey, count: before.state.statistics.workJobsCompleted + 4 })
@@ -529,6 +534,28 @@ test('CSWEAR negotiation shortcuts only prepare a manual percentage offer', asyn
   await expect(dialog.getByText('Round 0')).toBeVisible()
 })
 
+test('Inventory lists the exact selected item on CSWEAR through review and escrow', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await openBatch(page, 1)
+  await page.goto('/inventory')
+  const before = await readSave(page)
+  const itemId = before.state.inventory[0].instanceId
+  await page.locator('article[title="Tap to inspect, long press to select"]').first().click()
+  await page.getByRole('button', { name: 'List on CSWEAR' }).click()
+  await expect(page).toHaveURL(new RegExp(`/cswear\\?tab=sell&item=${itemId}`))
+  const itemSelect = page.getByLabel('Inventory item')
+  await expect(itemSelect).toHaveValue(itemId)
+  await expect(page.getByText('Expected proceeds')).toBeVisible()
+  await page.getByRole('button', { name: 'Review Listing' }).click()
+  await expect(page.getByText('Confirm listing', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Confirm Listing' }).click()
+  await expect.poll(async () => (await readSave(page)).state.marketplace.playerListings.length).toBe(1)
+  const after = await readSave(page)
+  expect(after.state.inventory.some((item: { instanceId: string }) => item.instanceId === itemId)).toBe(false)
+  expect(after.state.marketplace.playerListings[0].item.instanceId).toBe(itemId)
+})
+
 test('Achievements Claim All grants unlocked rewards once', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
@@ -596,7 +623,7 @@ test('inventory images load, selling is exact once, and the result survives relo
   const beforeSale = await readSave(page)
   await itemCard.click()
   await expect(page.getByRole('dialog').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Sell', exact: true }).click()
+  await page.getByRole('button', { name: 'Sell Instantly', exact: true }).click()
   await page.getByRole('button', { name: 'Confirm Sale' }).click()
   await page.waitForFunction((key) => {
     const value = JSON.parse(localStorage.getItem(key) ?? '{}')

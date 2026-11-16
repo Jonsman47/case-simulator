@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenControls'
 import { ItemDetailModal } from '../components/ItemDetailModal'
@@ -11,6 +12,7 @@ import { canOpenCaseFromSelection } from '../utils/caseSelection'
 import { formatCurrency } from '../utils/format'
 
 export function Main() {
+  const navigate = useNavigate()
   const {
     assignTrophyItem,
     availableCases,
@@ -103,6 +105,7 @@ export function Main() {
                   caseDef={selectedCase}
                   maxQuantity={getCareerMultiOpenBatch(state.careerUpgrades)}
                   money={state.money}
+                  openingCredits={state.dailyRewards.openingCredits}
                   onOpen={handleOpenSelectedCase}
                 />
               </div>
@@ -128,6 +131,7 @@ export function Main() {
         items={state.inventory}
         onClose={() => setActiveItem(undefined)}
         onItemChange={setActiveItem}
+        onListOnCSWear={(itemId) => navigate(`/cswear?tab=sell&item=${encodeURIComponent(itemId)}`)}
         onAddToTrophyRoom={(itemId, slotId) => assignTrophyItem(slotId, itemId)}
         onSell={sellItem}
         onToggleFavorite={toggleItemFavorite}
