@@ -33,6 +33,13 @@ async function downloadAsset(entry) {
     fail(`No source URL is recorded for ${entry.path}. Re-run npm run import:cs2-assets from the source dataset.`)
   }
 
+  const sourceUrls = [
+    entry.sourceUrl,
+    entry.sourceUrl.includes('community.akamai.steamstatic.com/economy/image/')
+      ? entry.sourceUrl.replace('community.akamai.steamstatic.com', 'steamcommunity-a.akamaihd.net')
+      : undefined,
+  ].filter((sourceUrl, index, values) => sourceUrl && values.indexOf(sourceUrl) === index)
+
   const destination = join(publicDir, ...entry.path.split('/'))
   const temporaryDestination = `${destination}.part`
 
@@ -40,34 +47,38 @@ async function downloadAsset(entry) {
   rmSync(temporaryDestination, { force: true })
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    try {
-      const response = await fetch(entry.sourceUrl, { signal: AbortSignal.timeout(30_000) })
+    let lastError
+    for (const sourceUrl of sourceUrls) {
+      try {
+        const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(30_000) })
 
-      if (!response.ok || !response.body) {
-        throw new Error(`HTTP ${response.status}`)
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP ${response.status}`)
+        }
+
+        await pipeline(Readable.fromWeb(response.body), createWriteStream(temporaryDestination))
+
+        if (statSync(temporaryDestination).size !== entry.bytes || sha256(temporaryDestination) !== entry.sha256) {
+          throw new Error('downloaded file did not match the recorded checksum')
+        }
+
+        rmSync(destination, { force: true })
+        renameSync(temporaryDestination, destination)
+        return
+      } catch (error) {
+        lastError = error
+        rmSync(temporaryDestination, { force: true })
       }
-
-      await pipeline(Readable.fromWeb(response.body), createWriteStream(temporaryDestination))
-
-      if (statSync(temporaryDestination).size !== entry.bytes || sha256(temporaryDestination) !== entry.sha256) {
-        throw new Error('downloaded file did not match the recorded checksum')
-      }
-
-      rmSync(destination, { force: true })
-      renameSync(temporaryDestination, destination)
-      return
-    } catch (error) {
-      rmSync(temporaryDestination, { force: true })
-
-      if (attempt === 3) {
-        throw new Error(
-          `Failed to download ${entry.path}: ${error instanceof Error ? error.message : String(error)}`,
-          { cause: error },
-        )
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, attempt * 500))
     }
+
+    if (attempt === 3) {
+      throw new Error(
+        `Failed to download ${entry.path}: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+        { cause: lastError },
+      )
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, attempt * 500))
   }
 }
 
