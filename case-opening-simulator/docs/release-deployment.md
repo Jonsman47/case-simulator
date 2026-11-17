@@ -53,7 +53,7 @@ PWA settings live in `pwa.config.ts`.
 Before release:
 
 - Keep generated CS2 images in `public/assets/cs2` out of normal Git history. They currently total roughly 197 MiB.
-- Run `npm run assets:sync` on a clean checkout. It downloads only missing or corrupt files from the committed `src/data/generated/cs2-assets.manifest.json` and verifies their sizes and SHA-256 checksums.
+- Run `npm run assets:sync` on a clean checkout. It downloads only missing or corrupt files from the committed `src/data/generated/cs2-assets.manifest.json`, retries the equivalent Steam CDN hostname where applicable, and verifies sizes and SHA-256 checksums. One 61 KB image with a regionally unavailable upstream object is committed as a bootstrap exception; the other 2,133 generated images remain outside Git.
 - `npm run dev`, `npm run build`, and `npm run build:github` refuse to start when required images are missing. This prevents a release from silently shipping a text-only catalog.
 - Use `npm run assets:verify` for an offline integrity check. It never downloads files.
 - Regenerate the manifest with `npm run import:cs2-assets` when updating the upstream catalog. Review the generated import report before committing catalog changes.

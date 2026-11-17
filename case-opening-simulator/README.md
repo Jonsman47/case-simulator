@@ -10,7 +10,7 @@ A client-side CS2 case-opening game built with React, TypeScript, and Vite. It i
 
 ## Clean installation
 
-The large generated image set is intentionally not committed. A small checksummed manifest is committed instead, so a clean checkout can reproduce the exact required files.
+The large generated image set is intentionally not committed. A small checksummed manifest is committed instead, so a clean checkout can reproduce the exact required files. One 61 KB image whose original CDN object became regionally unavailable is committed as a documented bootstrap exception; the other 2,133 images remain generated.
 
 ```bash
 npm ci
@@ -44,7 +44,7 @@ npm run preview:prod        # Preview the production build locally
 
 Runtime catalog data is generated into `src/data/generated/`. The corresponding binaries live in ignored `public/assets/cs2/` directories to avoid adding roughly 197 MiB of images to normal Git history.
 
-The committed `src/data/generated/cs2-assets.manifest.json` contains each public path, stable source URL, byte size, and SHA-256 checksum. This gives clean installations and deployment jobs a reproducible image step without committing thousands of binaries.
+The committed `src/data/generated/cs2-assets.manifest.json` contains each public path, source URL, byte size, and SHA-256 checksum. The sync tool retries Steam's equivalent CDN hostname where applicable, and the one regionally unavailable source is backed by its committed checksum-verified file. This gives clean installations and deployment jobs a reproducible image step without committing thousands of binaries.
 
 To reproduce the current assets:
 

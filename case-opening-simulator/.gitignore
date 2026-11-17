@@ -16,7 +16,13 @@ pnpm-lock.yaml
 asset-import.config.json
 CSGO-API/
 CounterStrike2Skins/
-public/assets/cs2/
+# Generated CS2 media stays out of Git and is restored from its checksum
+# manifest. One upstream CDN object is no longer globally reachable, so keep
+# that small verified file as a clean-checkout bootstrap exception.
+public/assets/cs2/*
+!public/assets/cs2/skins/
+public/assets/cs2/skins/*
+!public/assets/cs2/skins/skin-c7719cc84562_flip_knife_gamma_doppler.png
 playwright-report/
 test-results/
 
