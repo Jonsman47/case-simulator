@@ -65,6 +65,8 @@ import {
   type PrestigePerkId,
   type PrestigeSystemState,
 } from '../prestige/prestigeSystem'
+import { createDefaultQuestSystem, type QuestSystemState } from '../quests/questSystem'
+import { createDefaultDropJournal, type DropJournalState } from '../quests/dropJournal'
 
 export type RarityKey =
   | 'consumer'
@@ -175,7 +177,6 @@ export type GameUiEvent =
       type: 'case_opening_started'
       caseId: string
       quantity: number
-      firstCaseHook?: 'nearMissGold' | 'forcedGold'
       createdAt: number
     }
   | {
@@ -318,6 +319,27 @@ export type GameUiEvent =
       prestigeLevel: number
       createdAt: number
     }
+  | {
+      id: string
+      type: 'quest_stage_ready'
+      questId: string
+      message: string
+      createdAt: number
+    }
+  | {
+      id: string
+      type: 'quest_reward_claimed'
+      questId: string
+      message: string
+      createdAt: number
+    }
+  | {
+      id: string
+      type: 'npc_item_delivered'
+      questId: string
+      message: string
+      createdAt: number
+    }
 
 export interface GameState {
   money: number
@@ -367,6 +389,8 @@ export interface GameState {
   career: CareerState
   careerUpgrades: CareerUpgradeState
   business: BusinessState
+  quests: QuestSystemState
+  dropJournal: DropJournalState
   settings: GameSettings
   ui: GameUiState
   lastBackupAt: number
@@ -427,6 +451,10 @@ export type GameAction =
   | { type: 'PURCHASE_AUCTION_DEAL'; dealId: string; now?: number }
   | { type: 'CLAIM_ACHIEVEMENT_REWARD'; achievementId: string; now?: number }
   | { type: 'CLAIM_ALL_ACHIEVEMENT_REWARDS'; now?: number }
+  | { type: 'TRACK_QUEST'; questId: string }
+  | { type: 'CLAIM_QUEST_STAGE'; questId: string; requestId: string; now?: number }
+  | { type: 'DELIVER_QUEST_ITEM'; questId: string; itemId: string; requestId: string; now?: number }
+  | { type: 'MARK_NPC_DIALOGUE_SEEN'; npcId: string; dialogueId: string; message?: string; now?: number }
   | { type: 'UNLOCK_CASE'; caseId: string }
   | { type: 'PURCHASE_CASE_LICENSE'; caseId: string; licenseCost?: number; now?: number }
   | { type: 'TOGGLE_CASE_FAVORITE'; caseId: string }
@@ -435,7 +463,6 @@ export type GameAction =
       payload: {
         caseId: string
         quantity?: number
-        firstCaseHookRoll?: number
         openingEventId?: string
         now?: number
       }
@@ -536,6 +563,8 @@ export const defaultGameState: GameState = {
   career: createCareerState({ now: 0, runId: 'initial-run' }),
   careerUpgrades: createDefaultCareerUpgradeState(0),
   business: createDefaultBusinessState(0),
+  quests: createDefaultQuestSystem(0),
+  dropJournal: createDefaultDropJournal(),
   settings: {
     animationSpeed: 'normal',
     animationsEnabled: true,

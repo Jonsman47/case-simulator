@@ -114,7 +114,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state)
   const pendingOfflineProgressRef = useRef(pendingOfflineProgress)
   const saveTimerRef = useRef<number | undefined>(undefined)
-  const firstCaseHookSavedRef = useRef(state.hasUsedFirstCaseHook)
   const cloudSyncTimerRef = useRef<number | undefined>(undefined)
   const cloudSyncInFlightRef = useRef(false)
   const cloudRevisionRef = useRef(0)
@@ -290,20 +289,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     stateRef.current = state
-  }, [state])
-
-  useEffect(() => {
-    if (firstCaseHookSavedRef.current || !state.hasUsedFirstCaseHook) {
-      return
-    }
-
-    firstCaseHookSavedRef.current = true
-
-    try {
-      saveGame(state)
-    } catch (error) {
-      console.error('Immediate first-case hook save failed', error)
-    }
   }, [state])
 
   useEffect(() => {
@@ -660,7 +645,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const currentState = stateRef.current
     const sessionId = nanoid()
     const session = {
       id: sessionId,
@@ -674,7 +658,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       payload: {
         caseId,
         quantity,
-        firstCaseHookRoll: currentState.hasUsedFirstCaseHook ? undefined : Math.random(),
         openingEventId: sessionId,
         now: Date.now(),
       },
@@ -1305,12 +1288,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
           caseName={summaryCase?.name ?? activeOpeningSummary.startedEvent.caseId}
           finalItem={openingAnimationItem}
           finalItems={openingAnimationItems}
-          firstCaseHook={activeOpeningSummary.startedEvent.firstCaseHook}
+          firstRareItemIds={state.dropJournal.entries.filter((entry) => entry.isFirstRare).map((entry) => entry.instanceId)}
           careerXpEarned={openingCareerXp}
           newDiscoveryItemIds={openingDiscoveryItemIds}
           key={`${openingSession.id}:${activeOpeningSummary.startedEvent.id}`}
           onComplete={completeOpeningAnimation}
           potentialSkins={openingPotentialSkins}
+          personalBestItemIds={state.dropJournal.entries.filter((entry) => entry.isPersonalBest).map((entry) => entry.instanceId)}
           soundEnabled={openingSession.soundEnabled ?? state.settings.soundEnabled}
           speed={state.settings.animationSpeed}
           speedBonus={getCareerOpeningAnimationSpeedBonus(state.careerUpgrades)}

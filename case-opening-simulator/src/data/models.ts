@@ -270,6 +270,8 @@ export interface CaseDefinition {
   retirement?: {
     date: number
   }
+  /** Defines the authoritative rarity-selection mechanics for this container. */
+  oddsProfile?: 'standard-weapon-case' | 'custom'
 }
 
 export interface AutoSellRule {
@@ -527,6 +529,8 @@ export interface PlayerState {
   economyLedger?: import('../economy/economyLedger').EconomyLedgerState
   automation: AutomationState
   business?: import('../business/business').BusinessState
+  quests?: import('../quests/questSystem').QuestSystemState
+  dropJournal?: import('../quests/dropJournal').DropJournalState
   careerUpgrades?: import('../career/careerUpgrades').CareerUpgradeState
   upgrades: UpgradeLevels
   trophyAssignments: TrophyAssignments

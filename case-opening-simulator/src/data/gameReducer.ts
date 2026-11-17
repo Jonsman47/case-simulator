@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid'
-import { getCareerLevelFromXp, recordCareerAction, startNextCareerRun } from '../career/careerProgress'
+import { awardQuestCareerXp, getCareerLevelFromXp, recordCareerAction, startNextCareerRun } from '../career/careerProgress'
 import {
   careerUpgradesById,
   getCareerBusinessIntervalMultiplier,
@@ -18,6 +18,7 @@ import {
   resetCareerUpgradesForPrestige,
 } from '../career/careerUpgrades'
 import { CASE_DEFINITIONS, unlockCasesForProgress } from './cases'
+import { applyOfficialWeaponCaseOdds } from './officialDropOdds'
 import { getCaseLicenseCost, requiresCaseLicense } from './casePricing'
 import { pickDrop, type Prng } from './dropLogic'
 import { defaultGameState, type GameAction, type GameState, type GameUiEvent } from './gameState'
@@ -143,6 +144,21 @@ import {
   purchasePrestigePerk,
   validateVaultSelection,
 } from '../prestige/prestigeSystem'
+import {
+  MAX_TRACKED_QUESTS,
+  QUEST_DEFINITIONS,
+  QUEST_HISTORY_LIMIT,
+  QUEST_REQUEST_LIMIT,
+  getQuestProgressState,
+  getQuestStageStatus,
+  isQuestItemEligible,
+  isQuestUnlocked,
+  questNpcsById,
+  questsById,
+  recordQuestActivity,
+  resetQuestsForPrestige,
+} from '../quests/questSystem'
+import { recordDropJournalAction } from '../quests/dropJournal'
 import { getInventoryFreeSlots, hasInventorySpace } from '../utils/inventoryCapacity'
 import { isUnlockedTrophySlot } from '../utils/trophyRoom'
 import {
@@ -500,10 +516,6 @@ function getFallbackSkinForCase(dropTable: { skinId: string }[]) {
   return firstCatalogSkin
 }
 
-function getFirstCaseHook(rarity: Rarity) {
-  return rarity === Rarity.SpecialItem ? 'forcedGold' as const : 'nearMissGold' as const
-}
-
 function withDailyChallengeProgress(
   state: GameState,
   progressEvent: DailyChallengeProgressEvent,
@@ -652,7 +664,10 @@ function getEffectiveCaseDefinition(
     skinDefinitionsById,
   )
 
-  return applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, now)
+  const discountedCaseDef = applyDailyCaseDiscountToCase(eventCaseDef, state.dailyRewards, now)
+  return discountedCaseDef.oddsProfile === 'standard-weapon-case'
+    ? { ...discountedCaseDef, dropTable: applyOfficialWeaponCaseOdds(discountedCaseDef.dropTable, skinDefinitionsById) }
+    : discountedCaseDef
 }
 
 function updateCollectionBook(
@@ -832,7 +847,6 @@ function openCase(
   caseId: string,
   requestedQuantity = 1,
   openedAt = Date.now(),
-  firstCaseHookRoll?: number,
   openingEventId?: string,
   useOpeningCredits = false,
 ): GameState {
@@ -891,11 +905,8 @@ function openCase(
   const autoSoldItems: SkinInstance[] = []
   let collectionBook = state.collectionBook
   let inventory = state.inventory
-  let firstCaseHook: 'nearMissGold' | 'forcedGold' | undefined
   const knownSkinIds = new Set(state.collectionBook.map((entry) => entry.skinId))
   const discoveredSkinIds = new Set<string>()
-
-  void firstCaseHookRoll
 
   for (let index = 0; index < actualQuantity; index += 1) {
     const skinId = pickDrop(dailyCaseDef.dropTable)
@@ -912,7 +923,6 @@ function openCase(
 
     const item = createSkinInstance(fallbackSkin, state, discoveredAt)
     if (!knownSkinIds.has(item.id)) discoveredSkinIds.add(item.id)
-    if (!state.hasUsedFirstCaseHook && index === 0) firstCaseHook = getFirstCaseHook(item.rarity)
     openedItems.push(item)
     collectionBook = updateCollectionBook(collectionBook, item)
     inventory = [item, ...inventory]
@@ -962,7 +972,6 @@ function openCase(
       type: 'case_opening_started',
       caseId,
       quantity: actualQuantity,
-      firstCaseHook,
       createdAt: discoveredAt,
     },
     ...openedItems.map((item) => ({
@@ -1000,7 +1009,9 @@ function openCase(
     currentRunCollectionBook: openedItems.reduce(updateCollectionBook, state.currentRunCollectionBook),
     recentDrops: [...openedItems, ...state.recentDrops].slice(0, RECENT_DROPS_LIMIT),
     lastOpenedItems: openedItems,
-    hasUsedFirstCaseHook: state.hasUsedFirstCaseHook || Boolean(firstCaseHook),
+    // Backward-compatible tombstone only. First openings no longer alter results
+    // or insert a fabricated Gold near-miss into the reel.
+    hasUsedFirstCaseHook: true,
     lastError: partialOpenMessage,
     uiEvents: appendEvents(state, events),
     casesUnlocked: getUnlockedCaseIdsAfterOpening(state, casesOpened),
@@ -1394,6 +1405,8 @@ function prestigeRun(
       return !definition || getAchievementScope(definition) === 'lifetime'
     }),
     collectionBook: state.collectionBook,
+    quests: resetQuestsForPrestige(state.quests, now),
+    dropJournal: state.dropJournal,
     collectionRewards: state.collectionRewards,
     trophyAssignments: Object.fromEntries(Object.entries(state.trophyAssignments).filter(([, assignment]) => assignment && selectedIds.has(assignment.itemId))),
     settings: state.settings,
@@ -2161,6 +2174,7 @@ function finishEmployeeOperation(state: GameState, roleId: EmployeeRoleId, opera
 }
 
 function runCaseOperator(state: GameState, now: number, prng: Prng) {
+  void prng
   const roleId = 'caseOperator' as const
   const employee = state.business.employees[roleId]
   const settings = employee.settings
@@ -2184,7 +2198,7 @@ function runCaseOperator(state: GameState, now: number, prng: Prng) {
   if (employee.spentCapital + effectiveCase.cost * batch > settings.stopLoss) return pauseEmployee(state, roleId, 'Paused: configured stop-loss reached.', now)
   const beforeFund = employee.availableCapital
   const wallet = state.money
-  const opened = openCase({ ...state, money: beforeFund, autoSellRules: settings.allowAutoSell ? state.autoSellRules : [] }, caseDef.id, batch, now, prng(), `business-case:${now}:${employee.completedOperationCount}`)
+  const opened = openCase({ ...state, money: beforeFund, autoSellRules: settings.allowAutoSell ? state.autoSellRules : [] }, caseDef.id, batch, now, `business-case:${now}:${employee.completedOperationCount}`)
   const openedCount = opened.statistics.casesOpened - state.statistics.casesOpened
   if (openedCount <= 0) return pauseEmployee({ ...opened, money: wallet }, roleId, opened.lastError ?? 'Paused: opening could not complete.', now)
   const fundAfter = opened.money
@@ -3153,6 +3167,101 @@ function reorderAutoSellRules(autoSellRules: AutoSellRule[], ruleIds: string[]) 
   return [...orderedRules, ...missingRules]
 }
 
+function appendQuestRequest(state: GameState, requestId: string) {
+  return [...state.quests.processedRequestIds, requestId].slice(-QUEST_REQUEST_LIMIT)
+}
+
+function claimQuestStage(state: GameState, questId: string, requestId: string, now: number): GameState {
+  if (state.quests.processedRequestIds.includes(requestId)) return state
+  const definition = questsById.get(questId)
+  if (!definition || !isQuestUnlocked(state, definition)) return { ...state, lastError: 'Quest is not available.' }
+  const progress = getQuestProgressState(state, definition)
+  const stage = definition.stages[progress.stageIndex]
+  if (!stage || progress.claimedStageIds.includes(stage.id) || !getQuestStageStatus(state, definition).complete) {
+    return { ...state, lastError: 'Quest stage requirements are not complete.' }
+  }
+
+  const reward = stage.reward
+  const stageEventId = `${questId}:${stage.id}:${definition.repeatable ? state.quests.currentPeriod : state.economyLedger.currentRunId}`
+  const isFinalStage = progress.stageIndex >= definition.stages.length - 1
+  const npcState = state.quests.npc[definition.issuerId]
+  const nextProgress = {
+    ...progress,
+    stageIndex: isFinalStage ? progress.stageIndex : progress.stageIndex + 1,
+    claimedStageIds: [...progress.claimedStageIds, stage.id],
+    completedAt: isFinalStage ? now : undefined,
+  }
+  const nextNpc = npcState ? {
+    ...npcState,
+    reputation: npcState.reputation + Math.min(10, Math.max(0, Math.floor(reward.reputation ?? 0))),
+    history: [...npcState.history, { id: stageEventId, message: stage.dialogue, timestamp: now }].slice(-QUEST_HISTORY_LIMIT),
+  } : npcState
+  const moneyReward = Math.min(100, Math.max(0, Number(reward.money ?? 0)))
+  const creditReward = Math.min(10, Math.max(0, Number(reward.openingCredits ?? 0)))
+  const career = awardQuestCareerXp(state.career, {
+    eventId: stageEventId,
+    xp: reward.careerXp ?? 0,
+    reason: `${definition.name}: ${stage.title}`,
+    timestamp: now,
+    category: definition.category === 'opening' ? 'caseOpening' : definition.category === 'contract' ? 'trading' : 'collecting',
+  })
+  return {
+    ...state,
+    money: roundCurrency(state.money + moneyReward),
+    dailyRewards: { ...state.dailyRewards, openingCredits: roundCurrency(state.dailyRewards.openingCredits + creditReward) },
+    career,
+    quests: {
+      ...state.quests,
+      progress: { ...state.quests.progress, [questId]: nextProgress },
+      processedRequestIds: appendQuestRequest(state, requestId),
+      cosmetics: {
+        decorations: reward.decoration && !state.quests.cosmetics.decorations.includes(reward.decoration)
+          ? [...state.quests.cosmetics.decorations, reward.decoration]
+          : state.quests.cosmetics.decorations,
+        titles: reward.title && !state.quests.cosmetics.titles.includes(reward.title)
+          ? [...state.quests.cosmetics.titles, reward.title]
+          : state.quests.cosmetics.titles,
+      },
+      npc: nextNpc ? { ...state.quests.npc, [definition.issuerId]: nextNpc } : state.quests.npc,
+    },
+    statistics: { ...state.statistics, moneyEarned: roundCurrency(state.statistics.moneyEarned + moneyReward) },
+    lastError: undefined,
+    uiEvents: appendEvents(state, [{
+      id: requestId,
+      type: 'quest_reward_claimed',
+      questId,
+      message: `${stage.title} complete${creditReward ? ` · +$${creditReward.toFixed(2)} Opening Credits` : ''}`,
+      createdAt: now,
+    }]),
+  }
+}
+
+function deliverQuestItem(state: GameState, questId: string, itemId: string, requestId: string, now: number): GameState {
+  if (state.quests.processedRequestIds.includes(requestId)) return state
+  const definition = questsById.get(questId)
+  if (!definition || !isQuestUnlocked(state, definition)) return { ...state, lastError: 'Quest is not available.' }
+  const progress = getQuestProgressState(state, definition)
+  const stage = definition.stages[progress.stageIndex]
+  const requirement = stage?.requirements.find((entry) => entry.type === 'deliver_item')
+  const item = state.inventory.find((candidate) => candidate.instanceId === itemId)
+  const trophyIds = new Set(Object.values(state.trophyAssignments).flatMap((assignment) => assignment ? [assignment.itemId] : []))
+  if (!stage || !requirement || !item || item.isLocked || item.isFavorited || trophyIds.has(itemId)) {
+    return { ...state, lastError: 'That item is unavailable or protected.' }
+  }
+  if (!isQuestItemEligible(item, requirement)) return { ...state, lastError: 'That item does not meet this request.' }
+  return withInventoryValuation({
+    ...state,
+    inventory: state.inventory.filter((candidate) => candidate.instanceId !== itemId),
+    quests: {
+      ...state.quests,
+      progress: { ...state.quests.progress, [questId]: { ...progress, deliveredStageIds: [...progress.deliveredStageIds, stage.id] } },
+      processedRequestIds: appendQuestRequest(state, requestId),
+    },
+    lastError: undefined,
+    uiEvents: appendEvents(state, [{ id: requestId, type: 'npc_item_delivered', questId, message: `${item.weapon} | ${item.finish} delivered.`, createdAt: now }]),
+  }, now)
+}
+
 function reduceGameState(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'ADD_MONEY':
@@ -3393,6 +3502,38 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return claimAchievementReward(state, action.achievementId, action.now)
     case 'CLAIM_ALL_ACHIEVEMENT_REWARDS':
       return claimAllAchievementRewards(state, action.now)
+    case 'TRACK_QUEST': {
+      const tracked = state.quests.trackedQuestIds.includes(action.questId)
+        ? state.quests.trackedQuestIds.filter((id) => id !== action.questId)
+        : [...state.quests.trackedQuestIds, action.questId].slice(-MAX_TRACKED_QUESTS)
+      return questsById.has(action.questId) ? { ...state, quests: { ...state.quests, trackedQuestIds: tracked } } : state
+    }
+    case 'CLAIM_QUEST_STAGE':
+      return claimQuestStage(state, action.questId, action.requestId, action.now ?? Date.now())
+    case 'DELIVER_QUEST_ITEM':
+      return deliverQuestItem(state, action.questId, action.itemId, action.requestId, action.now ?? Date.now())
+    case 'MARK_NPC_DIALOGUE_SEEN': {
+      const npcDefinition = questNpcsById.get(action.npcId)
+      const npc = state.quests.npc[action.npcId]
+      if (!npcDefinition || !npc || npc.seenDialogueIds.includes(action.dialogueId)) return state
+      const now = action.now ?? Date.now()
+      return {
+        ...state,
+        quests: {
+          ...state.quests,
+          npc: {
+            ...state.quests.npc,
+            [action.npcId]: {
+              ...npc,
+              seenDialogueIds: [...npc.seenDialogueIds, action.dialogueId].slice(-160),
+              history: action.message
+                ? [...npc.history, { id: action.dialogueId, message: action.message, timestamp: now }].slice(-QUEST_HISTORY_LIMIT)
+                : npc.history,
+            },
+          },
+        },
+      }
+    }
     case 'UNLOCK_CASE':
       if (state.casesUnlocked.includes(action.caseId)) {
         return state
@@ -3422,7 +3563,6 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
         action.payload.caseId,
         action.payload.quantity,
         action.payload.now ?? Date.now(),
-        action.payload.firstCaseHookRoll,
         action.payload.openingEventId,
         true,
       ))
@@ -3770,7 +3910,33 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   const reducedState = validateGameState(reduceGameState(state, action))
   const withEconomy = recordEconomyAction(state, reducedState, action)
   const withCareer = recordCareerAction(state, withEconomy, action)
-  const careerXpGained = Math.max(0, withCareer.career.currentRunXp - state.career.currentRunXp)
+  const nextJournal = action.type === 'REPLACE_GAME_STATE' || action.type === 'RESET_GAME' || action.type === 'APPLY_OFFLINE_PROGRESS'
+    ? withCareer.dropJournal
+    : recordDropJournalAction(state, withCareer, action)
+  const withJournal = nextJournal === withCareer.dropJournal ? withCareer : { ...withCareer, dropJournal: nextJournal }
+  const actionNow = action.type === 'OPEN_CASE'
+    ? action.payload.now ?? Date.now()
+    : 'now' in action && typeof action.now === 'number'
+      ? action.now
+      : Date.now()
+  const nextQuests = action.type === 'REPLACE_GAME_STATE' || action.type === 'RESET_GAME' || action.type === 'APPLY_OFFLINE_PROGRESS' || action.type === 'PRESTIGE'
+    ? withJournal.quests
+    : recordQuestActivity(state, withJournal, action, actionNow)
+  const withQuests = nextQuests === withJournal.quests ? withJournal : { ...withJournal, quests: nextQuests }
+  const newlyReady = action.type === 'CLAIM_QUEST_STAGE' || action.type === 'REPLACE_GAME_STATE' || action.type === 'RESET_GAME'
+    ? []
+    : QUEST_DEFINITIONS.filter((quest) => withQuests.quests.trackedQuestIds.includes(quest.id) && isQuestUnlocked(withQuests, quest) && getQuestStageStatus(withQuests, quest).complete && (!isQuestUnlocked(state, quest) || !getQuestStageStatus(state, quest).complete))
+  const withQuestFeedback = newlyReady.length === 0 ? withQuests : {
+    ...withQuests,
+    uiEvents: appendEvents(withQuests, newlyReady.map((quest): GameUiEvent => ({
+      id: `quest-ready:${quest.id}:${getQuestProgressState(withQuests, quest).stageIndex}:${actionNow}`,
+      type: 'quest_stage_ready',
+      questId: quest.id,
+      message: `${quest.name} is ready to claim.`,
+      createdAt: actionNow,
+    }))),
+  }
+  const careerXpGained = Math.max(0, withQuestFeedback.career.currentRunXp - state.career.currentRunXp)
 
   if (
     careerXpGained <= 0 ||
@@ -3778,17 +3944,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     action.type === 'RESET_GAME' ||
     action.type === 'APPLY_OFFLINE_PROGRESS'
   ) {
-    return withCareer
+    return withQuestFeedback
   }
 
-  const actionNow = action.type === 'OPEN_CASE'
-    ? action.payload.now ?? Date.now()
-    : 'now' in action && typeof action.now === 'number'
-      ? action.now
-      : Date.now()
-
   return withDailyChallengeProgress(
-    withCareer,
+    withQuestFeedback,
     { type: 'career_xp', amount: careerXpGained },
     actionNow,
   )

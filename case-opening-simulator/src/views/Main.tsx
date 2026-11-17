@@ -5,6 +5,7 @@ import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenCo
 import { ItemDetailModal } from '../components/ItemDetailModal'
 import { PlaceholderView } from '../components/PlaceholderView'
 import { RecentDropsFeed } from '../components/RecentDropsFeed'
+import { TrackedQuestWidget } from '../components/TrackedQuestWidget'
 import type { SkinInstance } from '../data/models'
 import { getCareerMultiOpenBatch } from '../career/careerUpgrades'
 import { useGame } from '../hooks/useGame'
@@ -124,6 +125,8 @@ export function Main() {
           onOpenItem={setActiveItem}
         />
       </div>
+
+      <TrackedQuestWidget />
 
       <ItemDetailModal
         isOwned={modalItemIsOwned}

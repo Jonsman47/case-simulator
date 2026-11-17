@@ -119,7 +119,7 @@ function makeDailyChallenge(overrides: Partial<DailyChallenge> = {}): DailyChall
 
 function nonAchievementEventTypes(state: GameState) {
   return state.uiEvents
-    .filter((event) => event.type !== 'achievement_unlocked' && event.type !== 'collection_reward_unlocked')
+    .filter((event) => event.type !== 'achievement_unlocked' && event.type !== 'collection_reward_unlocked' && event.type !== 'quest_stage_ready')
     .map((event) => event.type)
 }
 
@@ -198,40 +198,29 @@ describe('gameReducer OPEN_CASE', () => {
     ])
   })
 
-  it('uses a near-miss gold hook on the first fresh-run opening without adding gold', () => {
+  it('does not add a fabricated Gold near-miss to a first opening', () => {
     const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
     const nextState = gameReducer(state, {
       type: 'OPEN_CASE',
-      payload: {
-        caseId: 'starter_case',
-        firstCaseHookRoll: 0.2,
-      },
+      payload: { caseId: 'starter_case' },
     })
     const startedEvent = nextState.uiEvents.find((event) => event.type === 'case_opening_started')
 
     expect(nextState.hasUsedFirstCaseHook).toBe(true)
-    expect(startedEvent).toMatchObject({ firstCaseHook: 'nearMissGold' })
+    expect(startedEvent).not.toHaveProperty('firstCaseHook')
     expect(nextState.inventory).toHaveLength(1)
-    expect(nextState.inventory[0].rarity).not.toBe(Rarity.SpecialItem)
-    expect(nextState.statistics.dropsByRarity[Rarity.SpecialItem]).toBe(0)
   })
 
-  it('does not let the first-case presentation hook alter the official drop result', () => {
+  it('keeps first-opening selection deterministic with the same random roll', () => {
     const random = vi.spyOn(Math, 'random').mockReturnValue(0)
     const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
     const lowHookState = gameReducer(state, {
       type: 'OPEN_CASE',
-      payload: {
-        caseId: 'starter_case',
-        firstCaseHookRoll: 0.2,
-      },
+      payload: { caseId: 'starter_case' },
     })
     const highHookState = gameReducer(state, {
       type: 'OPEN_CASE',
-      payload: {
-        caseId: 'starter_case',
-        firstCaseHookRoll: 0.95,
-      },
+      payload: { caseId: 'starter_case' },
     })
 
     expect(highHookState.lastOpenedItems[0].id).toBe(lowHookState.lastOpenedItems[0].id)
@@ -239,47 +228,19 @@ describe('gameReducer OPEN_CASE', () => {
     random.mockRestore()
   })
 
-  it('uses the first-case hook only once in an Open 10 batch', () => {
+  it('does not add a presentation hook to an Open 10 batch', () => {
     const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
     const nextState = gameReducer(state, {
       type: 'OPEN_CASE',
       payload: {
         caseId: 'starter_case',
         quantity: 10,
-        firstCaseHookRoll: 0.95,
       },
     })
 
     expect(nextState.hasUsedFirstCaseHook).toBe(true)
     expect(nextState.inventory).toHaveLength(10)
-    expect(nextState.uiEvents.filter((event) => (
-      event.type === 'case_opening_started' && event.firstCaseHook !== undefined
-    ))).toHaveLength(1)
-  })
-
-  it('does not repeat the first-case hook on the second opening', () => {
-    const state = makeState({ hasUsedFirstCaseHook: false, money: 10 })
-    const firstOpenState = gameReducer(state, {
-      type: 'OPEN_CASE',
-      payload: {
-        caseId: 'starter_case',
-        firstCaseHookRoll: 0.2,
-      },
-    })
-    const secondOpenState = gameReducer(firstOpenState, {
-      type: 'OPEN_CASE',
-      payload: {
-        caseId: 'starter_case',
-        firstCaseHookRoll: 0.95,
-      },
-    })
-    const secondStartedEvent = secondOpenState.uiEvents.find((event) => (
-      event.type === 'case_opening_started' && event.createdAt === Date.now()
-    ))
-
-    expect(secondOpenState.hasUsedFirstCaseHook).toBe(true)
-    expect(secondStartedEvent).not.toMatchObject({ firstCaseHook: expect.any(String) })
-    expect(secondOpenState.lastOpenedItems[0].rarity).not.toBe(Rarity.SpecialItem)
+    expect(nextState.uiEvents.find((event) => event.type === 'case_opening_started')).not.toHaveProperty('firstCaseHook')
   })
 
   it('unlocks achievements once when their conditions are met', () => {

@@ -10,6 +10,8 @@ export const ECONOMY_LEDGER_ITEM_DELTA_LIMIT = 64
 
 export type EconomyTransactionType =
   | 'admin-adjustment'
+  | 'quest-reward'
+  | 'npc-delivery'
   | 'auction-purchase'
   | 'automation-cycle'
   | 'automation-purchase'
@@ -382,6 +384,10 @@ function classifyAction(action: GameAction): {
     case 'CLAIM_ACHIEVEMENT_REWARD':
     case 'CLAIM_ALL_ACHIEVEMENT_REWARDS':
       return { type: 'achievement-reward', source: 'achievements', destination: 'player' }
+    case 'CLAIM_QUEST_STAGE':
+      return { type: 'quest-reward', source: action.questId, destination: 'player' }
+    case 'DELIVER_QUEST_ITEM':
+      return { type: 'npc-delivery', source: 'player inventory', destination: action.questId }
     case 'PURCHASE_AUTO_OPENER':
     case 'PURCHASE_AUTOMATION_MODULE':
       return { type: 'automation-purchase', source: 'player cash', destination: 'automation' }

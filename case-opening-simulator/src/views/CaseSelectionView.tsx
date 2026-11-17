@@ -5,6 +5,7 @@ import { AssetImage } from '../components/AssetImage'
 import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenControls'
 import { PriceChart } from '../components/PriceChart'
 import { DeferredPieChart } from '../components/DeferredChart'
+import { TrackedQuestWidget } from '../components/TrackedQuestWidget'
 import { getCaseLicenseCost, requiresCaseLicense } from '../data/casePricing'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import type { GameState } from '../data/gameState'
@@ -722,6 +723,8 @@ export function CaseSelectionView() {
           </label>
         </div>
       </div>
+
+      <TrackedQuestWidget />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">

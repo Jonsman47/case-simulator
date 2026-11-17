@@ -105,9 +105,11 @@ import {
   getTotalPrestigePerkSpend,
   normalizePrestigeSystem,
 } from '../prestige/prestigeSystem'
+import { createDefaultQuestSystem, normalizeQuestSystem } from '../quests/questSystem'
+import { createDefaultDropJournal, normalizeDropJournal } from '../quests/dropJournal'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 39
+export const CURRENT_SAVE_VERSION = 40
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -1731,6 +1733,18 @@ function migrateV38ToV39(value: unknown): unknown {
   }
 }
 
+function migrateV39ToV40(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const now = normalizeNumber(value.lastSaved, Date.now())
+  return {
+    ...value,
+    // Historical quest/drop events cannot be reconstructed honestly. Existing
+    // collections and inventory remain untouched and tracking starts at v40.
+    quests: createDefaultQuestSystem(now),
+    dropJournal: createDefaultDropJournal(),
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1771,6 +1785,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   36: migrateV36ToV37,
   37: migrateV37ToV38,
   38: migrateV38ToV39,
+  39: migrateV39ToV40,
 }
 
 function getEnvelope(value: unknown) {
@@ -1852,6 +1867,8 @@ export function toPlayerState(state: GameState): PlayerState {
     statistics: state.statistics,
     career: state.career,
     careerUpgrades: state.careerUpgrades,
+    quests: state.quests,
+    dropJournal: state.dropJournal,
     lastBackupAt: state.lastBackupAt,
     lastSaved: state.lastSaved,
   }
@@ -1921,6 +1938,8 @@ function playerStateToGameState(state: PlayerState): GameState {
     statistics: state.statistics,
     career,
     careerUpgrades: normalizeCareerUpgradeState(state.careerUpgrades, state.lastSaved),
+    quests: normalizeQuestSystem(state.quests, state.lastSaved),
+    dropJournal: normalizeDropJournal(state.dropJournal),
     lastBackupAt: normalizeNumber(state.lastBackupAt, defaultGameState.lastBackupAt),
     lastSaved: state.lastSaved,
   }
@@ -2035,6 +2054,8 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     economyLedger,
     career,
     careerUpgrades,
+    quests: normalizeQuestSystem(value.quests, lastSaved),
+    dropJournal: normalizeDropJournal(value.dropJournal),
     settings: normalizeSettings(value.settings),
     ui: normalizeUiState(value.ui),
     lastBackupAt: normalizeNumber(value.lastBackupAt, defaultGameState.lastBackupAt),
@@ -2136,6 +2157,8 @@ export function createSaveEnvelope(state: GameState | PlayerState): SaveEnvelope
       careerUpgrades: normalizeCareerUpgradeState(gameState.careerUpgrades, currentTime),
       prestigeSystem: normalizePrestigeSystem(gameState.prestigeSystem, gameState.prestigeLevel),
       business: normalizeBusinessState(gameState.business, currentTime),
+      quests: normalizeQuestSystem(gameState.quests, currentTime),
+      dropJournal: normalizeDropJournal(gameState.dropJournal),
       marketHistory,
       trophyAssignments: normalizeTrophyAssignments(gameState.trophyAssignments),
       uiEvents: [],

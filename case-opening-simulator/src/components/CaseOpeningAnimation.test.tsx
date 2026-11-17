@@ -229,8 +229,7 @@ describe('CaseOpeningAnimation', () => {
     })
 
     expect(screen.getByTestId('opening-result')).toHaveTextContent('AK-47 | Redline')
-    expect(screen.getByTestId('opening-result')).toHaveClass('border-cs-border')
-    expect(screen.getByTestId('opening-result')).not.toHaveClass('border-rarity-classified')
+    expect(screen.getByTestId('opening-result')).toHaveClass('border-rarity-classified')
     expect(audioInstances[0]?.pause).toHaveBeenCalledTimes(1)
     expect(audioInstances[0]?.currentTime).toBe(0)
     expect(onComplete).not.toHaveBeenCalled()
@@ -471,28 +470,4 @@ describe('CaseOpeningAnimation', () => {
     expect(screen.getByTestId('opening-result')).toHaveTextContent('AWP | Dragon Lore')
   }, 15_000)
 
-  it('places a near-miss gold placeholder beside the real winning card', () => {
-    const finalItem = makeItem({
-      ...fillerSkin,
-      instanceId: 'near-miss-normal',
-      marketValue: 0.03,
-    })
-
-    render(
-      <CaseOpeningAnimation
-        finalItem={finalItem}
-        firstCaseHook="nearMissGold"
-        onComplete={vi.fn()}
-        potentialSkins={[{ skin: fillerSkin, weight: 100 }]}
-      />,
-    )
-
-    act(() => {
-      vi.advanceTimersByTime(1_250)
-    })
-
-    expect(screen.getByTestId('case-opening-target')).toHaveTextContent('P250 | Sand Dune')
-    expect(screen.getByTestId('case-opening-target')).not.toHaveTextContent('Rare Special Item | Mystery Drop')
-    expect(screen.getByTestId('gold-suspense-placeholder')).toHaveAttribute('src', '/assets/GOLDGOLDGOLD.png')
-  }, 15_000)
 })

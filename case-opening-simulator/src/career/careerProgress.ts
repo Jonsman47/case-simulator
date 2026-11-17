@@ -35,6 +35,7 @@ export type CareerXpEventType =
   | 'work-performance'
   | 'business-operation'
   | 'achievement'
+  | 'quest'
 
 export type CareerRankId =
   | 'case-addict'
@@ -876,6 +877,22 @@ function applyPendingEvents(career: CareerState, pending: PendingCareerEvent[], 
     rankHistory: rankHistory.slice(-CAREER_RANKS.length),
     recentMilestones: milestones.slice(0, CAREER_MILESTONE_LIMIT),
   }
+}
+
+/** Exact-once Career XP award used only by a successfully claimed quest stage. */
+export function awardQuestCareerXp(
+  career: CareerState,
+  input: { eventId: string; xp: number; reason: string; timestamp: number; category?: CareerSpecializationId },
+) {
+  if (!Number.isFinite(input.xp) || input.xp <= 0) return career
+  return applyPendingEvents(career, [{
+    id: `quest:${input.eventId}`,
+    type: 'quest',
+    category: input.category ?? 'collecting',
+    baseXp: Math.min(1_000, Math.max(1, Math.round(input.xp))),
+    reason: input.reason,
+    timestamp: input.timestamp,
+  }])
 }
 
 export function recordCareerAction(before: GameState, after: GameState, action: GameAction): GameState {

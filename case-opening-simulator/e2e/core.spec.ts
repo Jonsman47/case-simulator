@@ -12,6 +12,11 @@ async function dismissEventPopup(page: Page) {
   if (await dismiss.isVisible().catch(() => false)) await dismiss.click()
 }
 
+async function dismissPwaNotification(page: Page) {
+  const dismiss = page.getByRole('button', { name: 'Dismiss PWA notification' })
+  if (await dismiss.isVisible().catch(() => false)) await dismiss.click()
+}
+
 async function readSave(page: Page) {
   await page.waitForFunction((key) => Boolean(localStorage.getItem(key)), saveKey)
   return page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}'), saveKey)
@@ -56,9 +61,11 @@ test('new player can complete every supported opening size with exact-once trans
   await page.goto('/')
   await dismissTutorial(page)
   await dismissEventPopup(page)
+  await dismissPwaNotification(page)
   await expect(page.getByRole('button', { name: 'Open 10' })).toBeVisible()
   if (!process.env.CI) {
-    await expect(page).toHaveScreenshot('case-buttons-1366.png', { animations: 'disabled', fullPage: true })
+    await page.mouse.move(0, 0)
+    await expect(page.locator('main')).toHaveScreenshot('case-buttons-1366.png', { animations: 'disabled' })
   }
 
   const before = await readSave(page)
@@ -77,13 +84,59 @@ test('new player can complete every supported opening size with exact-once trans
   expect(consoleErrors).toEqual([])
 })
 
+test('opening advances a tracked story quest and the exact-once reward survives reload', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await dismissEventPopup(page)
+  await expect(page.getByTestId('tracked-quest-widget')).toContainText('The First Crack')
+  await openBatch(page, 1)
+  await page.goto('/quests')
+  const quest = page.getByTestId('quest-story-first-crack')
+  await expect(quest).toContainText('1/1')
+  const before = await readSave(page)
+  await quest.getByRole('button', { name: 'Claim stage' }).click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.quests?.progress?.['story-first-crack']?.stageIndex === 1, saveKey)
+  const claimed = await readSave(page)
+  expect(claimed.state.dailyRewards.openingCredits - before.state.dailyRewards.openingCredits).toBe(1.5)
+  await page.reload()
+  await expect(page.getByTestId('quest-story-first-crack')).toContainText('Stage 2/3')
+  const reloaded = await readSave(page)
+  expect(reloaded.state.dailyRewards.openingCredits).toBe(claimed.state.dailyRewards.openingCredits)
+
+  await page.getByRole('button', { name: 'Characters' }).click()
+  const maraCard = page.locator('article').filter({ hasText: 'Mara Voss' })
+  await maraCard.getByRole('button', { name: 'Meet character' }).click()
+  await expect(maraCard.getByRole('button', { name: 'Revisit introduction' })).toBeVisible()
+})
+
+test('deterministic Gold fixture is skippable and creates a permanent journal record', async ({ page }) => {
+  await page.addInitScript(() => { Math.random = () => .999999 })
+  await page.goto('/')
+  await dismissTutorial(page)
+  await page.getByRole('button', { name: 'Open 1', exact: true }).click()
+  const opening = page.getByRole('dialog', { name: 'Case opening animation' })
+  await expect(opening).toBeVisible()
+  await page.getByRole('button', { name: 'Skip opening animation' }).click()
+  await expect(opening.getByText('Personal best')).toBeVisible({ timeout: 15_000 })
+  await expect(opening.getByText('First rare drop')).toBeVisible()
+  await page.getByRole('button', { name: 'Skip opening animation' }).click()
+  await page.goto('/quests?tab=completed')
+  await expect(page.getByText('1 notable openings')).toBeVisible()
+  await expect(page.getByText(/Pattern #/).first()).toBeVisible()
+  const save = await readSave(page)
+  expect(save.state.dropJournal.specialCount).toBe(1)
+  expect(save.state.dropJournal.entries).toHaveLength(1)
+})
+
 test('work jobs are usable and skill jobs claim only once', async ({ page }) => {
   await page.goto('/work')
   await dismissTutorial(page)
   await dismissEventPopup(page)
+  await dismissPwaNotification(page)
   await expect(page.getByText('Eight available jobs')).toBeVisible()
   if (!process.env.CI) {
-    await expect(page).toHaveScreenshot('work-page-1366.png', { animations: 'disabled', fullPage: true })
+    await page.mouse.move(0, 0)
+    await expect(page.locator('main')).toHaveScreenshot('work-page-1366.png', { animations: 'disabled' })
   }
 
   await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
@@ -400,12 +453,13 @@ test('tutorial progress persists, completion stays dismissed, and Settings can r
   await page.goto('/')
   await expect(page.getByTestId('onboarding-tutorial')).toBeVisible()
   await expect(page.getByText('Open Your First Case')).toBeVisible()
+  await dismissPwaNotification(page)
   await page.getByRole('button', { name: /Next/i }).click()
   await expect(page.getByText('Know What Can Drop')).toBeVisible()
-  await page.reload()
+  await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByText('Know What Can Drop')).toBeVisible()
   await page.getByRole('button', { name: 'Skip tutorial' }).click()
-  await page.reload()
+  await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
   await page.goto('/settings')
   await page.getByRole('button', { name: 'Review Tutorial' }).click()

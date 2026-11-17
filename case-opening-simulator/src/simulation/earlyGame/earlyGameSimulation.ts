@@ -7,7 +7,7 @@ import { applyPatternPremium, classifySkinPattern, generatePaintSeed } from '../
 import { createInitialMarketValues } from '../../market/marketSimulation'
 import { createSimulationRandom, deriveSimulationSeed } from '../careerEconomy/seededRandom'
 
-export type EarlyGamePlaystyle = 'opening-first' | 'balanced' | 'trader-secondary' | 'collector' | 'poor-decisions'
+export type EarlyGamePlaystyle = 'fresh-beginner' | 'opening-focused' | 'collector' | 'trader' | 'quest-focused' | 'work-focused'
 
 export interface EarlyGameCheckpoint {
   activeMinutes: number
@@ -22,6 +22,10 @@ export interface EarlyGameCheckpoint {
   longestRecoveryWaitMinutes: number
   minute: number
   objectivesCompleted: number
+  questStagesCompleted: number
+  availableQuests: number
+  repeatedRewards: number
+  decisionsAvailable: number
   upgradesPurchased: number
   waitingMinutes: number
 }
@@ -32,13 +36,14 @@ export interface EarlyGameScenarioResult {
   runs: number
 }
 
-const checkpointMinutes = [15, 30, 60, 120]
+const checkpointMinutes = [15, 30, 60, 120, 600, 3_000]
 const styles: Record<EarlyGamePlaystyle, { openingEvery: number; sellRate: number; workIncomePerMinute: number; tradeIncomePerMinute: number }> = {
-  'opening-first': { openingEvery: 1, sellRate: 0.93, workIncomePerMinute: 0.25, tradeIncomePerMinute: 0 },
-  balanced: { openingEvery: 2, sellRate: 0.91, workIncomePerMinute: 0.8, tradeIncomePerMinute: 0.15 },
-  'trader-secondary': { openingEvery: 3, sellRate: 0.9, workIncomePerMinute: 0.35, tradeIncomePerMinute: 0.75 },
+  'fresh-beginner': { openingEvery: 2, sellRate: 0.8, workIncomePerMinute: 0.55, tradeIncomePerMinute: 0.05 },
+  'opening-focused': { openingEvery: 1, sellRate: 0.93, workIncomePerMinute: 0.35, tradeIncomePerMinute: 0 },
   collector: { openingEvery: 3, sellRate: 0.35, workIncomePerMinute: 0.65, tradeIncomePerMinute: 0.1 },
-  'poor-decisions': { openingEvery: 1, sellRate: 0.4, workIncomePerMinute: 0.15, tradeIncomePerMinute: 0 },
+  trader: { openingEvery: 4, sellRate: 0.9, workIncomePerMinute: 0.35, tradeIncomePerMinute: 0.85 },
+  'quest-focused': { openingEvery: 2, sellRate: 0.72, workIncomePerMinute: 0.7, tradeIncomePerMinute: 0.2 },
+  'work-focused': { openingEvery: 5, sellRate: 0.75, workIncomePerMinute: 1.05, tradeIncomePerMinute: 0.05 },
 }
 
 function round(value: number) {
@@ -56,7 +61,7 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
   const aggregates = new Map(checkpointMinutes.map((minute) => [minute, {
     activeMinutes: 0, bankrupt: 0, casesOpened: 0, cash: 0, careerXp: 0, discoveries: 0,
     fundingEarned: 0, fundingSpent: 0, inventoryValue: 0, longestRecoveryWaitMinutes: 0,
-    objectivesCompleted: 0, upgradesPurchased: 0, waitingMinutes: 0,
+    objectivesCompleted: 0, questStagesCompleted: 0, availableQuests: 0, repeatedRewards: 0, decisionsAvailable: 0, upgradesPurchased: 0, waitingMinutes: 0,
   }]))
 
   for (let run = 0; run < runs; run += 1) {
@@ -75,17 +80,16 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
     let longestRecoveryWait = 0
     const discoveries = new Set<string>()
     const completedObjectives = new Set<string>()
+    const completedQuestStages = new Set<string>()
     const openedCaseIds = new Set<string>()
 
-    for (let minute = 1; minute <= 120; minute += 1) {
+    for (let minute = 1; minute <= checkpointMinutes.at(-1)!; minute += 1) {
       let acted = false
       cash += style.workIncomePerMinute + (minute >= 30 ? style.tradeIncomePerMinute : 0)
       if (style.workIncomePerMinute + (minute >= 30 ? style.tradeIncomePerMinute : 0) > 0.4) acted = true
 
       if (minute % style.openingEvery === 0 && openingCases.length > 0) {
-        const caseDef = playstyle === 'poor-decisions' && casesOpened >= 3
-          ? openingCases.at(-1)!
-          : casesOpened >= 5
+        const caseDef = casesOpened >= 5
             ? openingCases[casesOpened % openingCases.length]
             : openingCases[0]
         const maximumCredit = Math.min(credits, caseDef.cost * 0.35, 1.25)
@@ -127,6 +131,24 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
               fundingEarned += granted
             }
           }
+
+          const questStages: Array<[string, boolean, number, number]> = [
+            ['first-open', casesOpened >= 1, 1.5, 45],
+            ['three-discoveries', discoveries.size >= 3, 1.5, 70],
+            ['wear-awareness', discoveries.size >= 5, 2, 90],
+            ['case-tour', openedCaseIds.size >= 2, 1, 75],
+            ['ten-openings', casesOpened >= 10, 1.5, 120],
+            ['collection-ten', discoveries.size >= 10, 2, 160],
+            ['session-twenty', casesOpened >= 20, 1.5, 150],
+            ['collection-twenty-five', discoveries.size >= 25, 2, 220],
+          ]
+          for (const [id, complete, award, xp] of questStages) if (complete && !completedQuestStages.has(id)) {
+            completedQuestStages.add(id)
+            const granted = Math.max(0, Math.min(25 - credits, award))
+            credits += granted
+            fundingEarned += granted
+            careerXp += xp
+          }
         } else {
           recoveryWait += 1
           longestRecoveryWait = Math.max(longestRecoveryWait, recoveryWait)
@@ -155,6 +177,9 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
         aggregate.inventoryValue += inventoryValue
         aggregate.longestRecoveryWaitMinutes += longestRecoveryWait
         aggregate.objectivesCompleted += completedObjectives.size
+        aggregate.questStagesCompleted += completedQuestStages.size
+        aggregate.availableQuests += Math.max(1, 8 - completedQuestStages.size + Math.min(6, Math.floor(discoveries.size / 8)))
+        aggregate.decisionsAvailable += 3 + Number(cash >= (openingCases[0]?.cost ?? 999)) + Number(inventoryValue > 0) + Number(minute >= 30)
         aggregate.upgradesPurchased += upgradesPurchased
         aggregate.waitingMinutes += waitingMinutes
       }
@@ -179,6 +204,10 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
         inventoryValue: round(aggregate.inventoryValue / runs),
         longestRecoveryWaitMinutes: round(aggregate.longestRecoveryWaitMinutes / runs),
         objectivesCompleted: round(aggregate.objectivesCompleted / runs),
+        questStagesCompleted: round(aggregate.questStagesCompleted / runs),
+        availableQuests: round(aggregate.availableQuests / runs),
+        repeatedRewards: round(aggregate.repeatedRewards / runs),
+        decisionsAvailable: round(aggregate.decisionsAvailable / runs),
         upgradesPurchased: round(aggregate.upgradesPurchased / runs),
         waitingMinutes: round(aggregate.waitingMinutes / runs),
       }

@@ -14,6 +14,7 @@ type DailyRewardClaimedEvent = Extract<GameUiEvent, { type: 'daily_reward_claime
 type DailyChallengeClaimedEvent = Extract<GameUiEvent, { type: 'daily_challenge_claimed' }>
 type DailyChallengeRerolledEvent = Extract<GameUiEvent, { type: 'daily_challenge_rerolled' }>
 type MinigameCompletedEvent = Extract<GameUiEvent, { type: 'minigame_completed' }>
+type QuestToastEvent = Extract<GameUiEvent, { questId: string }>
 type SaleEvent = ItemSoldEvent | ItemsSoldEvent | ItemsAutoSoldEvent
 type ToastEvent =
   | SaleEvent
@@ -25,6 +26,7 @@ type ToastEvent =
   | DailyChallengeClaimedEvent
   | DailyChallengeRerolledEvent
   | MinigameCompletedEvent
+  | QuestToastEvent
 
 function isSaleEvent(event: GameUiEvent): event is SaleEvent {
   return event.type === 'item_sold' || event.type === 'items_sold' || event.type === 'items_auto_sold'
@@ -40,7 +42,10 @@ function isToastEvent(event: GameUiEvent): event is ToastEvent {
     event.type === 'daily_reward_claimed' ||
     event.type === 'daily_challenge_claimed' ||
     event.type === 'daily_challenge_rerolled' ||
-    event.type === 'minigame_completed'
+    event.type === 'minigame_completed' ||
+    event.type === 'quest_stage_ready' ||
+    event.type === 'quest_reward_claimed' ||
+    event.type === 'npc_item_delivered'
   )
 }
 
@@ -72,6 +77,9 @@ export function ToastNotifications() {
               event.type === 'daily_challenge_claimed' ||
               event.type === 'daily_challenge_rerolled' ||
               event.type === 'minigame_completed'
+              || event.type === 'quest_stage_ready'
+              || event.type === 'quest_reward_claimed'
+              || event.type === 'npc_item_delivered'
               ? 'border-rarity-special'
               : 'border-cs-green',
           ].join(' ')}
@@ -167,6 +175,11 @@ export function ToastNotifications() {
                   <p className="mt-1 text-sm text-cs-muted">
                     Earned <span className="font-semibold text-cs-green">{formatCurrency(event.reward)}</span>
                   </p>
+                </>
+              ) : event.type === 'quest_stage_ready' || event.type === 'quest_reward_claimed' || event.type === 'npc_item_delivered' ? (
+                <>
+                  <p className="font-mono text-xs uppercase text-rarity-classified">Quest update</p>
+                  <p className="mt-1 text-sm font-semibold text-cs-text">{event.message}</p>
                 </>
               ) : (
                 <>

@@ -242,7 +242,7 @@ describe('Business employee foundation', () => {
     const preserved = item(`legacy-v${version}`, { paintSeed: 661, floatValue: .123456, marketValue: 321 })
     const source = levelState(35, { inventory: [preserved], inventoryValue: 321, money: 12_345 })
     const migrated = parseGameSaveText(JSON.stringify({ version, savedAt: NOW, state: { ...source, business: undefined, lastSaved: NOW } }))
-    expect(createSaveEnvelope(migrated).version).toBe(39)
+    expect(createSaveEnvelope(migrated).version).toBe(40)
     expect(migrated.money).toBe(12_345)
     expect(migrated.inventory[0]).toMatchObject({ instanceId: preserved.instanceId, paintSeed: 661, floatValue: .123456 })
     expect(migrated.business.authoritative).toBe(true)

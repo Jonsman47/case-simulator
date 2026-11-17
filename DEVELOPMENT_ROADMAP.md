@@ -1,6 +1,22 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-10-19
+Updated: 2026-11-17
+
+## Living Gameplay Expansion — Prompt 1 of 2
+
+Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**
+
+- Normalize all 42 standard weapon cases to the official 1:5 rarity ratios and 2:5 Special/Covert ratio after every runtime modifier.
+- Remove the remaining false Gold near-miss presentation and retain predetermined immutable rewards.
+- Add 36 stable quests (eight story, 12 collection, eight opening, five NPC contracts, three weekly), exact-once bounded rewards, ownership/discovery semantics, and exact-item delivery.
+- Add eight recurring NPCs with original offline portraits, reputation/history, short dialogue, and bounded rival progression.
+- Add Classified/Covert/Gold reveal treatments plus permanent bounded opening-only Drop Journal.
+- Add v40 migration, Prestige rules, tracked-opening widget, responsive Quests destination, simulations, unit coverage, and browser journeys.
+- Keep Case Mastery and any new Dynamic Events replacement explicitly out of scope. Prompt 2 remains reserved for the next user specification.
+
+Detailed design and evidence: `case-opening-simulator/docs/QUESTS_NPCS_AND_DROP_EXPERIENCE.md`.
+
+Exit evidence: TypeScript and ESLint passed; 85 Vitest files / 497 tests passed; all 2,134 generated assets (197.4 MiB), Vite production bundling, PWA generation, and release verification passed; the deterministic simulation covered 300,000 careers, 500,000 production-linked openings, 95 upgrade rows, 45 employee rows, and 500 seeds across six early-game playstyles; and all 31 serial Chromium journeys passed against the production preview. Browser coverage includes exact-once 1/2/3/5/10 openings, quest claim/reload, genuine Gold reveal/journal persistence, every player-facing route, and seven desktop-to-mobile viewport checks.
 
 This roadmap reflects the inspected repository after completion of all six planned prompts. Any future maintenance task should still revalidate the code and `PROJECT_STATUS.md` before implementation.
 

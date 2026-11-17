@@ -8,6 +8,7 @@ import { CaseStatus, Rarity, type CaseDefinition } from './models'
 import type { ImportedCaseDefinition } from './importedAssetTypes'
 import { SKIN_DEFINITIONS } from './skins'
 import { applyCasePricingBalance, requiresCaseLicense } from './casePricing'
+import { applyOfficialWeaponCaseOdds } from './officialDropOdds'
 
 const PLACEHOLDER_CASE_IMAGE = '/assets/placeholder.png'
 const skinsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
@@ -258,9 +259,24 @@ const generatedCaseDefinitions = shouldUseGeneratedCaseDefinitions
 
 export const USING_GENERATED_CASE_DEFINITIONS = generatedCaseDefinitions.length > 0
 
+function applyContainerOddsProfiles(caseDefinitions: CaseDefinition[]) {
+  return caseDefinitions.map((caseDef) => {
+    // The imported catalog currently contains standard weapon cases. Future
+    // souvenir/special containers must explicitly use the custom profile.
+    const oddsProfile = caseDef.oddsProfile ?? 'standard-weapon-case'
+    return {
+      ...caseDef,
+      oddsProfile,
+      dropTable: oddsProfile === 'standard-weapon-case'
+        ? applyOfficialWeaponCaseOdds(caseDef.dropTable, skinsById)
+        : caseDef.dropTable.map((drop) => ({ ...drop })),
+    }
+  })
+}
+
 export const CASE_DEFINITIONS: CaseDefinition[] = USING_GENERATED_CASE_DEFINITIONS
-  ? applyCasePricingBalance(generatedCaseDefinitions, skinsById)
-  : PLACEHOLDER_CASE_DEFINITIONS
+  ? applyContainerOddsProfiles(applyCasePricingBalance(generatedCaseDefinitions, skinsById))
+  : PLACEHOLDER_CASE_DEFINITIONS.map((caseDef) => ({ ...caseDef, oddsProfile: 'custom' as const }))
 
 export interface CaseUnlockProgress {
   casesOpened: number

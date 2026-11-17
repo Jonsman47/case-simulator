@@ -718,7 +718,7 @@ describe('save system', () => {
     expect(migrated.prestigeSystem.totalPointsEarned).toBe(
       migrated.prestigePoints + migrated.prestigeSystem.totalPointsSpent,
     )
-    expect(createSaveEnvelope(migrated).version).toBe(39)
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
   })
 
   it('round-trips marketplace escrow, history, request ledger, and pending acquisition', () => {

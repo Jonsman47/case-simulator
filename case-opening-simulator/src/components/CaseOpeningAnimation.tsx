@@ -21,7 +21,8 @@ export interface CaseOpeningAnimationProps {
   careerXpEarned?: number
   finalItem: SkinInstance
   finalItems?: SkinInstance[]
-  firstCaseHook?: 'nearMissGold' | 'forcedGold'
+  firstRareItemIds?: string[]
+  personalBestItemIds?: string[]
   newDiscoveryItemIds?: string[]
   onComplete: (item: SkinInstance) => void
   potentialSkins: WeightedSkinOption[]
@@ -225,7 +226,6 @@ function buildReelItems(
   potentialSkins: WeightedSkinOption[],
   finalItem: SkinInstance,
   layout: ReelLayout,
-  nearMissGold = false,
 ) {
   const safeOptions =
     potentialSkins.length > 0
@@ -249,17 +249,6 @@ function buildReelItems(
   const beforeTarget = shuffledItems.slice(0, layout.targetIndex)
   const afterTarget = shuffledItems.slice(layout.targetIndex, layout.targetIndex + layout.afterCount)
   const finalSkin = isGoldSuspenseDrop(finalItem) ? getGoldSuspenseSkin(finalItem) : finalItem
-
-  if (nearMissGold && beforeTarget.length > 0) {
-    const suspenseSkin = getGoldSuspenseSkin(finalItem)
-
-    beforeTarget[beforeTarget.length - 1] = {
-      isFinal: false,
-      isSuspensePlaceholder: true,
-      key: `${finalItem.instanceId}-near-miss-gold`,
-      skin: suspenseSkin,
-    }
-  }
 
   return [
     ...beforeTarget,
@@ -312,10 +301,11 @@ export function CaseOpeningAnimation({
   careerXpEarned = 0,
   finalItem,
   finalItems,
-  firstCaseHook,
+  firstRareItemIds = [],
   newDiscoveryItemIds = [],
   onComplete,
   potentialSkins,
+  personalBestItemIds = [],
   soundEnabled = false,
   speed = 'normal',
   speedBonus = 0,
@@ -343,14 +333,9 @@ export function CaseOpeningAnimation({
   const reels = useMemo<OpeningReel[]>(
     () => animatedItems.map((item) => ({
       item,
-      reelItems: buildReelItems(
-        potentialSkins,
-        item,
-        layout,
-        firstCaseHook === 'nearMissGold' && item.instanceId === items[0]?.instanceId,
-      ),
+      reelItems: buildReelItems(potentialSkins, item, layout),
     })),
-    [animatedItems, firstCaseHook, items, layout, potentialSkins],
+    [animatedItems, layout, potentialSkins],
   )
   const [phase, setPhase] = useState<ReelPhase>(() => (startSkipped ? 'quickReveal' : 'ready'))
   const [rollStarted, setRollStarted] = useState(startSkipped)
@@ -364,6 +349,13 @@ export function CaseOpeningAnimation({
   const modalRef = useRef<HTMLElement>(null)
   const skipButtonRef = useRef<HTMLButtonElement>(null)
   const isPremiumBatch = useMemo(() => items.some(isPremiumRevealDrop), [items])
+  const revealTier = primaryItem.rarity === Rarity.SpecialItem || primaryItem.rarity === Rarity.Contraband
+    ? 'gold'
+    : primaryItem.rarity === Rarity.Covert
+      ? 'covert'
+      : primaryItem.rarity === Rarity.Classified
+        ? 'classified'
+        : 'standard'
   const keepsResultsOpen = isPremiumBatch || batchSize > 1
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
   const isRolling = rollStarted && (phase === 'spinning' || phase === 'quickReveal')
@@ -383,6 +375,7 @@ export function CaseOpeningAnimation({
       completedRef.current = true
       setPhase('revealed')
       stopCaseOpeningAudio(audioRef.current)
+      playRareRevealTone(soundEnabled, revealTier)
       if (!keepsResultsOpen) {
         completeTimerRef.current = window.setTimeout(() => {
           if (!closedRef.current) {
@@ -392,7 +385,7 @@ export function CaseOpeningAnimation({
         }, holdMs)
       }
     },
-    [keepsResultsOpen, onComplete, primaryItem, setPhase],
+    [keepsResultsOpen, onComplete, primaryItem, revealTier, setPhase, soundEnabled],
   )
 
   const cancelRollFrames = useCallback(() => {
@@ -498,7 +491,7 @@ export function CaseOpeningAnimation({
         role="dialog"
         tabIndex={-1}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="sticky top-0 z-50 -mx-3 -mt-3 flex items-start justify-between gap-4 border-b border-cs-border bg-cs-surface/95 px-3 py-3 backdrop-blur-sm sm:-mx-5 sm:-mt-5 sm:px-5 sm:py-4">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase text-rarity-special">{caseName}</p>
             <h2 className="mt-1 text-xl font-semibold text-cs-text sm:text-3xl">
@@ -547,7 +540,10 @@ export function CaseOpeningAnimation({
         <div
           className={[
             'relative overflow-hidden border bg-cs-panel transition-opacity',
-            isPremiumBatch && phase === 'revealed' ? 'border-rarity-special shadow-[0_0_44px_rgba(255,215,0,0.4)]' : 'border-cs-border',
+            phase === 'revealed' && revealTier === 'gold' ? 'rare-reveal border-rarity-special shadow-[0_0_44px_rgba(255,215,0,0.4)]' : '',
+            phase === 'revealed' && revealTier === 'covert' ? 'rare-reveal border-rarity-covert shadow-[0_0_36px_rgb(var(--rarity-covert)_/_0.35)]' : '',
+            phase === 'revealed' && revealTier === 'classified' ? 'rare-reveal border-rarity-classified shadow-[0_0_28px_rgb(var(--rarity-classified)_/_0.3)]' : '',
+            revealTier === 'standard' || phase !== 'revealed' ? 'border-cs-border' : '',
             batchSize > 1 && batchSize <= 10 ? 'mt-3 shrink-0 p-3' : 'mt-5 p-4',
             phase === 'revealed' || phase === 'quickReveal' ? 'opacity-100' : 'opacity-70',
           ].join(' ')}
@@ -572,9 +568,12 @@ export function CaseOpeningAnimation({
                     {primaryItem.weapon} | {primaryItem.finish}
                   </h3>
                   <div className="mt-2"><PatternBadge compact item={primaryItem} /></div>
+                  <p className="mt-2 font-mono text-xs text-cs-muted">Float {primaryItem.floatValue.toFixed(8)} · Pattern #{primaryItem.paintSeed ?? '—'}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {newDiscoveryItemIds.includes(primaryItem.instanceId) ? <span className="inline-flex items-center gap-1 border border-cs-green bg-cs-green/10 px-2 py-1 font-mono text-[10px] uppercase text-cs-green"><BookOpenCheck size={12} /> New discovery</span> : null}
                     {careerXpEarned > 0 ? <span className="inline-flex items-center gap-1 border border-rarity-special bg-rarity-special/10 px-2 py-1 font-mono text-[10px] uppercase text-rarity-special"><Sparkles size={12} /> +{careerXpEarned} XP</span> : null}
+                    {firstRareItemIds.includes(primaryItem.instanceId) ? <span className="inline-flex items-center gap-1 border border-rarity-classified bg-rarity-classified/10 px-2 py-1 font-mono text-[10px] uppercase text-rarity-classified">First rare drop</span> : null}
+                    {personalBestItemIds.includes(primaryItem.instanceId) ? <span className="inline-flex items-center gap-1 border border-rarity-special bg-rarity-special/10 px-2 py-1 font-mono text-[10px] uppercase text-rarity-special">Personal best</span> : null}
                   </div>
                 </div>
               </div>
@@ -912,6 +911,27 @@ function playCaseOpeningAudio(enabled: boolean) {
     return audio
   } catch {
     return undefined
+  }
+}
+
+function playRareRevealTone(enabled: boolean, tier: 'standard' | 'classified' | 'covert' | 'gold') {
+  if (!enabled || tier === 'standard' || typeof AudioContext === 'undefined') return
+  try {
+    const context = new AudioContext()
+    const gain = context.createGain()
+    const oscillator = context.createOscillator()
+    const frequency = tier === 'gold' ? 880 : tier === 'covert' ? 620 : 460
+    oscillator.type = tier === 'gold' ? 'triangle' : 'sine'
+    oscillator.frequency.setValueAtTime(frequency, context.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.35, context.currentTime + .22)
+    gain.gain.setValueAtTime(.0001, context.currentTime)
+    gain.gain.exponentialRampToValueAtTime(.12, context.currentTime + .025)
+    gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .38)
+    oscillator.connect(gain); gain.connect(context.destination)
+    oscillator.start(); oscillator.stop(context.currentTime + .4)
+    oscillator.addEventListener('ended', () => void context.close(), { once: true })
+  } catch {
+    // Browser autoplay/privacy policies may reject synthesized audio.
   }
 }
 

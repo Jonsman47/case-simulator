@@ -135,7 +135,6 @@ describe('authoritative economy ledger', () => {
       payload: {
         caseId: 'starter_case',
         openingEventId: 'ledger-opening-1',
-        firstCaseHookRoll: .5,
         now: 1_000,
       },
     })

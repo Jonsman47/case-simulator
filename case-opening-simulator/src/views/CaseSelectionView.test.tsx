@@ -4,6 +4,7 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 import { GameContext, type GameContextValue } from '../components/GameContext'
 import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
 import { defaultDropsByRarity, defaultGameState, type GameState } from '../data/gameState'
@@ -142,9 +143,11 @@ function renderCaseSelection(
   }
 
   render(
-    <GameContext.Provider value={value}>
-      <CaseSelectionView />
-    </GameContext.Provider>,
+    <MemoryRouter>
+      <GameContext.Provider value={value}>
+        <CaseSelectionView />
+      </GameContext.Provider>
+    </MemoryRouter>,
   )
 
   return { openCase, purchaseCaseLicense }

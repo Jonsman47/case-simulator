@@ -23,6 +23,7 @@ const MarketEvents = lazy(() => import('./views/MarketEvents').then((module) => 
 const Prestige = lazy(() => import('./views/Prestige').then((module) => ({ default: module.Prestige })))
 const PlayerProfileView = lazy(() => import('./views/PlayerProfileView').then((module) => ({ default: module.PlayerProfileView })))
 const RewardsView = lazy(() => import('./views/RewardsView').then((module) => ({ default: module.RewardsView })))
+const QuestsView = lazy(() => import('./views/QuestsView').then((module) => ({ default: module.QuestsView })))
 const Settings = lazy(() => import('./views/Settings').then((module) => ({ default: module.Settings })))
 const TradeUps = lazy(() => import('./views/TradeUps').then((module) => ({ default: module.TradeUps })))
 const TrophyRoom = lazy(() => import('./views/TrophyRoom').then((module) => ({ default: module.TrophyRoom })))
@@ -74,6 +75,7 @@ function App() {
                 }
               />
               <Route path="rewards" element={<Suspense fallback={<RouteFallback />}><RewardsView /></Suspense>} />
+              <Route path="quests" element={<Suspense fallback={<RouteFallback />}><QuestsView /></Suspense>} />
               <Route path="trade-ups" element={<Suspense fallback={<RouteFallback />}><TradeUps /></Suspense>} />
               <Route path="automation" element={<Navigate to="/business" replace />} />
               <Route path="business" element={<Suspense fallback={<RouteFallback />}><Business /></Suspense>} />
