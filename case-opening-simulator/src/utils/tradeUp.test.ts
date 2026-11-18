@@ -6,6 +6,8 @@ import {
   calculateTradeUpOutputFloat,
   calculateTradeUpOutcomes,
   getNextTradeUpRarity,
+  getTradeUpCompatibilityReason,
+  getTradeUpEditionGroup,
   getTradeUpProfitability,
   isTradeUpEligibleItem,
   suggestBestTradeUps,
@@ -204,13 +206,51 @@ describe('trade-up utilities', () => {
   it('rejects mixed StatTrak contracts but permits Souvenir inputs as regular edition', () => {
     const mixedStatTrak = makeTradeUpInputs()
     mixedStatTrak[0] = { ...mixedStatTrak[0], statTrak: true }
-    expect(analyzeTradeUp({ inputItems: mixedStatTrak, marketValues: {} }).isSameEdition).toBe(false)
+    const mixedAnalysis = analyzeTradeUp({ inputItems: mixedStatTrak, marketValues: {} })
+    expect(mixedAnalysis.isSameEdition).toBe(false)
+    expect(mixedAnalysis.message).toContain('1 StatTrak™')
+    expect(mixedAnalysis.message).toContain('9 regular')
 
     const souvenirInputs = makeTradeUpInputs().map((item, index) => ({ ...item, souvenir: index % 2 === 0 }))
     const analysis = analyzeTradeUp({ inputItems: souvenirInputs, marketValues: {} })
     expect(analysis.isSameEdition).toBe(true)
     expect(analysis.outputIsStatTrak).toBe(false)
     expect(analysis.outcomes.every((outcome) => !outcome.isStatTrak)).toBe(true)
+    expect(analysis.editionCounts).toEqual({ regular: 5, souvenir: 5, statTrak: 0 })
+    expect(getTradeUpEditionGroup(souvenirInputs)).toBe('standard')
+  })
+
+  it('explains edition incompatibility before adding an item', () => {
+    const statTrakInputs = [makeItem({ statTrak: true })]
+    expect(getTradeUpCompatibilityReason(makeItem({ instanceId: 'regular' }), statTrakInputs)).toContain('StatTrak™ contract')
+    expect(getTradeUpCompatibilityReason(makeItem({ instanceId: 'souvenir', souvenir: true }), statTrakInputs)).toContain('incompatible')
+    expect(getTradeUpCompatibilityReason(makeItem({ instanceId: 'st', statTrak: true }), statTrakInputs)).toBeUndefined()
+  })
+
+  it('keeps negative expected return advisory for valid manual contracts', () => {
+    const inputs = makeTradeUpInputs({ marketValue: 100 })
+    const skins: SkinBase[] = [{
+      id: 'cheap-output', weapon: 'MP7', finish: 'Cheap', rarity: Rarity.Industrial,
+      baseValue: 1, caseIds: ['starter_case'], image: '/assets/placeholder.png',
+    }]
+    const analysis = analyzeTradeUp({ inputItems: inputs, marketValues: { p250_sand_dune: 100 }, skins })
+    expect(analysis.canTradeUp).toBe(true)
+    expect(analysis.hasCompleteValuation).toBe(true)
+    expect(analysis.expectedProfit).toBeLessThan(0)
+    expect(analysis.expectedProfit / analysis.inputValue).toBeLessThan(-0.9)
+  })
+
+  it('does not describe missing outcome valuations as a guaranteed loss', () => {
+    const inputs = makeTradeUpInputs({ marketValue: 100 })
+    const skins: SkinBase[] = [{
+      id: 'unknown-output', weapon: 'MP7', finish: 'Unknown', rarity: Rarity.Industrial,
+      baseValue: 0, caseIds: ['starter_case'], image: '/assets/placeholder.png',
+    }]
+    const analysis = analyzeTradeUp({ inputItems: inputs, marketValues: { p250_sand_dune: 100 }, skins })
+    expect(analysis.canTradeUp).toBe(true)
+    expect(analysis.hasCompleteValuation).toBe(false)
+    expect(analysis.unvaluedOutcomeCount).toBe(1)
+    expect(analysis.outcomes[0]).toMatchObject({ hasValuation: false, valuationConfidence: 'unavailable' })
   })
 
   it('normalizes every input against its own float range before mapping each output range', () => {

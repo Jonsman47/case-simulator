@@ -1,0 +1,47 @@
+[
+  {
+    "name": "desktop-1920",
+    "documentHeight": 1146,
+    "horizontalOverflow": -15,
+    "navHeight": 53,
+    "viewportHeight": 1080,
+    "viewportWidth": 1920,
+    "workbenchHeight": 917.71875
+  },
+  {
+    "name": "laptop-1366",
+    "documentHeight": 1146,
+    "horizontalOverflow": -15,
+    "navHeight": 53,
+    "viewportHeight": 768,
+    "viewportWidth": 1366,
+    "workbenchHeight": 917.71875
+  },
+  {
+    "name": "laptop-1280",
+    "documentHeight": 1165,
+    "horizontalOverflow": -15,
+    "navHeight": 53,
+    "viewportHeight": 720,
+    "viewportWidth": 1280,
+    "workbenchHeight": 937.234375
+  },
+  {
+    "name": "tablet-768",
+    "documentHeight": 1837,
+    "horizontalOverflow": -15,
+    "navHeight": 0,
+    "viewportHeight": 1024,
+    "viewportWidth": 768,
+    "workbenchHeight": 1583.375
+  },
+  {
+    "name": "mobile-375",
+    "documentHeight": 2916,
+    "horizontalOverflow": -15,
+    "navHeight": 0,
+    "viewportHeight": 812,
+    "viewportWidth": 375,
+    "workbenchHeight": 2460
+  }
+]

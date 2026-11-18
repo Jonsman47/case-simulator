@@ -1118,6 +1118,23 @@ describe('gameReducer OPEN_CASE', () => {
     )
   })
 
+  it('executes a valid player contract even when its expected return is strongly negative', () => {
+    const inputItems = makeTradeUpItems({ marketValue: 10_000 })
+    const state = makeState({
+      inventory: inputItems,
+      marketValues: { ...defaultGameState.marketValues, p250_sand_dune: 10_000 },
+    })
+    const nextState = gameReducer(state, {
+      type: 'TRADE_UP',
+      itemIds: inputItems.map((item) => item.instanceId),
+    })
+
+    expect(nextState.statistics.tradeUpsCompleted).toBe(state.statistics.tradeUpsCompleted + 1)
+    expect(nextState.inventory).toHaveLength(1)
+    expect(nextState.ui.tradeUpHistory).toHaveLength(1)
+    expect(nextState.ui.tradeUpHistory[0].profit).toBeLessThan(0)
+  })
+
   it('maps trade-up output float from the average input float into the output range', () => {
     const inputItems = makeTradeUpItems().map((item, index) => ({
       ...item,

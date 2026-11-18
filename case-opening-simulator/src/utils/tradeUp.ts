@@ -1,6 +1,6 @@
 import { pickDrop, type DropTableEntry, type Prng } from '../data/dropLogic'
 import { Rarity, type SkinBase, type SkinInstance, type WearCondition } from '../data/models'
-import { getMarketAdjustedSkinConditionPrice } from '../data/skinPrices'
+import { getMarketAdjustedSkinConditionPrice, getSkinPriceConfidence } from '../data/skinPrices'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { getCurrentItemMarketValue } from './inventory'
 import { isExceptionalPattern } from './skinPatterns'
@@ -31,6 +31,8 @@ export interface TradeUpOutcome {
   sourceCaseIds: string[]
   sourceGroups: string[]
   value: number
+  hasValuation: boolean
+  valuationConfidence: 'market' | 'estimated' | 'unavailable'
   weight: number
   isStatTrak: boolean
 }
@@ -40,6 +42,7 @@ export interface TradeUpAnalysis {
   expectedProfit: number
   expectedValue: number
   hasProtectedItems: boolean
+  hasCompleteValuation: boolean
   inputCount: number
   inputRarity?: Rarity
   inputValue: number
@@ -51,6 +54,9 @@ export interface TradeUpAnalysis {
   outcomes: TradeUpOutcome[]
   profitability: TradeUpProfitability
   outputIsStatTrak: boolean
+  editionCounts: { regular: number; souvenir: number; statTrak: number }
+  editionGroup: 'none' | 'standard' | 'stattrak' | 'mixed'
+  unvaluedOutcomeCount: number
 }
 
 export interface TradeUpSuggestion {
@@ -88,6 +94,28 @@ export function getNextTradeUpRarity(rarity: Rarity) {
 
 export function isTradeUpEligibleItem(item: SkinInstance) {
   return Boolean(getNextTradeUpRarity(item.rarity)) && !item.isLocked && !item.isFavorited && !isExceptionalPattern(item)
+}
+
+export function getTradeUpEditionGroup(items: Pick<SkinInstance, 'statTrak'>[]): TradeUpAnalysis['editionGroup'] {
+  if (items.length === 0) return 'none'
+  const statTrakCount = items.filter((item) => item.statTrak).length
+  if (statTrakCount === items.length) return 'stattrak'
+  if (statTrakCount === 0) return 'standard'
+  return 'mixed'
+}
+
+export function getTradeUpCompatibilityReason(candidate: SkinInstance, selectedItems: SkinInstance[]) {
+  if (candidate.isLocked) return 'Locked items are protected and cannot be consumed.'
+  if (candidate.isFavorited) return 'Favorited items are protected and cannot be consumed.'
+  if (isExceptionalPattern(candidate)) return 'Exceptional Patterns are protected from contracts.'
+  if (!getNextTradeUpRarity(candidate.rarity)) return 'This rarity has no valid Trade-Up output.'
+  const first = selectedItems[0]
+  if (!first) return undefined
+  if (candidate.rarity !== first.rarity) return `This contract requires ${first.rarity} inputs.`
+  const group = getTradeUpEditionGroup(selectedItems)
+  if (group === 'stattrak' && !candidate.statTrak) return 'This is a StatTrak™ contract. Regular and Souvenir inputs are incompatible.'
+  if (group === 'standard' && candidate.statTrak) return 'This is a standard contract. StatTrak™ inputs require a separate contract.'
+  return undefined
 }
 
 export function getTradeUpInputRarity(items: SkinInstance[]) {
@@ -143,14 +171,21 @@ function getOutputsForSource(sourceGroup: string, outcomeRarity: Rarity, isStatT
 }
 
 function getOutcomeValue(skin: SkinBase, wear: WearCondition, isStatTrak: boolean, marketValues: Record<string, number>) {
-  return roundCurrency(getMarketAdjustedSkinConditionPrice({
+  const value = getMarketAdjustedSkinConditionPrice({
     fallbackValue: marketValues[skin.id] ?? skin.baseValue,
     isStatTrak,
     isSouvenir: false,
     marketValues,
     skin,
     wear,
-  }) ?? marketValues[skin.id] ?? skin.baseValue)
+  }) ?? marketValues[skin.id] ?? skin.baseValue
+  const hasValuation = Number.isFinite(value) && value > 0
+  const confidence = hasValuation ? getSkinPriceConfidence(skin, wear, isStatTrak, false) : 'estimated'
+  return {
+    value: hasValuation ? roundCurrency(value) : 0,
+    hasValuation,
+    valuationConfidence: hasValuation && confidence === 'market' ? 'market' as const : hasValuation ? 'estimated' as const : 'unavailable' as const,
+  }
 }
 
 export function calculateTradeUpOutcomes({
@@ -192,7 +227,8 @@ export function calculateTradeUpOutcomes({
     const normalizedProbability = entry.probability / totalProbability
     const predictedFloat = calculateTradeUpOutputFloat(inputItems, skin)
     const predictedWear = getWearConditionForFloat(skin, predictedFloat)
-    const value = getOutcomeValue(skin, predictedWear, isStatTrak, marketValues)
+    const valuation = getOutcomeValue(skin, predictedWear, isStatTrak, marketValues)
+    const value = valuation.value
     const sourceGroupsForOutcome = [...entry.sourceGroups].sort()
     return [{
       expectedContribution: roundCurrency(value * normalizedProbability),
@@ -203,6 +239,8 @@ export function calculateTradeUpOutcomes({
       sourceCaseIds: sourceGroupsForOutcome.filter((source) => !source.startsWith('collection:')).map((source) => source.replace(/^case:/, '')),
       sourceGroups: sourceGroupsForOutcome,
       value,
+      hasValuation: valuation.hasValuation,
+      valuationConfidence: valuation.valuationConfidence,
       weight: normalizedProbability,
       isStatTrak,
     }]
@@ -227,6 +265,10 @@ export function analyzeTradeUp({
   const isCorrectCount = inputItems.length === inputCount
   const isSameRarity = Boolean(inputRarity)
   const statTrakCount = inputItems.filter((item) => item.statTrak).length
+  const souvenirCount = inputItems.filter((item) => item.souvenir && !item.statTrak).length
+  const regularCount = inputItems.length - statTrakCount - souvenirCount
+  const editionCounts = { regular: regularCount, souvenir: souvenirCount, statTrak: statTrakCount }
+  const editionGroup = getTradeUpEditionGroup(inputItems)
   const isSameEdition = statTrakCount === 0 || statTrakCount === inputItems.length
   const outputIsStatTrak = inputItems.length > 0 && statTrakCount === inputItems.length
   void inputCostMultiplier
@@ -236,10 +278,12 @@ export function analyzeTradeUp({
     : []
   const expectedValue = roundCurrency(outcomes.reduce((total, outcome) => total + outcome.expectedContribution, 0))
   const expectedProfit = roundCurrency(expectedValue - inputValue)
+  const unvaluedOutcomeCount = outcomes.filter((outcome) => !outcome.hasValuation).length
+  const hasCompleteValuation = outcomes.length > 0 && unvaluedOutcomeCount === 0
   let message: string | undefined
   if (!isCorrectCount) message = `Select exactly ${inputCount} ${inputRarity === Rarity.Covert ? 'Covert ' : ''}skins.`
   else if (!isSameRarity) message = 'All selected skins must have the same rarity.'
-  else if (!isSameEdition) message = 'StatTrak items cannot be mixed with regular or Souvenir items.'
+  else if (!isSameEdition) message = `This contract contains ${statTrakCount} StatTrak™, ${regularCount} regular, and ${souvenirCount} Souvenir skin${souvenirCount === 1 ? '' : 's'}. Use one compatible edition group: all StatTrak™, or standard inputs (regular and Souvenir).`
   else if (hasProtectedItems) message = 'Locked, favorited, or exceptional-pattern skins cannot be used in trade-ups.'
   else if (!outcomeRarity) message = 'This rarity cannot be traded up.'
   else if (outcomes.length === 0) message = inputRarity === Rarity.Covert
@@ -247,9 +291,10 @@ export function analyzeTradeUp({
     : 'No valid next-rarity outcomes exist for the represented collections.'
   const canTradeUp = !message && outcomes.length > 0
   return {
-    canTradeUp, expectedProfit, expectedValue, hasProtectedItems, inputCount, inputRarity, inputValue,
+    canTradeUp, expectedProfit, expectedValue, hasProtectedItems, hasCompleteValuation, inputCount, inputRarity, inputValue,
     isCorrectCount, isSameEdition, isSameRarity, message, outcomeRarity, outcomes,
     profitability: getTradeUpProfitability(expectedProfit, canTradeUp), outputIsStatTrak,
+    editionCounts, editionGroup, unvaluedOutcomeCount,
   }
 }
 
@@ -284,7 +329,7 @@ export function suggestBestTradeUps({
     const inputCount = getTradeUpInputCount(group[0]?.rarity)
     const inputItems = [...group].sort((a, b) => getTradeUpItemValue(a, marketValues) - getTradeUpItemValue(b, marketValues)).slice(0, inputCount)
     const analysis = analyzeTradeUp({ inputCostMultiplier, inputItems, marketValues })
-    if (analysis.canTradeUp && analysis.expectedProfit > PROFITABLE_TRADE_UP_EPSILON) suggestions.push({ analysis, inputItems, score: analysis.expectedProfit })
+    if (analysis.canTradeUp && analysis.hasCompleteValuation && analysis.expectedProfit > PROFITABLE_TRADE_UP_EPSILON) suggestions.push({ analysis, inputItems, score: analysis.expectedProfit })
   }
   return suggestions.sort((a, b) => b.score - a.score).slice(0, limit)
 }

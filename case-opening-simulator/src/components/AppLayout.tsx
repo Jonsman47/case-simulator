@@ -208,12 +208,12 @@ export function AppLayout() {
       data-ui-density="compact"
         style={themeStyle}
       >
-      <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-[110rem] flex-col px-2 py-2 sm:px-3 sm:py-2.5 lg:px-4">
+      <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-[118rem] flex-col px-2 py-2 sm:px-3 sm:py-2 lg:px-3">
         <StatusHeader />
         <TopNav isAdminUser={isAdminUser} state={state} />
         <MarketEventBanner />
         <main
-          className="app-content flex min-w-0 w-full flex-1 py-2 sm:py-3"
+          className="app-content flex min-w-0 w-full flex-1 py-2 sm:py-2.5"
           onTouchEnd={handleMainTouchEnd}
           onTouchStart={handleMainTouchStart}
         >

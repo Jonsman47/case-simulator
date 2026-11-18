@@ -37,6 +37,9 @@ for (const viewport of [
     await page.goto('/business')
     await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+    await page.goto('/trade-ups')
+    await expect(page.getByTestId('trade-up-workbench')).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
     if (viewport.name === 'mobile-390' && !process.env.CI) {
       await page.goto('/work')
       await expect(page.getByRole('heading', { name: 'Precision Strike' })).toBeVisible()

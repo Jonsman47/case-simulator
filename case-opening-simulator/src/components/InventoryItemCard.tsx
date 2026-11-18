@@ -8,6 +8,7 @@ import { getSkinRarityColor } from '../data/rarities'
 import { getSkinPriceConfidence } from '../data/skinPrices'
 import { AssetImage } from './AssetImage'
 import { PatternBadge } from './PatternInfo'
+import { ItemEditionBadge } from './ItemEditionBadge'
 
 const rarityStyles: Record<Rarity, { border: string }> = {
   [Rarity.Consumer]: {
@@ -131,7 +132,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
   return (
     <article
       className={[
-        'relative flex h-full min-h-[16.5rem] min-w-0 cursor-pointer touch-manipulation flex-col border bg-cs-panel p-2 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[17.5rem]',
+        'relative flex h-full min-h-[14.5rem] min-w-0 cursor-pointer touch-manipulation flex-col border bg-cs-panel p-2 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15.25rem]',
         styles.border,
         isDuplicateSkin ? 'shadow-glow' : '',
         isSelected ? 'ring-2 ring-rarity-special' : '',
@@ -217,6 +218,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
       </div>
 
       <div className="mt-2 min-w-0 flex-1">
+        <div className="mb-1.5 flex flex-wrap gap-1"><ItemEditionBadge compact item={item} /></div>
         <h3 className="truncate text-sm font-semibold text-cs-text">
           {item.weapon} | {item.finish}
         </h3>

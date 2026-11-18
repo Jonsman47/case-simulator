@@ -1,6 +1,21 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-11-17
+Updated: 2026-11-18
+
+## Trade-Up Experience & UI Scale Correction
+
+Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**
+
+- Rebuilt Trade-Ups as a readable tactical workbench with large 10/5-slot sheets, real item imagery, full picker filters, explicit compatibility reasons, outcome inspection, irreversible review and an authoritative skippable reveal.
+- Added shared Regular / StatTrak™ / Souvenir labels across Inventory, inspection and every Trade-Up surface; mixed editions now report exact counts rather than a generic failure.
+- Kept manual profitability advisory: negative-EV contracts are executable and losses at or below -50% require acknowledgment. Kept automated contracts conservative through complete-valuation, EV, ROI, budget, rarity and collection checks.
+- Treats missing valuations as unavailable instead of fake -100% outcomes, without hiding valid results or changing probability calculations.
+- Expanded the desktop density token pass, shell width, header rhythm and Inventory proportions without CSS zoom/transform or undersized mobile controls.
+- Preserved v41 save compatibility, item identities, case odds, selection ownership, reducer transaction safety and reload-proof pending acquisitions.
+
+Detailed implementation, measured before/after results and five viewport screenshot pairs: `case-opening-simulator/docs/TRADE_UP_EXPERIENCE_AND_DENSITY.md`.
+
+Exit evidence: standalone TypeScript and ESLint passed; 90 Vitest files / 513 tests passed; all 2,134 assets, Vite/PWA production build and release verification passed; Career/early-game simulations passed; and the clean serial Chromium suite passed 36/36 journeys in 7.6 minutes at seven desktop-to-mobile widths.
 
 ## Living Gameplay Expansion — Prompt 2 of 2
 
@@ -132,6 +147,18 @@ Exit evidence: 66 unit files/335 tests, lint, TypeScript, production/PWA build, 
 | 6. Final UI/accessibility/balance/release | **COMPLETE** |
 
 Estimated overall completion after Stage 6: **99%**. The remaining 1% is credential-dependent Supabase proof, five source-rate-limited price matches, exact seed-specific artwork limitations, and controlled physical-device profiling—not unfinished core gameplay.
+
+## Post-release Trade-Up Experience and UI Scale Correction
+
+Status: **IMPLEMENTED — FINAL VERIFICATION RECORDED IN PROJECT_STATUS.md**
+
+- Replaced the spreadsheet-like Trade-Up screen with a tactical workbench, readable 5×2 or five-Covert slots, real item imagery, a full inventory picker, sticky risk analysis, inspectable real outcome cards, deliberate review, and a skippable reducer-backed reveal.
+- Added reusable textual Regular, StatTrak™, and Souvenir edition markers across every requested owned-item and Trade-Up surface.
+- Added exact per-item compatibility explanations, edition filters, compatible-only browsing, quick-fill, sorting, and existing protection enforcement.
+- Kept negative EV advisory for valid manual contracts and added explicit high-loss acknowledgment; retained every automated Trade-Up Specialist risk limit.
+- Distinguished unavailable valuations from genuine measured losses.
+- Expanded the non-transform desktop density layer and recorded deterministic before/after evidence at 1920, 1366, 1280, 768, and 375 px widths.
+- Preserved v41 without migration because no persistent field or transaction authority changed.
 
 ## Post-release Playtest Fixes — Batch 1
 

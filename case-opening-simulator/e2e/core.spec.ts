@@ -529,7 +529,7 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
   const seeded = await readSave(page)
   const createdAt = Date.now()
   seeded.state.inventory = Array.from({ length: 10 }, (_, index) => ({
-    id: 'skin-06a633fd8293',
+    id: 'e2e-expensive-trade-input',
     weapon: 'AUG',
     finish: 'Surveillance',
     rarity: 'Consumer',
@@ -541,7 +541,7 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
     instanceId: `e2e-trade-up-${index}`,
     wear: 'FactoryNew',
     floatValue: index / 1000,
-    marketValue: 0.03,
+    marketValue: 1_000,
     isLocked: false,
     isFavorited: false,
     discoveredAt: createdAt + index,
@@ -549,7 +549,8 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
     pattern: { family: 'standard', name: 'Standard pattern', premiumMultiplier: 1, referenceConfidence: 'neutral', tier: 'standard' },
     patternPremium: 0,
   }))
-  seeded.state.inventoryValue = 0.3
+  seeded.state.marketValues['e2e-expensive-trade-input'] = 1_000
+  seeded.state.inventoryValue = 10_000
   seeded.state.ui.tradeUpHistory = []
   seeded.state.marketplace.pendingAcquisition = undefined
   await page.addInitScript(({ key, envelope }) => {
@@ -561,14 +562,19 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
   const inputs = page.getByTestId('trade-up-inventory-item')
   await expect(inputs).toHaveCount(10)
   for (let index = 0; index < 10; index += 1) await inputs.nth(index).click()
-  await expect(page.getByText('10/10 items selected')).toBeVisible()
-  await expect(page.getByText('Probability & risk')).toBeVisible()
+  await expect(page.getByText('10/10 signed')).toBeVisible()
+  await expect(page.getByText('Contract analysis')).toBeVisible()
   await expect(page.getByText(/outcomes$/).first()).not.toHaveText('0 outcomes')
+  await expect(page.getByTestId('negative-ev-warning')).toBeVisible()
   await page.getByRole('button', { name: 'Review Contract' }).click()
   await expect(page.getByText('Final irreversible review')).toBeVisible()
+  const riskConfirmation = page.getByRole('checkbox', { name: /could lose most/i })
+  if (await riskConfirmation.isVisible().catch(() => false)) await riskConfirmation.check()
   await page.getByTestId('execute-trade-up').click()
   const reveal = page.getByRole('dialog')
-  await expect(reveal.getByText('New Item')).toBeVisible()
+  await expect(reveal.getByText('Contract sealed')).toBeVisible()
+  await reveal.getByRole('button', { name: 'Skip reveal' }).click()
+  await expect(reveal.getByText('Contract Result')).toBeVisible()
   await expect(reveal.getByText('Trade-up output')).toBeVisible()
   await page.waitForFunction(({ key, expected }) => {
     const state = JSON.parse(localStorage.getItem(key) ?? '{}').state
@@ -588,6 +594,42 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
   expect(persisted.state.ui.tradeUpHistory).toHaveLength(1)
   await expect(page.getByText('Recent contracts')).toBeVisible()
   await expect(page.getByText('1/24 retained')).toBeVisible()
+})
+
+test('Trade-Up picker labels editions and explains incompatible selections', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  const baseItem = {
+    id: 'skin-06a633fd8293', weapon: 'AUG', finish: 'Surveillance', rarity: 'Consumer',
+    baseValue: 0.03, baseMarketValue: 0.03, caseIds: [], collections: ['The Control Collection'],
+    image: '/assets/cs2/skins/skin-06a633fd8293_aug_surveillance.png', wear: 'FactoryNew',
+    floatValue: .01, marketValue: .03, isLocked: false, isFavorited: false,
+    discoveredAt: Date.now(), paintSeed: 1,
+    pattern: { family: 'standard', name: 'Standard pattern', premiumMultiplier: 1, referenceConfidence: 'neutral', tier: 'standard' },
+    patternPremium: 0,
+  }
+  seeded.state.inventory = [
+    { ...baseItem, instanceId: 'edition-st', statTrak: true },
+    { ...baseItem, instanceId: 'edition-regular', paintSeed: 2 },
+    { ...baseItem, instanceId: 'edition-souvenir', paintSeed: 3, souvenir: true },
+  ]
+  await page.addInitScript(({ key, envelope }) => {
+    if (sessionStorage.getItem('trade-up-editions-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('trade-up-editions-seeded', '1')
+  }, { key: saveKey, envelope: seeded })
+  await page.goto('/trade-ups')
+  await expect(page.getByLabel('Edition: StatTrak™')).toBeVisible()
+  await expect(page.getByLabel('Edition: Regular')).toBeVisible()
+  await expect(page.getByLabel('Edition: Souvenir')).toBeVisible()
+  await page.getByTestId('trade-up-inventory-item').filter({ hasText: 'StatTrak™' }).click()
+  await page.getByRole('button', { name: 'Compatible only' }).click()
+  const regular = page.getByRole('button', { name: /Edition: Regular AUG/ })
+  await expect(regular).toContainText('This is a StatTrak™ contract')
+  await regular.click()
+  await expect(page.getByRole('alert')).toContainText('Regular AUG | Surveillance')
+  await expect(page.getByRole('alert')).toContainText('StatTrak™ contract')
 })
 
 test('Large Text and Light theme are readable, persistent, and do not create horizontal overflow', async ({ page }) => {

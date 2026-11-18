@@ -19,6 +19,7 @@ import { AssetImage } from './AssetImage'
 import { PriceChart } from './PriceChart'
 import { PatternBadge, PatternDetails } from './PatternInfo'
 import { isExceptionalPattern } from '../utils/skinPatterns'
+import { ItemEditionBadge } from './ItemEditionBadge'
 
 export interface ItemDetailModalProps {
   item: SkinInstance | undefined
@@ -402,16 +403,7 @@ export function ItemDetailModal({
               >
                 {getSkinRarityLabel(item)}
               </span>
-              {item.statTrak ? (
-                <span className="border border-cs-amber bg-cs-amber/10 px-2 py-1 font-mono text-xs uppercase text-cs-amber">
-                  StatTrak
-                </span>
-              ) : null}
-              {item.souvenir ? (
-                <span className="border border-cs-green bg-cs-green/10 px-2 py-1 font-mono text-xs uppercase text-cs-green">
-                  Souvenir
-                </span>
-              ) : null}
+              <ItemEditionBadge item={item} showRegular />
               <PatternBadge item={item} />
             </div>
             <h2 className="mt-3 truncate text-2xl font-semibold text-cs-text sm:text-3xl" id={titleId}>
