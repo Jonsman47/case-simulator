@@ -117,6 +117,8 @@ function CaseCard({
 }) {
   return (
     <button
+      data-case-selected={isSelected ? 'true' : 'false'}
+      data-onboarding-target={isSelected && canOpenCaseFromSelection(caseDef, state) ? 'starter-case' : undefined}
       className={[
         'group flex min-h-[15rem] flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[17rem] sm:p-3',
         isSelected ? 'border-rarity-special ring-2 ring-rarity-special' : 'border-cs-border',
@@ -506,7 +508,7 @@ function CaseDetailPanel({
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-4" data-onboarding-target="open-case-controls">
         <CaseOpenControls
           canOpen={canOpen}
           caseDef={caseDef}

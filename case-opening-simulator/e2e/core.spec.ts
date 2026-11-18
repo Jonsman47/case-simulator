@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 const saveKey = 'case-opening-simulator:game-state'
 
 async function dismissTutorial(page: Page) {
-  const skip = page.getByRole('button', { name: 'Skip tutorial' })
+  const skip = page.getByRole('button', { name: 'Skip beginner tutorial' })
   if (await skip.isVisible().catch(() => false)) await skip.click()
 }
 
@@ -385,9 +385,13 @@ test('Business hires, funds, schedules, and persists a paid Case Operator', asyn
   }, { envelope: seeded, key: saveKey })
   await page.goto('/business')
   await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
+  await expect(page.getByRole('status', { name: 'Hiring your first employee' })).toBeVisible()
+  await page.getByRole('button', { name: 'Dismiss Hiring your first employee' }).click()
   const caseOperator = page.locator('article').filter({ has: page.getByRole('heading', { name: 'Case Operator' }) }).first()
   await caseOperator.getByRole('button', { name: /Hire/ }).click()
   await expect(caseOperator.getByRole('button', { name: 'Configure' })).toBeVisible()
+  await expect(page.getByRole('status', { name: 'Configure operations' })).toBeVisible()
+  await page.getByRole('button', { name: 'Dismiss Configure operations' }).click()
   await caseOperator.getByRole('button', { name: 'Configure' }).click()
   const configuration = page.getByRole('dialog')
   await configuration.getByRole('spinbutton', { name: 'Budget amount' }).fill('250')
@@ -404,6 +408,7 @@ test('Business hires, funds, schedules, and persists a paid Case Operator', asyn
   expect(after.state.career.specializations.business.currentRunXp).toBeGreaterThan(0)
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
+  await expect(page.getByRole('status', { name: /Hiring your first employee|Configure operations/ })).toHaveCount(0)
 })
 
 test('focused Memory Circuit stays visible, completes all rounds, and cannot claim twice', async ({ page }) => {
@@ -452,18 +457,137 @@ test('focused Memory Circuit stays visible, completes all rounds, and cannot cla
 test('tutorial progress persists, completion stays dismissed, and Settings can replay it', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('onboarding-tutorial')).toBeVisible()
-  await expect(page.getByText('Open Your First Case')).toBeVisible()
+  await expect(page.getByText('Welcome to your CS2 trading career')).toBeVisible()
   await dismissPwaNotification(page)
   await page.getByRole('button', { name: /Next/i }).click()
-  await expect(page.getByText('Know What Can Drop')).toBeVisible()
+  await expect(page.getByText('Open the Cases catalog')).toBeVisible()
+  await page.getByRole('link', { name: /Cases/ }).first().click()
+  await expect(page.getByText('Open one case')).toBeVisible()
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.getByText('Know What Can Drop')).toBeVisible()
-  await page.getByRole('button', { name: 'Skip tutorial' }).click()
+  await expect(page.getByText('Open one case')).toBeVisible()
+  await page.getByRole('button', { name: 'Open 1' }).first().click()
+  await expect(page.getByRole('dialog', { name: 'Case opening animation' })).toBeVisible()
+  await page.getByRole('button', { name: 'Skip opening animation' }).click()
+  await expect(page.getByText('Read your result')).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: /Next/i }).click()
+  await page.getByRole('button', { name: 'Skip beginner tutorial' }).click()
   await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
   await page.goto('/settings')
   await page.getByRole('button', { name: 'Review Tutorial' }).click()
-  await expect(page.getByText('Open Your First Case')).toBeVisible()
+  await expect(page.getByText('Welcome to your CS2 trading career')).toBeVisible()
+})
+
+test('numbered achievement notifications derive from claimable state and clear after Claim All', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const save = await readSave(page)
+  save.state.achievements = [
+    { id: 'first_case_opened', isClaimed: false, unlockedAt: 1 },
+    { id: 'cases_opened_100', isClaimed: false, unlockedAt: 2 },
+    { id: 'cases_opened_10000', isClaimed: false, unlockedAt: 3 },
+  ]
+  await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: save })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('link', { name: /Progression/ }).hover()
+  await expect(page.getByRole('status', { name: 'Achievements & Stats, 3 notifications' })).toHaveText('3')
+  await page.goto('/progress?tab=achievements')
+  await page.getByRole('button', { name: 'Claim All (3)' }).click()
+  await expect(page.getByRole('status', { name: /Achievements & Stats/ })).toHaveCount(0)
+})
+
+test('quest notification derives from a completed stage and clears after claiming', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const save = await readSave(page)
+  save.state.quests.activity.manualCases = 1
+  await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: save })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByRole('link', { name: /^Cases/ }).hover()
+  await expect(page.getByRole('status', { name: 'Quests & Characters, 1 notification' })).toHaveText('1')
+  await page.goto('/quests')
+  await page.getByRole('button', { name: 'Claim stage' }).first().click()
+  await page.getByRole('link', { name: /^Cases/ }).hover()
+  await expect(page.getByRole('status', { name: /Quests & Characters/ })).toHaveCount(0)
+})
+
+test('Help Center search and trade-up workbench remain usable at laptop width', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.goto('/help')
+  await dismissTutorial(page)
+  await expect(page.getByTestId('help-center')).toBeVisible()
+  await page.getByRole('searchbox').fill('opportunity cost')
+  await expect(page.getByRole('heading', { name: 'Contracts, float and risk' })).toBeVisible()
+  await page.goto('/trade-ups')
+  await expect(page.getByTestId('trade-up-workbench')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+})
+
+test('ten-item Trade-Up uses the real executor, reveal, history, and persisted exact-once result', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  const createdAt = Date.now()
+  seeded.state.inventory = Array.from({ length: 10 }, (_, index) => ({
+    id: 'skin-06a633fd8293',
+    weapon: 'AUG',
+    finish: 'Surveillance',
+    rarity: 'Consumer',
+    baseValue: 0.03,
+    baseMarketValue: 0.03,
+    caseIds: [],
+    collections: ['The Control Collection'],
+    image: '/assets/cs2/skins/skin-06a633fd8293_aug_surveillance.png',
+    instanceId: `e2e-trade-up-${index}`,
+    wear: 'FactoryNew',
+    floatValue: index / 1000,
+    marketValue: 0.03,
+    isLocked: false,
+    isFavorited: false,
+    discoveredAt: createdAt + index,
+    paintSeed: index,
+    pattern: { family: 'standard', name: 'Standard pattern', premiumMultiplier: 1, referenceConfidence: 'neutral', tier: 'standard' },
+    patternPremium: 0,
+  }))
+  seeded.state.inventoryValue = 0.3
+  seeded.state.ui.tradeUpHistory = []
+  seeded.state.marketplace.pendingAcquisition = undefined
+  await page.addInitScript(({ key, envelope }) => {
+    if (sessionStorage.getItem('trade-up-journey-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('trade-up-journey-seeded', '1')
+  }, { key: saveKey, envelope: seeded })
+  await page.goto('/trade-ups')
+  const inputs = page.getByTestId('trade-up-inventory-item')
+  await expect(inputs).toHaveCount(10)
+  for (let index = 0; index < 10; index += 1) await inputs.nth(index).click()
+  await expect(page.getByText('10/10 items selected')).toBeVisible()
+  await expect(page.getByText('Probability & risk')).toBeVisible()
+  await expect(page.getByText(/outcomes$/).first()).not.toHaveText('0 outcomes')
+  await page.getByRole('button', { name: 'Review Contract' }).click()
+  await expect(page.getByText('Final irreversible review')).toBeVisible()
+  await page.getByTestId('execute-trade-up').click()
+  const reveal = page.getByRole('dialog')
+  await expect(reveal.getByText('New Item')).toBeVisible()
+  await expect(reveal.getByText('Trade-up output')).toBeVisible()
+  await page.waitForFunction(({ key, expected }) => {
+    const state = JSON.parse(localStorage.getItem(key) ?? '{}').state
+    return state?.statistics?.tradeUpsCompleted === expected && state?.inventory?.length === 1 && state?.ui?.tradeUpHistory?.length === 1
+  }, { key: saveKey, expected: seeded.state.statistics.tradeUpsCompleted + 1 })
+  const afterExecution = await readSave(page)
+  expect(afterExecution.state.inventory).toHaveLength(1)
+  expect(afterExecution.state.statistics.tradeUpsCompleted).toBe(seeded.state.statistics.tradeUpsCompleted + 1)
+  expect(afterExecution.state.ui.tradeUpHistory).toHaveLength(1)
+  const outputId = afterExecution.state.inventory[0].instanceId
+  await reveal.getByRole('button', { name: 'Claim', exact: true }).click()
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  const persisted = await readSave(page)
+  expect(persisted.state.inventory).toHaveLength(1)
+  expect(persisted.state.inventory[0].instanceId).toBe(outputId)
+  expect(persisted.state.statistics.tradeUpsCompleted).toBe(afterExecution.state.statistics.tradeUpsCompleted)
+  expect(persisted.state.ui.tradeUpHistory).toHaveLength(1)
+  await expect(page.getByText('Recent contracts')).toBeVisible()
+  await expect(page.getByText('1/24 retained')).toBeVisible()
 })
 
 test('Large Text and Light theme are readable, persistent, and do not create horizontal overflow', async ({ page }) => {
@@ -700,7 +824,7 @@ test('every player-facing route renders without console errors or horizontal cli
   page.on('pageerror', (error) => errors.push(error.message))
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()) })
   await page.setViewportSize({ width: 1366, height: 768 })
-  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/progress', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/rewards', '/trade-ups']) {
+  for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/progress', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/help', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
     await expect(page.locator('main'), `route ${route} should render its application shell`).toBeVisible({ timeout: 15_000 })

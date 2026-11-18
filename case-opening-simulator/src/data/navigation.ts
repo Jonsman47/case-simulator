@@ -11,6 +11,7 @@ import {
   PackageOpen,
   ScrollText,
   Settings,
+  CircleHelp,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -80,6 +81,7 @@ export const primaryNavigationItems: NavigationItem[] = [
     ],
   },
   { label: 'Settings', path: '/settings', icon: Settings },
+  { label: 'Help', path: '/help', icon: CircleHelp },
   { label: 'Work', path: '/work', icon: BriefcaseBusiness },
   { label: 'Credits', path: '/credits', align: 'right', tone: 'danger', icon: BadgeInfo },
 ]

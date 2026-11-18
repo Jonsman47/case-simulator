@@ -5,7 +5,7 @@ import { defaultGameState, type GameState } from '../data/gameState'
 import { AutomationModuleId, Rarity, UpgradeId, WearCondition, type SkinInstance } from '../data/models'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { createMarketplaceNpc, MARKETPLACE_LISTING_DURATION_MS } from '../marketplace/marketplace'
-import { createSaveEnvelope, parseGameSaveText } from '../utils/save'
+import { CURRENT_SAVE_VERSION, createSaveEnvelope, parseGameSaveText } from '../utils/save'
 import {
   BUSINESS_MAX_TRAINING_LEVEL,
   BUSINESS_TRANSITION_CREDIT_CAP,
@@ -242,7 +242,7 @@ describe('Business employee foundation', () => {
     const preserved = item(`legacy-v${version}`, { paintSeed: 661, floatValue: .123456, marketValue: 321 })
     const source = levelState(35, { inventory: [preserved], inventoryValue: 321, money: 12_345 })
     const migrated = parseGameSaveText(JSON.stringify({ version, savedAt: NOW, state: { ...source, business: undefined, lastSaved: NOW } }))
-    expect(createSaveEnvelope(migrated).version).toBe(40)
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
     expect(migrated.money).toBe(12_345)
     expect(migrated.inventory[0]).toMatchObject({ instanceId: preserved.instanceId, paintSeed: 661, floatValue: .123456 })
     expect(migrated.business.authoritative).toBe(true)

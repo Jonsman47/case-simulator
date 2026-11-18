@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   Bell,
+  BookOpen,
   CalendarClock,
   CloudDownload,
   CloudUpload,
@@ -461,8 +462,11 @@ export function Settings() {
               <button
                 className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"
                 onClick={() => updateOnboardingState({
-                  activeStepId: 'open_case',
+                  activeStepId: 'welcome',
+                  caseOpenBaseline: state.statistics.casesOpened,
+                  completedStepIds: [],
                   isDismissed: false,
+                  isPaused: false,
                   isReviewing: true,
                 })}
                 type="button"
@@ -470,6 +474,10 @@ export function Settings() {
                 <Compass size={16} />
                 Review Tutorial
               </button>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a className="inline-flex min-h-10 items-center gap-2 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" href="/help"><BookOpen size={16} /> Open Help Center</a>
+              <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" onClick={() => updateOnboardingState({ dismissedTipIds: [] })} type="button">Replay all feature guides</button>
             </div>
           </div>
           <div className="mt-4 border border-cs-border bg-cs-surface p-4">

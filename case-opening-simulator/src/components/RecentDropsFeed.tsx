@@ -82,6 +82,7 @@ function RecentDropCard({
 
   return (
     <article
+      data-onboarding-target="recent-drop-item"
       className={[
         'border bg-cs-surface p-3 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special',
         isHighlighted ? 'shadow-glow' : '',

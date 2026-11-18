@@ -2,6 +2,21 @@
 
 Updated: 2026-11-17
 
+## Living Gameplay Expansion — Prompt 2 of 2
+
+Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**
+
+- Centralize deduplicated claimable/action/new/acknowledgement notifications for Achievements, Quests, Business, CSWEAR, Prestige, Career and Drop Journal, with desktop/mobile 99+ badges.
+- Replace the blocking text tour with a persistent 13-step, target-anchored beginner flow and nine replayable contextual guides.
+- Add the searchable 13-category Help Center with current mechanics, deep links and destructive-action warnings.
+- Rebuild Trade-Ups as a 10/5-slot contract workbench with filters, eligibility reasons, honest EV/risk analysis, deliberate execution, authoritative reveal and bounded real history.
+- Expand the compact density system at 100% zoom while preserving mobile touch targets, Large Text, Light Mode, reduced motion and keyboard focus.
+- Migrate v40 saves to v41 without changing money, items, Pattern/float identity, progression, quests, market state or Prestige data.
+
+Detailed design: `case-opening-simulator/docs/TUTORIAL_NOTIFICATIONS_AND_TRADEUP_REDESIGN.md`.
+
+Exit evidence: standalone TypeScript and ESLint passed; 88 Vitest files / 504 tests passed; all 2,134 generated assets (197.4 MiB), Vite production bundling, PWA generation and release verification passed; deterministic Career and early-game simulations passed; and 35/35 serial Chromium journeys passed in 5.9 minutes. Browser coverage includes a real 13-step opening tutorial, pre/post-hire Business guides, achievement and quest badge clearing, a real ten-item Trade-Up/reveal/reload, Light/Large Text, every player route, visual baselines and seven desktop-to-mobile viewports.
+
 ## Living Gameplay Expansion — Prompt 1 of 2
 
 Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**

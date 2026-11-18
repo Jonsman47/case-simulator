@@ -1107,6 +1107,15 @@ describe('gameReducer OPEN_CASE', () => {
       item: resultItem,
     })
     expect(nextState.inventoryValue).toBeGreaterThan(0)
+    expect(nextState.ui.tradeUpHistory).toHaveLength(1)
+    expect(nextState.ui.tradeUpHistory[0]).toMatchObject({
+      inputItemIds: inputItems.map((item) => item.instanceId),
+      outputItem: resultItem,
+    })
+    expect(nextState.ui.tradeUpHistory[0].profit).toBeCloseTo(
+      nextState.ui.tradeUpHistory[0].outputValue - nextState.ui.tradeUpHistory[0].inputValue,
+      2,
+    )
   })
 
   it('maps trade-up output float from the average input float into the output range', () => {

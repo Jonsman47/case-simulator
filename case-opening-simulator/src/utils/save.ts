@@ -1,6 +1,7 @@
 import {
   defaultDropsByRarity,
   defaultGameState,
+  defaultNotificationUiState,
   defaultOnboardingUiState,
   defaultRarityColors,
   type AnimationSpeed,
@@ -11,6 +12,7 @@ import {
   type GameStatistics,
   type OnboardingStepId,
   type OnboardingTipId,
+  type TradeUpHistoryEntry,
 } from '../data/gameState'
 import {
   createInitialMarketHistory,
@@ -109,7 +111,7 @@ import { createDefaultQuestSystem, normalizeQuestSystem } from '../quests/questS
 import { createDefaultDropJournal, normalizeDropJournal } from '../quests/dropJournal'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 40
+export const CURRENT_SAVE_VERSION = 41
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -555,16 +557,21 @@ function normalizeInventoryFilters(value: unknown): InventoryFilters {
 }
 
 const onboardingStepIds: OnboardingStepId[] = [
+  'welcome',
+  'cases_nav',
+  'select_starter_case',
   'open_case',
-  'understand_drops',
-  'view_inventory',
-  'sell_item',
-  'check_market',
-  'build_collection',
-  'earn_and_upgrade',
-  'enable_auto_sell',
+  'await_opening_result',
+  'understand_drop',
+  'inventory_nav',
+  'inspect_item',
+  'collection',
+  'quests',
+  'work',
+  'selling_vs_cswear',
+  'career',
 ]
-const onboardingTipIds: OnboardingTipId[] = ['collection_book_after_drop', 'trade_up_ready', 'auto_sell_ready']
+const onboardingTipIds: OnboardingTipId[] = ['cswear', 'trade_up', 'career', 'business', 'business_setup', 'market_scout', 'quests', 'prestige', 'drop_journal']
 
 function isOnboardingStepId(value: unknown): value is OnboardingStepId {
   return onboardingStepIds.includes(value as OnboardingStepId)
@@ -583,6 +590,7 @@ function normalizeOnboardingUiState(value: unknown) {
     activeStepId: isOnboardingStepId(value.activeStepId)
       ? value.activeStepId
       : defaultOnboardingUiState.activeStepId,
+    caseOpenBaseline: isNumber(value.caseOpenBaseline) ? Math.max(0, Math.floor(value.caseOpenBaseline)) : defaultOnboardingUiState.caseOpenBaseline,
     completedStepIds: Array.isArray(value.completedStepIds)
       ? Array.from(new Set(value.completedStepIds.filter(isOnboardingStepId)))
       : defaultOnboardingUiState.completedStepIds,
@@ -593,11 +601,36 @@ function normalizeOnboardingUiState(value: unknown) {
       typeof value.isDismissed === 'boolean'
         ? value.isDismissed
         : defaultOnboardingUiState.isDismissed,
+    isPaused:
+      typeof value.isPaused === 'boolean'
+        ? value.isPaused
+        : defaultOnboardingUiState.isPaused,
     isReviewing:
       typeof value.isReviewing === 'boolean'
         ? value.isReviewing
         : defaultOnboardingUiState.isReviewing,
   }
+}
+
+function normalizeNotificationUiState(value: unknown) {
+  if (!isRecord(value)) return defaultNotificationUiState
+  return {
+    acknowledgedPrestigeKey: typeof value.acknowledgedPrestigeKey === 'string' ? value.acknowledgedPrestigeKey : undefined,
+    acknowledgedUpgradeIds: readStringArray(value.acknowledgedUpgradeIds).slice(-256),
+    readDropJournalEntryIds: readStringArray(value.readDropJournalEntryIds).slice(-160),
+  }
+}
+
+function normalizeTradeUpHistory(value: unknown): TradeUpHistoryEntry[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((entry): entry is TradeUpHistoryEntry => isRecord(entry)
+    && typeof entry.id === 'string'
+    && isNumber(entry.createdAt)
+    && isStringArray(entry.inputItemIds)
+    && isNumber(entry.inputValue)
+    && isSkinInstance(entry.outputItem)
+    && isNumber(entry.outputValue)
+    && isNumber(entry.profit)).slice(0, 24)
 }
 
 function normalizeUiState(value: unknown): GameUiState {
@@ -615,7 +648,9 @@ function normalizeUiState(value: unknown): GameUiState {
         ? inventory.sortCriterion
         : defaultInventoryViewUiState.sortCriterion,
     },
+    notifications: normalizeNotificationUiState(value.notifications),
     onboarding: normalizeOnboardingUiState(onboarding),
+    tradeUpHistory: normalizeTradeUpHistory(value.tradeUpHistory),
   }
 }
 
@@ -1745,6 +1780,26 @@ function migrateV39ToV40(value: unknown): unknown {
   }
 }
 
+function migrateV40ToV41(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const previousUi = isRecord(value.ui) ? value.ui : {}
+  const previousOnboarding = isRecord(previousUi.onboarding) ? previousUi.onboarding : {}
+  const wasFinished = previousOnboarding.isDismissed === true
+  return {
+    ...value,
+    ui: {
+      ...previousUi,
+      notifications: defaultNotificationUiState,
+      onboarding: {
+        ...defaultOnboardingUiState,
+        completedStepIds: wasFinished ? onboardingStepIds : [],
+        isDismissed: wasFinished,
+      },
+      tradeUpHistory: [],
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1786,6 +1841,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   37: migrateV37ToV38,
   38: migrateV38ToV39,
   39: migrateV39ToV40,
+  40: migrateV40ToV41,
 }
 
 function getEnvelope(value: unknown) {

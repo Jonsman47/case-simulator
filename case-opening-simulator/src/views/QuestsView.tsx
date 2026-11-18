@@ -1,6 +1,6 @@
 import { Award, BookOpenCheck, Check, ChevronRight, Clock3, Compass, Gift, PackageOpen, ScrollText, Star, Swords, UserRound, Users } from 'lucide-react'
 import { nanoid } from 'nanoid'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { useGame } from '../hooks/useGame'
@@ -67,6 +67,13 @@ export function QuestsView() {
   const [params, setParams] = useSearchParams()
   const [limit, setLimit] = useState(8)
   const tab = (params.get('tab') as QuestTab) || 'current'
+  useEffect(() => {
+    if (tab !== 'completed') return
+    const readIds = state.dropJournal.entries.map((entry) => entry.id).slice(-160)
+    if (readIds.some((id) => !state.ui.notifications.readDropJournalEntryIds.includes(id))) {
+      dispatch({ type: 'UPDATE_NOTIFICATION_STATE', notifications: { readDropJournalEntryIds: readIds } })
+    }
+  }, [dispatch, state, tab])
   const available = useMemo(() => QUEST_DEFINITIONS.filter((quest) => isQuestUnlocked(state, quest)), [state])
   const quests = useMemo(() => available.filter((quest) => {
     const completed = Boolean(getQuestProgressState(state, quest).completedAt)

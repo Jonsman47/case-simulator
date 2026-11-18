@@ -15,7 +15,7 @@ import {
   WalletCards,
   type LucideIcon,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CAREER_RANKS,
@@ -36,6 +36,7 @@ import {
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { getPrestigeEligibilityV2 } from '../prestige/prestigeSystem'
+import { getNewlyUnlockedUpgradeIds } from '../notifications/notificationSelectors'
 
 type UpgradeFilter = 'all' | 'available' | 'affordable' | 'locked' | 'purchased' | 'maxed'
 
@@ -113,7 +114,7 @@ function UpgradeCard({ definition, expanded, onExpand }: { definition: CareerUpg
 }
 
 export function Career() {
-  const { state } = useGame()
+  const { dispatch, state } = useGame()
   const [specialization, setSpecialization] = useState<UpgradeSpecialization>('caseOpening')
   const [filter, setFilter] = useState<UpgradeFilter>('all')
   const [search, setSearch] = useState('')
@@ -123,6 +124,12 @@ export function Career() {
   const selectedSpecialization = specializationCards.find((entry) => entry.id === specialization) ?? specializationCards[0]
   const activeCapabilities = getActiveCareerUpgradeCapabilities(state.careerUpgrades, specialization)
   const prestigeEligibility = getPrestigeEligibilityV2(state)
+  useEffect(() => {
+    const unlocked = getNewlyUnlockedUpgradeIds(state)
+    if (unlocked.length > 0) {
+      dispatch({ type: 'UPDATE_NOTIFICATION_STATE', notifications: { acknowledgedUpgradeIds: Array.from(new Set([...state.ui.notifications.acknowledgedUpgradeIds, ...unlocked])) } })
+    }
+  }, [dispatch, state])
   const availableUpgradeCount = CAREER_UPGRADE_DEFINITIONS.filter((definition) => {
     const status = getCareerUpgradeStatus(definition, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
     return !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet && status.canAfford

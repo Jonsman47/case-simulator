@@ -210,7 +210,7 @@ export function AppLayout() {
       >
       <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-[110rem] flex-col px-2 py-2 sm:px-3 sm:py-2.5 lg:px-4">
         <StatusHeader />
-        <TopNav isAdminUser={isAdminUser} />
+        <TopNav isAdminUser={isAdminUser} state={state} />
         <MarketEventBanner />
         <main
           className="app-content flex min-w-0 w-full flex-1 py-2 sm:py-3"

@@ -15,6 +15,7 @@ const Career = lazy(() => import('./views/Career').then((module) => ({ default: 
 const CollectionBookView = lazy(() => import('./views/CollectionBookView').then((module) => ({ default: module.CollectionBookView })))
 const CreditsView = lazy(() => import('./views/CreditsView').then((module) => ({ default: module.CreditsView })))
 const InventoryView = lazy(() => import('./views/InventoryView').then((module) => ({ default: module.InventoryView })))
+const HelpCenter = lazy(() => import('./views/HelpCenter').then((module) => ({ default: module.HelpCenter })))
 const LeaderboardView = lazy(() => import('./views/LeaderboardView').then((module) => ({ default: module.LeaderboardView })))
 const Main = lazy(() => import('./views/Main').then((module) => ({ default: module.Main })))
 const Market = lazy(() => import('./views/Market').then((module) => ({ default: module.Market })))
@@ -94,6 +95,7 @@ function App() {
               <Route path="profile/:userId" element={<Suspense fallback={<RouteFallback />}><PlayerProfileView /></Suspense>} />
               <Route path="trophy-room" element={<Suspense fallback={<RouteFallback />}><TrophyRoom /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<RouteFallback />}><Settings /></Suspense>} />
+              <Route path="help" element={<Suspense fallback={<RouteFallback />}><HelpCenter /></Suspense>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Routes>

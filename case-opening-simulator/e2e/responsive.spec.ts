@@ -12,7 +12,7 @@ for (const viewport of [
   test(`${viewport.name} keeps Work and opening controls inside the viewport`, async ({ page }) => {
     await page.setViewportSize({ width: viewport.width, height: viewport.height })
     await page.goto('/work')
-    const skip = page.getByRole('button', { name: 'Skip tutorial' })
+    const skip = page.getByRole('button', { name: 'Skip beginner tutorial' })
     if (await skip.isVisible().catch(() => false)) {
       await skip.click()
       await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()

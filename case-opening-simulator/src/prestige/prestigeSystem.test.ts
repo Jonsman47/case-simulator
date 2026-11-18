@@ -3,7 +3,7 @@ import { getCumulativeXpForLevel } from '../career/careerProgress'
 import { gameReducer } from '../data/gameReducer'
 import { defaultGameState, type GameState } from '../data/gameState'
 import { Rarity, WearCondition, type SkinInstance } from '../data/models'
-import { createSaveEnvelope, parseGameSaveText } from '../utils/save'
+import { CURRENT_SAVE_VERSION, createSaveEnvelope, parseGameSaveText } from '../utils/save'
 import { calculatePrestigePointsV2, createPrestigeRecoveryProof, getLegacyVaultCapacity, getPrestigeEligibilityV2, getPrestigeXpMultiplier } from './prestigeSystem'
 
 function item(id: string, value = 1_000): SkinInstance {
@@ -100,7 +100,7 @@ describe('Prestige v38', () => {
       },
     }
     const loaded = parseGameSaveText(JSON.stringify({ version: 37, savedAt: 100, state: legacy }))
-    expect(createSaveEnvelope(loaded).version).toBe(40)
+    expect(createSaveEnvelope(loaded).version).toBe(CURRENT_SAVE_VERSION)
     expect(loaded.inventory.map((entry) => entry.instanceId)).toEqual(['keep', 'reset'])
     expect(loaded.prestigeSystem.highestTier).toBe(3)
     expect(loaded.prestigeSystem.perkLevels).toMatchObject({

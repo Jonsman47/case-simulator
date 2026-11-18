@@ -1,8 +1,9 @@
 import { Archive, BriefcaseBusiness, CheckCircle2, CircleDollarSign, Crown, Gem, Lock, PackageCheck, RotateCcw, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import { PRESTIGE_PERKS, calculatePrestigePointsV2, getLegacyVaultCapacity, getNextPrestigeTier, getPrestigeEligibilityV2, getPrestigePerkCost, type PrestigePathId, type PrestigePerkId } from '../prestige/prestigeSystem'
+import { getPrestigeNotificationKey } from '../notifications/notificationSelectors'
 
 const pathIcons = { opening: PackageCheck, trading: TrendingUp, patterns: Gem, tradeUps: Sparkles, business: BriefcaseBusiness }
 
@@ -43,11 +44,17 @@ function PrestigeModal({ onClose }: { onClose: () => void }) {
 }
 
 export function PrestigeView() {
-  const { purchasePrestigePerk, state } = useGame()
+  const { dispatch, purchasePrestigePerk, state } = useGame()
   const [showModal, setShowModal] = useState(false)
   const eligibility = useMemo(() => getPrestigeEligibilityV2(state), [state])
   const award = calculatePrestigePointsV2(state)
   const tier = getNextPrestigeTier(state.prestigeSystem)
+  useEffect(() => {
+    const key = getPrestigeNotificationKey(state)
+    if (key && key !== state.ui.notifications.acknowledgedPrestigeKey) {
+      dispatch({ type: 'UPDATE_NOTIFICATION_STATE', notifications: { acknowledgedPrestigeKey: key } })
+    }
+  }, [dispatch, state])
   return <section className="w-full border border-cs-border bg-cs-surface p-5 sm:p-7">
     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"><div className="border-l-4 border-rarity-special pl-4"><p className="font-mono text-xs uppercase text-rarity-special">Career Legacy</p><h1 className="mt-1 text-3xl font-semibold text-cs-text">Prestige</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-cs-muted">Archive a proven run, keep a carefully limited legacy, and begin a deeper career tier.</p></div><div className="grid grid-cols-3 gap-2 border border-cs-border bg-cs-panel p-3 text-center"><div><p className="text-xs text-cs-muted">Runs</p><p className="font-semibold text-cs-text">{state.prestigeSystem.completedRuns}</p></div><div><p className="text-xs text-cs-muted">Highest Tier</p><p className="font-semibold text-cs-text">{state.prestigeSystem.highestTier}/5</p></div><div><p className="text-xs text-cs-muted">Points</p><p className="font-semibold text-rarity-special">{state.prestigePoints}</p></div></div></header>
     <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]"><main className="space-y-5"><section className="border border-cs-border bg-cs-panel p-5"><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="font-mono text-xs uppercase text-cs-muted">Tier {tier.tier} · {tier.name}</p><h2 className="mt-1 text-2xl font-semibold text-cs-text">Run Score {eligibility.score.total.toFixed(1)} / {tier.minimumScore}</h2><p className="mt-2 text-sm text-cs-muted">Level {eligibility.level}/{tier.minimumLevel} · {eligibility.primaryCount}/{tier.requiredPrimaryPaths} primary · {eligibility.supportCount}/{tier.requiredSupportPaths} support</p></div><button className="inline-flex items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-4 py-3 font-semibold text-rarity-special disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted" disabled={!eligibility.canPrestige} onClick={() => setShowModal(true)} type="button">{eligibility.canPrestige ? <RotateCcw size={17} /> : <Lock size={17} />} Prestige · +{award} PP</button></div>

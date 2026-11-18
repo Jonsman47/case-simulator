@@ -2,9 +2,13 @@
 
 Audit date: 2026-11-17
 Application directory: `case-opening-simulator/`
-Current save schema: v40
+Current save schema: v41
 
 ## Executive summary
+
+Living Gameplay Expansion Prompt 2 adds a centralized, accessible red numbered notification system; a 13-step state-driven beginner tutorial that leaves real controls clickable; nine contextual feature guides; a searchable 13-category Help Center; and a substantially rebuilt Trade-Up workbench. Badge totals are derived from authoritative achievement, quest, Business, CSWEAR, Prestige, Career and Drop Journal state. The Trade-Up presentation still uses the existing analysis and reducer executor, adding deliberate review, exact probabilities/risk metrics, protected-item reasons, a real-result reveal and bounded 24-contract history. A global desktop density token pass reduces structural whitespace without transform/zoom, while mobile, Large Text, Light Mode, reduced motion and focus behavior remain supported. Save v41 persists only bounded acknowledgement/tutorial/history metadata and preserves every gameplay asset and transaction system.
+
+Prompt 2 final local verification: standalone TypeScript and zero-error ESLint passed; `npm test` passed **88 files / 504 tests**; all **2,134** generated CS2 assets (**197.4 MiB**) verified; Vite transformed **1,918 modules** and generated the PWA with **138 precache entries / 4,642.79 KiB**; `npm run build` and `npm run verify:release` passed. `npm run simulate:career` passed **300,000 careers**, **500,000 production-linked openings**, **95 upgrade rows**, **45 employee rows**, and **500 seeds for each of six early-game playstyles**. The competent-regular five-tier projection remains **781.1 engaged hours**; every sampled case remains negative EV; early-game runs retained available quests, zero repeated rewards and no terminal bankruptcy. The final serial Chromium run passed **35/35 journeys in 5.9 minutes** at 1920×1080, 1366×768, 1280×720, 768×1024, 390×844, 375×667 and 320×568. Live Supabase deployment remains credential-dependent and is not claimed.
 
 Living Gameplay Expansion Prompt 1 adds the first persistent quest/NPC layer without replacing Career, Prestige, or existing events. All 42 production weapon cases now use one normalized authoritative tier table (79.9232736573 / 15.9846547315 / 3.1969309463 / 0.6393861893 / 0.2557544757), reapplied after every modifier so manual, batch, employee, offline, UI, EV, and simulation paths cannot diverge. The fabricated first-opening Gold near-miss is removed. The game now contains 36 handcrafted multi-stage quests, 12 Collection Hunts, eight recurring locally illustrated NPCs, exact-item delivery and exact-once bounded rewards, up to three tracked goals, rarity-specific Classified/Covert/Gold reveals, and a permanent bounded Drop Journal. Save v40 initializes legacy quest/journal tracking without fabricating old records or changing existing assets.
 
@@ -57,7 +61,7 @@ Final verification for this pass: standalone TypeScript and ESLint passed; `npm 
 - Vitest, Testing Library, jsdom, and ESLint.
 - `react-window` for virtualized lists; Chart.js/`react-chartjs-2` for charts; Lucide React for icons.
 - `vite-plugin-pwa`, Workbox, and `workbox-window` for PWA behavior.
-- Versioned `localStorage` saves, currently schema v40.
+- Versioned `localStorage` saves, currently schema v41.
 - Build-time `csgo-blue-gem-calculator` and `csgo-fade-percentage-calculator` generation produces compact deterministic lookup data; the calculators are no longer shipped as runtime dependencies. Curated finish-specific rules remain the authority for premium tiers.
 - Optional local mock or Supabase REST/RPC cloud backends; no production credentials are committed.
 - Generated TypeScript catalog/price data and locally generated/downloaded image assets verified through a tracked SHA-256 manifest.

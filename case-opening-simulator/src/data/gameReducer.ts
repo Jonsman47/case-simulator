@@ -2452,6 +2452,15 @@ function tradeUpItems(state: GameState, itemIds: string[], now = Date.now(), prn
     item: outputItem,
     createdAt: completedAt,
   }
+  const tradeUpHistoryEntry = {
+    id: event.id,
+    createdAt: completedAt,
+    inputItemIds: selectedItems.map((item) => item.instanceId),
+    inputValue: analysis.inputValue,
+    outputItem,
+    outputValue: outputItem.marketValue,
+    profit: Number((outputItem.marketValue - analysis.inputValue).toFixed(2)),
+  }
 
   const tradedState = withInventoryValuation({
     ...state,
@@ -2474,6 +2483,10 @@ function tradeUpItems(state: GameState, itemIds: string[], now = Date.now(), prn
     },
     lastError: undefined,
     uiEvents: appendEvents(state, [event]),
+    ui: {
+      ...state.ui,
+      tradeUpHistory: [tradeUpHistoryEntry, ...state.ui.tradeUpHistory].slice(0, 24),
+    },
     statistics: {
       ...state.statistics,
       tradeUpsCompleted: state.statistics.tradeUpsCompleted + 1,
@@ -3875,6 +3888,21 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
               action.onboarding.completedStepIds ?? state.ui.onboarding.completedStepIds,
             dismissedTipIds:
               action.onboarding.dismissedTipIds ?? state.ui.onboarding.dismissedTipIds,
+          },
+        },
+      }
+    case 'UPDATE_NOTIFICATION_STATE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          notifications: {
+            ...state.ui.notifications,
+            ...action.notifications,
+            acknowledgedUpgradeIds: action.notifications.acknowledgedUpgradeIds
+              ?? state.ui.notifications.acknowledgedUpgradeIds,
+            readDropJournalEntryIds: action.notifications.readDropJournalEntryIds
+              ?? state.ui.notifications.readDropJournalEntryIds,
           },
         },
       }

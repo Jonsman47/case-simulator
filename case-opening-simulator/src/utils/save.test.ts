@@ -739,6 +739,32 @@ describe('save system', () => {
     expect(restored.marketplace.pendingAcquisition?.id).toBe('acquisition')
   })
 
+  it('migrates v40 tutorial metadata to v41 without touching gameplay state', () => {
+    const item = makeItem({ instanceId: 'v40-item', paintSeed: 661 })
+    const legacy = makeState({
+      money: 432.1,
+      inventory: [item],
+      ui: {
+        ...defaultGameState.ui,
+        onboarding: {
+          activeStepId: 'welcome',
+          completedStepIds: [],
+          dismissedTipIds: [],
+          isDismissed: true,
+          isPaused: false,
+          isReviewing: false,
+        },
+      },
+    })
+    const migrated = parseGameSaveText(JSON.stringify({ version: 40, savedAt: 100, state: legacy }))
+    expect(migrated.money).toBe(432.1)
+    expect(migrated.inventory[0]).toMatchObject({ instanceId: 'v40-item', paintSeed: 661 })
+    expect(migrated.ui.onboarding.isDismissed).toBe(true)
+    expect(migrated.ui.notifications).toEqual(defaultGameState.ui.notifications)
+    expect(migrated.ui.tradeUpHistory).toEqual([])
+    expect(createSaveEnvelope(migrated).version).toBe(41)
+  })
+
   it('detects weekly backup prompts and exports JSON through the download hook', () => {
     const now = 1_782_147_700_000
     const state = makeState({

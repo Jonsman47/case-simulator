@@ -6,6 +6,9 @@ import {
   getPrimaryNavigationItems,
   type NavigationItem,
 } from '../data/navigation'
+import { defaultGameState, type GameState } from '../data/gameState'
+import { getNotificationCountForPath, getNotificationCountForPaths } from '../notifications/notificationSelectors'
+import { NotificationBadge } from './NotificationBadge'
 
 function itemMatchesPath(item: NavigationItem, pathname: string): boolean {
   if (item.end) {
@@ -46,13 +49,18 @@ function getLinkClass(
 function DesktopNavGroup({
   item,
   pathname,
+  state,
 }: {
   item: NavigationItem
   pathname: string
+  state: GameState
 }) {
   const isGroupActive = itemMatchesPath(item, pathname)
   const subItems = item.items ?? []
   const Icon = item.icon
+  const count = subItems.length > 0
+    ? getNotificationCountForPaths(state, subItems.map((child) => child.path))
+    : getNotificationCountForPath(state, item.path)
 
   return (
     <div className="group relative">
@@ -60,9 +68,11 @@ function DesktopNavGroup({
         className={({ isActive }) => getLinkClass(isActive || isGroupActive, 'desktop', item.tone)}
         end={item.end}
         to={item.path}
+        data-onboarding-target={`nav-${item.path === '/' ? 'home' : item.path.slice(1)}`}
       >
         {Icon ? <Icon aria-hidden="true" className="shrink-0" size={15} strokeWidth={1.8} /> : null}
         <span>{item.label}</span>
+        <NotificationBadge count={count} label={item.label} />
         {subItems.length > 0 ? <ChevronDown aria-hidden="true" className="ml-1" size={13} /> : null}
       </NavLink>
 
@@ -74,8 +84,10 @@ function DesktopNavGroup({
               end={subItem.end}
               key={subItem.path}
               to={subItem.path}
+              data-onboarding-target={`nav-${subItem.path.slice(1)}`}
             >
-              {subItem.label}
+              <span className="min-w-0 flex-1">{subItem.label}</span>
+              <NotificationBadge count={getNotificationCountForPath(state, subItem.path)} label={subItem.label} />
             </NavLink>
           ))}
         </div>
@@ -84,7 +96,7 @@ function DesktopNavGroup({
   )
 }
 
-export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
+export function TopNav({ isAdminUser = false, state = defaultGameState }: { isAdminUser?: boolean; state?: GameState }) {
   const location = useLocation()
   const primaryItems = useMemo(() => getPrimaryNavigationItems(isAdminUser), [isAdminUser])
   const flatItems = useMemo(() => flattenNavigationItems(primaryItems), [primaryItems])
@@ -120,10 +132,10 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
   }, [isDrawerOpen])
 
   const leftDesktopLinks = primaryItems.filter((item) => item.align !== 'right').map((item) => (
-    <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} />
+    <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} state={state} />
   ))
   const rightDesktopLinks = primaryItems.filter((item) => item.align === 'right').map((item) => (
-    <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} />
+    <DesktopNavGroup item={item} key={item.path} pathname={location.pathname} state={state} />
   ))
 
   const mobileLinks = primaryItems.map((item) => (
@@ -133,9 +145,11 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
         end={item.end}
         onClick={() => setDrawerState((currentState) => ({ ...currentState, isOpen: false }))}
         to={item.path}
+        data-onboarding-target={`nav-${item.path === '/' ? 'home' : item.path.slice(1)}`}
       >
         {item.icon ? <item.icon aria-hidden="true" className="shrink-0" size={17} strokeWidth={1.8} /> : null}
-        {item.label}
+        <span className="min-w-0 flex-1">{item.label}</span>
+        <NotificationBadge count={item.items?.length ? getNotificationCountForPaths(state, item.items.map((child) => child.path)) : getNotificationCountForPath(state, item.path)} label={item.label} />
       </NavLink>
       {item.items && item.items.length > 0 ? (
         <div className="ml-3 grid gap-1 border-l border-cs-border pl-2">
@@ -146,8 +160,10 @@ export function TopNav({ isAdminUser = false }: { isAdminUser?: boolean }) {
               key={subItem.path}
               onClick={() => setDrawerState((currentState) => ({ ...currentState, isOpen: false }))}
               to={subItem.path}
+              data-onboarding-target={`nav-${subItem.path.slice(1)}`}
             >
-              {subItem.label}
+              <span className="min-w-0 flex-1">{subItem.label}</span>
+              <NotificationBadge count={getNotificationCountForPath(state, subItem.path)} label={subItem.label} />
             </NavLink>
           ))}
         </div>

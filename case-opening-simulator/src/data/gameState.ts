@@ -140,35 +140,76 @@ export interface GameStatistics {
 }
 
 export type OnboardingStepId =
+  | 'welcome'
+  | 'cases_nav'
+  | 'select_starter_case'
   | 'open_case'
-  | 'understand_drops'
-  | 'view_inventory'
-  | 'sell_item'
-  | 'check_market'
-  | 'build_collection'
-  | 'earn_and_upgrade'
-  | 'enable_auto_sell'
-export type OnboardingTipId = 'collection_book_after_drop' | 'trade_up_ready' | 'auto_sell_ready'
+  | 'await_opening_result'
+  | 'understand_drop'
+  | 'inventory_nav'
+  | 'inspect_item'
+  | 'collection'
+  | 'quests'
+  | 'work'
+  | 'selling_vs_cswear'
+  | 'career'
+export type OnboardingTipId =
+  | 'cswear'
+  | 'trade_up'
+  | 'career'
+  | 'business'
+  | 'business_setup'
+  | 'market_scout'
+  | 'quests'
+  | 'prestige'
+  | 'drop_journal'
+
+export interface NotificationUiState {
+  acknowledgedPrestigeKey?: string
+  acknowledgedUpgradeIds: string[]
+  readDropJournalEntryIds: string[]
+}
+
+export interface TradeUpHistoryEntry {
+  id: string
+  createdAt: number
+  inputItemIds: string[]
+  inputValue: number
+  outputItem: SkinInstance
+  outputValue: number
+  profit: number
+}
 
 export interface OnboardingUiState {
   activeStepId?: OnboardingStepId
+  caseOpenBaseline?: number
   completedStepIds: OnboardingStepId[]
   dismissedTipIds: OnboardingTipId[]
   isDismissed: boolean
+  isPaused: boolean
   isReviewing: boolean
 }
 
 export const defaultOnboardingUiState: OnboardingUiState = {
-  activeStepId: 'open_case',
+  activeStepId: 'welcome',
+  caseOpenBaseline: 0,
   completedStepIds: [],
   dismissedTipIds: [],
   isDismissed: false,
+  isPaused: false,
   isReviewing: false,
+}
+
+export const defaultNotificationUiState: NotificationUiState = {
+  acknowledgedUpgradeIds: [],
+  readDropJournalEntryIds: [],
 }
 
 export interface GameUiState {
   inventory: InventoryViewUiState
+  notifications: NotificationUiState
   onboarding: OnboardingUiState
+  tradeUpHistory: TradeUpHistoryEntry[]
 }
 
 export type GameUiEvent =
@@ -481,6 +522,7 @@ export type GameAction =
   | { type: 'REORDER_AUTO_SELL_RULES'; ruleIds: string[] }
   | { type: 'UPDATE_INVENTORY_VIEW_STATE'; inventory: Partial<InventoryViewUiState> }
   | { type: 'UPDATE_ONBOARDING_STATE'; onboarding: Partial<OnboardingUiState> }
+  | { type: 'UPDATE_NOTIFICATION_STATE'; notifications: Partial<NotificationUiState> }
   | { type: 'MARK_BACKUP_CREATED'; now?: number }
   | { type: 'REPLACE_GAME_STATE'; state: GameState }
   | { type: 'CLEAR_GAME_ERROR' }
@@ -587,7 +629,9 @@ export const defaultGameState: GameState = {
   },
   ui: {
     inventory: defaultInventoryViewUiState,
+    notifications: defaultNotificationUiState,
     onboarding: defaultOnboardingUiState,
+    tradeUpHistory: [],
   },
   lastBackupAt: 0,
   lastSaved: 0,
