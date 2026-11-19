@@ -102,24 +102,24 @@ a {
 /* Compact desktop density: reduce structural whitespace without scaling the
    rendered page, controls, or media. Large Text intentionally opts out. */
 @media (min-width: 640px) {
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-8) { padding: 1rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-7, .p-6) { padding: 0.95rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-5, .p-4) { padding: 0.75rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-3) { padding: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.px-5, .px-4) { padding-left: 0.75rem; padding-right: 0.75rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.px-3) { padding-left: 0.625rem; padding-right: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.py-5, .py-4) { padding-bottom: 0.75rem; padding-top: 0.75rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.py-3) { padding-bottom: 0.625rem; padding-top: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-8, .gap-7, .gap-6, .gap-5) { gap: 0.875rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-4, .gap-3) { gap: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-2) { gap: 0.425rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-8) { padding: 0.875rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-7, .p-6) { padding: 0.75rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-5, .p-4) { padding: 0.625rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.p-3) { padding: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.px-5, .px-4) { padding-left: 0.625rem; padding-right: 0.625rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.px-3) { padding-left: 0.5rem; padding-right: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.py-5, .py-4) { padding-bottom: 0.625rem; padding-top: 0.625rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.py-3) { padding-bottom: 0.5rem; padding-top: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-8, .gap-7, .gap-6, .gap-5) { gap: 0.7rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-4, .gap-3) { gap: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.gap-2) { gap: 0.375rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-6 > :not([hidden]) ~ :not([hidden]),
-  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-8, .mt-7, .mt-6) { margin-top: 0.875rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-5, .mt-4) { margin-top: 0.625rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-3) { margin-top: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.4rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-8, .mt-7, .mt-6) { margin-top: 0.7rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-5, .mt-4) { margin-top: 0.5rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.mt-3) { margin-top: 0.4rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-4xl) { font-size: 1.7rem; line-height: 2rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-3xl) { font-size: 1.5rem; line-height: 1.8rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-2xl) { font-size: 1.25rem; line-height: 1.55rem; }
@@ -127,7 +127,7 @@ a {
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-lg) { font-size: 1rem; line-height: 1.4rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-base) { font-size: 0.9375rem; line-height: 1.4rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(.text-sm) { font-size: 0.8125rem; line-height: 1.22rem; }
-  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.min-h-12, .min-h-11, .min-h-10) { min-height: 2.125rem; }
+  [data-ui-density='compact'][data-large-text='false'] .app-content :where(.min-h-12, .min-h-11, .min-h-10) { min-height: 2rem; }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where([role='dialog']) { max-height: var(--ui-density-panel-max); }
   [data-ui-density='compact'][data-large-text='false'] .app-content :where(table) :where(th, td) { padding-bottom: 0.45rem; padding-top: 0.45rem; }
 }

@@ -40,6 +40,16 @@ for (const viewport of [
     await page.goto('/trade-ups')
     await expect(page.getByTestId('trade-up-workbench')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
+    if (viewport.width >= 1280) {
+      const pickerBox = await page.getByTestId('trade-up-picker-panel').boundingBox()
+      const contractBox = await page.getByTestId('trade-up-contract-panel').boundingBox()
+      expect(pickerBox).not.toBeNull()
+      expect(contractBox).not.toBeNull()
+      expect(pickerBox!.x).toBeLessThan(contractBox!.x)
+      expect(pickerBox!.width).toBeLessThan(contractBox!.width)
+      await page.getByRole('button', { name: /Review Contract/ }).scrollIntoViewIfNeeded()
+      await expect(page.getByRole('button', { name: /Review Contract/ })).toBeInViewport()
+    }
     if (viewport.name === 'mobile-390' && !process.env.CI) {
       await page.goto('/work')
       await expect(page.getByRole('heading', { name: 'Precision Strike' })).toBeVisible()

@@ -1,4 +1,4 @@
-import { Star, X, Zap } from 'lucide-react'
+import { Repeat2, Star, X, Zap } from 'lucide-react'
 import { useRef } from 'react'
 import { Rarity, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
@@ -16,6 +16,7 @@ export interface BatchOpenSummaryModalProps {
   items: SkinInstance[]
   newDiscoveryItemIds?: string[]
   onClose: () => void
+  onOpenAgain?: () => void
   openedCount: number
   saleValue: number
   skipAnimations: boolean
@@ -63,6 +64,7 @@ export function BatchOpenSummaryModal({
   items,
   newDiscoveryItemIds = [],
   onClose,
+  onOpenAgain,
   openedCount,
   saleValue,
   skipAnimations,
@@ -92,7 +94,7 @@ export function BatchOpenSummaryModal({
         role="dialog"
         tabIndex={-1}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-xs uppercase text-rarity-special">{caseName}</p>
             <h2 className="mt-1 text-xl font-semibold text-cs-text sm:text-3xl">Opening Summary</h2>
@@ -105,16 +107,19 @@ export function BatchOpenSummaryModal({
               {careerXpEarned > 0 ? <SummaryPill label="Career XP" value={`+${careerXpEarned}`} /> : null}
             </div>
           </div>
-          <button
-            aria-label="Close opening summary"
-            className="grid h-11 w-11 shrink-0 place-items-center border border-cs-border text-cs-muted transition-colors hover:text-cs-text"
-            onClick={onClose}
-            ref={closeButtonRef}
-            title="Close"
-            type="button"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+            {onOpenAgain ? <button className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special hover:bg-rarity-special/20 sm:flex-none" onClick={onOpenAgain} type="button"><Repeat2 size={16} /> Open Again ×{openedCount}</button> : null}
+            <button
+              aria-label="Close opening summary"
+              className="grid h-11 w-11 shrink-0 place-items-center border border-cs-border text-cs-muted transition-colors hover:text-cs-text"
+              onClick={onClose}
+              ref={closeButtonRef}
+              title="Close"
+              type="button"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {excitingDrops.length > 0 ? (

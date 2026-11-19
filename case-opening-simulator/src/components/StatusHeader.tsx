@@ -7,16 +7,16 @@ export function StatusHeader() {
   const { cloud, state } = useGame()
 
   return (
-    <header className="border-b border-cs-border bg-cs-surface/90 px-3 py-1.5 shadow-glow">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+    <header className="border-b border-cs-border bg-cs-surface/90 px-2.5 py-1 shadow-glow">
+      <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
         <div>
-          <p className="font-mono text-[10px] uppercase text-cs-amber">Case Opening Simulator</p>
-          <h1 className="mt-0.5 text-lg font-semibold text-cs-text sm:text-xl">
+          <p className="font-mono text-[9px] uppercase text-cs-amber">CS2 economy &amp; career</p>
+          <h1 className="text-base font-semibold text-cs-text sm:text-lg">
             Case Opening Simulator
           </h1>
         </div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2.5 py-1.5">
+          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Balance
               <Tooltip label="Explain balance">
@@ -27,7 +27,7 @@ export function StatusHeader() {
               {formatCurrency(state.money)}
             </p>
           </div>
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2.5 py-1.5">
+          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Inventory Value
               <Tooltip label="Explain inventory value">
@@ -38,11 +38,11 @@ export function StatusHeader() {
               {formatCurrency(state.inventoryValue)}
             </p>
           </div>
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2.5 py-1.5">
+          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
             <p className="font-mono text-xs uppercase text-cs-muted">Items</p>
             <p className="mt-0.5 truncate text-base font-semibold text-cs-text">{state.inventory.length}</p>
           </div>
-          <details className="group relative min-w-0 border border-cs-border bg-cs-panel px-2.5 py-1.5">
+          <details className="group relative min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
               <span className="min-w-0">
                 <span className="flex items-center gap-1 font-mono text-xs uppercase text-cs-muted"><Cloud size={13} /> Account</span>

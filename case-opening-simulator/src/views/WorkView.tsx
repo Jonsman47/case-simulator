@@ -93,7 +93,7 @@ export function WorkView() {
   const closeActiveJob = useCallback(() => setActiveJob(undefined), [])
 
   return (
-    <section className="grid w-full min-w-0 gap-5" data-onboarding-target="work-jobs">
+    <section className="grid w-full min-w-0 gap-3" data-onboarding-target="work-jobs">
       <div className="flex flex-wrap items-end justify-between gap-3 border-l-4 border-cs-green pl-4">
         <div>
           <p className="font-mono text-xs uppercase text-cs-green">Skill Jobs</p>
@@ -152,9 +152,9 @@ function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { des
   const rewardMax = getWorkBaseReward(gameId, 1) * economyMultiplier
   const isAvailable = cooldownRemaining <= 0
 
-  return <article className="group flex min-h-0 min-w-0 flex-col overflow-hidden border border-cs-border bg-cs-surface p-3 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60">
+  return <article className="group flex min-h-0 min-w-0 flex-col overflow-hidden border border-cs-border bg-cs-surface p-2.5 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60">
     <div className="flex min-w-0 items-start gap-3">
-      <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden border border-cs-border bg-[radial-gradient(circle,rgb(var(--cs-panel-muted)),rgb(var(--cs-bg)))]"><img alt={definition.name} className="h-12 w-12 object-contain transition group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" src={thumbnail} /><i className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center bg-cs-bg/90 text-rarity-special">{icon}</i></span>
+      <span className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden border border-cs-border bg-[radial-gradient(circle,rgb(var(--cs-panel-muted)),rgb(var(--cs-bg)))]"><img alt={definition.name} className="h-10 w-10 object-contain transition group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" src={thumbnail} /><i className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center bg-cs-bg/90 text-rarity-special">{icon}</i></span>
       <div className="min-w-0">
         <p className="font-mono text-[10px] uppercase tracking-wide text-cs-muted">{description}</p>
         <h3 className="mt-1 text-lg font-semibold text-cs-text">{definition.name}</h3>

@@ -1,6 +1,7 @@
 import { Lock, PackageOpen, Ticket } from 'lucide-react'
 import { memo, useState } from 'react'
 import type { CaseDefinition } from '../data/models'
+import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import { formatCurrency } from '../utils/format'
 import { getOpeningCreditQuote } from '../rewards/dailyRewards'
 
@@ -31,6 +32,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
   requiresLicense = false,
 }: CaseOpenControlsProps) {
   const [skipAnimations, setSkipAnimations] = useState(false)
+  const [lastQuantity, setLastQuantity] = useSessionStorageState('cases:last-quantity', 1)
   let affordableCount = Math.min(1_000_000, Math.floor((money + openingCredits) / caseDef.cost))
   while (
     affordableCount > 0 &&
@@ -49,6 +51,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
   // Small batches are always available so the adaptive 2/3/5 presentation can
   // be used directly; progression continues to control the 10+ batch ceiling.
   const openQuantities = [1, 2, 3, 5, ...batchQuantities]
+  const effectiveLastQuantity = openQuantities.includes(lastQuantity) ? lastQuantity : 1
 
   return (
     <div>
@@ -60,10 +63,11 @@ export const CaseOpenControls = memo(function CaseOpenControls({
 
           return (
             <button
-              className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap border border-rarity-special bg-rarity-special/10 px-3 py-2 text-sm font-semibold text-rarity-special transition hover:-translate-y-px hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special active:translate-y-0 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60 disabled:hover:translate-y-0"
+              aria-pressed={effectiveLastQuantity === quantity}
+              className={`inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap border px-3 py-2 text-sm font-semibold transition hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special active:translate-y-0 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60 disabled:hover:translate-y-0 ${effectiveLastQuantity === quantity ? 'border-rarity-special bg-rarity-special/25 text-rarity-special shadow-glow' : 'border-rarity-special bg-rarity-special/10 text-rarity-special hover:bg-rarity-special/20'}`}
               disabled={disabled}
               key={quantity}
-              onClick={() => onOpen(quantity, { skipAnimations: quantity >= 10 && skipAnimations })}
+              onClick={() => { setLastQuantity(quantity); onOpen(quantity, { skipAnimations: quantity >= 10 && skipAnimations }) }}
               title={
                 quote.creditUsed > 0
                   ? `${formatCurrency(quote.cashCost)} cash + ${formatCurrency(quote.creditUsed)} opening credit`
@@ -90,6 +94,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
           />
           Skip Animations
         </label>
+        <p className="font-mono text-[10px] uppercase text-rarity-special">Repeat preference: Open {effectiveLastQuantity}</p>
         {requiresLicense ? (
           <p className="border border-cs-border bg-cs-surface px-3 py-2 text-sm text-cs-muted">
             License required

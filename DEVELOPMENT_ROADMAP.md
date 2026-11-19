@@ -229,6 +229,21 @@ Legacy progression fields remain loadable for migration history, but retired pur
 - Full specialization upgrades, calibrated employee economics, final Prestige/Legacy Vault behavior, and final progression navigation remain correctly scheduled for Prompts 4–8.
 # Career Overhaul status
 
+## Whole-Game Interaction & Layout Overhaul
+
+Status: **COMPLETE — UNIT, RELEASE, SIMULATION AND BROWSER VERIFICATION PASSED**
+
+- Reorganizes Trade-Ups into left-side Inventory sourcing and a dominant right-side contract/analysis workspace.
+- Adds safe Random 10/Random 5, Cheapest, Lowest Float and Fill Remaining manual selection without changing execution or automated specialist rules.
+- Adds an exact-once `Open Again ×N` batch case loop and session-persistent Case, Trade-Up, CSWEAR, Career and Help working context.
+- Makes Cases, Inventory, Work, Business and Quests denser while retaining Large Text, Light Mode, reduced motion, keyboard behavior and mobile flow.
+- Records deterministic before/after layout evidence at five required viewports with no horizontal overflow.
+- Keeps save schema v41 because the added context is optional session UI state and no economy/domain model changed.
+
+Full specification and measured evidence: `case-opening-simulator/docs/WHOLE_GAME_UX_AND_TRADEUP_WORKSPACE_OVERHAUL.md`.
+
+Exit evidence: standalone TypeScript and zero-warning ESLint passed; 91 Vitest files / 520 tests passed; all 2,134 generated assets, production/PWA build and release verification passed; the deterministic 300,000-career / 500,000-opening plus six-playstyle simulation passed; and 31 core plus seven responsive Chromium journeys passed. The command host restarted after emitting the clean core results during the combined run, so the complete responsive file was rerun separately and passed 7/7. Save schema remains v41.
+
 - Prompt 1/8 — Economy ledger and critical exploit fixes: complete.
 - Prompt 2/8 — Career XP, levels and ranks: complete.
 - Prompt 3/8 — Business employees: complete.

@@ -21,6 +21,7 @@ import { Rarity, WearCondition, type NpcMarketListing, type PlayerMarketListing 
 import { getSkinRarityColor } from '../data/rarities'
 import { SKIN_DEFINITIONS } from '../data/skins'
 import { useGame } from '../hooks/useGame'
+import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import { getPlayerListingAttractiveness } from '../marketplace/marketplace'
 import {
   VIRTUAL_MARKET_PAGE_SIZE,
@@ -45,7 +46,7 @@ import { PatternBadge } from './PatternInfo'
 type MarketplaceTab = 'browse' | 'sell' | 'history'
 type CatalogSort = 'most-offers' | 'lowest-starting' | 'highest-maximum' | 'alphabetical'
 const CATALOG_PAGE_SIZE = 30
-const LISTING_ROW_HEIGHT = 318
+const LISTING_ROW_HEIGHT = 294
 const MAX_CACHED_LISTING_PAGES = 18
 
 export function NpcMarketplace() {
@@ -88,7 +89,7 @@ export function NpcMarketplace() {
     else navigate('/cswear')
   }
 
-  return <section className="border border-cs-border bg-cs-panel p-3 sm:p-5">
+  return <section className="border border-cs-border bg-cs-panel p-3 sm:p-4">
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div><p className="font-mono text-xs uppercase text-rarity-special">Procedural simulated market</p><h2 className="mt-1 text-3xl font-semibold text-cs-text">CSWEAR</h2><p className="mt-1 max-w-3xl text-sm text-cs-muted">{SKIN_DEFINITIONS.length.toLocaleString()} skin markets and {totalVirtualSupply.toLocaleString()} estimated active offers, generated on demand. Counts are simulator estimates, not live CSFloat inventory.</p></div>
       <div className="grid grid-cols-3 gap-1 border border-cs-border bg-cs-surface p-1"><TabButton active={tab === 'browse'} icon={<ShoppingCart size={15} />} label="Browse" onClick={() => setTab('browse')} /><TabButton active={tab === 'sell'} icon={<ListPlus size={15} />} label={`My Listings (${state.marketplace.playerListings.length})`} onClick={() => setTab('sell')} /><TabButton active={tab === 'history'} icon={<History size={15} />} label="History" onClick={() => setTab('history')} /></div>
@@ -101,11 +102,11 @@ export function NpcMarketplace() {
 
 function SkinMarketCatalog({ onSelectSkin }: { onSelectSkin: (skinId: string) => void }) {
   const { state } = useGame()
-  const [search, setSearch] = useState('')
-  const [weapon, setWeapon] = useState('all')
-  const [rarity, setRarity] = useState('all')
-  const [sort, setSort] = useState<CatalogSort>('most-offers')
-  const [visibleCount, setVisibleCount] = useState(CATALOG_PAGE_SIZE)
+  const [search, setSearch] = useSessionStorageState('cswear:catalog-search', '')
+  const [weapon, setWeapon] = useSessionStorageState('cswear:catalog-weapon', 'all')
+  const [rarity, setRarity] = useSessionStorageState('cswear:catalog-rarity', 'all')
+  const [sort, setSort] = useSessionStorageState<CatalogSort>('cswear:catalog-sort', 'most-offers')
+  const [visibleCount, setVisibleCount] = useSessionStorageState('cswear:catalog-visible-count', CATALOG_PAGE_SIZE)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const summaries = useMemo(() => SKIN_DEFINITIONS.map((skin) => createVirtualSkinMarketSummary(skin, state.marketValues[skin.id], state.marketplace.virtualMarketEpoch, state.marketplace.virtualMarketSeed)), [state.marketValues, state.marketplace.virtualMarketEpoch, state.marketplace.virtualMarketSeed])
   const weapons = useMemo(() => [...new Set(SKIN_DEFINITIONS.map((skin) => skin.weapon))].sort(), [])
@@ -138,7 +139,7 @@ function SkinMarketCatalog({ onSelectSkin }: { onSelectSkin: (skinId: string) =>
     }, { rootMargin: '500px 0px' })
     observer.observe(target)
     return () => observer.disconnect()
-  }, [hasMore, rows.length])
+  }, [hasMore, rows.length, setVisibleCount])
 
   const resetCatalog = () => setVisibleCount(CATALOG_PAGE_SIZE)
 
@@ -152,24 +153,25 @@ function SkinMarketCatalog({ onSelectSkin }: { onSelectSkin: (skinId: string) =>
 }
 
 function SkinMarketCard({ onClick, summary }: { onClick: () => void; summary: VirtualSkinMarketSummary }) {
-  return <button className="group flex min-w-0 flex-col border bg-cs-surface p-3 text-left transition hover:-translate-y-0.5 hover:bg-cs-panel" onClick={onClick} style={{ borderColor: getSkinRarityColor(summary.skin) }} type="button"><div className="flex min-w-0 items-center gap-3"><AssetImage alt="" className="h-20 w-24 shrink-0 object-contain" loading="lazy" src={summary.skin.image} /><div className="min-w-0"><h4 className="line-clamp-2 font-semibold text-cs-text">{summary.skin.weapon} | {summary.skin.finish}</h4><p className="mt-1 text-xs" style={{ color: getSkinRarityColor(summary.skin) }}>{getSkinRarityLabel(summary.skin)}</p></div></div><div className="mt-3 grid grid-cols-2 gap-2"><Metric label="Starting at" value={formatCurrency(summary.startingPrice)} /><Metric label="Estimated offers" value={summary.supply.toLocaleString()} /></div><div className="mt-2 border border-cs-border bg-cs-panel px-2 py-2"><p className="font-mono text-[10px] uppercase text-cs-muted">Full estimated value range</p><p className="mt-1 flex items-center gap-1 text-sm font-semibold text-cs-text">{formatCurrency(summary.minimumValue)} – {formatCurrency(summary.maximumValue)} {summary.hasExceptionalVariant ? <Sparkles aria-label="Exceptional variant available" className="text-rarity-special" size={13} /> : null}</p><p className="mt-1 text-[10px] text-cs-muted">Maximum: {summary.maximumConfidence}</p></div><span className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 border border-rarity-special/60 bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special"><Users size={15} /> View all listings</span></button>
+  return <button className="group flex min-w-0 flex-col border bg-cs-surface p-2.5 text-left transition hover:-translate-y-0.5 hover:bg-cs-panel" onClick={onClick} style={{ borderColor: getSkinRarityColor(summary.skin) }} type="button"><div className="flex min-w-0 items-center gap-2.5"><AssetImage alt="" className="h-16 w-20 shrink-0 object-contain" loading="lazy" src={summary.skin.image} /><div className="min-w-0"><h4 className="line-clamp-2 font-semibold text-cs-text">{summary.skin.weapon} | {summary.skin.finish}</h4><p className="mt-1 text-xs" style={{ color: getSkinRarityColor(summary.skin) }}>{getSkinRarityLabel(summary.skin)}</p></div></div><div className="mt-2 grid grid-cols-2 gap-2"><Metric label="Starting at" value={formatCurrency(summary.startingPrice)} /><Metric label="Estimated offers" value={summary.supply.toLocaleString()} /></div><div className="mt-2 border border-cs-border bg-cs-panel px-2 py-1.5"><p className="font-mono text-[10px] uppercase text-cs-muted">Full estimated value range</p><p className="mt-1 flex items-center gap-1 text-sm font-semibold text-cs-text">{formatCurrency(summary.minimumValue)} – {formatCurrency(summary.maximumValue)} {summary.hasExceptionalVariant ? <Sparkles aria-label="Exceptional variant available" className="text-rarity-special" size={13} /> : null}</p><p className="mt-1 text-[10px] text-cs-muted">Maximum: {summary.maximumConfidence}</p></div><span className="mt-2 inline-flex min-h-9 items-center justify-center gap-2 border border-rarity-special/60 bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special"><Users size={15} /> View all listings</span></button>
 }
 
 function SkinListingMarket({ onBack, skinId }: { onBack: () => void; skinId: string }) {
   const game = useGame()
   const { state } = game
   const skin = SKIN_DEFINITIONS.find((candidate) => candidate.id === skinId)
-  const [sort, setSort] = useState<VirtualListingSort>('lowest-price')
-  const [wear, setWear] = useState<WearCondition | 'all'>('all')
-  const [edition, setEdition] = useState<VirtualListingEdition>('all')
-  const [patternTier, setPatternTier] = useState<VirtualPatternTier>('all')
-  const [patternClassification, setPatternClassification] = useState('')
-  const [patternId, setPatternId] = useState('')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
-  const [minFloat, setMinFloat] = useState('')
-  const [maxFloat, setMaxFloat] = useState('')
-  const [seller, setSeller] = useState('')
+  const key = `cswear:skin:${skinId}`
+  const [sort, setSort] = useSessionStorageState<VirtualListingSort>(`${key}:sort`, 'lowest-price')
+  const [wear, setWear] = useSessionStorageState<WearCondition | 'all'>(`${key}:wear`, 'all')
+  const [edition, setEdition] = useSessionStorageState<VirtualListingEdition>(`${key}:edition`, 'all')
+  const [patternTier, setPatternTier] = useSessionStorageState<VirtualPatternTier>(`${key}:pattern-tier`, 'all')
+  const [patternClassification, setPatternClassification] = useSessionStorageState(`${key}:classification`, '')
+  const [patternId, setPatternId] = useSessionStorageState(`${key}:pattern-id`, '')
+  const [minPrice, setMinPrice] = useSessionStorageState(`${key}:min-price`, '')
+  const [maxPrice, setMaxPrice] = useSessionStorageState(`${key}:max-price`, '')
+  const [minFloat, setMinFloat] = useSessionStorageState(`${key}:min-float`, '')
+  const [maxFloat, setMaxFloat] = useSessionStorageState(`${key}:max-float`, '')
+  const [seller, setSeller] = useSessionStorageState(`${key}:seller`, '')
   const [negotiatingListing, setNegotiatingListing] = useState<NpcMarketListing>()
   const [listingNow] = useState(() => Date.now())
   const numericPattern = parseOptionalNumber(patternId)
@@ -358,8 +360,8 @@ function ContinuousListingBrowser({
         <p className="inline-flex items-center gap-1 text-xs text-cs-muted"><LoaderCircle size={13} /> Continuous virtualized browsing</p>
       </div>
       <List
-        className="h-[min(68dvh,44rem)] min-h-[28rem] bg-cs-panel"
-        defaultHeight={680}
+        className="h-[min(64dvh,40rem)] min-h-[24rem] bg-cs-panel"
+        defaultHeight={620}
         listRef={listRef}
         onRowsRendered={handleRowsRendered}
         overscanCount={3}

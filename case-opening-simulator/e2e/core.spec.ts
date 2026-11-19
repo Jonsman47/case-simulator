@@ -84,6 +84,46 @@ test('new player can complete every supported opening size with exact-once trans
   expect(consoleErrors).toEqual([])
 })
 
+test('batch summary Open Again repeats the same quantity as one fresh exact-once session', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  await dismissEventPopup(page)
+  await dismissPwaNotification(page)
+  const before = await readSave(page)
+  const costPanel = await page.getByText('Cost', { exact: true }).locator('..').textContent()
+  const caseCost = Number(costPanel?.match(/\$([\d.]+)/)?.[1])
+
+  async function finishTwoCaseAnimation() {
+    const opening = page.getByRole('dialog', { name: 'Case opening animation' })
+    await expect(opening).toBeVisible()
+    await opening.getByRole('button', { name: 'Skip opening animation' }).click()
+    await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 15_000 })
+    await page.waitForFunction(() => {
+      const button = document.querySelector<HTMLButtonElement>('button[aria-label="Skip opening animation"]')
+      return !button || button.textContent?.includes('Close')
+    }, undefined, { timeout: 15_000 })
+    const close = opening.getByRole('button', { name: 'Skip opening animation' })
+    if (await close.isVisible().catch(() => false)) await close.click().catch(() => undefined)
+    await expect(opening).toBeHidden({ timeout: 15_000 })
+    return page.getByRole('dialog', { name: 'Case opening batch summary' })
+  }
+
+  await page.getByRole('button', { name: 'Open 2', exact: true }).click()
+  const firstSummary = await finishTwoCaseAnimation()
+  await expect(firstSummary).toBeVisible()
+  await firstSummary.getByRole('button', { name: 'Open Again ×2' }).click()
+  await expect(firstSummary).toBeHidden()
+  const secondSummary = await finishTwoCaseAnimation()
+  await expect(secondSummary).toBeVisible()
+  await secondSummary.getByRole('button', { name: 'Close opening summary' }).click()
+
+  await page.waitForFunction(({ key, expected }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.casesOpened === expected, { key: saveKey, expected: before.state.statistics.casesOpened + 4 })
+  const after = await readSave(page)
+  expect(after.state.inventory.length - before.state.inventory.length).toBe(4)
+  expect(after.state.statistics.casesOpened - before.state.statistics.casesOpened).toBe(4)
+  expect(before.state.money - after.state.money).toBeCloseTo(caseCost * 4, 2)
+})
+
 test('opening advances a tracked story quest and the exact-once reward survives reload', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
@@ -563,10 +603,10 @@ test('ten-item Trade-Up uses the real executor, reveal, history, and persisted e
   await expect(inputs).toHaveCount(10)
   for (let index = 0; index < 10; index += 1) await inputs.nth(index).click()
   await expect(page.getByText('10/10 signed')).toBeVisible()
-  await expect(page.getByText('Contract analysis')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Contract analysis' })).toBeVisible()
   await expect(page.getByText(/outcomes$/).first()).not.toHaveText('0 outcomes')
   await expect(page.getByTestId('negative-ev-warning')).toBeVisible()
-  await page.getByRole('button', { name: 'Review Contract' }).click()
+  await page.getByTestId('trade-up-analysis-panel').getByRole('button', { name: 'Review Contract', exact: true }).click()
   await expect(page.getByText('Final irreversible review')).toBeVisible()
   const riskConfirmation = page.getByRole('checkbox', { name: /could lose most/i })
   if (await riskConfirmation.isVisible().catch(() => false)) await riskConfirmation.check()
@@ -630,6 +670,61 @@ test('Trade-Up picker labels editions and explains incompatible selections', asy
   await regular.click()
   await expect(page.getByRole('alert')).toContainText('Regular AUG | Surveillance')
   await expect(page.getByRole('alert')).toContainText('StatTrak™ contract')
+})
+
+test('Trade-Up quick fills stay eligible, unique, and preserve the workspace context', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  const createdAt = Date.now()
+  seeded.state.inventory = Array.from({ length: 14 }, (_, index) => ({
+    id: `quick-fill-skin-${index}`,
+    weapon: 'P250',
+    finish: `Quick Fill ${index}`,
+    rarity: 'Consumer',
+    baseValue: index + 1,
+    baseMarketValue: index + 1,
+    caseIds: [],
+    collections: ['The Control Collection'],
+    image: '/assets/cs2/skins/skin-06a633fd8293_aug_surveillance.png',
+    instanceId: `quick-fill-${index}`,
+    wear: 'FactoryNew',
+    floatValue: (14 - index) / 100,
+    marketValue: index + 1,
+    isLocked: index === 12,
+    isFavorited: index === 13,
+    discoveredAt: createdAt + index,
+    paintSeed: index,
+    pattern: { family: 'standard', name: 'Standard pattern', premiumMultiplier: 1, referenceConfidence: 'neutral', tier: 'standard' },
+    patternPremium: 0,
+  }))
+  seeded.state.inventoryValue = 105
+  await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: seeded })
+  await page.goto('/trade-ups')
+
+  const picker = page.getByTestId('trade-up-picker-panel')
+  const inventoryItems = picker.getByTestId('trade-up-inventory-item')
+  await picker.getByRole('button', { name: 'Compatible only' }).click()
+  await picker.getByRole('checkbox', { name: 'Protected/ineligible' }).check()
+  await expect(inventoryItems).toHaveCount(14)
+  await page.getByTestId('random-trade-up-fill').click()
+  await expect(page.getByText('10/10 signed')).toBeVisible()
+  expect(await inventoryItems.evaluateAll((items) => items.filter((item) => item.getAttribute('aria-pressed') === 'true').length)).toBe(10)
+  expect(await inventoryItems.evaluateAll((items) => items.filter((item) => item.getAttribute('aria-pressed') === 'true').map((item) => item.textContent).some((text) => text?.includes('Quick Fill 12') || text?.includes('Quick Fill 13')))).toBe(false)
+
+  await page.getByRole('button', { name: 'Clear' }).click()
+  await page.getByTestId('cheapest-trade-up-fill').click()
+  await expect(page.getByText('10/10 signed')).toBeVisible()
+  const selectedNames = await inventoryItems.evaluateAll((items) => items
+    .filter((item) => item.getAttribute('aria-pressed') === 'true')
+    .map((item) => item.textContent ?? ''))
+  for (let index = 0; index < 10; index += 1) expect(selectedNames.some((name) => new RegExp(`Quick Fill ${index}(?:\\D|$)`).test(name))).toBe(true)
+
+  await page.goto('/inventory')
+  await page.goBack()
+  await expect(page).toHaveURL(/\/trade-ups$/)
+  await expect(page.getByText('10/10 signed')).toBeVisible()
+  expect(await page.getByTestId('trade-up-inventory-item').evaluateAll((items) => items.filter((item) => item.getAttribute('aria-pressed') === 'true').length)).toBe(10)
 })
 
 test('Large Text and Light theme are readable, persistent, and do not create horizontal overflow', async ({ page }) => {
@@ -762,7 +857,7 @@ test('Inventory lists the exact selected item on CSWEAR through review and escro
   const before = await readSave(page)
   const itemId = before.state.inventory[0].instanceId
   await page.locator('article[title="Tap to inspect, long press to select"]').first().click()
-  await page.getByRole('button', { name: 'List on CSWEAR' }).click()
+  await page.getByTestId('item-detail-backdrop').getByRole('button', { name: 'List on CSWEAR' }).click()
   await expect(page).toHaveURL(new RegExp(`/cswear\\?tab=sell&item=${itemId}`))
   const itemSelect = page.getByLabel('Inventory item')
   await expect(itemSelect).toHaveValue(itemId)

@@ -3,7 +3,7 @@
  */
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { GameContext, type GameContextValue } from '../components/GameContext'
 import { CASE_DEFINITIONS, getAvailableCases, getDropOdds } from '../data/cases'
@@ -18,6 +18,10 @@ vi.mock('react-chartjs-2', () => ({
 
 afterEach(() => {
   cleanup()
+})
+
+beforeEach(() => {
+  sessionStorage.clear()
 })
 
 function makeState(overrides: Partial<GameState> = {}): GameState {

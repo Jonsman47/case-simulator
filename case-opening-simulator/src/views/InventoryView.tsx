@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from 'react'
-import { Boxes, CheckSquare, Copy } from 'lucide-react'
+import { Boxes, CheckSquare, Copy, Repeat2, Tags } from 'lucide-react'
 import { Grid } from 'react-window'
 import { useNavigate } from 'react-router-dom'
 import { BulkActionsToolbar } from '../components/BulkActionsToolbar'
@@ -30,10 +30,10 @@ const ItemDetailModal = lazy(() => (
   import('../components/ItemDetailModal').then((module) => ({ default: module.ItemDetailModal }))
 ))
 
-const CARD_ROW_HEIGHT_DESKTOP = 360
-const CARD_ROW_HEIGHT_MOBILE = 336
-const MIN_GRID_HEIGHT = 360
-const MAX_GRID_HEIGHT = 760
+const CARD_ROW_HEIGHT_DESKTOP = 316
+const CARD_ROW_HEIGHT_MOBILE = 308
+const MIN_GRID_HEIGHT = 320
+const MAX_GRID_HEIGHT = 700
 const GRID_SCROLLBAR_GUTTER = 16
 
 function useElementWidth() {
@@ -282,7 +282,7 @@ export function InventoryView() {
 
   return (
     <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div className="border-l-4 border-rarity-industrial pl-4">
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Inventory</h2>
           <p className="mt-2 text-sm text-cs-muted">
@@ -292,8 +292,8 @@ export function InventoryView() {
             <Boxes size={14} /> {state.inventory.length}/{inventoryCapacity} slots / {freeSlots} free
           </p>
         </div>
-        <div className="grid gap-3 md:grid-cols-[minmax(220px,280px)_minmax(240px,320px)]">
-          <div className="border border-cs-border bg-cs-panel p-4">
+        <div className="grid gap-2 md:grid-cols-[minmax(220px,280px)_minmax(240px,320px)]">
+          <div className="border border-cs-border bg-cs-panel p-3">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Inventory Value
               <Tooltip label="Explain inventory value">
@@ -335,6 +335,8 @@ export function InventoryView() {
             <Copy size={16} />
             Sell Duplicates
           </button>
+          <button className="inline-flex min-h-10 items-center justify-center gap-2 border border-cs-border px-3 text-xs font-semibold text-cs-muted hover:border-rarity-restricted hover:text-rarity-restricted" onClick={() => navigate('/trade-ups')} type="button"><Repeat2 size={15} /> Trade-Ups</button>
+          <button className="inline-flex min-h-10 items-center justify-center gap-2 border border-cs-border px-3 text-xs font-semibold text-cs-muted hover:border-rarity-special hover:text-rarity-special" onClick={() => navigate('/cswear?tab=sell')} type="button"><Tags size={15} /> List on CSWEAR</button>
             </div>
           </div>
           <InventoryValueChart
@@ -359,7 +361,7 @@ export function InventoryView() {
       </div>
 
       {selectedCount > 0 ? (
-        <div className="mt-5">
+        <div className="sticky top-2 z-20 mt-3 shadow-2xl">
           <BulkActionsToolbar
             lockedSelectedCount={lockedSelectedCount}
             onClearSelection={clearSelection}
@@ -371,12 +373,12 @@ export function InventoryView() {
         </div>
       ) : null}
 
-      <div className="mt-5" data-onboarding-target="inventory-grid" ref={gridContainerRef}>
+      <div className="mt-3" data-onboarding-target="inventory-grid" ref={gridContainerRef}>
         {filteredItems.length > 0 && gridWidth > 0 ? (
           <Grid
             cellComponent={InventoryGridCell}
             cellProps={cellProps}
-            className="border border-cs-border bg-cs-bg"
+            className="max-h-[calc(100dvh-13rem)] border border-cs-border bg-cs-bg"
             columnCount={columnCount}
             columnWidth={Math.floor((gridWidth - GRID_SCROLLBAR_GUTTER) / columnCount)}
             defaultHeight={gridHeight}

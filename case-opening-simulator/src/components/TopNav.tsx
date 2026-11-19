@@ -30,7 +30,7 @@ function getLinkClass(
   if (tone === 'danger') {
     return [
       'flex shrink-0 items-center border font-medium transition-colors',
-      density === 'desktop' ? 'min-h-9 px-3 py-1.5 text-xs' : 'min-h-10 px-3 py-2 text-sm',
+      density === 'desktop' ? 'min-h-8 px-2.5 py-1 text-xs' : 'min-h-10 px-3 py-2 text-sm',
       isActive
         ? 'border-rarity-covert bg-rarity-covert/15 text-rarity-covert'
         : 'border-rarity-covert/60 text-rarity-covert hover:bg-rarity-covert/10',
@@ -39,7 +39,7 @@ function getLinkClass(
 
   return [
     'flex min-w-0 shrink-0 items-center gap-2 whitespace-nowrap border font-medium transition-colors',
-    density === 'desktop' ? 'min-h-9 px-3 py-1.5 text-xs' : 'min-h-10 px-3 py-2 text-sm',
+    density === 'desktop' ? 'min-h-8 px-2.5 py-1 text-xs' : 'min-h-10 px-3 py-2 text-sm',
     isActive
       ? 'border-rarity-special bg-rarity-special/10 text-rarity-special'
       : 'border-transparent text-cs-muted hover:border-cs-border hover:bg-cs-panelMuted hover:text-cs-text',
@@ -173,7 +173,7 @@ export function TopNav({ isAdminUser = false, state = defaultGameState }: { isAd
 
   return (
     <>
-      <nav aria-label="Primary navigation" className="hidden border-b border-cs-border bg-cs-panel px-2 py-2 lg:block">
+      <nav aria-label="Primary navigation" className="hidden border-b border-cs-border bg-cs-panel px-1.5 py-1 lg:block">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           {leftDesktopLinks}
           <div className="ml-auto flex min-w-0 flex-wrap gap-1.5">{rightDesktopLinks}</div>

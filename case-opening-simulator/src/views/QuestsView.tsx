@@ -33,7 +33,7 @@ function QuestCard({ quest }: { quest: QuestDefinition }) {
   const [showItems, setShowItems] = useState(false)
   const isComplete = Boolean(progress.completedAt)
 
-  return <article className="min-w-0 border border-cs-border bg-cs-panel p-4" data-testid={`quest-${quest.id}`}>
+  return <article className="min-w-0 border border-cs-border bg-cs-panel p-3" data-testid={`quest-${quest.id}`}>
     <div className="flex min-w-0 items-start gap-3">
       <AssetImage alt={`${npc?.name ?? 'Quest issuer'} portrait`} className="h-14 w-14 shrink-0 rounded border border-cs-border bg-cs-surface object-cover" src={npc?.portrait} />
       <div className="min-w-0 flex-1">
@@ -81,6 +81,14 @@ export function QuestsView() {
     if (completed) return false
     if (tab === 'hunts') return quest.category === 'collection'
     return tab === 'current' && quest.category !== 'collection'
+  }).sort((left, right) => {
+    const leftProgress = getQuestProgressState(state, left)
+    const rightProgress = getQuestProgressState(state, right)
+    const leftClaimable = getQuestStageStatus(state, left).complete ? 0 : 1
+    const rightClaimable = getQuestStageStatus(state, right).complete ? 0 : 1
+    const leftTracked = state.quests.trackedQuestIds.includes(left.id) ? 0 : 1
+    const rightTracked = state.quests.trackedQuestIds.includes(right.id) ? 0 : 1
+    return leftClaimable - rightClaimable || leftTracked - rightTracked || rightProgress.stageIndex - leftProgress.stageIndex || left.name.localeCompare(right.name)
   }), [available, state, tab])
   const tabs: { id: QuestTab; label: string; icon: typeof Compass }[] = [
     { id: 'current', label: 'Current Quests', icon: Compass },
@@ -94,7 +102,7 @@ export function QuestsView() {
       <div><p className="font-mono text-xs uppercase text-rarity-classified">Living gameplay</p><h1 className="mt-1 text-2xl font-semibold text-cs-text sm:text-3xl">Quests & Characters</h1><p className="mt-2 max-w-3xl text-sm text-cs-muted">Story quests are persistent; Current Run contests reset on Prestige. Discovery goals remain valid after an item is sold, while delivery goals consume the exact selected item.</p></div>
       <Link className="inline-flex min-h-10 items-center gap-2 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" to="/rewards"><Clock3 size={16} /> Daily objectives</Link>
     </header>
-    <nav className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4" aria-label="Quest sections">{tabs.map(({ id, label, icon: Icon }) => <button className={`flex min-h-11 items-center justify-center gap-2 border px-3 text-sm font-semibold ${tab === id ? 'border-rarity-classified bg-rarity-classified/10 text-rarity-classified' : 'border-cs-border text-cs-muted hover:text-cs-text'}`} key={id} onClick={() => { setParams({ tab: id }); setLimit(8) }} type="button"><Icon size={16} /> {label}</button>)}</nav>
+    <nav className="sticky top-2 z-20 mt-3 grid gap-2 border border-cs-border bg-cs-surface/95 p-1 shadow-xl backdrop-blur sm:grid-cols-2 xl:grid-cols-4" aria-label="Quest sections">{tabs.map(({ id, label, icon: Icon }) => <button className={`flex min-h-10 items-center justify-center gap-2 border px-3 text-sm font-semibold ${tab === id ? 'border-rarity-classified bg-rarity-classified/10 text-rarity-classified' : 'border-cs-border text-cs-muted hover:text-cs-text'}`} key={id} onClick={() => { setParams({ tab: id }); setLimit(8) }} type="button"><Icon size={16} /> {label}</button>)}</nav>
 
     {tab === 'characters' ? <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{QUEST_NPCS.map((npc) => {
       const progress = state.quests.npc[npc.id]
@@ -102,7 +110,7 @@ export function QuestsView() {
       return <article className="border border-cs-border bg-cs-panel p-4" key={npc.id}><div className="flex items-start gap-3"><AssetImage alt={`${npc.name} portrait`} className="h-20 w-20 rounded border border-cs-border bg-cs-surface object-cover" src={npc.portrait} /><div><h2 className="font-semibold text-cs-text">{npc.name}</h2><p className="text-xs" style={{ color: npc.accent }}>{npc.role}</p><p className="mt-2 text-xs text-cs-muted">Reputation {progress?.reputation ?? 0}</p></div></div><p className="mt-3 text-sm leading-5 text-cs-muted">{npc.description}</p><p className="mt-3 border-l-2 pl-3 text-xs italic text-cs-text" style={{ borderColor: npc.accent }}>{npc.personality}</p><button className="mt-4 flex min-h-10 w-full items-center justify-center gap-2 border border-cs-border text-sm text-cs-muted hover:text-cs-text" onClick={() => dispatch({ type: 'MARK_NPC_DIALOGUE_SEEN', npcId: npc.id, dialogueId: introId, message: npc.description, now: Date.now() })} type="button"><UserRound size={15} /> {progress?.seenDialogueIds.includes(introId) ? 'Revisit introduction' : 'Meet character'}</button>{npc.id === 'rook-vega' ? <p className="mt-2 flex items-center gap-2 text-xs text-rarity-covert"><Swords size={14} /> Rival score: {progress?.rivalScore ?? 0}</p> : null}</article>
     })}</div> : <>
       {tab === 'completed' ? <div className="mt-5 border border-cs-border bg-cs-panel p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-mono text-xs uppercase text-rarity-special">Permanent Drop Journal</p><h2 className="mt-1 text-xl font-semibold text-cs-text">{state.dropJournal.entries.length} notable openings</h2></div><div className="text-right text-xs text-cs-muted"><p>Best {formatCurrency(state.dropJournal.highestValue)}</p><p>{state.dropJournal.specialCount} Gold · {state.dropJournal.covertCount} Covert</p></div></div>{state.dropJournal.entries.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">{[...state.dropJournal.entries].reverse().slice(0, 12).map((entry) => <div className="flex min-w-0 items-center gap-3 border border-cs-border bg-cs-surface p-2" key={entry.id}><AssetImage alt="" className="h-12 w-16 object-contain" src={entry.image} /><div className="min-w-0"><p className="truncate text-sm font-semibold text-cs-text">{entry.weapon} | {entry.finish}</p><p className="truncate text-xs text-cs-muted">Pattern #{entry.paintSeed ?? '—'} · {entry.wear}</p><p className="text-xs text-rarity-special">{formatCurrency(entry.valueAtDiscovery)}{entry.isPersonalBest ? ' · Personal best' : ''}</p></div></div>)}</div> : <p className="mt-4 flex items-center gap-2 text-sm text-cs-muted"><ScrollText size={16} /> Tracking starts with v40; old openings are not fabricated.</p>}</div> : null}
-      <div className="mt-5 grid gap-3 xl:grid-cols-2">{quests.slice(0, limit).map((quest) => <QuestCard key={quest.id} quest={quest} />)}</div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">{quests.slice(0, limit).map((quest) => <QuestCard key={quest.id} quest={quest} />)}</div>
       {!quests.length ? <div className="mt-5 border border-cs-border bg-cs-panel p-8 text-center"><PackageOpen className="mx-auto text-cs-muted" size={28} /><p className="mt-3 text-cs-text">No quests in this section yet.</p></div> : null}
       {quests.length > limit ? <button className="mx-auto mt-4 block min-h-11 border border-cs-border px-5 text-sm text-cs-muted hover:text-cs-text" onClick={() => setLimit((value) => value + 8)} type="button">Show more quests</button> : null}
     </>}

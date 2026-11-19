@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 import '@testing-library/jest-dom/vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CaseStatus, type CaseDefinition } from '../data/models'
 import { CaseOpenControls } from './CaseOpenControls'
 
@@ -17,6 +17,10 @@ const caseDef: CaseDefinition = {
 }
 
 describe('CaseOpenControls', () => {
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
   it('shows all compact quantities with non-wrapping labels', () => {
     const onOpen = vi.fn()
 
@@ -57,5 +61,22 @@ describe('CaseOpenControls', () => {
     fireEvent.click(screen.getByRole('button', { name: /^open 100$/i }))
 
     expect(onOpen).toHaveBeenCalledWith(100, { skipAnimations: false })
+  })
+
+  it('remembers the last opening quantity for a repeated case-opening loop', () => {
+    const firstOpen = vi.fn()
+    const firstRender = render(<CaseOpenControls canOpen caseDef={caseDef} money={100} onOpen={firstOpen} />)
+    const firstControls = within(firstRender.container)
+
+    fireEvent.click(firstControls.getByRole('button', { name: /^open 5$/i }))
+    expect(firstControls.getByRole('button', { name: /^open 5$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(firstControls.getByText('Repeat preference: Open 5')).toBeInTheDocument()
+
+    firstRender.unmount()
+    const secondRender = render(<CaseOpenControls canOpen caseDef={caseDef} money={100} onOpen={vi.fn()} />)
+    const secondControls = within(secondRender.container)
+
+    expect(secondControls.getByRole('button', { name: /^open 5$/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(secondControls.getByText('Repeat preference: Open 5')).toBeInTheDocument()
   })
 })

@@ -699,6 +699,16 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setOpeningSession(undefined)
   }, [])
 
+  const repeatOpening = useCallback(() => {
+    const currentSession = openingSessionRef.current
+    if (!currentSession?.summary) return
+    const { caseId, quantity } = currentSession.summary.startedEvent
+    const skipAnimations = currentSession.skipAnimations
+    openingSessionRef.current = undefined
+    setOpeningSession(undefined)
+    openCase(caseId, quantity, { skipAnimations })
+  }, [openCase])
+
   const updateMarketValue = useCallback((skinId: string, value: number) => {
     dispatch({ type: 'UPDATE_MARKET_VALUE', skinId, value })
   }, [])
@@ -1309,6 +1319,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           careerXpEarned={openingCareerXp}
           newDiscoveryItemIds={openingDiscoveryItemIds}
           onClose={dismissOpeningSummary}
+          onOpenAgain={repeatOpening}
           openedCount={activeOpeningSummary.startedEvent.quantity}
           saleValue={activeOpeningSummary.autoSoldEvent?.salePrice ?? 0}
           skipAnimations={openingSession.skipAnimations}

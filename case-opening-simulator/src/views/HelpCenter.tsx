@@ -1,7 +1,8 @@
 import { AlertTriangle, BookOpen, BriefcaseBusiness, ExternalLink, HelpCircle, PackageOpen, RotateCcw, Search, ShieldCheck } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useGame } from '../hooks/useGame'
+import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import type { OnboardingTipId } from '../data/gameState'
 
 interface HelpArticle {
@@ -34,8 +35,8 @@ const categories = Array.from(new Set(HELP_ARTICLES.map((article) => article.cat
 
 export function HelpCenter() {
   const { state, updateOnboardingState } = useGame()
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('All')
+  const [query, setQuery] = useSessionStorageState('help:query', '')
+  const [category, setCategory] = useSessionStorageState('help:category', 'All')
   const articles = useMemo(() => HELP_ARTICLES.filter((article) => {
     const matchesCategory = category === 'All' || article.category === category
     const haystack = `${article.category} ${article.title} ${article.body} ${article.example ?? ''}`.toLowerCase()

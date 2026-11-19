@@ -12,6 +12,7 @@ import type { GameState } from '../data/gameState'
 import { CaseStatus, Rarity, type CaseDefinition, type SkinBase } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
 import { useGame } from '../hooks/useGame'
+import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import {
   canOpenCaseFromSelection,
   filterCases,
@@ -120,7 +121,7 @@ function CaseCard({
       data-case-selected={isSelected ? 'true' : 'false'}
       data-onboarding-target={isSelected && canOpenCaseFromSelection(caseDef, state) ? 'starter-case' : undefined}
       className={[
-        'group flex min-h-[15rem] flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[17rem] sm:p-3',
+        'group flex min-h-[13.5rem] flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15rem] sm:p-3',
         isSelected ? 'border-rarity-special ring-2 ring-rarity-special' : 'border-cs-border',
       ].join(' ')}
       onClick={() => onSelect(caseDef)}
@@ -144,8 +145,8 @@ function CaseCard({
         </span>
       </div>
 
-      <div className="mt-3 grid h-20 place-items-center border border-cs-border bg-cs-surface sm:h-24">
-        <AssetImage alt="" className="h-16 w-16 object-contain sm:h-20 sm:w-20" draggable={false} src={caseDef.image} />
+      <div className="mt-2 grid h-16 place-items-center border border-cs-border bg-cs-surface sm:h-20">
+        <AssetImage alt="" className="h-14 w-14 object-contain sm:h-16 sm:w-16" draggable={false} src={caseDef.image} />
       </div>
 
       <div className="mt-3 min-w-0">
@@ -451,7 +452,7 @@ function CaseDetailPanel({
 
   return (
     <aside
-      className="border border-rarity-special bg-cs-panel p-3 shadow-glow sm:p-4"
+      className="border border-rarity-special bg-cs-panel p-3 shadow-glow sm:p-4 xl:sticky xl:top-2 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto xl:overscroll-contain"
       data-swipe-ignore="true"
       onTouchEnd={handlePanelTouchEnd}
       onTouchStart={handlePanelTouchStart}
@@ -660,12 +661,12 @@ function CaseDetailPanel({
 
 export function CaseSelectionView() {
   const { caseDefinitions, openCase, purchaseCaseLicense, state, toggleCaseFavorite } = useGame()
-  const [filter, setFilter] = useState<CaseFilter>('all')
-  const [sort, setSort] = useState<CaseSort>('cost')
+  const [filter, setFilter] = useSessionStorageState<CaseFilter>('cases:filter', 'all')
+  const [sort, setSort] = useSessionStorageState<CaseSort>('cases:sort', 'cost')
   const casesWithDisplayData = useMemo(() => {
     return sortCases(filterCases(caseDefinitions, filter), sort, state)
   }, [caseDefinitions, filter, sort, state])
-  const [selectedCaseId, setSelectedCaseId] = useState<string | undefined>()
+  const [selectedCaseId, setSelectedCaseId] = useSessionStorageState<string | undefined>('cases:selected-case', undefined)
   const selectedCase = useMemo(() => {
     return (
       casesWithDisplayData.find((caseDef) => caseDef.id === selectedCaseId) ??
@@ -729,7 +730,7 @@ export function CaseSelectionView() {
       <TrackedQuestWidget />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+        <div className="case-catalog grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:max-h-[calc(100dvh-10rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1 2xl:grid-cols-4">
           {casesWithDisplayData.map((caseDef) => (
             <CaseCard
               bestDrop={getBestPossibleDrop(caseDef, skinsById, state.marketValues)}

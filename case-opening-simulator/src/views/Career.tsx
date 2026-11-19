@@ -34,6 +34,7 @@ import {
   type UpgradeSpecialization,
 } from '../career/careerUpgrades'
 import { useGame } from '../hooks/useGame'
+import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import { formatCurrency } from '../utils/format'
 import { getPrestigeEligibilityV2 } from '../prestige/prestigeSystem'
 import { getNewlyUnlockedUpgradeIds } from '../notifications/notificationSelectors'
@@ -115,9 +116,9 @@ function UpgradeCard({ definition, expanded, onExpand }: { definition: CareerUpg
 
 export function Career() {
   const { dispatch, state } = useGame()
-  const [specialization, setSpecialization] = useState<UpgradeSpecialization>('caseOpening')
-  const [filter, setFilter] = useState<UpgradeFilter>('all')
-  const [search, setSearch] = useState('')
+  const [specialization, setSpecialization] = useSessionStorageState<UpgradeSpecialization>('career:specialization', 'caseOpening')
+  const [filter, setFilter] = useSessionStorageState<UpgradeFilter>('career:filter', 'all')
+  const [search, setSearch] = useSessionStorageState('career:search', '')
   const [expandedId, setExpandedId] = useState<string>()
   const snapshot = getCareerSnapshot(state.career)
   const rankRecord = [...state.career.rankHistory].reverse().find((entry) => entry.rankId === snapshot.rank.id)
@@ -165,7 +166,7 @@ export function Career() {
   }, [visibleDefinitions])
 
   return (
-    <section className="w-full space-y-5">
+    <section className="w-full space-y-3">
       <header className="border border-cs-border bg-cs-surface p-4 sm:p-6 lg:p-7">
         <div className="flex flex-col gap-4 border-b border-cs-border pb-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="border-l-4 border-rarity-special pl-4"><p className="font-mono text-xs uppercase text-rarity-special">Trading career</p><h1 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Career &amp; Upgrades</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-cs-muted">Ninety-five working upgrades across five independent paths. Research reveals information; it never changes official case odds, predicts drops, or guarantees profit.</p></div>
@@ -192,14 +193,14 @@ export function Career() {
         </div>
       </section>
 
-      <section className="border border-cs-border bg-cs-surface p-4 sm:p-6" aria-labelledby="specializations-title">
+      <section className="border border-cs-border bg-cs-surface p-3 sm:p-4" aria-labelledby="specializations-title">
         <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-xs uppercase text-rarity-special">Choose a path</p><h2 className="mt-1 text-xl font-semibold text-cs-text" id="specializations-title">Specializations</h2></div><p className="text-xs text-cs-muted">{CAREER_UPGRADE_COUNTS.total} nodes · flexible cross-training</p></div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-5" role="tablist" aria-label="Career specializations">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5" role="tablist" aria-label="Career specializations">
           {specializationCards.map((entry) => { const Icon = entry.icon; const progress = getSpecializationUpgradeProgress(state.careerUpgrades, entry.id); const active = entry.id === specialization; return <button aria-selected={active} className={['min-w-0 border p-3 text-left', active ? 'border-rarity-special bg-rarity-special/10' : 'border-cs-border bg-cs-panel hover:border-cs-muted'].join(' ')} key={entry.id} onClick={() => { setSpecialization(entry.id); setExpandedId(undefined) }} role="tab" type="button"><span className="flex items-center gap-2"><Icon className={active ? 'text-rarity-special' : 'text-cs-muted'} size={18} /><span className="font-semibold text-cs-text">{entry.label}</span></span><span className="mt-2 block text-xs leading-5 text-cs-muted">{entry.description}</span><span className="mt-2 block font-mono text-[10px] uppercase text-cs-muted">{progress.purchased}/{progress.nodes} nodes · {progress.completedLevels}/{progress.maximumLevels} levels</span></button> })}
         </div>
       </section>
 
-      <section className="border border-cs-border bg-cs-surface p-4 sm:p-6" aria-labelledby="upgrade-explorer-title">
+      <section className="border border-cs-border bg-cs-surface p-3 sm:p-4" aria-labelledby="upgrade-explorer-title">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="font-mono text-xs uppercase text-rarity-special">{selectedSpecialization.label}</p><h2 className="mt-1 text-2xl font-semibold text-cs-text" id="upgrade-explorer-title">Upgrade explorer</h2><p className="mt-1 max-w-2xl text-sm text-cs-muted">Open one upgrade to see its exact consumer, next effect, cost, prerequisites and Prestige policy.</p></div><label className="flex min-h-10 min-w-0 items-center gap-2 border border-cs-border bg-cs-panel px-3 lg:w-72"><Search className="shrink-0 text-cs-muted" size={16} /><span className="sr-only">Search upgrades</span><input className="min-w-0 flex-1 bg-transparent text-sm text-cs-text outline-none" onChange={(event) => setSearch(event.target.value)} placeholder="Search this branch" value={search} /></label></div>
         <div className="mt-4 flex flex-wrap gap-2" aria-label="Upgrade filters">{(['all', 'available', 'affordable', 'locked', 'purchased', 'maxed'] as UpgradeFilter[]).map((entry) => <button className={['min-h-9 border px-3 text-xs capitalize', filter === entry ? 'border-rarity-special bg-rarity-special/10 text-rarity-special' : 'border-cs-border text-cs-muted'].join(' ')} key={entry} onClick={() => setFilter(entry)} type="button">{entry}</button>)}</div>
         <aside className="mt-4 border border-cs-border bg-cs-panel p-3" aria-label={`${selectedSpecialization.label} active toolkit`}>
