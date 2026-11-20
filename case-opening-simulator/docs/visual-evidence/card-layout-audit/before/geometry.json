@@ -1,0 +1,3697 @@
+[
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "desktop-1920",
+      "width": 1920,
+      "height": 1080
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-desktop-1920-standard.png",
+        "cardCount": 42,
+        "clipped": [
+          {
+            "height": 240,
+            "scrollHeight": 294,
+            "testId": null,
+            "text": "Unlocked$2.65Kilowatt CaseUnlockedOpen Cost$2.65Best DropSpecial ItemKukri Knife"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 294,
+            "testId": null,
+            "text": "Unlocked$2.72Revolution CaseUnlockedOpen Cost$2.72Best DropSpecial ItemSport Glo"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.79$97.65Recoil CaseLicense $97.65Open Cost$2.79Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.96$103.60Snakebite CaseLicense $103.60Open Cost$2.96Best Drop"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.97$103.95Fracture CaseLicense $103.95Open Cost$2.97Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.04$106.40Fever CaseLicense $106.40Open Cost$3.04Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.09$108.15Clutch CaseLicense $108.15Open Cost$3.09Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.28$114.80Gallery CaseLicense $114.80Open Cost$3.28Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.60$126.00CS20 CaseLicense $126.00Open Cost$3.60Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.62$126.70Dreams & Nightmares CaseLicense $126.70Open Cost$3.6"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.69$129.15Danger Zone CaseLicense $129.15Open Cost$3.69Best Dr"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.74$130.90Prisma 2 CaseLicense $130.90Open Cost$3.74Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.76$131.60Prisma CaseLicense $131.60Open Cost$3.76Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.88$135.80Falchion CaseLicense $135.80Open Cost$3.88Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$4.02$140.70Shadow CaseLicense $140.70Open Cost$4.02Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$4.15$145.25Horizon CaseLicense $145.25Open Cost$4.15Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.07$177.45Revolver CaseLicense $177.45Open Cost$5.07Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.20$182.00Spectrum 2 CaseLicense $182.00Open Cost$5.20Best Dro"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.38$188.30Gamma 2 CaseLicense $188.30Open Cost$5.38Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.43$190.05Chroma 3 CaseLicense $190.05Open Cost$5.43Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.51$192.85Gamma CaseLicense $192.85Open Cost$5.51Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.54$193.90Operation Wildfire CaseLicense $193.90Open Cost$5.54"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.89$206.15Chroma 2 CaseLicense $206.15Open Cost$5.89Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$6.02$210.70Spectrum CaseLicense $210.70Open Cost$6.02Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$6.05$211.75Operation Phoenix Weapon CaseLicense $211.75Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$7.10$248.50Chroma CaseLicense $248.50Open Cost$7.10Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$7.93$277.55Operation Vanguard Weapon CaseLicense $277.55Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$8.07$282.45Shattered Web CaseLicense $282.45Open Cost$8.07Best "
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$8.54$298.90Operation Broken Fang CaseLicense $298.90Open Cost$8"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$9.70$339.50Operation Breakout Weapon CaseLicense $339.50Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$10.52$368.20Huntsman Weapon CaseLicense $368.20Open Cost$10.52B"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$12.47$436.45Operation Riptide CaseLicense $436.45Open Cost$12.4"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$12.52$438.20Winter Offensive Weapon CaseLicense $438.20Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$15.04$526.40CS:GO Weapon Case 3License $526.40Open Cost$15.04Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$17.26$604.10eSports 2014 Summer CaseLicense $604.10Open Cost$17"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$18.22$637.70Glove CaseLicense $637.70Open Cost$18.22Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$22.92$802.20CS:GO Weapon Case 2License $802.20Open Cost$22.92Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$25.67$898.45eSports 2013 Winter CaseLicense $898.45Open Cost$25"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$35.24$1,233.40Operation Hydra CaseLicense $1,233.40Open Cost$35"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$54.14$1,894.90eSports 2013 CaseLicense $1,894.90Open Cost$54.14"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$58.80$2,058.00Operation Bravo CaseLicense $2,058.00Open Cost$58"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$121.49$4,252.15CS:GO Weapon CaseLicense $4,252.15Open Cost$121."
+          }
+        ],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-desktop-1920-standard.png",
+        "cardCount": 24,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #2WearFactory NewFloat0.021000Estimated Va"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #1WearBattle-ScarredFloat0.011000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          }
+        ],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-desktop-1920-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-desktop-1920-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-desktop-1920-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-desktop-1920-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-desktop-1920-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-desktop-1920-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-desktop-1920-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-desktop-1920-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-desktop-1920-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "desktop-1920",
+      "width": 1920,
+      "height": 1080
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-desktop-1920-large-text.png",
+        "cardCount": 42,
+        "clipped": [
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.65Kilowatt CaseUnlockedOpen Cost$2.65Best DropSpecial ItemKukri Knife"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.72Revolution CaseUnlockedOpen Cost$2.72Best DropSpecial ItemSport Glo"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.79$97.65Recoil CaseLicense $97.65Open Cost$2.79Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.96$103.60Snakebite CaseLicense $103.60Open Cost$2.96Best Drop"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.97$103.95Fracture CaseLicense $103.95Open Cost$2.97Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.04$106.40Fever CaseLicense $106.40Open Cost$3.04Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.09$108.15Clutch CaseLicense $108.15Open Cost$3.09Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.28$114.80Gallery CaseLicense $114.80Open Cost$3.28Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.60$126.00CS20 CaseLicense $126.00Open Cost$3.60Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.62$126.70Dreams & Nightmares CaseLicense $126.70Open Cost$3.6"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.69$129.15Danger Zone CaseLicense $129.15Open Cost$3.69Best Dr"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.74$130.90Prisma 2 CaseLicense $130.90Open Cost$3.74Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.76$131.60Prisma CaseLicense $131.60Open Cost$3.76Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.88$135.80Falchion CaseLicense $135.80Open Cost$3.88Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$4.02$140.70Shadow CaseLicense $140.70Open Cost$4.02Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$4.15$145.25Horizon CaseLicense $145.25Open Cost$4.15Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.07$177.45Revolver CaseLicense $177.45Open Cost$5.07Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.20$182.00Spectrum 2 CaseLicense $182.00Open Cost$5.20Best Dro"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.38$188.30Gamma 2 CaseLicense $188.30Open Cost$5.38Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.43$190.05Chroma 3 CaseLicense $190.05Open Cost$5.43Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.51$192.85Gamma CaseLicense $192.85Open Cost$5.51Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.54$193.90Operation Wildfire CaseLicense $193.90Open Cost$5.54"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.89$206.15Chroma 2 CaseLicense $206.15Open Cost$5.89Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$6.02$210.70Spectrum CaseLicense $210.70Open Cost$6.02Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$6.05$211.75Operation Phoenix Weapon CaseLicense $211.75Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$7.10$248.50Chroma CaseLicense $248.50Open Cost$7.10Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$7.93$277.55Operation Vanguard Weapon CaseLicense $277.55Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$8.07$282.45Shattered Web CaseLicense $282.45Open Cost$8.07Best "
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$8.54$298.90Operation Broken Fang CaseLicense $298.90Open Cost$8"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$9.70$339.50Operation Breakout Weapon CaseLicense $339.50Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$10.52$368.20Huntsman Weapon CaseLicense $368.20Open Cost$10.52B"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$12.47$436.45Operation Riptide CaseLicense $436.45Open Cost$12.4"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$12.52$438.20Winter Offensive Weapon CaseLicense $438.20Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$15.04$526.40CS:GO Weapon Case 3License $526.40Open Cost$15.04Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$17.26$604.10eSports 2014 Summer CaseLicense $604.10Open Cost$17"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$18.22$637.70Glove CaseLicense $637.70Open Cost$18.22Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$22.92$802.20CS:GO Weapon Case 2License $802.20Open Cost$22.92Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$25.67$898.45eSports 2013 Winter CaseLicense $898.45Open Cost$25"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$35.24$1,233.40Operation Hydra CaseLicense $1,233.40Open Cost$35"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$54.14$1,894.90eSports 2013 CaseLicense $1,894.90Open Cost$54.14"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$58.80$2,058.00Operation Bravo CaseLicense $2,058.00Open Cost$58"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$121.49$4,252.15CS:GO Weapon CaseLicense $4,252.15Open Cost$121."
+          }
+        ],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-desktop-1920-large-text.png",
+        "cardCount": 24,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #2WearFactory NewFloat0.021000Estimated Va"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #1WearBattle-ScarredFloat0.011000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          }
+        ],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-desktop-1920-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-desktop-1920-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-desktop-1920-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-desktop-1920-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-desktop-1920-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-desktop-1920-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-desktop-1920-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-desktop-1920-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-desktop-1920-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "laptop-1366",
+      "width": 1366,
+      "height": 768
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1366-standard.png",
+        "cardCount": 42,
+        "clipped": [
+          {
+            "height": 240,
+            "scrollHeight": 294,
+            "testId": null,
+            "text": "Unlocked$2.65Kilowatt CaseUnlockedOpen Cost$2.65Best DropSpecial ItemKukri Knife"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 294,
+            "testId": null,
+            "text": "Unlocked$2.72Revolution CaseUnlockedOpen Cost$2.72Best DropSpecial ItemSport Glo"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.79$97.65Recoil CaseLicense $97.65Open Cost$2.79Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.96$103.60Snakebite CaseLicense $103.60Open Cost$2.96Best Drop"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$2.97$103.95Fracture CaseLicense $103.95Open Cost$2.97Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.04$106.40Fever CaseLicense $106.40Open Cost$3.04Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.09$108.15Clutch CaseLicense $108.15Open Cost$3.09Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.28$114.80Gallery CaseLicense $114.80Open Cost$3.28Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.60$126.00CS20 CaseLicense $126.00Open Cost$3.60Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.62$126.70Dreams & Nightmares CaseLicense $126.70Open Cost$3.6"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.69$129.15Danger Zone CaseLicense $129.15Open Cost$3.69Best Dr"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.74$130.90Prisma 2 CaseLicense $130.90Open Cost$3.74Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.76$131.60Prisma CaseLicense $131.60Open Cost$3.76Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$3.88$135.80Falchion CaseLicense $135.80Open Cost$3.88Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$4.02$140.70Shadow CaseLicense $140.70Open Cost$4.02Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$4.15$145.25Horizon CaseLicense $145.25Open Cost$4.15Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.07$177.45Revolver CaseLicense $177.45Open Cost$5.07Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.20$182.00Spectrum 2 CaseLicense $182.00Open Cost$5.20Best Dro"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.38$188.30Gamma 2 CaseLicense $188.30Open Cost$5.38Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.43$190.05Chroma 3 CaseLicense $190.05Open Cost$5.43Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.51$192.85Gamma CaseLicense $192.85Open Cost$5.51Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.54$193.90Operation Wildfire CaseLicense $193.90Open Cost$5.54"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$5.89$206.15Chroma 2 CaseLicense $206.15Open Cost$5.89Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$6.02$210.70Spectrum CaseLicense $210.70Open Cost$6.02Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$6.05$211.75Operation Phoenix Weapon CaseLicense $211.75Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$7.10$248.50Chroma CaseLicense $248.50Open Cost$7.10Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$7.93$277.55Operation Vanguard Weapon CaseLicense $277.55Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$8.07$282.45Shattered Web CaseLicense $282.45Open Cost$8.07Best "
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$8.54$298.90Operation Broken Fang CaseLicense $298.90Open Cost$8"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$9.70$339.50Operation Breakout Weapon CaseLicense $339.50Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$10.52$368.20Huntsman Weapon CaseLicense $368.20Open Cost$10.52B"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$12.47$436.45Operation Riptide CaseLicense $436.45Open Cost$12.4"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$12.52$438.20Winter Offensive Weapon CaseLicense $438.20Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$15.04$526.40CS:GO Weapon Case 3License $526.40Open Cost$15.04Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$17.26$604.10eSports 2014 Summer CaseLicense $604.10Open Cost$17"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$18.22$637.70Glove CaseLicense $637.70Open Cost$18.22Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$22.92$802.20CS:GO Weapon Case 2License $802.20Open Cost$22.92Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$25.67$898.45eSports 2013 Winter CaseLicense $898.45Open Cost$25"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$35.24$1,233.40Operation Hydra CaseLicense $1,233.40Open Cost$35"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$54.14$1,894.90eSports 2013 CaseLicense $1,894.90Open Cost$54.14"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$58.80$2,058.00Operation Bravo CaseLicense $2,058.00Open Cost$58"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 296,
+            "testId": null,
+            "text": "License Required$121.49$4,252.15CS:GO Weapon CaseLicense $4,252.15Open Cost$121."
+          }
+        ],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1366-standard.png",
+        "cardCount": 24,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #2WearFactory NewFloat0.021000Estimated Va"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #1WearBattle-ScarredFloat0.011000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          }
+        ],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1366-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1366-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1366-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1366-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1366-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1366-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1366-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1366-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1366-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "laptop-1366",
+      "width": 1366,
+      "height": 768
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1366-large-text.png",
+        "cardCount": 42,
+        "clipped": [
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.65Kilowatt CaseUnlockedOpen Cost$2.65Best DropSpecial ItemKukri Knife"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.72Revolution CaseUnlockedOpen Cost$2.72Best DropSpecial ItemSport Glo"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.79$97.65Recoil CaseLicense $97.65Open Cost$2.79Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.96$103.60Snakebite CaseLicense $103.60Open Cost$2.96Best Drop"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$2.97$103.95Fracture CaseLicense $103.95Open Cost$2.97Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.04$106.40Fever CaseLicense $106.40Open Cost$3.04Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.09$108.15Clutch CaseLicense $108.15Open Cost$3.09Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.28$114.80Gallery CaseLicense $114.80Open Cost$3.28Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.60$126.00CS20 CaseLicense $126.00Open Cost$3.60Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.62$126.70Dreams & Nightmares CaseLicense $126.70Open Cost$3.6"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.69$129.15Danger Zone CaseLicense $129.15Open Cost$3.69Best Dr"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.74$130.90Prisma 2 CaseLicense $130.90Open Cost$3.74Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.76$131.60Prisma CaseLicense $131.60Open Cost$3.76Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$3.88$135.80Falchion CaseLicense $135.80Open Cost$3.88Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$4.02$140.70Shadow CaseLicense $140.70Open Cost$4.02Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$4.15$145.25Horizon CaseLicense $145.25Open Cost$4.15Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.07$177.45Revolver CaseLicense $177.45Open Cost$5.07Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.20$182.00Spectrum 2 CaseLicense $182.00Open Cost$5.20Best Dro"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.38$188.30Gamma 2 CaseLicense $188.30Open Cost$5.38Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.43$190.05Chroma 3 CaseLicense $190.05Open Cost$5.43Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.51$192.85Gamma CaseLicense $192.85Open Cost$5.51Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.54$193.90Operation Wildfire CaseLicense $193.90Open Cost$5.54"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$5.89$206.15Chroma 2 CaseLicense $206.15Open Cost$5.89Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$6.02$210.70Spectrum CaseLicense $210.70Open Cost$6.02Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$6.05$211.75Operation Phoenix Weapon CaseLicense $211.75Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$7.10$248.50Chroma CaseLicense $248.50Open Cost$7.10Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$7.93$277.55Operation Vanguard Weapon CaseLicense $277.55Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$8.07$282.45Shattered Web CaseLicense $282.45Open Cost$8.07Best "
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$8.54$298.90Operation Broken Fang CaseLicense $298.90Open Cost$8"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$9.70$339.50Operation Breakout Weapon CaseLicense $339.50Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$10.52$368.20Huntsman Weapon CaseLicense $368.20Open Cost$10.52B"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$12.47$436.45Operation Riptide CaseLicense $436.45Open Cost$12.4"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$12.52$438.20Winter Offensive Weapon CaseLicense $438.20Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$15.04$526.40CS:GO Weapon Case 3License $526.40Open Cost$15.04Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$17.26$604.10eSports 2014 Summer CaseLicense $604.10Open Cost$17"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$18.22$637.70Glove CaseLicense $637.70Open Cost$18.22Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$22.92$802.20CS:GO Weapon Case 2License $802.20Open Cost$22.92Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 333,
+            "testId": null,
+            "text": "License Required$25.67$898.45eSports 2013 Winter CaseLicense $898.45Open Cost$25"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$35.24$1,233.40Operation Hydra CaseLicense $1,233.40Open Cost$35"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$54.14$1,894.90eSports 2013 CaseLicense $1,894.90Open Cost$54.14"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$58.80$2,058.00Operation Bravo CaseLicense $2,058.00Open Cost$58"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$121.49$4,252.15CS:GO Weapon CaseLicense $4,252.15Open Cost$121."
+          }
+        ],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1366-large-text.png",
+        "cardCount": 24,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #2WearFactory NewFloat0.021000Estimated Va"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #1WearBattle-ScarredFloat0.011000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          }
+        ],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1366-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1366-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1366-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1366-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1366-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1366-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1366-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1366-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1366-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "laptop-1280",
+      "width": 1280,
+      "height": 720
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1280-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1280-standard.png",
+        "cardCount": 20,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          }
+        ],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1280-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1280-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1280-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1280-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1280-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1280-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1280-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1280-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1280-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "laptop-1280",
+      "width": 1280,
+      "height": 720
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1280-large-text.png",
+        "cardCount": 42,
+        "clipped": [
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.65Kilowatt CaseUnlockedOpen Cost$2.65Best DropSpecial ItemKukri Knife"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 314,
+            "testId": null,
+            "text": "Unlocked$2.72Revolution CaseUnlockedOpen Cost$2.72Best DropSpecial ItemSport Glo"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$2.79$97.65Recoil CaseLicense $97.65Open Cost$2.79Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$2.96$103.60Snakebite CaseLicense $103.60Open Cost$2.96Best Drop"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$2.97$103.95Fracture CaseLicense $103.95Open Cost$2.97Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.04$106.40Fever CaseLicense $106.40Open Cost$3.04Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.09$108.15Clutch CaseLicense $108.15Open Cost$3.09Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.28$114.80Gallery CaseLicense $114.80Open Cost$3.28Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.60$126.00CS20 CaseLicense $126.00Open Cost$3.60Best DropSpeci"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.62$126.70Dreams & Nightmares CaseLicense $126.70Open Cost$3.6"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.69$129.15Danger Zone CaseLicense $129.15Open Cost$3.69Best Dr"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.74$130.90Prisma 2 CaseLicense $130.90Open Cost$3.74Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.76$131.60Prisma CaseLicense $131.60Open Cost$3.76Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$3.88$135.80Falchion CaseLicense $135.80Open Cost$3.88Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$4.02$140.70Shadow CaseLicense $140.70Open Cost$4.02Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$4.15$145.25Horizon CaseLicense $145.25Open Cost$4.15Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.07$177.45Revolver CaseLicense $177.45Open Cost$5.07Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.20$182.00Spectrum 2 CaseLicense $182.00Open Cost$5.20Best Dro"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.38$188.30Gamma 2 CaseLicense $188.30Open Cost$5.38Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.43$190.05Chroma 3 CaseLicense $190.05Open Cost$5.43Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.51$192.85Gamma CaseLicense $192.85Open Cost$5.51Best DropSpec"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.54$193.90Operation Wildfire CaseLicense $193.90Open Cost$5.54"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$5.89$206.15Chroma 2 CaseLicense $206.15Open Cost$5.89Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$6.02$210.70Spectrum CaseLicense $210.70Open Cost$6.02Best DropS"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$6.05$211.75Operation Phoenix Weapon CaseLicense $211.75Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$7.10$248.50Chroma CaseLicense $248.50Open Cost$7.10Best DropSpe"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$7.93$277.55Operation Vanguard Weapon CaseLicense $277.55Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$8.07$282.45Shattered Web CaseLicense $282.45Open Cost$8.07Best "
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$8.54$298.90Operation Broken Fang CaseLicense $298.90Open Cost$8"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$9.70$339.50Operation Breakout Weapon CaseLicense $339.50Open Co"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$10.52$368.20Huntsman Weapon CaseLicense $368.20Open Cost$10.52B"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$12.47$436.45Operation Riptide CaseLicense $436.45Open Cost$12.4"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$12.52$438.20Winter Offensive Weapon CaseLicense $438.20Open Cos"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$15.04$526.40CS:GO Weapon Case 3License $526.40Open Cost$15.04Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$17.26$604.10eSports 2014 Summer CaseLicense $604.10Open Cost$17"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$18.22$637.70Glove CaseLicense $637.70Open Cost$18.22Best DropSp"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$22.92$802.20CS:GO Weapon Case 2License $802.20Open Cost$22.92Be"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$25.67$898.45eSports 2013 Winter CaseLicense $898.45Open Cost$25"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$35.24$1,233.40Operation Hydra CaseLicense $1,233.40Open Cost$35"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$54.14$1,894.90eSports 2013 CaseLicense $1,894.90Open Cost$54.14"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$58.80$2,058.00Operation Bravo CaseLicense $2,058.00Open Cost$58"
+          },
+          {
+            "height": 240,
+            "scrollHeight": 354,
+            "testId": null,
+            "text": "License Required$121.49$4,252.15CS:GO Weapon CaseLicense $4,252.15Open Cost$121."
+          }
+        ],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1280-large-text.png",
+        "cardCount": 20,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #13WearBattle-ScarredFloat0.131000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | Surveillance With A L"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #11WearBattle-ScarredFloat0.111000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #10WearFactory NewFloat0.101000Estimated Val"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #8WearFactory NewF"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #7WearBattle-ScarredFloat0.071000Estimated"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceCovertPattern #5WearBattle-ScarredFloat0.051000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #4WearFactory NewF"
+          }
+        ],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1280-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1280-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1280-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1280-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1280-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1280-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1280-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1280-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1280-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "tablet-768",
+      "width": 768,
+      "height": 1024
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-tablet-768-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-tablet-768-standard.png",
+        "cardCount": 10,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 368,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 338,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          }
+        ],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-tablet-768-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-tablet-768-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-tablet-768-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-tablet-768-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-tablet-768-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-tablet-768-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-tablet-768-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-tablet-768-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-tablet-768-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "tablet-768",
+      "width": 768,
+      "height": 1024
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-tablet-768-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-tablet-768-large-text.png",
+        "cardCount": 10,
+        "clipped": [
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #17WearBattle-ScarredFloat0.171000Estimate"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameConsumerPattern #16WearFactory New"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 378,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceCovertPat"
+          },
+          {
+            "height": 304,
+            "scrollHeight": 344,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #14WearFactory NewFloat0.141000Estimated V"
+          }
+        ],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-tablet-768-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-tablet-768-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-tablet-768-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-tablet-768-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-tablet-768-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-tablet-768-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-tablet-768-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-tablet-768-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-tablet-768-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "mobile-375",
+      "width": 375,
+      "height": 812
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-mobile-375-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-mobile-375-standard.png",
+        "cardCount": 5,
+        "clipped": [
+          {
+            "height": 296,
+            "scrollHeight": 332,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 332,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 362,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 332,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 332,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          }
+        ],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [
+          "Inventory Value Trend$45.12+0% session"
+        ],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-mobile-375-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-mobile-375-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-mobile-375-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-mobile-375-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-mobile-375-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-mobile-375-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-mobile-375-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-mobile-375-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-mobile-375-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 363,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "mobile-375",
+      "width": 375,
+      "height": 812
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-mobile-375-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-mobile-375-large-text.png",
+        "cardCount": 5,
+        "clipped": [
+          {
+            "height": 296,
+            "scrollHeight": 336,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #23WearBattle-ScarredFloat0.231000Estimate"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 336,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #22WearFactory NewFloat0.221000Estimated V"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 370,
+            "testId": null,
+            "text": "DupeStatTrak™AUG With An Intentionally Long Weapon Label | SurveillanceConsumerP"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 336,
+            "testId": null,
+            "text": "DupeAUG | Surveillance With A Long Finish NameCovertPattern #20WearFactory NewFl"
+          },
+          {
+            "height": 296,
+            "scrollHeight": 336,
+            "testId": null,
+            "text": "DupeAUG | SurveillanceConsumerPattern #19WearBattle-ScarredFloat0.191000Estimate"
+          }
+        ],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [
+          "Inventory Value Trend$45.12+0% session"
+        ],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-mobile-375-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-mobile-375-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-mobile-375-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-mobile-375-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-mobile-375-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-mobile-375-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-mobile-375-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-mobile-375-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-mobile-375-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 363,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      }
+    ]
+  }
+]

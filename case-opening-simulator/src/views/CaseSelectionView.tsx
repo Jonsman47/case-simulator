@@ -119,20 +119,22 @@ function CaseCard({
   return (
     <button
       data-case-selected={isSelected ? 'true' : 'false'}
+      data-layout-card="true"
       data-onboarding-target={isSelected && canOpenCaseFromSelection(caseDef, state) ? 'starter-case' : undefined}
+      data-testid="case-card"
       className={[
-        'group flex min-h-[13.5rem] flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15rem] sm:p-3',
+        'group flex h-full min-h-[13.5rem] min-w-0 flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15rem] sm:p-3',
         isSelected ? 'border-rarity-special ring-2 ring-rarity-special' : 'border-cs-border',
       ].join(' ')}
       onClick={() => onSelect(caseDef)}
       type="button"
     >
-      <div className="flex items-start justify-between gap-3">
-        <span className={`border px-2 py-1 font-mono text-[10px] uppercase ${getCaseBadgeClass(caseDef, state)}`}>
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+        <span className={`max-w-full border px-2 py-1 text-center font-mono text-[10px] uppercase leading-4 ${getCaseBadgeClass(caseDef, state)}`}>
           {getCaseStatusLabel(caseDef, state)}
         </span>
-        <span className="inline-flex flex-col items-end gap-1 font-mono text-xs text-cs-muted">
-          <span className="inline-flex items-center gap-2">
+        <span className="inline-flex min-w-0 flex-col items-end gap-1 break-words text-right font-mono text-xs text-cs-muted">
+          <span className="inline-flex max-w-full flex-wrap items-center justify-end gap-2">
           {isFavorite ? <Star aria-hidden="true" fill="currentColor" size={14} className="text-rarity-special" /> : null}
           {formatCurrency(caseDef.cost)}
           </span>
@@ -150,19 +152,19 @@ function CaseCard({
       </div>
 
       <div className="mt-3 min-w-0">
-        <h3 className="truncate text-base font-semibold text-cs-text">{caseDef.name}</h3>
-        <p className="mt-1 truncate text-xs text-cs-muted">{getUnlockProgressLabel(caseDef, state)}</p>
+        <h3 className="break-words text-base font-semibold leading-5 text-cs-text">{caseDef.name}</h3>
+        <p className="mt-1 break-words text-xs text-cs-muted">{getUnlockProgressLabel(caseDef, state)}</p>
       </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-        <div className="border border-cs-border bg-cs-surface px-2 py-1.5">
+      <dl className="mt-3 grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 text-xs">
+        <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Open Cost</dt>
-          <dd className="mt-1 font-semibold text-cs-text">{formatCurrency(caseDef.cost)}</dd>
+          <dd className="mt-1 break-words font-semibold text-cs-text">{formatCurrency(caseDef.cost)}</dd>
         </div>
-        <div className="border border-cs-border bg-cs-surface px-2 py-1.5">
+        <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Best Drop</dt>
           <dd
-            className="mt-1 truncate font-semibold"
+            className="mt-1 break-words font-semibold"
             style={bestDrop ? { color: getSkinRarityColor(bestDrop) } : undefined}
           >
             {bestDrop ? getSkinRarityLabel(bestDrop) : 'Unknown'}
@@ -173,7 +175,7 @@ function CaseCard({
       <div className="mt-3 flex items-center gap-2 border border-cs-border bg-cs-surface p-2">
         <AssetImage alt="" className="h-10 w-10 object-contain" src={bestDrop?.image} />
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-cs-text">{getBestDropLabel(bestDrop)}</p>
+          <p className="break-words text-xs font-semibold text-cs-text">{getBestDropLabel(bestDrop)}</p>
           <p className="mt-1 font-mono text-[10px] uppercase text-cs-muted">Preview</p>
         </div>
       </div>
@@ -730,7 +732,7 @@ export function CaseSelectionView() {
       <TrackedQuestWidget />
 
       <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(26rem,32rem)]">
-        <div className="case-catalog grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:max-h-[calc(100dvh-10rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1 2xl:grid-cols-4">
+        <div className="case-catalog content-card-grid grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:max-h-[calc(100dvh-10rem)] xl:overflow-y-auto xl:overscroll-contain xl:pr-1 2xl:grid-cols-4">
           {casesWithDisplayData.map((caseDef) => (
             <CaseCard
               bestDrop={getBestPossibleDrop(caseDef, skinsById, state.marketValues)}

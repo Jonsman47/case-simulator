@@ -106,7 +106,7 @@ export function Achievements() {
             Lifetime accomplishments and bounded Current Run goals across the complete trading career.
           </p>
         </div>
-        <div className="grid gap-2 border border-cs-border bg-cs-panel p-2 sm:grid-cols-5">
+        <div className="content-card-grid grid gap-2 border border-cs-border bg-cs-panel p-2 sm:grid-cols-5">
           <SummaryPill label="Completed" value={`${activeUnlockedCount}/${activeAchievementCount}`} />
           <SummaryPill label="Complete" value={`${completion}%`} />
           <SummaryPill label="Claimable" value={String(claimableCount)} />
@@ -189,7 +189,7 @@ export function Achievements() {
                 </span>
               </div>
 
-              <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="content-card-grid mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {categoryAchievements.map((achievement) => {
                   const progress = getProgress(achievement.id)
                   const isUnlocked = Boolean(progress)
@@ -216,6 +216,7 @@ export function Achievements() {
 
                   return (
                     <article
+                      data-layout-card="true"
                       className={[
                         'border bg-cs-panel p-3',
                         isUnlocked ? categoryAccentClasses[category] : 'border-cs-border text-cs-muted',
@@ -236,7 +237,7 @@ export function Achievements() {
                         </div>
                       </div>
 
-                      <p className="mt-2 line-clamp-2 min-h-10 text-sm text-cs-muted">{displayDescription}</p>
+                      <p className="mt-2 min-h-10 text-sm text-cs-muted">{displayDescription}</p>
                       {!achievement.isHidden || isUnlocked ? (
                         <div className="mt-3">
                           <div className="flex justify-between gap-3 font-mono text-[10px] uppercase text-cs-muted">

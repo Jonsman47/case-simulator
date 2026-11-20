@@ -279,3 +279,15 @@ Status: **COMPLETE — VERIFIED 2026-11-16**
 - Five deterministic 15/30/60/120-minute playstyles and the full Career/case economy model pass. Detailed rules and results live in `case-opening-simulator/docs/CASE_OPENING_EARLY_GAME_REBALANCE.md`.
 
 Exit evidence: TypeScript and ESLint passed; 83 Vitest files / 489 tests passed; 2,134 generated assets verified; production/PWA build and release verification passed; early-game and full Career simulations passed; and 29/29 Chromium journeys passed, including the new Work, opening, CSWEAR escrow, console, responsive, and exact-once regressions. Live Supabase deployment remains the only credential-dependent release boundary.
+
+## Post-release global card/layout correctness pass
+
+Status: **COMPLETE — RELEASE AND BROWSER VERIFICATION PASSED (2026-11-20)**
+
+- Root causes fixed: compact minimum-height overrides fighting max-content rows, undersized Inventory/CSWEAR virtual rows, missing `min-width: 0`, unsafe truncation/line clamps, and an early five-column status-header breakpoint.
+- Coverage: Cases, Inventory, Trade-Ups, CSWEAR, Work, Business, Career & Upgrades, Quests, Prestige, Achievements, and Stats.
+- Regression matrix: 1920×1080, 1366×768, 1280×720, 768×1024, and 375×812 in normal and Large Text modes.
+- Visual result: 376 clipped cards / two out-of-grid cards at baseline reduced to zero clipped, zero horizontal overflow, zero outside-grid cards, and zero card intersections across 110 final production screenshots.
+- Release scope remains layout-only; compact density, Light Mode, Large Text, mobile behavior, gameplay systems, economy, probabilities, and saves are preserved.
+- Evidence: `case-opening-simulator/docs/CARD_LAYOUT_AUDIT.md`.
+- Exit evidence: TypeScript, zero-error ESLint, 91 Vitest files / 520 tests, 2,134-asset verification, production/PWA build, release verification, the 10-case-layout regression matrix, and all 48 Chromium journeys passed.

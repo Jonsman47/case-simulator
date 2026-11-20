@@ -108,11 +108,11 @@ function MetricCard({
   value: string
 }) {
   return (
-    <article className="border border-cs-border bg-cs-panel p-4">
+    <article className="min-w-0 border border-cs-border bg-cs-panel p-4" data-layout-card="true">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase text-cs-muted">{label}</p>
-          <p className={['mt-2 truncate text-2xl font-semibold', toneClass(tone)].join(' ')}>
+          <p className={['mt-2 break-words text-2xl font-semibold', toneClass(tone)].join(' ')}>
             {value}
           </p>
         </div>
@@ -260,7 +260,7 @@ function Comparatives({ summary }: { summary: StatsDashboardSummary }) {
         <h3 className="text-lg font-semibold text-cs-text">Session vs Average</h3>
         <Clock3 aria-hidden="true" className="text-rarity-industrial" size={18} />
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-card-grid mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SmallStat label="Session Cases" value={summary.comparatives.sessionCasesOpened.toLocaleString()} />
         <SmallStat
           label="Session Pace"
@@ -304,7 +304,7 @@ function FinancialBreakdown({
         </div>
         <Landmark aria-hidden="true" className="text-rarity-special" size={18} />
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-card-grid mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SmallStat label="Lifetime Income" value={formatCurrency(summary.totalIncome)} valueClass="text-cs-green" />
         <SmallStat label="Lifetime Expenses" value={formatCurrency(summary.totalExpenses)} valueClass="text-rarity-covert" />
         <SmallStat label="Current Run Net Cash" value={formatCurrency(summary.currentRunNetCashFlow)} valueClass={summary.currentRunNetCashFlow >= 0 ? 'text-cs-green' : 'text-rarity-covert'} />

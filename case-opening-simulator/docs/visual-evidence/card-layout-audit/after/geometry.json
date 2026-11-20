@@ -1,0 +1,1422 @@
+[
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "desktop-1920",
+      "width": 1920,
+      "height": 1080
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-desktop-1920-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-desktop-1920-standard.png",
+        "cardCount": 20,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-desktop-1920-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-desktop-1920-standard.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-desktop-1920-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-desktop-1920-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-desktop-1920-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-desktop-1920-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-desktop-1920-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-desktop-1920-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-desktop-1920-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "desktop-1920",
+      "width": 1920,
+      "height": 1080
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-desktop-1920-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-desktop-1920-large-text.png",
+        "cardCount": 20,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-desktop-1920-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-desktop-1920-large-text.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-desktop-1920-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-desktop-1920-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-desktop-1920-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-desktop-1920-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-desktop-1920-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-desktop-1920-large-text.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-desktop-1920-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1905,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1920
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "laptop-1366",
+      "width": 1366,
+      "height": 768
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1366-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1366-standard.png",
+        "cardCount": 16,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1366-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1366-standard.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1366-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1366-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1366-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1366-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1366-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1366-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1366-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "laptop-1366",
+      "width": 1366,
+      "height": 768
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1366-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1366-large-text.png",
+        "cardCount": 16,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1366-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1366-large-text.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1366-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1366-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1366-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1366-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1366-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1366-large-text.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1366-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1351,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1366
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "laptop-1280",
+      "width": 1280,
+      "height": 720
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1280-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1280-standard.png",
+        "cardCount": 16,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1280-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1280-standard.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1280-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1280-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1280-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1280-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1280-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1280-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1280-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "laptop-1280",
+      "width": 1280,
+      "height": 720
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-laptop-1280-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-laptop-1280-large-text.png",
+        "cardCount": 16,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-laptop-1280-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-laptop-1280-large-text.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-laptop-1280-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-laptop-1280-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-laptop-1280-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-laptop-1280-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-laptop-1280-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-laptop-1280-large-text.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-laptop-1280-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 1265,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 1280
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "tablet-768",
+      "width": 768,
+      "height": 1024
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-tablet-768-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-tablet-768-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-tablet-768-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-tablet-768-standard.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-tablet-768-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-tablet-768-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-tablet-768-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-tablet-768-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-tablet-768-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-tablet-768-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-tablet-768-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "tablet-768",
+      "width": 768,
+      "height": 1024
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-tablet-768-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-tablet-768-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-tablet-768-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-tablet-768-large-text.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-tablet-768-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-tablet-768-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-tablet-768-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-tablet-768-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-tablet-768-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-tablet-768-large-text.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-tablet-768-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 753,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 768
+      }
+    ]
+  },
+  {
+    "largeText": false,
+    "viewport": {
+      "name": "mobile-375",
+      "width": 375,
+      "height": 812
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-mobile-375-standard.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-mobile-375-standard.png",
+        "cardCount": 4,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-mobile-375-standard.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-mobile-375-standard.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-mobile-375-standard.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-mobile-375-standard.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-mobile-375-standard.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-mobile-375-standard.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-mobile-375-standard.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-mobile-375-standard.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-mobile-375-standard.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      }
+    ]
+  },
+  {
+    "largeText": true,
+    "viewport": {
+      "name": "mobile-375",
+      "width": 375,
+      "height": 812
+    },
+    "results": [
+      {
+        "name": "cases",
+        "route": "/cases",
+        "screenshot": "cases-mobile-375-large-text.png",
+        "cardCount": 42,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "inventory",
+        "route": "/inventory",
+        "screenshot": "inventory-mobile-375-large-text.png",
+        "cardCount": 4,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "trade-ups",
+        "route": "/trade-ups",
+        "screenshot": "trade-ups-mobile-375-large-text.png",
+        "cardCount": 0,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "cswear",
+        "route": "/cswear",
+        "screenshot": "cswear-mobile-375-large-text.png",
+        "cardCount": 30,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "work",
+        "route": "/work",
+        "screenshot": "work-mobile-375-large-text.png",
+        "cardCount": 8,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "business",
+        "route": "/business",
+        "screenshot": "business-mobile-375-large-text.png",
+        "cardCount": 5,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "career",
+        "route": "/career",
+        "screenshot": "career-mobile-375-large-text.png",
+        "cardCount": 18,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "quests",
+        "route": "/quests",
+        "screenshot": "quests-mobile-375-large-text.png",
+        "cardCount": 7,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "prestige",
+        "route": "/prestige",
+        "screenshot": "prestige-mobile-375-large-text.png",
+        "cardCount": 11,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "achievements",
+        "route": "/achievements",
+        "screenshot": "achievements-mobile-375-large-text.png",
+        "cardCount": 130,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      },
+      {
+        "name": "stats",
+        "route": "/stats",
+        "screenshot": "stats-mobile-375-large-text.png",
+        "cardCount": 13,
+        "clipped": [],
+        "documentWidth": 360,
+        "horizontalOverflow": false,
+        "outsideGrid": [],
+        "overlaps": [],
+        "viewportWidth": 375
+      }
+    ]
+  }
+]

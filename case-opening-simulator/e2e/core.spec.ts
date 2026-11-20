@@ -284,7 +284,7 @@ test('case roulette center marker stays centered above the animated track', asyn
 test('Career XP, rank progress, and save reload remain consistent', async ({ page }) => {
   await page.goto('/career')
   await dismissTutorial(page)
-  await expect(page.getByRole('heading', { name: 'Career & Upgrades' })).toBeVisible()
+  await expect(page.getByRole('main').getByRole('heading', { name: 'Career & Upgrades' })).toBeVisible()
   await expect(page.getByTestId('career-level')).toHaveText('1')
   await expect(page.getByTestId('career-rank')).toHaveText('Case Addict')
 

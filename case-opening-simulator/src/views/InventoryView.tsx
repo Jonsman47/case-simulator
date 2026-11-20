@@ -30,8 +30,10 @@ const ItemDetailModal = lazy(() => (
   import('../components/ItemDetailModal').then((module) => ({ default: module.ItemDetailModal }))
 ))
 
-const CARD_ROW_HEIGHT_DESKTOP = 316
-const CARD_ROW_HEIGHT_MOBILE = 308
+const CARD_ROW_HEIGHT_DESKTOP = 404
+const CARD_ROW_HEIGHT_MOBILE = 400
+const CARD_ROW_HEIGHT_LARGE_TEXT_DESKTOP = 492
+const CARD_ROW_HEIGHT_LARGE_TEXT_MOBILE = 468
 const MIN_GRID_HEIGHT = 320
 const MAX_GRID_HEIGHT = 700
 const GRID_SCROLLBAR_GUTTER = 16
@@ -76,14 +78,18 @@ function getColumnCount(width: number) {
     return 3
   }
 
-  if (width < 1240) {
+  if (width < 1440) {
     return 4
   }
 
   return 5
 }
 
-function getCardRowHeight(width: number) {
+function getCardRowHeight(width: number, largeText: boolean) {
+  if (largeText) {
+    return width < 520 ? CARD_ROW_HEIGHT_LARGE_TEXT_MOBILE : CARD_ROW_HEIGHT_LARGE_TEXT_DESKTOP
+  }
+
   return width < 520 ? CARD_ROW_HEIGHT_MOBILE : CARD_ROW_HEIGHT_DESKTOP
 }
 
@@ -208,7 +214,7 @@ export function InventoryView() {
     return getSelectedItemsValue([activeItem.instanceId])
   }, [activeItem, getSelectedItemsValue])
   const columnCount = getColumnCount(gridWidth || 1280)
-  const cardRowHeight = getCardRowHeight(gridWidth || 1280)
+  const cardRowHeight = getCardRowHeight(gridWidth || 1280, state.settings.largeText)
   const rowCount = Math.ceil(filteredItems.length / columnCount)
   const gridHeight =
     filteredItems.length === 0

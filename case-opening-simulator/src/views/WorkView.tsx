@@ -102,7 +102,7 @@ export function WorkView() {
         </div>
         <div className="inline-flex items-center gap-2 border border-cs-border bg-cs-panel px-3 py-2 font-mono text-xs uppercase text-cs-muted"><Trophy size={15} /> Eight available jobs</div>
       </div>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="content-card-grid grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <JobOverviewCard description="Clean and dispose" gameId="poopCleaning" icon={<Trash2 size={18} />} onPlay={setActiveJob} thumbnail={workAsset('trash-can.png')} />
         <JobOverviewCard description="Match crates and docks" gameId="sortBoxes" icon={<Box size={18} />} onPlay={setActiveJob} thumbnail={workAsset('crate-red.png')} />
         <JobOverviewCard description="Five timing attempts" gameId="precisionStrike" icon={<Crosshair size={18} />} onPlay={setActiveJob} thumbnail={workAsset('precision-target.png')} />
@@ -152,7 +152,7 @@ function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { des
   const rewardMax = getWorkBaseReward(gameId, 1) * economyMultiplier
   const isAvailable = cooldownRemaining <= 0
 
-  return <article className="group flex min-h-0 min-w-0 flex-col overflow-hidden border border-cs-border bg-cs-surface p-2.5 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60">
+  return <article className="group flex h-full min-h-0 min-w-0 flex-col border border-cs-border bg-cs-surface p-2.5 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60" data-layout-card="true">
     <div className="flex min-w-0 items-start gap-3">
       <span className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden border border-cs-border bg-[radial-gradient(circle,rgb(var(--cs-panel-muted)),rgb(var(--cs-bg)))]"><img alt={definition.name} className="h-10 w-10 object-contain transition group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" src={thumbnail} /><i className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center bg-cs-bg/90 text-rarity-special">{icon}</i></span>
       <div className="min-w-0">
@@ -160,15 +160,15 @@ function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { des
         <h3 className="mt-1 text-lg font-semibold text-cs-text">{definition.name}</h3>
       </div>
     </div>
-    <p className="mt-2 line-clamp-2 text-xs leading-5 text-cs-muted">{jobInstructions[gameId]}</p>
+    <p className="mt-2 text-xs leading-5 text-cs-muted">{jobInstructions[gameId]}</p>
     <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
       <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5">
         <p className="font-mono text-[10px] uppercase text-cs-muted">Reward</p>
-        <p className="mt-1 whitespace-nowrap font-mono text-xs font-semibold text-cs-green">+{formatWorkReward(rewardMin)}{rewardMax !== rewardMin ? `–${formatWorkReward(rewardMax)}` : ''}</p>
+        <p className="mt-1 break-words font-mono text-xs font-semibold text-cs-green">+{formatWorkReward(rewardMin)}{rewardMax !== rewardMin ? `–${formatWorkReward(rewardMax)}` : ''}</p>
       </div>
       <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5 text-right">
         <p className="font-mono text-[10px] uppercase text-cs-muted">{isAvailable ? 'Status' : 'Available in'}</p>
-        <p className={`mt-1 whitespace-nowrap font-mono text-xs font-semibold ${isAvailable ? 'text-cs-green' : 'text-cs-text'}`}>{isAvailable ? 'Ready' : formatWorkCooldown(cooldownRemaining)}</p>
+        <p className={`mt-1 break-words font-mono text-xs font-semibold ${isAvailable ? 'text-cs-green' : 'text-cs-text'}`}>{isAvailable ? 'Ready' : formatWorkCooldown(cooldownRemaining)}</p>
       </div>
     </div>
     <button className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special transition hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-cs-panel disabled:text-cs-muted" disabled={!isAvailable} onClick={() => onPlay(gameId)} type="button"><Play size={15} />{isAvailable ? `Play ${definition.name}` : 'On cooldown'}</button>

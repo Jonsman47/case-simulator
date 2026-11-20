@@ -131,6 +131,8 @@ export const InventoryItemCard = memo(function InventoryItemCard({
 
   return (
     <article
+      data-layout-card="true"
+      data-testid="inventory-item-card"
       className={[
         'relative flex h-full min-h-[14.5rem] min-w-0 cursor-pointer touch-manipulation flex-col border bg-cs-panel p-2 outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15.25rem]',
         styles.border,
@@ -204,7 +206,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
       </div>
 
       <div
-        className={`mt-1.5 grid h-20 place-items-center border bg-cs-surface sm:h-24 ${styles.border}`}
+        className={`mt-1.5 grid h-20 place-items-center border bg-cs-surface ${styles.border}`}
         style={{
           borderColor: rarityColor,
         }}
@@ -219,7 +221,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
 
       <div className="mt-2 min-w-0 flex-1">
         <div className="mb-1.5 flex flex-wrap gap-1"><ItemEditionBadge compact item={item} /></div>
-        <h3 className="truncate text-sm font-semibold text-cs-text">
+        <h3 className="break-words text-sm font-semibold leading-5 text-cs-text">
           {item.weapon} | {item.finish}
         </h3>
         <p className="mt-1 font-mono text-xs uppercase text-cs-muted">
@@ -228,14 +230,14 @@ export const InventoryItemCard = memo(function InventoryItemCard({
         <div className="mt-2"><PatternBadge compact item={item} /></div>
       </div>
 
-      <dl className="mt-2 grid grid-cols-2 gap-2 text-xs">
-        <div className="border border-cs-border bg-cs-surface px-2 py-1.5">
+      <dl className="mt-2 grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 text-xs">
+        <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Wear</dt>
-          <dd className="mt-1 truncate text-cs-text">{getWearLabel(item.wear)}</dd>
+          <dd className="mt-1 break-words text-cs-text">{getWearLabel(item.wear)}</dd>
         </div>
-        <div className="border border-cs-border bg-cs-surface px-2 py-1.5">
+        <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Float</dt>
-          <dd className="mt-1 font-mono text-cs-text">{item.floatValue.toFixed(6)}</dd>
+          <dd className="mt-1 break-all font-mono text-cs-text">{item.floatValue.toFixed(6)}</dd>
         </div>
       </dl>
 

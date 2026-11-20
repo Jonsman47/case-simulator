@@ -62,6 +62,45 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Layout safety rails. Grid and flex children default to min-width:auto, which
+   lets long prices, labels, and buttons force a card beyond its track. These
+   rules preserve the compact spacing while keeping content inside its owner. */
+.app-content,
+.app-content :where(.grid, .flex),
+.app-content :where(.grid, .flex) > *,
+.app-content :where(article, section, aside, header, footer, nav) {
+  min-width: 0;
+}
+
+.app-content :where(article, [data-layout-card='true']) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.app-content :where(h1, h2, h3, h4, h5, h6, p, dt, dd, label) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.app-content :where(button, a, input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Content cards use their max-content contribution for the grid track, then
+   stretch to the tallest card in that row. This prevents a compact minimum
+   height from becoming an accidental fixed row height. */
+.content-card-grid {
+  align-items: stretch;
+  grid-auto-rows: max-content;
+}
+
+.content-card-grid > :where(article, button, [data-layout-card='true']) {
+  height: 100%;
+  min-height: max-content;
+  min-width: 0;
+}
+
 :where(button, a, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid rgb(var(--rarity-special));
   outline-offset: 2px;
@@ -196,7 +235,7 @@ a {
 .work-conveyor > div:first-child { animation: work-conveyor-scroll 620ms linear infinite; }
 .work-trash-ready { animation: work-trash-ready 700ms ease-in-out infinite; }
 .employee-status-dot { animation: employee-status-pulse 1.6s ease-in-out infinite; }
-.employee-card { transition: border-color 180ms ease, transform 180ms ease; }
+.employee-card { height: 100%; overflow: visible; transition: border-color 180ms ease, transform 180ms ease; }
 .employee-card:hover { border-color: rgb(var(--rarity-mil-spec) / 0.65); transform: translateY(-2px); }
 
 .simplified-motion *,

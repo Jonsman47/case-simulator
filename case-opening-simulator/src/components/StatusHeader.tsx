@@ -8,14 +8,14 @@ export function StatusHeader() {
 
   return (
     <header className="border-b border-cs-border bg-cs-surface/90 px-2.5 py-1 shadow-glow">
-      <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-1.5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="font-mono text-[9px] uppercase text-cs-amber">CS2 economy &amp; career</p>
           <h1 className="text-base font-semibold text-cs-text sm:text-lg">
             Case Opening Simulator
           </h1>
         </div>
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
           <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Balance
