@@ -30,7 +30,7 @@ const ItemDetailModal = lazy(() => (
   import('../components/ItemDetailModal').then((module) => ({ default: module.ItemDetailModal }))
 ))
 
-const CARD_ROW_HEIGHT_DESKTOP = 404
+const CARD_ROW_HEIGHT_DESKTOP = 428
 const CARD_ROW_HEIGHT_MOBILE = 400
 const CARD_ROW_HEIGHT_LARGE_TEXT_DESKTOP = 492
 const CARD_ROW_HEIGHT_LARGE_TEXT_MOBILE = 468
