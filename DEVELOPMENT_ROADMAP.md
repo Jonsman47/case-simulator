@@ -4,7 +4,7 @@ Updated: 2026-11-23
 
 ## Usability overhaul — Prompt 1 of 4
 
-Status: **LOCAL VERIFICATION PASSED — REMOTE CI PENDING**
+Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**
 
 - Replaced the old Home opening shortcut with a compact, data-driven hub for current case, tracked goals, rewards, recent real activity, next unlock, and contextual actions.
 - Rebuilt the beginner guide as twelve event-driven steps with an original guide portrait, centered explanations, click-through spotlights, authoritative result timing, recovery, and persisted pause/resume/replay.
@@ -13,7 +13,7 @@ Status: **LOCAL VERIFICATION PASSED — REMOTE CI PENDING**
 
 Detailed implementation and evidence: `case-opening-simulator/docs/HOME_TUTORIAL_AND_UNLOCK_OVERHAUL.md`. Prompts 2–4 remain planned; their exact contents follow later user specifications.
 
-Local exit evidence: 92 Vitest files / 525 tests, standalone TypeScript and lint, production build and release verification, 56/56 Chromium journeys, 300,000-career and 500,000-opening economy simulations, six early-game playstyles, and 76 measured layouts with no horizontal overflow or clipped cards. Remote CI must confirm the pushed revision before this prompt is marked complete.
+Exit evidence: 92 Vitest files / 525 tests, standalone TypeScript and lint, production build and release verification, 56/56 local Chromium journeys, 300,000-career and 500,000-opening economy simulations, six early-game playstyles, and 76 measured layouts with no horizontal overflow or clipped cards. GitHub CI [run 45282565079](https://github.com/Jonsman47/case-simulator/actions/runs/45282565079) passed on corrective commit `9edbcb5`, including 56/56 Linux browser journeys.
 
 ## Trade-Up Experience & UI Scale Correction
 
