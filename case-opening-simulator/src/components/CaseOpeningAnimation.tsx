@@ -548,6 +548,8 @@ export function CaseOpeningAnimation({
             phase === 'revealed' || phase === 'quickReveal' ? 'opacity-100' : 'opacity-70',
           ].join(' ')}
           data-testid="opening-result"
+          data-onboarding-target={phase === 'revealed' ? 'opening-result' : undefined}
+          data-reveal-complete={phase === 'revealed' ? primaryItem.instanceId : undefined}
         >
           {phase === 'revealed' ? (
             <div className={isPremiumBatch && batchSize === 1 ? 'grid gap-4 py-4 text-center' : 'flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'}>

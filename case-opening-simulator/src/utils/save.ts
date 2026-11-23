@@ -9,6 +9,7 @@ import {
   type LanguageCode,
   type GameState,
   type GameUiState,
+  type FeatureId,
   type GameStatistics,
   type OnboardingStepId,
   type OnboardingTipId,
@@ -111,7 +112,7 @@ import { createDefaultQuestSystem, normalizeQuestSystem } from '../quests/questS
 import { createDefaultDropJournal, normalizeDropJournal } from '../quests/dropJournal'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 41
+export const CURRENT_SAVE_VERSION = 42
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -558,6 +559,7 @@ function normalizeInventoryFilters(value: unknown): InventoryFilters {
 
 const onboardingStepIds: OnboardingStepId[] = [
   'welcome',
+  'cash',
   'cases_nav',
   'select_starter_case',
   'open_case',
@@ -570,7 +572,10 @@ const onboardingStepIds: OnboardingStepId[] = [
   'work',
   'selling_vs_cswear',
   'career',
+  'finish_home',
 ]
+const featureIds: FeatureId[] = ['collection-book', 'quests', 'market', 'cswear', 'trade-ups', 'business', 'prestige']
+const isFeatureId = (value: unknown): value is FeatureId => featureIds.includes(value as FeatureId)
 const onboardingTipIds: OnboardingTipId[] = ['cswear', 'trade_up', 'career', 'business', 'business_setup', 'market_scout', 'quests', 'prestige', 'drop_journal']
 
 function isOnboardingStepId(value: unknown): value is OnboardingStepId {
@@ -587,10 +592,13 @@ function normalizeOnboardingUiState(value: unknown) {
   }
 
   return {
+    version: isNumber(value.version) ? Math.max(1, Math.floor(value.version)) : 1,
     activeStepId: isOnboardingStepId(value.activeStepId)
       ? value.activeStepId
       : defaultOnboardingUiState.activeStepId,
     caseOpenBaseline: isNumber(value.caseOpenBaseline) ? Math.max(0, Math.floor(value.caseOpenBaseline)) : defaultOnboardingUiState.caseOpenBaseline,
+    openedItemId: typeof value.openedItemId === 'string' ? value.openedItemId : undefined,
+    lastValidStepId: isOnboardingStepId(value.lastValidStepId) ? value.lastValidStepId : undefined,
     completedStepIds: Array.isArray(value.completedStepIds)
       ? Array.from(new Set(value.completedStepIds.filter(isOnboardingStepId)))
       : defaultOnboardingUiState.completedStepIds,
@@ -650,6 +658,13 @@ function normalizeUiState(value: unknown): GameUiState {
     },
     notifications: normalizeNotificationUiState(value.notifications),
     onboarding: normalizeOnboardingUiState(onboarding),
+    featureUnlocks: isRecord(value.featureUnlocks) ? {
+      unlockedIds: readStringArray(value.featureUnlocks.unlockedIds).filter(isFeatureId),
+      acknowledgedIds: readStringArray(value.featureUnlocks.acknowledgedIds).filter(isFeatureId),
+      presentedIds: readStringArray(value.featureUnlocks.presentedIds).filter(isFeatureId),
+      introducedIds: readStringArray(value.featureUnlocks.introducedIds).filter(isFeatureId),
+      selectedCaseId: typeof value.featureUnlocks.selectedCaseId === 'string' ? value.featureUnlocks.selectedCaseId : undefined,
+    } : defaultGameState.ui.featureUnlocks,
     tradeUpHistory: normalizeTradeUpHistory(value.tradeUpHistory),
   }
 }
@@ -1800,6 +1815,20 @@ function migrateV40ToV41(value: unknown): unknown {
   }
 }
 
+function migrateV41ToV42(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const ui = isRecord(value.ui) ? value.ui : {}
+  const onboarding = isRecord(ui.onboarding) ? ui.onboarding : {}
+  return {
+    ...value,
+    ui: {
+      ...ui,
+      onboarding: { ...onboarding, version: 2, isDismissed: true, isPaused: false, isReviewing: false },
+      featureUnlocks: { unlockedIds: featureIds, acknowledgedIds: featureIds, presentedIds: featureIds, introducedIds: featureIds },
+    },
+  }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1842,6 +1871,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   38: migrateV38ToV39,
   39: migrateV39ToV40,
   40: migrateV40ToV41,
+  41: migrateV41ToV42,
 }
 
 function getEnvelope(value: unknown) {

@@ -13,6 +13,8 @@ import { CaseStatus, Rarity, type CaseDefinition, type SkinBase } from '../data/
 import { getSkinRarityColor } from '../data/rarities'
 import { useGame } from '../hooks/useGame'
 import { useSessionStorageState } from '../hooks/useSessionStorageState'
+import { useSearchParams } from 'react-router-dom'
+import { getOpeningCreditQuote } from '../rewards/dailyRewards'
 import {
   canOpenCaseFromSelection,
   filterCases,
@@ -106,6 +108,7 @@ function CaseCard({
   caseDef,
   isFavorite,
   isSelected,
+  isStarter,
   onSelect,
   state,
 }: {
@@ -113,6 +116,7 @@ function CaseCard({
   caseDef: CaseDefinition
   isFavorite: boolean
   isSelected: boolean
+  isStarter: boolean
   onSelect: (caseDef: CaseDefinition) => void
   state: GameState
 }) {
@@ -120,7 +124,7 @@ function CaseCard({
     <button
       data-case-selected={isSelected ? 'true' : 'false'}
       data-layout-card="true"
-      data-onboarding-target={isSelected && canOpenCaseFromSelection(caseDef, state) ? 'starter-case' : undefined}
+      data-onboarding-target={isStarter ? 'starter-case' : undefined}
       data-testid="case-card"
       className={[
         'group flex h-full min-h-[13.5rem] min-w-0 flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15rem] sm:p-3',
@@ -662,7 +666,8 @@ function CaseDetailPanel({
 }
 
 export function CaseSelectionView() {
-  const { caseDefinitions, openCase, purchaseCaseLicense, state, toggleCaseFavorite } = useGame()
+  const { caseDefinitions, dispatch, openCase, purchaseCaseLicense, state, toggleCaseFavorite } = useGame()
+  const [searchParams] = useSearchParams()
   const [filter, setFilter] = useSessionStorageState<CaseFilter>('cases:filter', 'all')
   const [sort, setSort] = useSessionStorageState<CaseSort>('cases:sort', 'cost')
   const casesWithDisplayData = useMemo(() => {
@@ -671,16 +676,20 @@ export function CaseSelectionView() {
   const [selectedCaseId, setSelectedCaseId] = useSessionStorageState<string | undefined>('cases:selected-case', undefined)
   const selectedCase = useMemo(() => {
     return (
+      casesWithDisplayData.find((caseDef) => caseDef.id === searchParams.get('case')) ??
       casesWithDisplayData.find((caseDef) => caseDef.id === selectedCaseId) ??
+      casesWithDisplayData.find((caseDef) => caseDef.id === state.ui.featureUnlocks.selectedCaseId) ??
       casesWithDisplayData[0]
     )
-  }, [casesWithDisplayData, selectedCaseId])
+  }, [casesWithDisplayData, searchParams, selectedCaseId, state.ui.featureUnlocks.selectedCaseId])
   const selectedBestDrop = selectedCase
     ? getBestPossibleDrop(selectedCase, skinsById, state.marketValues)
     : undefined
   const selectedCanOpen = selectedCase ? canOpenCaseFromSelection(selectedCase, state) : false
+  const starterCaseId = [...casesWithDisplayData].filter((candidate) => canOpenCaseFromSelection(candidate, state) && getOpeningCreditQuote(candidate.cost, state.dailyRewards.openingCredits).cashCost <= state.money).sort((a, b) => a.cost - b.cost)[0]?.id
   const favoriteCaseIds = useMemo(() => new Set(state.favoriteCaseIds), [state.favoriteCaseIds])
   function handleOpenCase(quantity: number, options: CaseOpenOptions) {
+    if (selectedCase) dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { selectedCaseId: selectedCase.id } })
     openCase(selectedCase?.id ?? '', quantity, options)
   }
 
@@ -739,8 +748,9 @@ export function CaseSelectionView() {
               caseDef={caseDef}
               isFavorite={favoriteCaseIds.has(caseDef.id)}
               isSelected={caseDef.id === selectedCase?.id}
+              isStarter={caseDef.id === starterCaseId}
               key={caseDef.id}
-              onSelect={(nextCase) => setSelectedCaseId(nextCase.id)}
+              onSelect={(nextCase) => { setSelectedCaseId(nextCase.id); dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { selectedCaseId: nextCase.id } }); window.dispatchEvent(new CustomEvent('tutorial:case-selected', { detail: nextCase.id })) }}
               state={state}
             />
           ))}

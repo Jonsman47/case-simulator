@@ -141,6 +141,7 @@ export interface GameStatistics {
 
 export type OnboardingStepId =
   | 'welcome'
+  | 'cash'
   | 'cases_nav'
   | 'select_starter_case'
   | 'open_case'
@@ -153,6 +154,7 @@ export type OnboardingStepId =
   | 'work'
   | 'selling_vs_cswear'
   | 'career'
+  | 'finish_home'
 export type OnboardingTipId =
   | 'cswear'
   | 'trade_up'
@@ -181,8 +183,11 @@ export interface TradeUpHistoryEntry {
 }
 
 export interface OnboardingUiState {
+  version: number
   activeStepId?: OnboardingStepId
   caseOpenBaseline?: number
+  openedItemId?: string
+  lastValidStepId?: OnboardingStepId
   completedStepIds: OnboardingStepId[]
   dismissedTipIds: OnboardingTipId[]
   isDismissed: boolean
@@ -191,6 +196,7 @@ export interface OnboardingUiState {
 }
 
 export const defaultOnboardingUiState: OnboardingUiState = {
+  version: 2,
   activeStepId: 'welcome',
   caseOpenBaseline: 0,
   completedStepIds: [],
@@ -198,6 +204,16 @@ export const defaultOnboardingUiState: OnboardingUiState = {
   isDismissed: false,
   isPaused: false,
   isReviewing: false,
+}
+
+export type FeatureId = 'collection-book' | 'quests' | 'market' | 'cswear' | 'trade-ups' | 'business' | 'prestige'
+
+export interface FeatureUnlockUiState {
+  unlockedIds: FeatureId[]
+  acknowledgedIds: FeatureId[]
+  presentedIds?: FeatureId[]
+  introducedIds: FeatureId[]
+  selectedCaseId?: string
 }
 
 export const defaultNotificationUiState: NotificationUiState = {
@@ -209,6 +225,7 @@ export interface GameUiState {
   inventory: InventoryViewUiState
   notifications: NotificationUiState
   onboarding: OnboardingUiState
+  featureUnlocks: FeatureUnlockUiState
   tradeUpHistory: TradeUpHistoryEntry[]
 }
 
@@ -522,6 +539,7 @@ export type GameAction =
   | { type: 'REORDER_AUTO_SELL_RULES'; ruleIds: string[] }
   | { type: 'UPDATE_INVENTORY_VIEW_STATE'; inventory: Partial<InventoryViewUiState> }
   | { type: 'UPDATE_ONBOARDING_STATE'; onboarding: Partial<OnboardingUiState> }
+  | { type: 'UPDATE_FEATURE_UNLOCK_STATE'; featureUnlocks: Partial<FeatureUnlockUiState> }
   | { type: 'UPDATE_NOTIFICATION_STATE'; notifications: Partial<NotificationUiState> }
   | { type: 'MARK_BACKUP_CREATED'; now?: number }
   | { type: 'REPLACE_GAME_STATE'; state: GameState }
@@ -631,6 +649,7 @@ export const defaultGameState: GameState = {
     inventory: defaultInventoryViewUiState,
     notifications: defaultNotificationUiState,
     onboarding: defaultOnboardingUiState,
+    featureUnlocks: { unlockedIds: [], acknowledgedIds: [], presentedIds: [], introducedIds: [] },
     tradeUpHistory: [],
   },
   lastBackupAt: 0,

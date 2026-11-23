@@ -1,8 +1,14 @@
 # CS2 Case Opening Simulator — Project Status
 
-Audit date: 2026-11-18
+Updated: 2026-11-23
 Application directory: `case-opening-simulator/`
-Current save schema: v41
+Current save schema: v42
+
+## Usability overhaul — Prompt 1 of 4
+
+Home now acts as a gameplay hub built from actual case selection, opening credit, Career, tracked quests, claimable notifications, persisted activity, and feature progress. A twelve-step beginner guide uses centered explanations and click-through spotlights, observes the committed opening and completed reveal, and persists pause/resume/replay state. New players discover Collection Book, Quests, Market, CSWEAR, compatible Trade-Ups, Business, and Prestige through genuine milestones; existing saves retain their prior access through a backward-compatible v42 UI-metadata migration. The shared status header is shorter and the Home layout is responsive without global zoom. Details and browser measurements: `case-opening-simulator/docs/HOME_TUTORIAL_AND_UNLOCK_OVERHAUL.md`.
+
+Local verification passed: standalone TypeScript, lint, 92 Vitest files / 525 tests, production build, release verification with all 2,134 assets, 56/56 Chromium journeys, and the Career plus six-playstyle early-game simulations. The measured 76 route/viewport/setting combinations have zero horizontal overflow and zero clipped cards; Home shows two first-viewport actions at 320×568. Prompt 1 remains in verification until remote GitHub CI confirms the pushed commit. Prompts 2–4 remain planned and are not implemented in this change.
 
 ## Executive summary
 

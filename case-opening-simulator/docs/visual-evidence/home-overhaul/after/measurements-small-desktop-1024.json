@@ -1,0 +1,122 @@
+[
+  {
+    "route": "home",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 904,
+    "pageLengths": 1.18,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 4,
+    "clippedCards": 0
+  },
+  {
+    "route": "cases",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 6144,
+    "pageLengths": 8,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 9,
+    "clippedCards": 0
+  },
+  {
+    "route": "inventory",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 833,
+    "pageLengths": 1.08,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 10,
+    "clippedCards": 0
+  },
+  {
+    "route": "work",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 1212,
+    "pageLengths": 1.58,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 4,
+    "clippedCards": 0
+  },
+  {
+    "route": "quests",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 1426,
+    "pageLengths": 1.86,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 13,
+    "clippedCards": 0
+  },
+  {
+    "route": "career",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 3652,
+    "pageLengths": 4.76,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 3,
+    "clippedCards": 0
+  },
+  {
+    "route": "business",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 3447,
+    "pageLengths": 4.49,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "trade-ups",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 1789,
+    "pageLengths": 2.33,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 8,
+    "clippedCards": 0
+  },
+  {
+    "route": "prestige",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 1732,
+    "pageLengths": 2.26,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 1,
+    "clippedCards": 0
+  },
+  {
+    "route": "progress",
+    "viewport": "small-desktop-1024",
+    "variant": "standard",
+    "documentHeight": 19020,
+    "pageLengths": 24.77,
+    "headerHeight": 73,
+    "navigationHeight": 79,
+    "horizontalOverflow": 0,
+    "visibleActions": 10,
+    "clippedCards": 0
+  }
+]

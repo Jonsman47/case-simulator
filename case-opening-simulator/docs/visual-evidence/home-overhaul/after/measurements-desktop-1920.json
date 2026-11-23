@@ -1,0 +1,122 @@
+[
+  {
+    "route": "home",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1080,
+    "pageLengths": 1,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 7,
+    "clippedCards": 0
+  },
+  {
+    "route": "cases",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1485,
+    "pageLengths": 1.38,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 22,
+    "clippedCards": 0
+  },
+  {
+    "route": "inventory",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1080,
+    "pageLengths": 1,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 10,
+    "clippedCards": 0
+  },
+  {
+    "route": "work",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1080,
+    "pageLengths": 1,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 8,
+    "clippedCards": 0
+  },
+  {
+    "route": "quests",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1142,
+    "pageLengths": 1.06,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 21,
+    "clippedCards": 0
+  },
+  {
+    "route": "career",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 2479,
+    "pageLengths": 2.3,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 12,
+    "clippedCards": 0
+  },
+  {
+    "route": "business",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1555,
+    "pageLengths": 1.44,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 5,
+    "clippedCards": 0
+  },
+  {
+    "route": "trade-ups",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1237,
+    "pageLengths": 1.15,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 14,
+    "clippedCards": 0
+  },
+  {
+    "route": "prestige",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 1430,
+    "pageLengths": 1.32,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 1,
+    "clippedCards": 0
+  },
+  {
+    "route": "progress",
+    "viewport": "desktop-1920",
+    "variant": "standard",
+    "documentHeight": 10433,
+    "pageLengths": 9.66,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 18,
+    "clippedCards": 0
+  }
+]

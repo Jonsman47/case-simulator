@@ -8,6 +8,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { GameProvider } from './GameProvider'
 import { Main } from '../views/Main'
+import { CaseSelectionView } from '../views/CaseSelectionView'
 import { useGame } from '../hooks/useGame'
 import { SAVE_STORAGE_KEY } from '../utils/save'
 
@@ -84,6 +85,7 @@ describe('GameProvider opening session', () => {
           <Routes>
             <Route element={<AppLayout />}>
               <Route index element={<Main />} />
+              <Route path="cases" element={<CaseSelectionView />} />
               <Route path="inventory" element={<div>Inventory screen</div>} />
             </Route>
           </Routes>
@@ -91,6 +93,7 @@ describe('GameProvider opening session', () => {
       </GameProvider>,
     )
 
+    fireEvent.click(screen.getByRole('button', { name: /Choose your first case/i }))
     fireEvent.click(screen.getByRole('button', { name: /^Open 1$/i }))
 
     expect(screen.getByRole('dialog', { name: 'Case opening animation' })).toBeInTheDocument()

@@ -438,7 +438,7 @@ describe('save system', () => {
     expect(loadedState?.dailyRewards.challenges).toHaveLength(4)
     expect(loadedState?.inventoryValue).toBe(getInventoryValue([item], { [item.id]: 38 }))
     expect(loadedState?.inventoryValueHistory[0]?.value).toBe(loadedState?.inventoryValue)
-    expect(loadedState?.ui.onboarding).toEqual(defaultGameState.ui.onboarding)
+    expect(loadedState?.ui.onboarding).toMatchObject({ version: 2, isDismissed: true })
     expect(loadedState?.lastPoopCleaningAt).toBe(0)
   })
 
@@ -739,7 +739,7 @@ describe('save system', () => {
     expect(restored.marketplace.pendingAcquisition?.id).toBe('acquisition')
   })
 
-  it('migrates v40 tutorial metadata to v41 without touching gameplay state', () => {
+  it('migrates v40 tutorial metadata through v42 without touching gameplay state', () => {
     const item = makeItem({ instanceId: 'v40-item', paintSeed: 661 })
     const legacy = makeState({
       money: 432.1,
@@ -747,6 +747,7 @@ describe('save system', () => {
       ui: {
         ...defaultGameState.ui,
         onboarding: {
+          version: 1,
           activeStepId: 'welcome',
           completedStepIds: [],
           dismissedTipIds: [],
@@ -762,7 +763,23 @@ describe('save system', () => {
     expect(migrated.ui.onboarding.isDismissed).toBe(true)
     expect(migrated.ui.notifications).toEqual(defaultGameState.ui.notifications)
     expect(migrated.ui.tradeUpHistory).toEqual([])
-    expect(createSaveEnvelope(migrated).version).toBe(41)
+    expect(createSaveEnvelope(migrated).version).toBe(42)
+  })
+
+  it('keeps all previously available features and dismisses legacy onboarding in v41 saves', () => {
+    const legacy = makeState({
+      money: 287.42,
+      ui: {
+        ...defaultGameState.ui,
+        onboarding: { ...defaultGameState.ui.onboarding, version: 1, activeStepId: 'open_case', isDismissed: false },
+      },
+    })
+    const migrated = parseGameSaveText(JSON.stringify({ version: 41, savedAt: 100, state: legacy }))
+    expect(migrated.money).toBe(287.42)
+    expect(migrated.ui.onboarding).toMatchObject({ version: 2, isDismissed: true })
+    expect(migrated.ui.featureUnlocks.unlockedIds).toContain('trade-ups')
+    expect(migrated.ui.featureUnlocks.unlockedIds).toContain('business')
+    expect(migrated.ui.featureUnlocks.acknowledgedIds).toEqual(migrated.ui.featureUnlocks.unlockedIds)
   })
 
   it('detects weekly backup prompts and exports JSON through the download hook', () => {

@@ -1,6 +1,5 @@
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
-import { InventoryValueChart } from './InventoryValueChart'
 import { Tooltip } from './Tooltip'
 
 export function StatusHeader() {
@@ -15,8 +14,8 @@ export function StatusHeader() {
             Case Opening Simulator
           </h1>
         </div>
-        <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
+        <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1" data-onboarding-target="wallet-balance">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Balance
               <Tooltip label="Explain balance">
@@ -27,7 +26,7 @@ export function StatusHeader() {
               {formatCurrency(state.money)}
             </p>
           </div>
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
+          <div className="hidden min-w-0 border border-cs-border bg-cs-panel px-2 py-1 sm:block">
             <p className="flex items-center gap-2 font-mono text-xs uppercase text-cs-muted">
               Inventory Value
               <Tooltip label="Explain inventory value">
@@ -38,7 +37,7 @@ export function StatusHeader() {
               {formatCurrency(state.inventoryValue)}
             </p>
           </div>
-          <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1">
+          <div className="hidden min-w-0 border border-cs-border bg-cs-panel px-2 py-1 lg:block">
             <p className="font-mono text-xs uppercase text-cs-muted">Items</p>
             <p className="mt-0.5 truncate text-base font-semibold text-cs-text">{state.inventory.length}</p>
           </div>
@@ -64,12 +63,6 @@ export function StatusHeader() {
               {cloud.session ? <button className="flex min-h-10 items-center gap-2 border border-transparent px-2 text-left text-sm text-rarity-covert hover:border-rarity-covert/50" onClick={() => void cloud.logout()} type="button"><LogOut size={15} /> Secure Logout</button> : null}
             </div>
           </details>
-          <InventoryValueChart
-            compact
-            currentValue={state.inventoryValue}
-            history={state.inventoryValueHistory}
-            title="Trend"
-          />
         </div>
       </div>
     </header>

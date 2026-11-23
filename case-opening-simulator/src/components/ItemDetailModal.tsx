@@ -389,6 +389,7 @@ export function ItemDetailModal({
         ref={modalRef}
         role="dialog"
         data-onboarding-target="item-details"
+        data-item-instance-id={item?.instanceId}
         style={{ boxShadow: `0 0 42px ${rarityColor}55` }}
         tabIndex={-1}
       >

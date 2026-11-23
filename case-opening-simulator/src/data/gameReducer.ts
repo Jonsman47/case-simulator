@@ -58,6 +58,7 @@ import {
   type MarketEventLog,
 } from '../market/marketSimulation'
 import { analyzeTradeUp, pickTradeUpOutcome, suggestBestTradeUps } from '../utils/tradeUp'
+import { getFeatureProgress } from '../progression/featureUnlocks'
 import {
   getInstantSaleQuote,
   hasProcessedMarketplaceRequest,
@@ -3891,6 +3892,14 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
           },
         },
       }
+    case 'UPDATE_FEATURE_UNLOCK_STATE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          featureUnlocks: { ...state.ui.featureUnlocks, ...action.featureUnlocks },
+        },
+      }
     case 'UPDATE_NOTIFICATION_STATE':
       return {
         ...state,
@@ -3934,6 +3943,13 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
   }
 }
 
+function latchFeatureUnlocks(state: GameState): GameState {
+  const existing = state.ui.featureUnlocks?.unlockedIds ?? []
+  const gained = getFeatureProgress(state).filter((feature) => feature.unlocked && !existing.includes(feature.id)).map((feature) => feature.id)
+  if (gained.length === 0) return state
+  return { ...state, ui: { ...state.ui, featureUnlocks: { ...state.ui.featureUnlocks, unlockedIds: [...existing, ...gained] } } }
+}
+
 export function gameReducer(state: GameState, action: GameAction): GameState {
   const reducedState = validateGameState(reduceGameState(state, action))
   const withEconomy = recordEconomyAction(state, reducedState, action)
@@ -3966,17 +3982,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   }
   const careerXpGained = Math.max(0, withQuestFeedback.career.currentRunXp - state.career.currentRunXp)
 
+  const withUnlocks = action.type === 'RESET_GAME' || action.type === 'REPLACE_GAME_STATE'
+    ? withQuestFeedback
+    : latchFeatureUnlocks(withQuestFeedback)
   if (
     careerXpGained <= 0 ||
     action.type === 'REPLACE_GAME_STATE' ||
     action.type === 'RESET_GAME' ||
     action.type === 'APPLY_OFFLINE_PROGRESS'
   ) {
-    return withQuestFeedback
+    return withUnlocks
   }
 
   return withDailyChallengeProgress(
-    withQuestFeedback,
+    withUnlocks,
     { type: 'career_xp', amount: careerXpGained },
     actionNow,
   )

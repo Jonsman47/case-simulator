@@ -5,6 +5,9 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { GameProvider } from './components/GameProvider'
 import { PWAUpdatePrompt } from './components/PWAUpdatePrompt'
 import { useGame } from './hooks/useGame'
+import { getFeatureProgress } from './progression/featureUnlocks'
+import type { FeatureId } from './data/gameState'
+import { Link } from 'react-router-dom'
 import { isAdminSession } from './utils/admin'
 
 const AchievementsStats = lazy(() => import('./views/AchievementsStats').then((module) => ({ default: module.AchievementsStats })))
@@ -52,6 +55,13 @@ function AdminOnlyRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function FeatureRoute({ children, id }: { children: ReactNode; id: FeatureId }) {
+  const { state } = useGame()
+  const feature = getFeatureProgress(state).find((entry) => entry.id === id)
+  if (feature?.unlocked) return <>{children}</>
+  return <section className="grid w-full min-h-64 place-items-center border border-cs-border bg-cs-surface p-4 text-center"><div className="max-w-lg"><p className="font-mono text-xs uppercase text-rarity-special">Feature locked</p><h2 className="mt-2 text-xl font-semibold">{feature?.name}</h2><p className="mt-2 text-sm text-cs-muted">{feature?.description}</p><p className="mt-2 text-sm text-cs-muted">Progress: {feature?.current}/{feature?.target}</p><Link className="mt-4 inline-flex min-h-11 items-center border border-rarity-special px-4 text-sm text-rarity-special" to={id === 'business' || id === 'prestige' ? '/career' : id === 'market' ? '/inventory' : id === 'cswear' ? '/work' : '/cases'}>Continue progressing</Link></div></section>
+}
+
 function App() {
   return (
     <GameProvider>
@@ -63,9 +73,9 @@ function App() {
               <Route path="poop-cleaning" element={<Navigate to="/work" replace />} />
               <Route path="cases" element={<Suspense fallback={<RouteFallback />}><CaseSelectionView /></Suspense>} />
               <Route path="inventory" element={<Suspense fallback={<RouteFallback />}><InventoryView /></Suspense>} />
-              <Route path="collection-book" element={<Suspense fallback={<RouteFallback />}><CollectionBookView /></Suspense>} />
-              <Route path="market" element={<Suspense fallback={<RouteFallback />}><Market /></Suspense>} />
-              <Route path="cswear" element={<Suspense fallback={<RouteFallback />}><CSWear /></Suspense>} />
+              <Route path="collection-book" element={<FeatureRoute id="collection-book"><Suspense fallback={<RouteFallback />}><CollectionBookView /></Suspense></FeatureRoute>} />
+              <Route path="market" element={<FeatureRoute id="market"><Suspense fallback={<RouteFallback />}><Market /></Suspense></FeatureRoute>} />
+              <Route path="cswear" element={<FeatureRoute id="cswear"><Suspense fallback={<RouteFallback />}><CSWear /></Suspense></FeatureRoute>} />
               <Route path="events" element={<Suspense fallback={<RouteFallback />}><MarketEvents /></Suspense>} />
               <Route
                 path="admin"
@@ -76,13 +86,13 @@ function App() {
                 }
               />
               <Route path="rewards" element={<Suspense fallback={<RouteFallback />}><RewardsView /></Suspense>} />
-              <Route path="quests" element={<Suspense fallback={<RouteFallback />}><QuestsView /></Suspense>} />
-              <Route path="trade-ups" element={<Suspense fallback={<RouteFallback />}><TradeUps /></Suspense>} />
+              <Route path="quests" element={<FeatureRoute id="quests"><Suspense fallback={<RouteFallback />}><QuestsView /></Suspense></FeatureRoute>} />
+              <Route path="trade-ups" element={<FeatureRoute id="trade-ups"><Suspense fallback={<RouteFallback />}><TradeUps /></Suspense></FeatureRoute>} />
               <Route path="automation" element={<Navigate to="/business" replace />} />
-              <Route path="business" element={<Suspense fallback={<RouteFallback />}><Business /></Suspense>} />
+              <Route path="business" element={<FeatureRoute id="business"><Suspense fallback={<RouteFallback />}><Business /></Suspense></FeatureRoute>} />
               <Route path="career" element={<Suspense fallback={<RouteFallback />}><Career /></Suspense>} />
               <Route path="upgrades" element={<Navigate to="/career" replace />} />
-              <Route path="prestige" element={<Suspense fallback={<RouteFallback />}><Prestige /></Suspense>} />
+              <Route path="prestige" element={<FeatureRoute id="prestige"><Suspense fallback={<RouteFallback />}><Prestige /></Suspense></FeatureRoute>} />
               <Route path="skill-tree" element={<Navigate to="/career" replace />} />
               <Route path="progress" element={<Suspense fallback={<RouteFallback />}><AchievementsStats /></Suspense>} />
               <Route path="achievements" element={<Navigate to="/progress?tab=achievements" replace />} />

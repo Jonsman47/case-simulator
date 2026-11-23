@@ -5,8 +5,10 @@ const viewports = [
   { name: 'desktop-1920', width: 1920, height: 1080 },
   { name: 'laptop-1366', width: 1366, height: 768 },
   { name: 'laptop-1280', width: 1280, height: 720 },
+  { name: 'small-desktop-1024', width: 1024, height: 768 },
   { name: 'tablet-768', width: 768, height: 1024 },
   { name: 'mobile-375', width: 375, height: 812 },
+  { name: 'mobile-320', width: 320, height: 568 },
 ]
 
 async function dismissTutorial(page: Page) {

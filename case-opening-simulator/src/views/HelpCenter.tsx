@@ -34,7 +34,7 @@ const HELP_ARTICLES: HelpArticle[] = [
 const categories = Array.from(new Set(HELP_ARTICLES.map((article) => article.category)))
 
 export function HelpCenter() {
-  const { state, updateOnboardingState } = useGame()
+  const { dispatch, state, updateOnboardingState } = useGame()
   const [query, setQuery] = useSessionStorageState('help:query', '')
   const [category, setCategory] = useSessionStorageState('help:category', 'All')
   const articles = useMemo(() => HELP_ARTICLES.filter((article) => {
@@ -44,11 +44,13 @@ export function HelpCenter() {
   }), [category, query])
 
   function replayBeginner() {
-    updateOnboardingState({ activeStepId: 'welcome', completedStepIds: [], isDismissed: false, isPaused: false, isReviewing: true })
+    updateOnboardingState({ activeStepId: 'welcome', lastValidStepId: 'welcome', caseOpenBaseline: state.statistics.casesOpened, openedItemId: undefined, completedStepIds: [], isDismissed: false, isPaused: false, isReviewing: true })
   }
 
   function replayGuide(guide: OnboardingTipId) {
-    updateOnboardingState({ dismissedTipIds: state.ui.onboarding.dismissedTipIds.filter((id) => id !== guide), isDismissed: true, isPaused: false, isReviewing: false })
+    const id = guide === 'trade_up' ? 'trade-ups' : guide === 'business_setup' || guide === 'market_scout' ? 'business' : guide
+    if (id === 'career' || id === 'drop_journal') { replayBeginner(); return }
+    dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { introducedIds: state.ui.featureUnlocks.introducedIds.filter((entry) => entry !== id) } })
   }
 
   return <section className="w-full border border-cs-border bg-cs-surface p-3 sm:p-5" data-testid="help-center">

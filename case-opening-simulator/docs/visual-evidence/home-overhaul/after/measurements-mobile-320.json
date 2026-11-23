@@ -1,0 +1,122 @@
+[
+  {
+    "route": "home",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 1287,
+    "pageLengths": 2.27,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 2,
+    "clippedCards": 0
+  },
+  {
+    "route": "cases",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 15964,
+    "pageLengths": 28.11,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 5,
+    "clippedCards": 0
+  },
+  {
+    "route": "inventory",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 1814,
+    "pageLengths": 3.19,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 1,
+    "clippedCards": 0
+  },
+  {
+    "route": "work",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 2468,
+    "pageLengths": 4.35,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "quests",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 3356,
+    "pageLengths": 5.91,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 3,
+    "clippedCards": 0
+  },
+  {
+    "route": "career",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 6803,
+    "pageLengths": 11.98,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "business",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 5549,
+    "pageLengths": 9.77,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "trade-ups",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 2998,
+    "pageLengths": 5.28,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 6,
+    "clippedCards": 0
+  },
+  {
+    "route": "prestige",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 3654,
+    "pageLengths": 6.43,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "progress",
+    "viewport": "mobile-320",
+    "variant": "standard",
+    "documentHeight": 42704,
+    "pageLengths": 75.18,
+    "headerHeight": 127,
+    "navigationHeight": 0,
+    "horizontalOverflow": 0,
+    "visibleActions": 2,
+    "clippedCards": 0
+  }
+]

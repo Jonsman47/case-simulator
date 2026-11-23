@@ -1,4 +1,4 @@
-import { ChevronDown, Menu, X } from 'lucide-react'
+import { ChevronDown, LockKeyhole, Menu, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
@@ -9,6 +9,13 @@ import {
 import { defaultGameState, type GameState } from '../data/gameState'
 import { getNotificationCountForPath, getNotificationCountForPaths } from '../notifications/notificationSelectors'
 import { NotificationBadge } from './NotificationBadge'
+import { getFeatureProgress } from '../progression/featureUnlocks'
+
+const featurePaths: Record<string, string> = { '/collection-book': 'collection-book', '/quests': 'quests', '/market': 'market', '/cswear': 'cswear', '/trade-ups': 'trade-ups', '/business': 'business', '/prestige': 'prestige' }
+function lockedFeature(state: GameState, path: string) {
+  const id = featurePaths[path]
+  return id ? getFeatureProgress(state).find((feature) => feature.id === id && !feature.unlocked) : undefined
+}
 
 function itemMatchesPath(item: NavigationItem, pathname: string): boolean {
   if (item.end) {
@@ -61,6 +68,7 @@ function DesktopNavGroup({
   const count = subItems.length > 0
     ? getNotificationCountForPaths(state, subItems.map((child) => child.path))
     : getNotificationCountForPath(state, item.path)
+  const locked = lockedFeature(state, item.path)
 
   return (
     <div className="group relative">
@@ -69,9 +77,11 @@ function DesktopNavGroup({
         end={item.end}
         to={item.path}
         data-onboarding-target={`nav-${item.path === '/' ? 'home' : item.path.slice(1)}`}
+        title={locked?.description}
       >
         {Icon ? <Icon aria-hidden="true" className="shrink-0" size={15} strokeWidth={1.8} /> : null}
         <span>{item.label}</span>
+        {locked ? <LockKeyhole aria-label="Locked" size={12} /> : null}
         <NotificationBadge count={count} label={item.label} />
         {subItems.length > 0 ? <ChevronDown aria-hidden="true" className="ml-1" size={13} /> : null}
       </NavLink>
@@ -85,8 +95,10 @@ function DesktopNavGroup({
               key={subItem.path}
               to={subItem.path}
               data-onboarding-target={`nav-${subItem.path.slice(1)}`}
+              title={lockedFeature(state, subItem.path)?.description}
             >
               <span className="min-w-0 flex-1">{subItem.label}</span>
+              {lockedFeature(state, subItem.path) ? <LockKeyhole aria-label="Locked" size={12} /> : null}
               <NotificationBadge count={getNotificationCountForPath(state, subItem.path)} label={subItem.label} />
             </NavLink>
           ))}
@@ -146,9 +158,11 @@ export function TopNav({ isAdminUser = false, state = defaultGameState }: { isAd
         onClick={() => setDrawerState((currentState) => ({ ...currentState, isOpen: false }))}
         to={item.path}
         data-onboarding-target={`nav-${item.path === '/' ? 'home' : item.path.slice(1)}`}
+        title={lockedFeature(state, item.path)?.description}
       >
         {item.icon ? <item.icon aria-hidden="true" className="shrink-0" size={17} strokeWidth={1.8} /> : null}
         <span className="min-w-0 flex-1">{item.label}</span>
+        {lockedFeature(state, item.path) ? <LockKeyhole aria-label="Locked" size={13} /> : null}
         <NotificationBadge count={item.items?.length ? getNotificationCountForPaths(state, item.items.map((child) => child.path)) : getNotificationCountForPath(state, item.path)} label={item.label} />
       </NavLink>
       {item.items && item.items.length > 0 ? (
@@ -161,8 +175,10 @@ export function TopNav({ isAdminUser = false, state = defaultGameState }: { isAd
               onClick={() => setDrawerState((currentState) => ({ ...currentState, isOpen: false }))}
               to={subItem.path}
               data-onboarding-target={`nav-${subItem.path.slice(1)}`}
+              title={lockedFeature(state, subItem.path)?.description}
             >
               <span className="min-w-0 flex-1">{subItem.label}</span>
+              {lockedFeature(state, subItem.path) ? <LockKeyhole aria-label="Locked" size={13} /> : null}
               <NotificationBadge count={getNotificationCountForPath(state, subItem.path)} label={subItem.label} />
             </NavLink>
           ))}
@@ -182,6 +198,7 @@ export function TopNav({ isAdminUser = false, state = defaultGameState }: { isAd
 
       <div className="border-b border-cs-border bg-cs-panel p-2 lg:hidden">
         <button
+          data-onboarding-target="mobile-menu"
           aria-label={
             isDrawerOpen
               ? 'Close navigation menu'

@@ -211,7 +211,7 @@ export function AppLayout() {
       <div className="mx-auto flex min-h-screen min-w-0 w-full max-w-[124rem] flex-col px-2 py-1.5 sm:px-2.5 sm:py-1.5 lg:px-2.5">
         <StatusHeader />
         <TopNav isAdminUser={isAdminUser} state={state} />
-        <MarketEventBanner />
+        {location.pathname === '/' ? null : <MarketEventBanner />}
         <main
           className="app-content flex min-w-0 w-full flex-1 py-1.5 sm:py-2"
           onTouchEnd={handleMainTouchEnd}

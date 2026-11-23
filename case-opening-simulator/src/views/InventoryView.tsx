@@ -94,6 +94,7 @@ function getCardRowHeight(width: number, largeText: boolean) {
 }
 
 interface GridCellProps {
+  tutorialItemId?: string
   bulkSelectMode: boolean
   columnCount: number
   duplicateSkinIds: Set<string>
@@ -118,6 +119,7 @@ function InventoryGridCell({
   onToggleSelect,
   rowIndex,
   selectedIds,
+  tutorialItemId,
   style,
 }: GridCellProps & {
   ariaAttributes: {
@@ -136,7 +138,7 @@ function InventoryGridCell({
   }
 
   return (
-    <div {...ariaAttributes} style={style}>
+    <div {...ariaAttributes} data-onboarding-target={item.instanceId === tutorialItemId ? 'acquired-item' : undefined} style={style}>
       <div className="h-full p-1.5">
         <InventoryItemCard
           bulkSelectMode={bulkSelectMode}
@@ -256,6 +258,7 @@ export function InventoryView() {
       onToggleLock: toggleItemLock,
       onToggleSelect: handleToggleSelect,
       selectedIds,
+      tutorialItemId: state.ui.onboarding.openedItemId,
     }),
     [
       columnCount,
@@ -264,6 +267,7 @@ export function InventoryView() {
       handleToggleSelect,
       selectionModeActive,
       selectedIds,
+      state.ui.onboarding.openedItemId,
       toggleItemFavorite,
       toggleItemLock,
     ],

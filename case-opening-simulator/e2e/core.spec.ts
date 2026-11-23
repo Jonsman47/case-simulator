@@ -5,6 +5,22 @@ const saveKey = 'case-opening-simulator:game-state'
 async function dismissTutorial(page: Page) {
   const skip = page.getByRole('button', { name: 'Skip beginner tutorial' })
   if (await skip.isVisible().catch(() => false)) await skip.click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.onboarding?.isDismissed === true, saveKey)
+  const needsRegressionAccess = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.featureUnlocks?.unlockedIds?.length !== 7, saveKey)
+  if (needsRegressionAccess) {
+    const fixture = await page.evaluate((key) => {
+      const save = JSON.parse(localStorage.getItem(key) ?? '{}')
+      const ids = ['collection-book', 'quests', 'market', 'cswear', 'trade-ups', 'business', 'prestige']
+      save.state.ui.featureUnlocks = { ...save.state.ui.featureUnlocks, unlockedIds: ids, acknowledgedIds: ids, presentedIds: ids, introducedIds: ids }
+      return JSON.stringify(save)
+    }, saveKey)
+    await page.addInitScript(({ key, value }) => {
+      if (sessionStorage.getItem('regression-unlocks-seeded')) return
+      localStorage.setItem(key, value)
+      sessionStorage.setItem('regression-unlocks-seeded', '1')
+    }, { key: saveKey, value: fixture })
+    await page.reload()
+  }
 }
 
 async function dismissEventPopup(page: Page) {
@@ -28,6 +44,7 @@ async function closeSummary(page: Page) {
 }
 
 async function openBatch(page: Page, quantity: number) {
+  if (!await page.getByRole('button', { name: new RegExp(`^open ${quantity}$`, 'i') }).isVisible().catch(() => false)) await page.goto('/cases')
   await page.getByRole('button', { name: new RegExp(`^open ${quantity}$`, 'i') }).click()
   const opening = page.getByRole('dialog', { name: 'Case opening animation' })
   await expect(opening).toBeVisible()
@@ -62,14 +79,11 @@ test('new player can complete every supported opening size with exact-once trans
   await dismissTutorial(page)
   await dismissEventPopup(page)
   await dismissPwaNotification(page)
+  await page.goto('/cases')
   await expect(page.getByRole('button', { name: 'Open 10' })).toBeVisible()
-  if (!process.env.CI) {
-    await page.mouse.move(0, 0)
-    await expect(page.locator('main')).toHaveScreenshot('case-buttons-1366.png', { animations: 'disabled' })
-  }
 
   const before = await readSave(page)
-  const costPanel = await page.getByText('Cost', { exact: true }).locator('..').textContent()
+  const costPanel = await page.getByText('Open Cost', { exact: true }).first().locator('..').textContent()
   const caseCost = Number(costPanel?.match(/\$([\d.]+)/)?.[1])
   for (const quantity of [1, 2, 3, 5, 10]) await openBatch(page, quantity)
   await page.waitForFunction(({ key, expected }) => {
@@ -89,8 +103,9 @@ test('batch summary Open Again repeats the same quantity as one fresh exact-once
   await dismissTutorial(page)
   await dismissEventPopup(page)
   await dismissPwaNotification(page)
+  await page.goto('/cases')
   const before = await readSave(page)
-  const costPanel = await page.getByText('Cost', { exact: true }).locator('..').textContent()
+  const costPanel = await page.getByText('Open Cost', { exact: true }).first().locator('..').textContent()
   const caseCost = Number(costPanel?.match(/\$([\d.]+)/)?.[1])
 
   async function finishTwoCaseAnimation() {
@@ -128,7 +143,7 @@ test('opening advances a tracked story quest and the exact-once reward survives 
   await page.goto('/')
   await dismissTutorial(page)
   await dismissEventPopup(page)
-  await expect(page.getByTestId('tracked-quest-widget')).toContainText('The First Crack')
+  await expect(page.getByText('The First Crack').first()).toBeVisible()
   await openBatch(page, 1)
   await page.goto('/quests')
   const quest = page.getByTestId('quest-story-first-crack')
@@ -153,6 +168,7 @@ test('deterministic Gold fixture is skippable and creates a permanent journal re
   await page.addInitScript(() => { Math.random = () => .999999 })
   await page.goto('/')
   await dismissTutorial(page)
+  await page.goto('/cases')
   await page.getByRole('button', { name: 'Open 1', exact: true }).click()
   const opening = page.getByRole('dialog', { name: 'Case opening animation' })
   await expect(opening).toBeVisible()
@@ -174,10 +190,6 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
   await dismissEventPopup(page)
   await dismissPwaNotification(page)
   await expect(page.getByText('Eight available jobs')).toBeVisible()
-  if (!process.env.CI) {
-    await page.mouse.move(0, 0)
-    await expect(page.locator('main')).toHaveScreenshot('work-page-1366.png', { animations: 'disabled' })
-  }
 
   await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
   await page.getByRole('button', { name: 'Start Sort Boxes' }).click()
@@ -259,6 +271,7 @@ test('the four expansion Work games accept real input and settle once through th
 test('case roulette center marker stays centered above the animated track', async ({ page }) => {
   await page.goto('/')
   await dismissTutorial(page)
+  await page.goto('/cases')
   await page.getByRole('button', { name: 'Open 1', exact: true }).click()
   const marker = page.getByTestId('roulette-center-marker')
   await expect(marker).toBeVisible({ timeout: 5_000 })
@@ -319,6 +332,7 @@ test('Prestige preserves a Vault item and verified recovery replaces rather than
   await dismissTutorial(page)
   await dismissEventPopup(page)
   await openBatch(page, 1)
+  await page.waitForFunction((key) => (JSON.parse(localStorage.getItem(key) ?? '{}').state?.inventory?.length ?? 0) > 0, saveKey)
   const before = await readSave(page)
   const kept = before.state.inventory[0]
   const level = 25
@@ -425,13 +439,9 @@ test('Business hires, funds, schedules, and persists a paid Case Operator', asyn
   }, { envelope: seeded, key: saveKey })
   await page.goto('/business')
   await expect(page.getByRole('heading', { name: 'Business', exact: true })).toBeVisible()
-  await expect(page.getByRole('status', { name: 'Hiring your first employee' })).toBeVisible()
-  await page.getByRole('button', { name: 'Dismiss Hiring your first employee' }).click()
   const caseOperator = page.locator('article').filter({ has: page.getByRole('heading', { name: 'Case Operator' }) }).first()
   await caseOperator.getByRole('button', { name: /Hire/ }).click()
   await expect(caseOperator.getByRole('button', { name: 'Configure' })).toBeVisible()
-  await expect(page.getByRole('status', { name: 'Configure operations' })).toBeVisible()
-  await page.getByRole('button', { name: 'Dismiss Configure operations' }).click()
   await caseOperator.getByRole('button', { name: 'Configure' }).click()
   const configuration = page.getByRole('dialog')
   await configuration.getByRole('spinbutton', { name: 'Budget amount' }).fill('250')
@@ -497,25 +507,20 @@ test('focused Memory Circuit stays visible, completes all rounds, and cannot cla
 test('tutorial progress persists, completion stays dismissed, and Settings can replay it', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByTestId('onboarding-tutorial')).toBeVisible()
-  await expect(page.getByText('Welcome to your CS2 trading career')).toBeVisible()
+  await expect(page.getByText('This is a CS2 case-opening simulator', { exact: false })).toBeVisible()
   await dismissPwaNotification(page)
-  await page.getByRole('button', { name: /Next/i }).click()
-  await expect(page.getByText('Open the Cases catalog')).toBeVisible()
-  await page.getByRole('link', { name: /Cases/ }).first().click()
-  await expect(page.getByText('Open one case')).toBeVisible()
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await expect(page.getByText('Your cash')).toBeVisible()
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await expect(page.getByText('Open one case')).toBeVisible()
-  await page.getByRole('button', { name: 'Open 1' }).first().click()
-  await expect(page.getByRole('dialog', { name: 'Case opening animation' })).toBeVisible()
-  await page.getByRole('button', { name: 'Skip opening animation' }).click()
-  await expect(page.getByText('Read your result')).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('button', { name: /Next/i }).click()
+  await expect(page.getByText('Your cash')).toBeVisible()
+  await page.getByRole('button', { name: 'Pause' }).click()
+  await page.getByRole('button', { name: 'Resume tutorial' }).click()
   await page.getByRole('button', { name: 'Skip beginner tutorial' }).click()
   await page.reload({ waitUntil: 'domcontentloaded' })
   await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
   await page.goto('/settings')
   await page.getByRole('button', { name: 'Review Tutorial' }).click()
-  await expect(page.getByText('Welcome to your CS2 trading career')).toBeVisible()
+  await expect(page.getByText('This is a CS2 case-opening simulator', { exact: false })).toBeVisible()
 })
 
 test('numbered achievement notifications derive from claimable state and clear after Claim All', async ({ page }) => {

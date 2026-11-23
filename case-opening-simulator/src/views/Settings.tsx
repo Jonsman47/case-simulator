@@ -125,6 +125,7 @@ export function Settings() {
   const {
     addAutoSellRule,
     cloud,
+    dispatch,
     markBackupCreated,
     removeAutoSellRule,
     reorderAutoSellRules,
@@ -457,7 +458,7 @@ export function Settings() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="font-mono text-xs uppercase text-cs-muted">Onboarding</p>
-                <p className="mt-1 text-sm text-cs-muted">Replay the complete guided tour of cases, rarities, inventory, Market, Collection, Work, upgrades, and auto-sell.</p>
+                <p className="mt-1 text-sm text-cs-muted">Replay the beginner path through a real case opening, Inventory, Quests, Work, and Home.</p>
               </div>
               <button
                 className="inline-flex min-h-11 items-center justify-center gap-2 border border-rarity-special px-3 py-2 text-sm font-semibold text-rarity-special transition-colors hover:bg-rarity-special/10"
@@ -465,6 +466,8 @@ export function Settings() {
                   activeStepId: 'welcome',
                   caseOpenBaseline: state.statistics.casesOpened,
                   completedStepIds: [],
+                  openedItemId: undefined,
+                  lastValidStepId: 'welcome',
                   isDismissed: false,
                   isPaused: false,
                   isReviewing: true,
@@ -477,7 +480,7 @@ export function Settings() {
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               <a className="inline-flex min-h-10 items-center gap-2 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" href="/help"><BookOpen size={16} /> Open Help Center</a>
-              <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" onClick={() => updateOnboardingState({ dismissedTipIds: [] })} type="button">Replay all feature guides</button>
+              <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-muted hover:text-cs-text" onClick={() => dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { introducedIds: [] } })} type="button">Replay all feature guides</button>
             </div>
           </div>
           <div className="mt-4 border border-cs-border bg-cs-surface p-4">

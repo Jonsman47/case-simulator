@@ -27,23 +27,25 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 
 function renderTutorial(stateOverrides: Partial<GameState> = {}, path = '/') {
   const updateOnboardingState = vi.fn()
-  const value = { state: makeState(stateOverrides), updateOnboardingState } as unknown as GameContextValue
+  const dispatch = vi.fn()
+  const value = { state: makeState(stateOverrides), updateOnboardingState, dispatch } as unknown as GameContextValue
   render(<GameContext.Provider value={value}><MemoryRouter initialEntries={[path]}><div data-onboarding-target="nav-cases">Cases</div><OnboardingTutorial /></MemoryRouter></GameContext.Provider>)
-  return { updateOnboardingState }
+  return { updateOnboardingState, dispatch }
 }
 
 describe('OnboardingTutorial', () => {
-  it('starts with a non-blocking welcome and can be skipped', () => {
+  it('starts with a centered welcome and can be skipped', () => {
     const { updateOnboardingState } = renderTutorial()
-    expect(screen.getByTestId('onboarding-tutorial')).toHaveTextContent('Welcome to your CS2 trading career')
+    expect(screen.getByTestId('onboarding-tutorial')).toHaveTextContent('This is a CS2 case-opening simulator')
+    expect(screen.getByTestId('onboarding-tutorial')).toHaveClass('left-1/2')
     fireEvent.click(screen.getByRole('button', { name: 'Skip beginner tutorial' }))
     expect(updateOnboardingState).toHaveBeenCalledWith({ isDismissed: true, isPaused: false, isReviewing: false })
   })
 
   it('persists progress and the opening baseline', () => {
     const { updateOnboardingState } = renderTutorial({ statistics: { ...defaultGameState.statistics, casesOpened: 4 } })
-    fireEvent.click(screen.getByRole('button', { name: /Next/i }))
-    expect(updateOnboardingState).toHaveBeenCalledWith(expect.objectContaining({ activeStepId: 'cases_nav', caseOpenBaseline: 4, completedStepIds: ['welcome'] }))
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }))
+    expect(updateOnboardingState).toHaveBeenCalledWith(expect.objectContaining({ activeStepId: 'cash', caseOpenBaseline: 4, completedStepIds: ['welcome'] }))
   })
 
   it('pauses and resumes without dismissing progress', () => {
@@ -57,10 +59,10 @@ describe('OnboardingTutorial', () => {
     expect(screen.queryByTestId('onboarding-tutorial')).not.toBeInTheDocument()
   })
 
-  it('shows and permanently dismisses a contextual guide', () => {
-    const { updateOnboardingState } = renderTutorial({ ui: { ...defaultGameState.ui, onboarding: { ...defaultGameState.ui.onboarding, isDismissed: true } } }, '/career')
-    expect(screen.getByText('Career & Upgrades')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss Career & Upgrades' }))
-    expect(updateOnboardingState).toHaveBeenCalledWith({ dismissedTipIds: ['career'] })
+  it('acknowledges a genuine unlock once', async () => {
+    const { dispatch } = renderTutorial({ ui: { ...defaultGameState.ui, onboarding: { ...defaultGameState.ui.onboarding, isDismissed: true }, featureUnlocks: { unlockedIds: ['quests'], acknowledgedIds: [], introducedIds: [] } } })
+    expect(await screen.findByText('Quests Unlocked!')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Maybe later' }))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { acknowledgedIds: ['quests'] } })
   })
 })

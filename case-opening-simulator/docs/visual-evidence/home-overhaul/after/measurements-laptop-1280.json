@@ -1,0 +1,122 @@
+[
+  {
+    "route": "home",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 720,
+    "pageLengths": 1,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 7,
+    "clippedCards": 0
+  },
+  {
+    "route": "cases",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 1032,
+    "pageLengths": 1.43,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 17,
+    "clippedCards": 0
+  },
+  {
+    "route": "inventory",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 720,
+    "pageLengths": 1,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 10,
+    "clippedCards": 0
+  },
+  {
+    "route": "work",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 726,
+    "pageLengths": 1.01,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 8,
+    "clippedCards": 0
+  },
+  {
+    "route": "quests",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 1311,
+    "pageLengths": 1.82,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 13,
+    "clippedCards": 0
+  },
+  {
+    "route": "career",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 2426,
+    "pageLengths": 3.37,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 1,
+    "clippedCards": 0
+  },
+  {
+    "route": "business",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 2431,
+    "pageLengths": 3.38,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 0,
+    "clippedCards": 0
+  },
+  {
+    "route": "trade-ups",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 1164,
+    "pageLengths": 1.62,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 14,
+    "clippedCards": 0
+  },
+  {
+    "route": "prestige",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 1357,
+    "pageLengths": 1.88,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 1,
+    "clippedCards": 0
+  },
+  {
+    "route": "progress",
+    "viewport": "laptop-1280",
+    "variant": "standard",
+    "documentHeight": 12493,
+    "pageLengths": 17.35,
+    "headerHeight": 73,
+    "navigationHeight": 41,
+    "horizontalOverflow": 0,
+    "visibleActions": 13,
+    "clippedCards": 0
+  }
+]

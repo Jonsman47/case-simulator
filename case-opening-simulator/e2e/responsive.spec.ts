@@ -6,7 +6,7 @@ for (const viewport of [
   { name: 'laptop-1280', width: 1280, height: 720 },
   { name: 'tablet-768', width: 768, height: 1024 },
   { name: 'mobile-375', width: 375, height: 812 },
-  { name: 'mobile-320', width: 320, height: 720 },
+  { name: 'mobile-320', width: 320, height: 568 },
   { name: 'mobile-390', width: 390, height: 844 },
 ]) {
   test(`${viewport.name} keeps Work and opening controls inside the viewport`, async ({ page }) => {
@@ -18,6 +18,19 @@ for (const viewport of [
       await expect(page.getByTestId('onboarding-tutorial')).toBeHidden()
       await page.waitForFunction(() => JSON.parse(localStorage.getItem('case-opening-simulator:game-state') ?? '{}').state?.ui?.onboarding?.isDismissed === true)
     }
+    const fixture = await page.evaluate(() => {
+      const key = 'case-opening-simulator:game-state'
+      const envelope = JSON.parse(localStorage.getItem(key) ?? '{}')
+      const ids = ['collection-book', 'quests', 'market', 'cswear', 'trade-ups', 'business', 'prestige']
+      envelope.state.ui.featureUnlocks = { ...envelope.state.ui.featureUnlocks, unlockedIds: ids, acknowledgedIds: ids, presentedIds: ids, introducedIds: ids }
+      return JSON.stringify(envelope)
+    })
+    await page.addInitScript((value) => {
+      if (sessionStorage.getItem('responsive-unlocks-seeded')) return
+      localStorage.setItem('case-opening-simulator:game-state', value)
+      sessionStorage.setItem('responsive-unlocks-seeded', '1')
+    }, fixture)
+    await page.reload()
     await expect(page.getByRole('heading', { name: 'Precision Strike' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
     if (viewport.width <= 390) {
@@ -32,6 +45,7 @@ for (const viewport of [
     }
 
     await page.goto('/')
+    await page.goto('/cases')
     await expect(page.getByRole('button', { name: 'Open 10' })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
     await page.goto('/business')
