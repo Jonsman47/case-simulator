@@ -60,11 +60,22 @@ test('fresh Home has truthful empty activity and tutorial survives reload', asyn
 })
 
 test('real openings permanently unlock early features and compatible Trade-Ups', async ({ page }) => {
+  test.setTimeout(180_000)
   await page.goto('/')
   await page.getByRole('button', { name: 'Skip beginner tutorial' }).click()
   await expect(page.getByRole('heading', { name: 'Next unlock' })).toBeVisible()
   await page.goto('/trade-ups')
   await expect(page.getByText('Feature locked')).toBeVisible()
+  await page.goto('/work')
+  await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
+  await page.getByRole('button', { name: 'Start Sort Boxes' }).click()
+  for (const color of ['Red', 'Blue', 'Green', 'Yellow']) {
+    await page.getByRole('button', { name: `${color} box` }).click()
+    await page.getByRole('button', { name: `${color} container` }).click()
+  }
+  await expect(page.getByText('Earned $20.00')).toBeVisible()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.workJobsCompleted >= 1, saveKey)
+  await page.getByRole('button', { name: 'Close Sort Boxes' }).click()
   await page.goto('/cases?case=crate-4904')
   for (let round = 0; round < 6; round += 1) {
     await page.getByRole('button', { name: 'Open 10', exact: true }).click()
@@ -80,6 +91,7 @@ test('real openings permanently unlock early features and compatible Trade-Ups',
     const summary = page.getByRole('dialog', { name: 'Case opening batch summary' })
     if (await summary.isVisible().catch(() => false)) await summary.getByRole('button', { name: 'Close opening summary' }).click()
     while (await page.getByRole('button', { name: 'Maybe later' }).isVisible().catch(() => false)) await page.getByRole('button', { name: 'Maybe later' }).click()
+    await page.waitForFunction(({ key, count }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.casesOpened >= count, { key: saveKey, count: (round + 1) * 10 })
     const unlocked = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.featureUnlocks?.unlockedIds ?? [], saveKey)
     if (unlocked.includes('trade-ups')) break
   }

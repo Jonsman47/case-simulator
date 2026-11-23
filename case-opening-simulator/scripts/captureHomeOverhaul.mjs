@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173'
 const output = path.resolve('docs', 'visual-evidence', 'home-overhaul', 'after')
+const captureScreenshots = process.env.CAPTURE_METRICS_ONLY !== '1'
 const viewports = [
   { name: 'desktop-1920', width: 1920, height: 1080 },
   { name: 'laptop-1366', width: 1366, height: 768 },
@@ -62,7 +63,7 @@ for (const viewport of viewports.filter((entry) => !process.env.CAPTURE_VIEWPORT
   if (await skip.isVisible().catch(() => false)) await skip.click()
   await page.waitForFunction(() => Boolean(JSON.parse(localStorage.getItem('case-opening-simulator:game-state') ?? '{}').state?.ui?.onboarding?.isDismissed))
   await measure(page, viewport, 'home')
-  if (viewport.name === 'laptop-1366' || viewport.name === 'mobile-320') {
+  if (captureScreenshots && (viewport.name === 'laptop-1366' || viewport.name === 'mobile-320')) {
     await page.screenshot({ path: path.join(output, `home-${viewport.name}.png`), fullPage: true, animations: 'disabled' })
   }
 
@@ -88,7 +89,7 @@ for (const viewport of viewports.filter((entry) => !process.env.CAPTURE_VIEWPORT
       await variantPage.addInitScript((value) => localStorage.setItem('case-opening-simulator:game-state', value), JSON.stringify(alternate))
       await variantPage.goto(baseUrl)
       await measure(variantPage, viewport, 'home', variant)
-      if (viewport.name === 'laptop-1366' && variant !== 'reduced-motion') {
+      if (captureScreenshots && viewport.name === 'laptop-1366' && variant !== 'reduced-motion') {
         await variantPage.screenshot({ path: path.join(output, `home-${viewport.name}-${variant}.png`), fullPage: true, animations: 'disabled' })
       }
       await variantContext.close()

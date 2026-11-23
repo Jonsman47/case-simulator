@@ -34,6 +34,8 @@ const CARD_ROW_HEIGHT_DESKTOP = 428
 const CARD_ROW_HEIGHT_MOBILE = 400
 const CARD_ROW_HEIGHT_LARGE_TEXT_DESKTOP = 492
 const CARD_ROW_HEIGHT_LARGE_TEXT_MOBILE = 468
+const CARD_ROW_HEIGHT_NARROW = 432
+const CARD_ROW_HEIGHT_LARGE_TEXT_NARROW = 500
 const MIN_GRID_HEIGHT = 320
 const MAX_GRID_HEIGHT = 700
 const GRID_SCROLLBAR_GUTTER = 16
@@ -86,6 +88,9 @@ function getColumnCount(width: number) {
 }
 
 function getCardRowHeight(width: number, largeText: boolean) {
+  if (width < 340) {
+    return largeText ? CARD_ROW_HEIGHT_LARGE_TEXT_NARROW : CARD_ROW_HEIGHT_NARROW
+  }
   if (largeText) {
     return width < 520 ? CARD_ROW_HEIGHT_LARGE_TEXT_MOBILE : CARD_ROW_HEIGHT_LARGE_TEXT_DESKTOP
   }
