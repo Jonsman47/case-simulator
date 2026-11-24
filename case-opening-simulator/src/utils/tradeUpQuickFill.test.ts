@@ -69,4 +69,21 @@ describe('trade-up quick fill', () => {
     const result = selectTradeUpQuickFill({ candidates, capacity: 5, marketValues: {}, mode: 'random', random: () => .2, selectedItems: [] })
     expect(result.itemIds).toHaveLength(5)
   })
+
+  it('never mixes rarity groups when all rarities are presented', () => {
+    const candidates = [
+      ...Array.from({ length: 10 }, (_, index) => item(index, { rarity: Rarity.MilSpec })),
+      ...Array.from({ length: 10 }, (_, index) => item(index + 20, { rarity: Rarity.Restricted })),
+    ]
+    const result = selectTradeUpQuickFill({ candidates, capacity: 10, marketValues: {}, mode: 'random', random: () => .99, selectedItems: [] })
+    expect(result.itemIds).toHaveLength(10)
+    expect(new Set(result.itemIds.map((id) => candidates.find((candidate) => candidate.instanceId === id)?.rarity))).toHaveProperty('size', 1)
+  })
+
+  it('deduplicates a large candidate pool before selecting a contract', () => {
+    const candidates = Array.from({ length: 2_000 }, (_, index) => item(index, { rarity: Rarity.MilSpec }))
+    const result = selectTradeUpQuickFill({ candidates: [...candidates, ...candidates], capacity: 10, marketValues: {}, mode: 'cheapest', selectedItems: [] })
+    expect(result.itemIds).toHaveLength(10)
+    expect(new Set(result.itemIds).size).toBe(10)
+  })
 })

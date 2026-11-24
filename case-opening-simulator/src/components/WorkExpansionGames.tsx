@@ -11,7 +11,7 @@ import {
   Truck,
   Warehouse,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import {
@@ -151,7 +151,7 @@ export function DiamondMinerJob() {
   return (
     <section data-testid="diamondMiner-game">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div><p className="font-mono text-[10px] uppercase text-rarity-special">Depth strategy · 20 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Diamond Miner</h3><p className="mt-1 max-w-2xl text-sm text-cs-muted">Spend 18 pickaxe swings. Mine a supported block to descend; hard and valuable ores take more hits.</p></div>
+        <div><p className="font-mono text-[10px] uppercase text-rarity-special">Depth strategy · 20 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Diamond Miner</h3><p className="mt-1 max-w-2xl text-sm text-cs-muted">Click a reachable block to mine it, then dig through it to reach deeper blocks. Hard rocks need more hits. Find valuable ores and diamonds in 18 swings; cash out after your first find, or use every swing. More valuable finds and greater depth improve your reward.</p></div>
         <img alt="Pixel pickaxe" className="h-12 w-12 object-contain [image-rendering:pixelated]" src={workAsset('pickaxe.png')} />
       </div>
       {status === 'idle' ? <StartJob icon={<Play size={16} />} onStart={start}>Start mining</StartJob> : null}
@@ -169,7 +169,7 @@ export function DiamondMinerJob() {
             })}
           </div>
           <aside className="grid content-start gap-2">
-            <div className="border border-cs-border bg-cs-panel p-3"><p className="font-mono text-[10px] uppercase text-cs-muted">Swings remaining</p><p className="mt-1 font-mono text-2xl font-bold text-rarity-special">{actions}</p></div>
+            <div className="border border-cs-border bg-cs-panel p-3"><p className="font-mono text-[10px] uppercase text-cs-muted">Swings remaining</p><p className="mt-1 font-mono text-2xl font-bold text-rarity-special">{actions}</p><p className="mt-1 text-xs text-cs-muted">Harder blocks need more hits.</p></div>
             <div className="grid grid-cols-2 gap-2">{(['coal', 'iron', 'gold', 'diamond'] as const).map((resource) => <div className="flex items-center gap-2 border border-cs-border bg-cs-panel p-2" key={resource}><img alt="" className="h-7 w-7 [image-rendering:pixelated]" src={miningImages[resource]} /><span className="font-mono text-xs uppercase text-cs-text">{resources[resource] ?? 0}</span></div>)}</div>
             <p className="font-mono text-xs uppercase text-cs-muted">Depth {deepestRow + 1}/7</p>
             {status === 'running' && minedIds.size > 0 ? <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-text" onClick={() => complete(calculateMiningPerformance(resources, deepestRow))} type="button">Cash out safely</button> : null}
@@ -249,13 +249,17 @@ export function PackageDeliveryJob() {
 export function WarehouseRushJob() {
   const { dispatch } = useGame()
   const [status, setStatus] = useState<'idle' | 'running' | 'finished'>('idle')
-  const [items, setItems] = useState<WarehouseLane[]>([])
+  const [items] = useState<WarehouseLane[]>(() => Array.from({ length: 10 }, () => warehouseLanes[Math.floor(Math.random() * warehouseLanes.length)]))
   const [index, setIndex] = useState(0)
   const [correct, setCorrect] = useState(0)
   const [mistakes, setMistakes] = useState(0)
   const [feedback, setFeedback] = useState('')
   const [performance, setPerformance] = useState(0)
+  const [drag, setDrag] = useState<{ pointerId: number; x: number; y: number }>()
   const completedRef = useRef(false)
+  const settledIndexRef = useRef(-1)
+  const dragRef = useRef<{ pointerId: number; x: number; y: number } | undefined>(undefined)
+  const boxRef = useRef<HTMLImageElement>(null)
   const reward = useRewardPreview('warehouseRush', performance)
   const current = items[index]
 
@@ -266,15 +270,25 @@ export function WarehouseRushJob() {
     dispatch({ type: 'COMPLETE_WORK_MINIGAME', gameId: 'warehouseRush', now: Date.now(), performance: score })
   }, [dispatch])
 
+  const clearDrag = useCallback(() => {
+    const active = dragRef.current
+    if (active && boxRef.current?.hasPointerCapture(active.pointerId)) boxRef.current.releasePointerCapture(active.pointerId)
+    dragRef.current = undefined
+    setDrag(undefined)
+  }, [])
+
   const settle = useCallback((lane?: WarehouseLane) => {
-    if (status !== 'running' || completedRef.current || !current) return
+    if (status === 'finished' || completedRef.current || !current || settledIndexRef.current === index) return
+    settledIndexRef.current = index
+    clearDrag()
+    if (status === 'idle') setStatus('running')
     const matched = lane === current
     const nextCorrect = correct + (matched ? 1 : 0)
     const nextMistakes = mistakes + (matched ? 0 : 1)
     setCorrect(nextCorrect); setMistakes(nextMistakes); setFeedback(matched ? 'Correct lane' : lane ? 'Wrong dock' : 'Package missed')
     if (index + 1 >= items.length) complete(nextCorrect, nextMistakes)
     else setIndex((value) => value + 1)
-  }, [complete, correct, current, index, items.length, mistakes, status])
+  }, [clearDrag, complete, correct, current, index, items.length, mistakes, status])
 
   useEffect(() => {
     if (status !== 'running' || !current) return
@@ -283,23 +297,50 @@ export function WarehouseRushJob() {
   }, [current, index, settle, status])
 
   useEffect(() => {
-    if (status !== 'running') return
-    const onKeyDown = (event: KeyboardEvent) => { const lane = warehouseLanes[Number(event.key) - 1]; if (lane) settle(lane) }
+    if (status === 'finished') return
+    const onKeyDown = (event: KeyboardEvent) => { const lane = warehouseLanes[Number(event.key) - 1]; if (lane && !event.repeat) { event.preventDefault(); settle(lane) } }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [settle, status])
 
-  function start() {
-    completedRef.current = false
-    setItems(Array.from({ length: 10 }, () => warehouseLanes[Math.floor(Math.random() * warehouseLanes.length)]))
-    setIndex(0); setCorrect(0); setMistakes(0); setFeedback('Sort the arriving package'); setPerformance(0); setStatus('running')
+  useEffect(() => {
+    const cancel = () => clearDrag()
+    window.addEventListener('blur', cancel)
+    return () => window.removeEventListener('blur', cancel)
+  }, [clearDrag])
+
+  function pointerDown(event: ReactPointerEvent<HTMLImageElement>) {
+    if (status === 'finished' || dragRef.current || settledIndexRef.current === index) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    const next = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+    dragRef.current = next
+    setDrag(next)
+    if (status === 'idle') setStatus('running')
+  }
+
+  function pointerMove(event: ReactPointerEvent<HTMLImageElement>) {
+    if (dragRef.current?.pointerId !== event.pointerId) return
+    const next = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
+    dragRef.current = next
+    setDrag(next)
+  }
+
+  function pointerEnd(event: ReactPointerEvent<HTMLImageElement>, cancelled = false) {
+    if (dragRef.current?.pointerId !== event.pointerId) return
+    const target = cancelled ? null : document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-warehouse-lane]')
+    const lane = warehouseLanes.find((entry) => entry === target?.dataset.warehouseLane)
+    clearDrag()
+    if (cancelled) setFeedback('Drag cancelled. Try again.')
+    else if (lane) settle(lane)
+    else setFeedback('Drop a box on a colored bin.')
   }
 
   return (
     <section data-testid="warehouseRush-game">
-      <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase text-rarity-special">Timed sorting · 18 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Warehouse Rush</h3><p className="mt-1 text-sm text-cs-muted">Route ten moving packages before they leave the conveyor. The belt accelerates; press 1–4 or tap a dock.</p></div><Warehouse className="text-rarity-special" size={28} /></div>
-      {status === 'idle' ? <StartJob icon={<Play size={16} />} onStart={start}>Start conveyor</StartJob> : null}
-      {status !== 'idle' ? <div className="mt-3 border border-cs-border bg-[#0a0f16] p-3"><div className="flex items-center justify-between font-mono text-xs uppercase text-cs-muted"><span>Package {Math.min(index + 1, 10)}/10</span><span>{correct} correct · {mistakes} missed</span></div><div className="relative mt-3 flex h-28 items-center justify-center overflow-hidden border border-cs-border bg-cs-panel work-conveyor"><div className="absolute inset-x-0 bottom-0 h-7 bg-repeat-x [image-rendering:pixelated]" style={{ backgroundImage: `url(${workAsset('conveyor-horizontal.png')})`, backgroundSize: '32px 32px' }} />{current && status === 'running' ? <img alt={`${current} package`} className="relative z-10 h-20 w-20 object-contain [image-rendering:pixelated] work-package-arrival" key={index} src={crateImages[current]} /> : null}</div><p aria-live="polite" className="mt-2 min-h-5 text-center text-xs font-semibold text-cs-green">{feedback}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{warehouseLanes.map((lane, laneIndex) => <button aria-label={`Sort into ${lane} dock`} className="flex min-h-20 min-w-0 items-center justify-center gap-2 border border-cs-border bg-cs-panel px-2 text-xs font-semibold uppercase text-cs-text transition hover:border-rarity-special" disabled={status !== 'running'} key={lane} onClick={() => settle(lane)} type="button"><span className="font-mono text-rarity-special">{laneIndex + 1}</span><img alt="" className="h-10 w-10 object-contain [image-rendering:pixelated]" src={dockImages[lane]} /><span className="truncate">{lane}</span></button>)}</div></div> : null}
+      <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase text-rarity-special">Timed sorting · 18 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Warehouse Rush</h3><p className="mt-1 text-sm text-cs-muted">Drag each moving box into the matching color bin, tap a bin, or press its number (1–4). Correct bins score points; wrong bins and boxes that reach the end count as mistakes. The round starts with your first action and ends after ten boxes.</p></div><Warehouse className="text-rarity-special" size={28} /></div>
+      {status !== 'finished' ? <div className="mt-3 border border-cs-border bg-[#0a0f16] p-3"><div className="flex items-center justify-between font-mono text-xs uppercase text-cs-muted"><span>Package {Math.min(index + 1, 10)}/10</span><span>{correct} correct · {mistakes} missed</span></div><div className="relative mt-3 flex h-28 items-center justify-center overflow-hidden border border-cs-border bg-cs-panel work-conveyor"><div className="absolute inset-x-0 bottom-0 h-7 bg-repeat-x [image-rendering:pixelated]" style={{ backgroundImage: `url(${workAsset('conveyor-horizontal.png')})`, backgroundSize: '32px 32px' }} />{current ? <img alt={`${current} package`} className={`relative z-10 h-20 w-20 cursor-grab touch-none select-none object-contain [image-rendering:pixelated] ${status === 'running' && !drag ? 'work-package-arrival' : ''} ${drag ? 'opacity-35' : ''}`} draggable={false} key={index} onPointerCancel={(event) => pointerEnd(event, true)} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={boxRef} src={crateImages[current]} /> : null}</div><p aria-live="polite" className="mt-2 min-h-5 text-center text-xs font-semibold text-cs-green">{feedback || (status === 'idle' ? 'Pick up the box or choose a bin to begin.' : 'Sort the next box.')}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{warehouseLanes.map((lane, laneIndex) => <button aria-label={`Sort into ${lane} dock`} className={`flex min-h-20 min-w-0 items-center justify-center gap-2 border bg-cs-panel px-2 text-xs font-semibold uppercase text-cs-text transition ${drag ? 'border-rarity-special bg-rarity-special/10' : 'border-cs-border hover:border-rarity-special'}`} data-warehouse-lane={lane} key={lane} onClick={() => { if (!dragRef.current) settle(lane) }} type="button"><span className="font-mono text-rarity-special">{laneIndex + 1}</span><img alt="" className="h-10 w-10 object-contain [image-rendering:pixelated]" src={dockImages[lane]} /><span className="truncate">{lane}</span></button>)}</div></div> : null}
+      {drag && current ? <img alt="" aria-hidden="true" className="pointer-events-none fixed z-[100] h-20 w-20 -translate-x-1/2 -translate-y-1/2 object-contain opacity-90 drop-shadow-xl [image-rendering:pixelated]" src={crateImages[current]} style={{ left: drag.x, top: drag.y }} /> : null}
       {status === 'finished' ? <ResultBanner performance={performance} reward={reward} /> : null}
     </section>
   )

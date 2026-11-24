@@ -106,6 +106,19 @@ interface OpeningUiSession {
   completedEventId?: string
 }
 
+const pendingBatchKey = 'case-opening:pending-batch'
+
+function recoverBatchSession(state: GameState): OpeningUiSession | undefined {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(pendingBatchKey) ?? 'null') as { id?: string; skipAnimations?: boolean; summary?: LatestCaseOpeningSummary; itemIds?: string[] } | null
+    if (!saved?.id) return undefined
+    const sameItems = saved.itemIds?.length === state.lastOpenedItems.length && saved.itemIds?.every((id, index) => state.lastOpenedItems[index]?.instanceId === id)
+    const summary = getLatestCaseOpeningSummary(state, saved.id) ?? (sameItems ? saved.summary : undefined)
+    if (!summary || summary.startedEvent.quantity <= 1) return undefined
+    return { id: saved.id, skipAnimations: Boolean(saved.skipAnimations), items: state.lastOpenedItems, summary, shouldAnimate: false, completedEventId: saved.id }
+  } catch { return undefined }
+}
+
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(gameReducer, undefined, loadGameStateOrDefault)
   const [pendingOfflineProgress, setPendingOfflineProgress] = useState<
@@ -125,8 +138,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [cloudError, setCloudError] = useState<string | undefined>()
   const [lastCloudSyncedAt, setLastCloudSyncedAt] = useState<number | undefined>()
   const [leaderboardMetric, setLeaderboardMetric] = useState<LeaderboardMetric>('inventoryValue')
-  const [openingSession, setOpeningSession] = useState<OpeningUiSession | undefined>()
-  const openingSessionRef = useRef<OpeningUiSession | undefined>(undefined)
+  const [openingSession, setOpeningSession] = useState<OpeningUiSession | undefined>(() => recoverBatchSession(state))
+  const openingSessionRef = useRef<OpeningUiSession | undefined>(openingSession)
 
   useEffect(() => {
     if (import.meta.env.MODE === 'test' || !HAS_EXTERNAL_SKIN_PRICES || Object.keys(externalSkinMarketValues).length === 0) {
@@ -238,6 +251,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     openingSessionRef.current = openingSession
+    if (openingSession?.summary?.startedEvent.quantity && openingSession.summary.startedEvent.quantity > 1) {
+      sessionStorage.setItem(pendingBatchKey, JSON.stringify({ id: openingSession.id, skipAnimations: openingSession.skipAnimations, summary: openingSession.summary, itemIds: openingSession.items?.map((item) => item.instanceId) ?? [] }))
+    }
   }, [openingSession])
 
   useEffect(() => {
@@ -652,6 +668,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
 
     openingSessionRef.current = session
+    if ((quantity ?? 1) > 1) sessionStorage.setItem(pendingBatchKey, JSON.stringify(session))
     setOpeningSession(session)
     dispatch({
       type: 'OPEN_CASE',
@@ -695,6 +712,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const dismissOpeningSummary = useCallback(() => {
+    sessionStorage.removeItem(pendingBatchKey)
     openingSessionRef.current = undefined
     setOpeningSession(undefined)
   }, [])
@@ -704,6 +722,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     if (!currentSession?.summary) return
     const { caseId, quantity } = currentSession.summary.startedEvent
     const skipAnimations = currentSession.skipAnimations
+    sessionStorage.removeItem(pendingBatchKey)
     openingSessionRef.current = undefined
     setOpeningSession(undefined)
     openCase(caseId, quantity, { skipAnimations })
@@ -1321,6 +1340,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           onClose={dismissOpeningSummary}
           onOpenAgain={repeatOpening}
           openedCount={activeOpeningSummary.startedEvent.quantity}
+          openingCost={activeOpeningSummary.startedEvent.cashCost}
           saleValue={activeOpeningSummary.autoSoldEvent?.salePrice ?? 0}
           skipAnimations={openingSession.skipAnimations}
         />

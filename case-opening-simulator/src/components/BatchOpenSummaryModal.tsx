@@ -18,6 +18,7 @@ export interface BatchOpenSummaryModalProps {
   onClose: () => void
   onOpenAgain?: () => void
   openedCount: number
+  openingCost?: number
   saleValue: number
   skipAnimations: boolean
 }
@@ -66,6 +67,7 @@ export function BatchOpenSummaryModal({
   onClose,
   onOpenAgain,
   openedCount,
+  openingCost,
   saleValue,
   skipAnimations,
 }: BatchOpenSummaryModalProps) {
@@ -102,6 +104,7 @@ export function BatchOpenSummaryModal({
               <SummaryPill label="Opened" value={openedCount.toLocaleString()} />
               <SummaryPill label="Drops" value={items.length.toLocaleString()} />
               <SummaryPill label="Value" value={formatCurrency(totalValue)} tone="green" />
+              {openingCost !== undefined ? <SummaryPill label="Opening cost" value={formatCurrency(openingCost)} /> : null}
               <SummaryPill label="Reveal" value={revealMode} />
               {newDiscoveryItemIds.length > 0 ? <SummaryPill label="New discoveries" value={newDiscoveryItemIds.length.toLocaleString()} tone="green" /> : null}
               {careerXpEarned > 0 ? <SummaryPill label="Career XP" value={`+${careerXpEarned}`} /> : null}

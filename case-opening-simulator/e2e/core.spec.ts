@@ -54,7 +54,6 @@ async function openBatch(page: Page, quantity: number) {
   }
   const skip = page.getByRole('button', { name: 'Skip opening animation' })
   await skip.click()
-  if (quantity > 1) await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 15_000 })
   const completionState = await page.waitForFunction(() => {
     const dialog = document.querySelector('[role="dialog"][aria-label="Case opening animation"]')
     if (!dialog) return 'closed'
@@ -112,13 +111,6 @@ test('batch summary Open Again repeats the same quantity as one fresh exact-once
     const opening = page.getByRole('dialog', { name: 'Case opening animation' })
     await expect(opening).toBeVisible()
     await opening.getByRole('button', { name: 'Skip opening animation' }).click()
-    await expect(opening.getByText('Stopped').first()).toBeVisible({ timeout: 15_000 })
-    await page.waitForFunction(() => {
-      const button = document.querySelector<HTMLButtonElement>('button[aria-label="Skip opening animation"]')
-      return !button || button.textContent?.includes('Close')
-    }, undefined, { timeout: 15_000 })
-    const close = opening.getByRole('button', { name: 'Skip opening animation' })
-    if (await close.isVisible().catch(() => false)) await close.click().catch(() => undefined)
     await expect(opening).toBeHidden({ timeout: 15_000 })
     return page.getByRole('dialog', { name: 'Case opening batch summary' })
   }
@@ -239,7 +231,7 @@ test('the four expansion Work games accept real input and settle once through th
   await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
 
   await page.getByRole('button', { name: 'Play Warehouse Rush' }).click()
-  await page.getByRole('button', { name: 'Start conveyor' }).click()
+  await expect(page.getByTestId('warehouseRush-game')).toContainText('Pick up the box or choose a bin to begin.')
   for (let item = 0; item < 10; item += 1) {
     const packageImage = page.locator('[data-testid="warehouseRush-game"] img[alt$=" package"]')
     await expect(packageImage).toBeVisible()
@@ -732,6 +724,86 @@ test('Trade-Up quick fills stay eligible, unique, and preserve the workspace con
   expect(await page.getByTestId('trade-up-inventory-item').evaluateAll((items) => items.filter((item) => item.getAttribute('aria-pressed') === 'true').length)).toBe(10)
 })
 
+test('Trade-Up picker groups rarities by descending value and restores them after clearing', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const seeded = await readSave(page)
+  const template = seeded.state.inventory[0] ?? {
+    id: 'skin-06a633fd8293', weapon: 'AUG', finish: 'Surveillance', baseValue: 1,
+    caseIds: [], image: '/assets/cs2/skins/skin-06a633fd8293_aug_surveillance.png',
+    wear: 'FactoryNew', floatValue: .01, isLocked: false, isFavorited: false,
+    discoveredAt: Date.now(), paintSeed: 1,
+  }
+  seeded.state.inventory = [
+    { ...template, id: 'sort-mil-low', instanceId: 'mil-low', rarity: 'MilSpec', finish: 'Mil Low', marketValue: 1 },
+    { ...template, id: 'sort-restricted', instanceId: 'restricted', rarity: 'Restricted', finish: 'Restricted', marketValue: 3 },
+    { ...template, id: 'sort-mil-high', instanceId: 'mil-high', rarity: 'MilSpec', finish: 'Mil High', marketValue: 5 },
+    { ...template, id: 'sort-classified', instanceId: 'classified', rarity: 'Classified', finish: 'Classified', marketValue: 2 },
+  ]
+  Object.assign(seeded.state.marketValues, { 'sort-mil-low': 1, 'sort-restricted': 3, 'sort-mil-high': 5, 'sort-classified': 2 })
+  await page.addInitScript(({ key, envelope }) => {
+    if (sessionStorage.getItem('trade-up-sort-seeded')) return
+    localStorage.setItem(key, JSON.stringify(envelope))
+    sessionStorage.setItem('trade-up-sort-seeded', '1')
+  }, { key: saveKey, envelope: seeded })
+  await page.goto('/trade-ups')
+  const picker = page.getByTestId('trade-up-picker-panel')
+  await expect(picker.getByTestId('trade-up-rarity-group')).toHaveCount(3)
+  await expect(picker.getByTestId('trade-up-rarity-group').first()).toContainText('Classified')
+  await expect(picker.getByTestId('trade-up-rarity-group').nth(1)).toContainText('Restricted')
+  await expect(picker.getByTestId('trade-up-rarity-group').last()).toContainText('Mil-Spec')
+  await expect(picker.getByTestId('trade-up-rarity-group').last().getByTestId('trade-up-inventory-item').first()).toContainText('Mil High')
+  await picker.getByTestId('trade-up-inventory-item').filter({ hasText: 'Mil High' }).click()
+  await expect(picker.getByTestId('trade-up-rarity-group')).toHaveCount(1)
+  await expect(picker.getByTestId('trade-up-rarity-group').first()).toContainText('Mil-Spec')
+  await page.getByRole('button', { name: 'Clear' }).click()
+  await expect(picker.getByTestId('trade-up-rarity-group')).toHaveCount(3)
+})
+
+test('Warehouse Rush starts on the first drag and scores it once', async ({ page }) => {
+  await page.goto('/work')
+  await dismissTutorial(page)
+  await page.getByRole('button', { name: 'Play Warehouse Rush' }).click()
+  const game = page.getByTestId('warehouseRush-game')
+  await expect(game).toContainText('Pick up the box or choose a bin to begin.')
+  await page.waitForTimeout(1_900)
+  await expect(game).toContainText('0 correct · 0 missed')
+  const box = game.locator('img[alt$=" package"]')
+  const lane = (await box.getAttribute('alt'))!.replace(' package', '')
+  const origin = await box.boundingBox()
+  const destination = await game.getByRole('button', { name: `Sort into ${lane} dock` }).boundingBox()
+  expect(origin && destination).toBeTruthy()
+  await page.mouse.move(origin!.x + origin!.width / 2, origin!.y + origin!.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(destination!.x + destination!.width / 2, destination!.y + destination!.height / 2, { steps: 5 })
+  await page.mouse.up()
+  await expect(game).toContainText('1 correct · 0 missed')
+  await expect(game).toContainText('Package 2/10')
+})
+
+test('multi-opening reaches its summary automatically and recovers after reload', async ({ page }) => {
+  await page.goto('/cases')
+  await dismissTutorial(page)
+  const before = await readSave(page)
+  await page.getByRole('button', { name: 'Open 2', exact: true }).click()
+  const opening = page.getByRole('dialog', { name: 'Case opening animation' })
+  await expect(opening).toBeVisible()
+  const summary = page.getByRole('dialog', { name: 'Case opening batch summary' })
+  await expect(summary).toBeVisible({ timeout: 20_000 })
+  await expect(opening).toBeHidden()
+  await expect(summary.getByText('Opening cost')).toBeVisible()
+  await page.waitForFunction((key) => {
+    const pending = JSON.parse(sessionStorage.getItem('case-opening:pending-batch') ?? 'null')
+    const saved = JSON.parse(localStorage.getItem(key) ?? 'null')
+    return pending?.summary && pending?.itemIds?.length === saved?.state?.lastOpenedItems?.length
+  }, saveKey)
+  await page.reload()
+  await expect(summary).toBeVisible()
+  const after = await readSave(page)
+  expect(after.state.statistics.casesOpened - before.state.statistics.casesOpened).toBe(2)
+  await summary.getByRole('button', { name: 'Close opening summary' }).click()
+})
+
 test('Large Text and Light theme are readable, persistent, and do not create horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/settings')
@@ -969,7 +1041,7 @@ test('every player-facing route renders without console errors or horizontal cli
   for (const route of ['/', '/cases', '/inventory', '/market', '/events', '/business', '/career', '/work', '/upgrades', '/prestige', '/skill-tree', '/progress', '/achievements', '/collection-book', '/trophy-room', '/stats', '/leaderboards', '/profile', '/settings', '/help', '/rewards', '/trade-ups']) {
     await page.goto(route)
     await dismissTutorial(page)
-    await expect(page.locator('main'), `route ${route} should render its application shell`).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('main.app-content'), `route ${route} should render its application shell`).toBeVisible({ timeout: 15_000 })
     await expect(page.locator('body')).not.toContainText('Something went wrong')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), route).toBe(true)
   }

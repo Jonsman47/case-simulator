@@ -235,6 +235,7 @@ export type GameUiEvent =
       type: 'case_opening_started'
       caseId: string
       quantity: number
+      cashCost?: number
       createdAt: number
     }
   | {

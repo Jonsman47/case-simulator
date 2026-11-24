@@ -28,6 +28,7 @@ type SortMode = 'float-asc' | 'float-desc' | 'name' | 'price-asc' | 'price-desc'
 type EditionFilter = 'all' | ItemEdition
 
 const tradeableRarities = tradeUpRarityOrder.filter((rarity) => getNextTradeUpRarity(rarity))
+const descendingRarities = [...tradeableRarities].reverse()
 const skinsById = new Map(SKIN_DEFINITIONS.map((skin) => [skin.id, skin]))
 const casesById = new Map(CASE_DEFINITIONS.map((caseDef) => [caseDef.id, caseDef]))
 
@@ -89,13 +90,13 @@ function OutcomeCard({ outcome, onInspect }: { outcome: TradeUpOutcome; onInspec
 
 export function TradeUps() {
   const { claimAcquisition, state, tradeUpItems } = useGame()
-  const [rarity, setRarity] = useSessionStorageState<Rarity>('trade-ups:rarity', Rarity.Consumer)
+  const [rarity, setRarity] = useSessionStorageState<Rarity | 'all'>('trade-ups:rarity-v2', 'all')
   const [selectedIds, setSelectedIds] = useSessionStorageState<string[]>('trade-ups:selected', [])
   const [search, setSearch] = useSessionStorageState('trade-ups:search', '')
   const [wear, setWear] = useSessionStorageState<'all' | WearCondition>('trade-ups:wear', 'all')
   const [collection, setCollection] = useSessionStorageState('trade-ups:collection', 'all')
   const [edition, setEdition] = useSessionStorageState<EditionFilter>('trade-ups:edition', 'all')
-  const [sort, setSort] = useSessionStorageState<SortMode>('trade-ups:sort', 'price-asc')
+  const [sort, setSort] = useSessionStorageState<SortMode>('trade-ups:sort', 'price-desc')
   const [minimumFloat, setMinimumFloat] = useSessionStorageState('trade-ups:min-float', '')
   const [maximumFloat, setMaximumFloat] = useSessionStorageState('trade-ups:max-float', '')
   const [minimumPrice, setMinimumPrice] = useSessionStorageState('trade-ups:min-price', '')
@@ -108,12 +109,14 @@ export function TradeUps() {
   const [inspectedOutcome, setInspectedOutcome] = useState<TradeUpOutcome>()
   const [outcomeLimit, setOutcomeLimit] = useState(12)
 
-  const selected = useMemo(() => selectedIds.flatMap((id) => state.inventory.find((item) => item.instanceId === id) ?? []), [selectedIds, state.inventory])
+  const inventoryById = useMemo(() => new Map(state.inventory.map((item) => [item.instanceId, item])), [state.inventory])
+  const selected = useMemo(() => selectedIds.flatMap((id) => inventoryById.get(id) ?? []), [selectedIds, inventoryById])
   const analysis = useMemo(() => analyzeTradeUp({ inputItems: selected, marketValues: state.marketValues }), [selected, state.marketValues])
-  const capacity = getTradeUpInputCount(rarity)
-  const collections = useMemo(() => Array.from(new Set(state.inventory.filter((item) => item.rarity === rarity).map(collectionLabel))).sort(), [rarity, state.inventory])
+  const activeRarity = selected[0]?.rarity ?? (rarity === 'all' ? undefined : rarity)
+  const capacity = getTradeUpInputCount(activeRarity)
+  const collections = useMemo(() => Array.from(new Set(state.inventory.filter((item) => !activeRarity || item.rarity === activeRarity).map(collectionLabel))).sort(), [activeRarity, state.inventory])
   const visibleItems = useMemo(() => state.inventory.filter((item) => {
-    if (item.rarity !== rarity) return false
+    if (activeRarity && item.rarity !== activeRarity) return false
     const protectionReason = isTradeUpEligibleItem(item) ? undefined : getTradeUpCompatibilityReason(item, [])
     const compatibilityReason = getTradeUpCompatibilityReason(item, selected)
     if (!showIneligible && protectionReason) return false
@@ -130,6 +133,7 @@ export function TradeUps() {
     if (maximumPrice && value > Number(maximumPrice)) return false
     return true
   }).sort((a, b) => {
+    if (a.rarity !== b.rarity) return descendingRarities.indexOf(a.rarity) - descendingRarities.indexOf(b.rarity)
     const leftValue = getCurrentItemMarketValue(a, state.marketValues)
     const rightValue = getCurrentItemMarketValue(b, state.marketValues)
     if (sort === 'price-desc') return rightValue - leftValue
@@ -137,7 +141,8 @@ export function TradeUps() {
     if (sort === 'float-desc') return b.floatValue - a.floatValue
     if (sort === 'name') return `${a.weapon} ${a.finish}`.localeCompare(`${b.weapon} ${b.finish}`)
     return leftValue - rightValue
-  }), [collection, compatibleOnly, edition, maximumFloat, maximumPrice, minimumFloat, minimumPrice, rarity, search, selected, showIneligible, sort, state.inventory, state.marketValues, wear])
+  }), [activeRarity, collection, compatibleOnly, edition, maximumFloat, maximumPrice, minimumFloat, minimumPrice, search, selected, showIneligible, sort, state.inventory, state.marketValues, wear])
+  const visibleGroups = useMemo(() => descendingRarities.map((groupRarity) => ({ rarity: groupRarity, items: visibleItems.filter((item) => item.rarity === groupRarity) })).filter((group) => group.items.length > 0), [visibleItems])
 
   const knownOutcomes = analysis.outcomes.filter((outcome) => outcome.hasValuation)
   const worst = knownOutcomes.length ? Math.min(...knownOutcomes.map((outcome) => outcome.value)) : undefined
@@ -155,15 +160,23 @@ export function TradeUps() {
     }
     const reason = getTradeUpCompatibilityReason(item, selected)
     if (reason) { setSelectionNotice(`${getItemEditionLabel(item)} ${item.weapon} | ${item.finish}: ${reason}`); return }
-    if (selectedIds.length >= capacity) { setSelectionNotice(`This ${rarity === Rarity.Covert ? 'five-Covert' : 'standard'} contract already has all ${capacity} inputs.`); return }
+    if (selectedIds.length >= capacity) { setSelectionNotice(`This ${activeRarity === Rarity.Covert ? 'five-Covert' : 'standard'} contract already has all ${capacity} inputs.`); return }
     setSelectedIds((current) => [...current, item.instanceId]); setSelectionNotice(undefined); resetReview()
   }
-  function changeRarity(next: Rarity) { setRarity(next); setSelectedIds([]); resetReview(); setCollection('all'); setSelectionNotice(undefined) }
+  function changeRarity(next: Rarity | 'all') { setRarity(next); setSelectedIds([]); resetReview(); setCollection('all'); setSelectionNotice(selected.length ? 'Previous inputs were cleared because the contract type changed.' : undefined) }
   function clearContract() { setSelectedIds([]); resetReview(); setSelectionNotice(undefined) }
   function quickFill(mode: TradeUpQuickFillMode) {
+    // Before the first pick, use the highest rarity with a complete edition pool.
+    const counts = new Map<string, number>()
+    for (const item of visibleItems) {
+      const key = `${item.rarity}:${Boolean(item.statTrak)}`
+      counts.set(key, (counts.get(key) ?? 0) + 1)
+    }
+    const firstComplete = visibleItems.find((candidate) => (counts.get(`${candidate.rarity}:${Boolean(candidate.statTrak)}`) ?? 0) >= getTradeUpInputCount(candidate.rarity))
+    const pool = selected.length || activeRarity ? visibleItems : firstComplete ? visibleItems.filter((item) => item.rarity === firstComplete.rarity) : []
     const result = selectTradeUpQuickFill({
-      candidates: visibleItems,
-      capacity,
+      candidates: pool,
+      capacity: selected[0] ? capacity : activeRarity ? capacity : getTradeUpInputCount(pool[0]?.rarity),
       marketValues: state.marketValues,
       mode,
       selectedItems: selected,
@@ -181,7 +194,7 @@ export function TradeUps() {
   return <section className="trade-up-workbench w-full min-w-0 border border-cs-border bg-cs-surface p-3 sm:p-4" data-testid="trade-up-workbench">
     <header className="flex flex-col gap-3 border-l-4 border-rarity-restricted pl-3 lg:flex-row lg:items-end lg:justify-between">
       <div><p className="font-mono text-[10px] uppercase tracking-[.22em] text-rarity-restricted">Tactical contract desk</p><h1 className="mt-0.5 text-2xl font-semibold text-cs-text">Trade-Up Workbench</h1><p className="mt-1 max-w-3xl text-sm text-cs-muted">Commit eligible skins, inspect the honest odds, and accept the result. Profitability informs your choice—it never decides for you.</p></div>
-      <div className="flex max-w-4xl flex-wrap gap-1.5">{tradeableRarities.map((entry) => <button aria-pressed={rarity === entry} className={`min-h-9 border px-2.5 font-mono text-[9px] uppercase ${rarity === entry ? 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted' : 'border-cs-border text-cs-muted'}`} key={entry} onClick={() => changeRarity(entry)} type="button">{getRarityLabel(entry)} · {state.inventory.filter((item) => item.rarity === entry && isTradeUpEligibleItem(item)).length}</button>)}</div>
+      <div className="flex max-w-4xl flex-wrap gap-1.5"><button aria-pressed={rarity === 'all'} className={`min-h-9 border px-2.5 font-mono text-[9px] uppercase ${rarity === 'all' ? 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted' : 'border-cs-border text-cs-muted'}`} onClick={() => changeRarity('all')} type="button">All rarities</button>{descendingRarities.map((entry) => <button aria-pressed={rarity === entry} className={`min-h-9 border px-2.5 font-mono text-[9px] uppercase ${rarity === entry ? 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted' : 'border-cs-border text-cs-muted'}`} key={entry} onClick={() => changeRarity(entry)} type="button">{getRarityLabel(entry)} · {state.inventory.filter((item) => item.rarity === entry && isTradeUpEligibleItem(item)).length}</button>)}</div>
     </header>
 
     <div className="mt-3 grid min-w-0 gap-3 xl:grid-cols-[minmax(20rem,.68fr)_minmax(0,1.32fr)] xl:items-start" data-testid="trade-up-left-right-workspace">
@@ -189,7 +202,7 @@ export function TradeUps() {
         <section className="trade-up-contract-paper relative overflow-hidden border border-rarity-restricted/60 p-3 sm:p-4 xl:col-start-2 xl:row-start-1" data-testid="trade-up-contract-panel">
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,.025)_1px,transparent_1px)] [background-size:100%_1.75rem]" />
           <div className="relative flex flex-wrap items-start justify-between gap-3">
-            <div><div className="flex items-center gap-2"><Stamp className="text-rarity-restricted" size={20} /><div><p className="font-mono text-[9px] uppercase tracking-[.2em] text-rarity-restricted">Official exchange contract</p><h2 className="text-lg font-semibold text-cs-text">{getRarityLabel(rarity)} → {getRarityLabel(getNextTradeUpRarity(rarity)!)}</h2></div></div><p className="mt-1.5 text-xs text-cs-muted">Edition group: <strong className={analysis.editionGroup === 'mixed' ? 'text-rarity-covert' : 'text-cs-text'}>{contractEdition}</strong></p></div>
+            <div><div className="flex items-center gap-2"><Stamp className="text-rarity-restricted" size={20} /><div><p className="font-mono text-[9px] uppercase tracking-[.2em] text-rarity-restricted">Official exchange contract</p><h2 className="text-lg font-semibold text-cs-text">{activeRarity ? `${getRarityLabel(activeRarity)} → ${getRarityLabel(getNextTradeUpRarity(activeRarity)!)}` : 'Choose any eligible skin'}</h2></div></div><p className="mt-1.5 text-xs text-cs-muted">Edition group: <strong className={analysis.editionGroup === 'mixed' ? 'text-rarity-covert' : 'text-cs-text'}>{contractEdition}</strong></p></div>
             <div className="flex flex-wrap items-center justify-end gap-2"><span className="border border-cs-border bg-cs-surface/70 px-2.5 py-1.5 font-mono text-xs text-cs-text">{selected.length}/{capacity} signed</span><button className="inline-flex min-h-9 items-center gap-1.5 border border-cs-border px-2.5 text-xs text-cs-muted disabled:opacity-40" disabled={!selected.length} onClick={clearContract} type="button"><RotateCcw size={13} /> Clear</button><button aria-label="Review contract from header" className="inline-flex min-h-9 items-center gap-1.5 border border-rarity-restricted/60 bg-rarity-restricted/10 px-2.5 text-xs font-semibold text-rarity-restricted disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted" disabled={!analysis.canTradeUp} onClick={() => { setReviewing(true); setRiskAccepted(false) }} type="button">Review <ArrowRight size={13} /></button></div>
           </div>
           <div className={`content-card-grid relative mt-3 grid gap-2 ${capacity === 5 ? 'grid-cols-1 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-5'}`}>{Array.from({ length: capacity }, (_, index) => <ContractSlot index={index} item={selected[index]} key={index} onRemove={(id) => { setSelectedIds((current) => current.filter((entry) => entry !== id)); resetReview() }} />)}</div>
@@ -215,7 +228,7 @@ export function TradeUps() {
             <label className="flex min-h-10 items-center gap-2 border border-cs-border bg-cs-surface px-2 text-xs text-cs-muted"><input checked={showIneligible} onChange={(event) => setShowIneligible(event.target.checked)} type="checkbox" /> Protected/ineligible</label>
           </div>
           <details className="mt-2 border border-cs-border bg-cs-surface p-2"><summary className="flex cursor-pointer items-center gap-2 text-xs text-cs-muted"><SlidersHorizontal size={14} /> Float and price ranges <ChevronDown size={13} /></summary><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"><input aria-label="Minimum float" className="min-h-9 min-w-0 border border-cs-border bg-cs-panel px-2 text-xs text-cs-text" max="1" min="0" onChange={(event) => setMinimumFloat(event.target.value)} placeholder="Min float" step="0.001" type="number" value={minimumFloat} /><input aria-label="Maximum float" className="min-h-9 min-w-0 border border-cs-border bg-cs-panel px-2 text-xs text-cs-text" max="1" min="0" onChange={(event) => setMaximumFloat(event.target.value)} placeholder="Max float" step="0.001" type="number" value={maximumFloat} /><input aria-label="Minimum price" className="min-h-9 min-w-0 border border-cs-border bg-cs-panel px-2 text-xs text-cs-text" min="0" onChange={(event) => setMinimumPrice(event.target.value)} placeholder="Min price" type="number" value={minimumPrice} /><input aria-label="Maximum price" className="min-h-9 min-w-0 border border-cs-border bg-cs-panel px-2 text-xs text-cs-text" min="0" onChange={(event) => setMaximumPrice(event.target.value)} placeholder="Max price" type="number" value={maximumPrice} /></div></details>
-          <div className="mt-3 grid max-h-[min(58dvh,38rem)] gap-2 overflow-y-auto overscroll-contain pr-1 2xl:grid-cols-2">{visibleItems.map((item) => { const reason = getTradeUpCompatibilityReason(item, selected); return <InventoryChoice incompatibility={reason} item={item} key={item.instanceId} onToggle={() => toggle(item)} selected={selectedIds.includes(item.instanceId)} value={getCurrentItemMarketValue(item, state.marketValues)} /> })}{visibleItems.length === 0 ? <p className="col-span-full border border-cs-border bg-cs-surface p-6 text-center text-sm text-cs-muted">No items match these filters. Turn off “Compatible only” to inspect why other editions are unavailable.</p> : null}</div>
+          <div className="mt-3 max-h-[min(58dvh,38rem)] space-y-3 overflow-y-auto overscroll-contain pr-1">{visibleGroups.map((group) => <section data-testid="trade-up-rarity-group" key={group.rarity}><h3 className="mb-1.5 border-b border-cs-border pb-1 font-mono text-xs font-semibold uppercase text-cs-text">{getRarityLabel(group.rarity)} · {group.items.length}</h3><div className="grid gap-2 2xl:grid-cols-2">{group.items.map((item) => { const reason = getTradeUpCompatibilityReason(item, selected); return <InventoryChoice incompatibility={reason} item={item} key={item.instanceId} onToggle={() => toggle(item)} selected={selectedIds.includes(item.instanceId)} value={getCurrentItemMarketValue(item, state.marketValues)} /> })}</div></section>)}{visibleItems.length === 0 ? <p className="border border-cs-border bg-cs-surface p-6 text-center text-sm text-cs-muted">No items match these filters. Check your search and filters.</p> : null}</div>
         </section>
       </main>
 

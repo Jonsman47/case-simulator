@@ -973,6 +973,7 @@ function openCase(
       type: 'case_opening_started',
       caseId,
       quantity: actualQuantity,
+      cashCost: totalCost,
       createdAt: discoveredAt,
     },
     ...openedItems.map((item) => ({

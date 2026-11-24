@@ -356,7 +356,7 @@ export function CaseOpeningAnimation({
       : primaryItem.rarity === Rarity.Classified
         ? 'classified'
         : 'standard'
-  const keepsResultsOpen = isPremiumBatch || batchSize > 1
+  const keepsResultsOpen = isPremiumBatch && batchSize === 1
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
   const isRolling = rollStarted && (phase === 'spinning' || phase === 'quickReveal')
   const trackTransform = getTrackTransform(isRolling, layout)
@@ -382,10 +382,10 @@ export function CaseOpeningAnimation({
             closedRef.current = true
             onComplete(primaryItem)
           }
-        }, holdMs)
+        }, batchSize > 1 && isPremiumBatch ? Math.max(holdMs, 1_800) : holdMs)
       }
     },
-    [keepsResultsOpen, onComplete, primaryItem, revealTier, setPhase, soundEnabled],
+    [batchSize, isPremiumBatch, keepsResultsOpen, onComplete, primaryItem, revealTier, setPhase, soundEnabled],
   )
 
   const cancelRollFrames = useCallback(() => {
@@ -450,6 +450,13 @@ export function CaseOpeningAnimation({
   }, [cancelRollFrames, finishAnimation, quickDurationMs, revealAtMs, revealHoldMs, rollStartMs, soundEnabled, startReelRoll, startSkipped])
 
   function skipAnimation() {
+    if (batchSize > 1 && !closedRef.current) {
+      closedRef.current = true
+      completedRef.current = true
+      stopCaseOpeningAudio(audioRef.current)
+      onComplete(primaryItem)
+      return
+    }
     if (phase === 'revealed') {
       if (!closedRef.current) {
         closedRef.current = true

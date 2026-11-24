@@ -321,7 +321,7 @@ describe('WorkView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close Package Delivery' }))
 
     openJob('Warehouse Rush')
-    fireEvent.click(screen.getByRole('button', { name: 'Start conveyor' }))
+    expect(screen.getByText('Pick up the box or choose a bin to begin.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Sort into red dock/i })).toBeEnabled()
     fireEvent.click(screen.getByRole('button', { name: 'Close Warehouse Rush' }))
 

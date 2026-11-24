@@ -1,8 +1,14 @@
 # CS2 Case Opening Simulator — Project Status
 
-Updated: 2026-11-23
+Updated: 2026-11-24
 Application directory: `case-opening-simulator/`
 Current save schema: v42
+
+## Usability overhaul — Prompt 2 of 4
+
+The focused gameplay-friction changes are implemented locally: Trade-Ups opens with eligible rarities grouped high-to-low and current values high-to-low within each group, then narrows to authoritative contract compatibility after a selection. Warehouse Rush displays its first box immediately, starts on the first meaningful drag, tap, or number key, and uses one scoring path for mouse, touch, and keyboard. Diamond Miner has short mechanics-accurate instructions. Multi-case openings automatically enter the real result summary after their reveal, with a brief premium hold and session-only reload recovery tied to saved item IDs. Home, tutorial rules, feature unlocks, economy formulas, and save v42 remain unchanged. Details: `case-opening-simulator/docs/GAMEPLAY_FRICTION_FIXES.md`.
+
+Local TypeScript, lint, 93 Vitest files / 532 tests, build, release verification, and the Career plus six-playstyle early-game simulations passed. The complete Chrome suite passed **59/59** journeys, including mobile, Large Text, Light Mode, fresh tutorial, returning save, real Trade-Up, first Warehouse drag, and batch result recovery. GitHub CI verification is pending; Prompt 2 is **not yet marked complete**. Prompts 3 and 4 remain planned.
 
 ## Usability overhaul — Prompt 1 of 4
 

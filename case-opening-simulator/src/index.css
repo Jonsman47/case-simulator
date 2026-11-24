@@ -233,6 +233,11 @@ a {
 
 .work-package-arrival { animation: work-package-arrival 320ms ease-out both; }
 .work-conveyor > div:first-child { animation: work-conveyor-scroll 620ms linear infinite; }
+[data-warehouse-lane='red'] { border-color: #f87171; }
+[data-warehouse-lane='blue'] { border-color: #38bdf8; }
+[data-warehouse-lane='blue'] img { filter: hue-rotate(190deg); }
+[data-warehouse-lane='green'] { border-color: #4ade80; }
+[data-warehouse-lane='yellow'] { border-color: #facc15; }
 .work-trash-ready { animation: work-trash-ready 700ms ease-in-out infinite; }
 .employee-status-dot { animation: employee-status-pulse 1.6s ease-in-out infinite; }
 .employee-card { height: 100%; overflow: visible; transition: border-color 180ms ease, transform 180ms ease; }

@@ -441,6 +441,25 @@ describe('CaseOpeningAnimation', () => {
     expect(onComplete).toHaveBeenCalledWith(finalItem)
   }, 15_000)
 
+  it('automatically completes a multi-open after the real reveal, including a rare-drop hold', () => {
+    const rare = makeItem({ ...knifeSkin, instanceId: 'batch-rare' })
+    const onComplete = vi.fn()
+    render(<CaseOpeningAnimation finalItem={rare} finalItems={[rare, makeItem({ instanceId: 'batch-common' })]} onComplete={onComplete} potentialSkins={[{ skin: fillerSkin, weight: 100 }]} />)
+    act(() => { vi.advanceTimersByTime(6_000) })
+    expect(onComplete).not.toHaveBeenCalled()
+    act(() => { vi.advanceTimersByTime(4_000) })
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  }, 15_000)
+
+  it('skips a multi-open directly to summary without repeating completion', () => {
+    const drops = makeBatchItems(10)
+    const onComplete = vi.fn()
+    render(<CaseOpeningAnimation finalItem={drops[0]} finalItems={drops} onComplete={onComplete} potentialSkins={[{ skin: fillerSkin, weight: 100 }]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Skip opening animation' }))
+    act(() => { vi.advanceTimersByTime(20_000) })
+    expect(onComplete).toHaveBeenCalledTimes(1)
+  }, 15_000)
+
   it('uses suspense art for all Special Item targets until reveal completes', () => {
     const finalItem = makeItem({
       ...rareNonKnifeSkin,

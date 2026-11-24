@@ -1,6 +1,6 @@
 import type { SkinInstance } from '../data/models'
 import { getCurrentItemMarketValue } from './inventory'
-import { getTradeUpCompatibilityReason, isTradeUpEligibleItem } from './tradeUp'
+import { getTradeUpCompatibilityReason, getTradeUpInputCount, isTradeUpEligibleItem, tradeUpRarityOrder } from './tradeUp'
 
 export type TradeUpQuickFillMode = 'cheapest' | 'lowest-float' | 'random' | 'remaining'
 
@@ -57,20 +57,23 @@ export function selectTradeUpQuickFill({
   const remaining = Math.max(0, capacity - selected.length)
   if (remaining === 0) return { addedIds: [], itemIds: selected.map((item) => item.instanceId), message: 'The contract is already full.' }
 
-  const eligible = candidates.filter((item, index, items) => (
+  const seenIds = new Set<string>()
+  const eligible = candidates.filter((item) => (
     !selectedIds.has(item.instanceId)
-    && items.findIndex((candidate) => candidate.instanceId === item.instanceId) === index
+    && !seenIds.has(item.instanceId) && Boolean(seenIds.add(item.instanceId))
     && isTradeUpEligibleItem(item)
     && !getTradeUpCompatibilityReason(item, selected)
   ))
 
   let compatiblePool = eligible
   if (selected.length === 0) {
-    const groups = ['standard', 'stattrak'].map((group) => ({
-      group,
-      items: eligible.filter((item) => editionGroup(item) === group),
-    }))
-    const completeGroups = groups.filter((group) => group.items.length >= remaining)
+    const groups = [...tradeUpRarityOrder].reverse().flatMap((rarity) =>
+      ['standard', 'stattrak'].map((group) => ({
+        group,
+        items: eligible.filter((item) => item.rarity === rarity && editionGroup(item) === group),
+      })).filter((group) => group.items.length > 0),
+    )
+    const completeGroups = groups.filter((group) => group.items.length >= getTradeUpInputCount(group.items[0].rarity))
     if (completeGroups.length > 0) {
       if (mode === 'random') compatiblePool = completeGroups[Math.floor(random() * completeGroups.length)].items
       else if (mode === 'cheapest') compatiblePool = completeGroups.sort((left, right) => {
