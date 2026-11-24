@@ -4,7 +4,7 @@ Updated: 2026-11-24
 
 ## Usability overhaul — Prompt 3 of 4
 
-Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**
 
 - Simplified Quests to Current Quests, Collection Hunts, and Completed & Journal while retaining stable quest IDs, historical completion, tracking, and exact-once rewards. Character meetings, reputation, rival screens, and dialogue are retired from player-facing navigation.
 - Renamed the existing opening credit balance to Case Opening Funds in player-facing text and showed the existing bounded quote on case controls. No cash conversion or reward formula changed.
@@ -12,7 +12,7 @@ Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
 - Added 26 contextual glossary terms with hover, focus, tap, technical detail, and Help Center links. Help and tutorial references now explain standalone quests and opening funds.
 - Added a backward-compatible v43 migration with conservative historical baselines and no claim, inventory, cloud-lineage, or balance reset. Detailed notes: `case-opening-simulator/docs/QUEST_ACHIEVEMENT_AND_HELP_SIMPLIFICATION.md`.
 
-Local exit evidence: standalone TypeScript, lint, 94 Vitest files / **539 tests**, production/PWA build, release verification, Career and six-playstyle early-game simulations, and **62/62 Chromium journeys** passed. GitHub CI confirmation is pending. Prompt 4 remains planned for notification behavior, small animations, and final first-session testing.
+Exit evidence: standalone TypeScript, lint, 94 Vitest files / **539 tests**, production/PWA build, release verification, Career and six-playstyle early-game simulations, and **62/62 Chromium journeys** passed. GitHub [CI run 45436654721](https://github.com/Jonsman47/case-simulator/actions/runs/45436654721) passed for implementation commit `1f19728`, including 62 Linux browser journeys. Prompt 4 remains planned for notification behavior, small animations, and final first-session testing.
 
 ## Usability overhaul — Prompt 2 of 4
 
