@@ -334,6 +334,13 @@ export type GameUiEvent =
     }
   | {
       id: string
+      type: 'achievement_reward_claimed'
+      count: number
+      cash: number
+      createdAt: number
+    }
+  | {
+      id: string
       type: 'collection_reward_unlocked'
       reward: CollectionRewardProgress
       title: string
@@ -556,6 +563,7 @@ export type GameAction =
   | { type: 'REPLACE_GAME_STATE'; state: GameState }
   | { type: 'CLEAR_GAME_ERROR' }
   | { type: 'CLEAR_UI_EVENTS' }
+  | { type: 'DISMISS_UI_EVENT'; eventId: string }
   | { type: 'RESET_GAME' }
 
 export const defaultDropsByRarity: DropRarityCounts = {

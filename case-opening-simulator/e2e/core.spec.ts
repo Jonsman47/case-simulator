@@ -195,12 +195,14 @@ test('work jobs are usable and skill jobs claim only once', async ({ page }) => 
     await page.getByRole('button', { name: `${color} box` }).click()
     await page.getByRole('button', { name: `${color} container` }).click()
   }
-  await expect(page.getByText('Earned $20.00')).toBeVisible()
+  await expect(page.getByText('All four boxes sorted. +$20')).toBeVisible()
 
   await page.getByRole('button', { name: 'Close Sort Boxes' }).click()
   await page.getByRole('button', { name: 'Play Precision Strike' }).click()
   await page.getByRole('button', { name: 'Start Precision Strike' }).click()
   for (let attempt = 0; attempt < 5; attempt += 1) await page.getByRole('button', { name: 'Stop precision marker' }).click()
+  await expect(page.getByRole('dialog', { name: 'Precision Strike minigame' }).getByText(/Score \d+%/)).toBeVisible()
+  await page.getByRole('button', { name: 'Close Precision Strike' }).click()
   const precisionToast = page.getByRole('status').filter({ hasText: 'Precision Strike' })
   await expect(precisionToast.getByText(/Earned \$\d+\.\d{2}/)).toBeVisible()
   await page.waitForFunction((key) => {
@@ -306,7 +308,7 @@ test('Career XP, rank progress, and save reload remain consistent', async ({ pag
     await page.getByRole('button', { name: `${color} box` }).click()
     await page.getByRole('button', { name: `${color} container` }).click()
   }
-  await expect(page.getByText('Earned $20.00')).toBeVisible()
+  await expect(page.getByText('All four boxes sorted. +$20')).toBeVisible()
   await page.goto('/career')
   const earnedXp = (await readSave(page)).state.career.currentRunXp
   expect(earnedXp).toBeGreaterThan(0)

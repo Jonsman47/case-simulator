@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid'
 import { Link } from 'react-router-dom'
-import { cloneElement, useMemo, useState, type ReactElement } from 'react'
+import { cloneElement, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import {
   BadgeDollarSign,
   BellRing,
@@ -102,6 +102,16 @@ export function Business() {
   const [watchEdition, setWatchEdition] = useState('any')
   const [editingWatchId, setEditingWatchId] = useState<string>()
   const [now] = useState(() => Date.now())
+  const latestOperationId = state.business.recentOperations[0]?.id
+  const previousOperationId = useRef(latestOperationId)
+  const [highlightedOperationId, setHighlightedOperationId] = useState<string>()
+  useEffect(() => {
+    if (!latestOperationId || latestOperationId === previousOperationId.current) return
+    previousOperationId.current = latestOperationId
+    setHighlightedOperationId(latestOperationId)
+    const timer = window.setTimeout(() => setHighlightedOperationId(undefined), 1_200)
+    return () => window.clearTimeout(timer)
+  }, [latestOperationId])
   const activeCount = getActiveEmployeeCount(state.business)
   const capacity = getOperatingCapacity(state.business) + getCareerOperatingCapacityBonus(state.careerUpgrades)
   const reserved = getBusinessReservedFunds(state.business)
@@ -196,7 +206,7 @@ export function Business() {
 
           <section className="border border-cs-border bg-cs-surface p-4 sm:p-6">
             <div className="flex items-center gap-2"><ReceiptText className="text-cs-green" size={20} /><h2 className="text-xl font-semibold text-cs-text">Recent operations</h2></div>
-            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[42rem] text-left text-sm"><thead className="font-mono text-[10px] uppercase text-cs-muted"><tr><th className="p-2">Time</th><th className="p-2">Employee</th><th className="p-2">Result</th><th className="p-2">Revenue</th><th className="p-2">Expense</th><th className="p-2">Realized</th></tr></thead><tbody>{state.business.recentOperations.slice(0, 20).map((operation) => <tr className="border-t border-cs-border" key={operation.id}><td className="p-2 text-cs-muted">{new Date(operation.timestamp).toLocaleString()}</td><td className="p-2 text-cs-text">{EMPLOYEE_ROLE_DEFINITIONS[operation.employeeRole].name}</td><td className="p-2 text-cs-text">{operation.description}</td><td className="p-2 text-cs-green">{formatCurrency(operation.revenue)}</td><td className="p-2 text-rarity-covert">{formatCurrency(operation.expense)}</td><td className="p-2 text-cs-text">{formatCurrency(operation.realizedProfit)}</td></tr>)}</tbody></table></div>
+            <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[42rem] text-left text-sm"><thead className="font-mono text-[10px] uppercase text-cs-muted"><tr><th className="p-2">Time</th><th className="p-2">Employee</th><th className="p-2">Result</th><th className="p-2">Revenue</th><th className="p-2">Expense</th><th className="p-2">Realized</th></tr></thead><tbody>{state.business.recentOperations.slice(0, 20).map((operation) => <tr className={`border-t border-cs-border transition-colors duration-300 motion-reduce:transition-none ${highlightedOperationId === operation.id ? 'bg-cs-green/10' : ''}`} key={operation.id}><td className="p-2 text-cs-muted">{new Date(operation.timestamp).toLocaleString()}</td><td className="p-2 text-cs-text">{EMPLOYEE_ROLE_DEFINITIONS[operation.employeeRole].name}</td><td className="p-2 text-cs-text">{operation.description}</td><td className="p-2 text-cs-green">{formatCurrency(operation.revenue)}</td><td className="p-2 text-rarity-covert">{formatCurrency(operation.expense)}</td><td className="p-2 text-cs-text">{formatCurrency(operation.realizedProfit)}</td></tr>)}</tbody></table></div>
             {state.business.recentOperations.length === 0 ? <EmptyState text="Completed, paid operations appear here. Idle scans and failed checks never create fake revenue." /> : null}
           </section>
         </div>

@@ -101,6 +101,7 @@ function getCardRowHeight(width: number, largeText: boolean) {
 
 interface GridCellProps {
   tutorialItemId?: string
+  recentItemIds: Set<string>
   bulkSelectMode: boolean
   columnCount: number
   duplicateSkinIds: Set<string>
@@ -126,6 +127,7 @@ function InventoryGridCell({
   rowIndex,
   selectedIds,
   tutorialItemId,
+  recentItemIds,
   style,
 }: GridCellProps & {
   ariaAttributes: {
@@ -151,6 +153,7 @@ function InventoryGridCell({
           index={itemIndex}
           isDuplicateSkin={duplicateSkinIds.has(item.id)}
           isSelected={selectedIds.has(item.instanceId)}
+          isRecent={recentItemIds.has(item.instanceId)}
           item={item}
           onOpen={onOpenItem}
           onToggleFavorite={onToggleFavorite}
@@ -174,6 +177,20 @@ export function InventoryView() {
     toggleItemLock,
     updateInventoryViewState,
   } = useGame()
+  const [recentItemIds, setRecentItemIds] = useState(() => {
+    try {
+      const key = 'inventory:shown-acquisitions'
+      const seen = new Set<string>(JSON.parse(sessionStorage.getItem(key) ?? '[]') as string[])
+      const recent = state.lastOpenedItems.filter((item) => state.inventory.some((owned) => owned.instanceId === item.instanceId) && Date.now() - item.discoveredAt < 30_000 && !seen.has(item.instanceId)).map((item) => item.instanceId)
+      sessionStorage.setItem(key, JSON.stringify([...seen, ...recent].slice(-100)))
+      return new Set(recent)
+    } catch { return new Set<string>() }
+  })
+  useEffect(() => {
+    if (!recentItemIds.size) return
+    const timer = window.setTimeout(() => setRecentItemIds(new Set()), 2_000)
+    return () => window.clearTimeout(timer)
+  }, [recentItemIds])
   const [bulkSelectMode, setBulkSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | undefined>(undefined)
@@ -265,6 +282,7 @@ export function InventoryView() {
       onToggleSelect: handleToggleSelect,
       selectedIds,
       tutorialItemId: state.ui.onboarding.openedItemId,
+      recentItemIds,
     }),
     [
       columnCount,
@@ -274,6 +292,7 @@ export function InventoryView() {
       selectionModeActive,
       selectedIds,
       state.ui.onboarding.openedItemId,
+      recentItemIds,
       toggleItemFavorite,
       toggleItemLock,
     ],

@@ -2,6 +2,17 @@
 
 Updated: 2026-11-24
 
+## Usability overhaul — Prompt 4 of 4
+
+Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+
+- Fixed per-ID toast dismissal, bounded three-visible noncritical presentation, independent timeouts, deduplication, and persistent critical failures; claimable badges remain tied to reward state.
+- Coordinated toasts, feature introductions, tutorial spotlights, opening and Trade-Up reveals, and Work dialogs. Added restrained cash, XP, quest, achievement-claim, acquired-item, and employee-operation feedback with reduced-motion support.
+- Audited a real first-session path and 320 px Large Text/Light Mode layout, fixed the toast overflow, and prepared a manual 30-minute player script. Detailed findings: `case-opening-simulator/docs/FINAL_UX_POLISH_AND_FIRST_SESSION_AUDIT.md`.
+- Kept save schema v43 and all gameplay and economy authorities unchanged.
+
+Local verification passed: 548 unit tests, 65/65 Playwright journeys, TypeScript, lint, build, release, Career, and early-game simulations. Remote GitHub CI remains before marking the four-part overhaul complete.
+
 ## Usability overhaul — Prompt 3 of 4
 
 Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**

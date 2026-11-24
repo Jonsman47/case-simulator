@@ -115,6 +115,9 @@ export function UiEffects() {
   const [celebration, setCelebration] = useState<CelebrationState | undefined>()
   const [prestige, setPrestige] = useState<PrestigeState | undefined>()
   const motionEnabled = state.settings.animationsEnabled && !state.settings.simplifiedAnimations
+  const onboarding = state.ui.onboarding
+  const tutorialOpen = (!onboarding.isDismissed || onboarding.isReviewing) && !onboarding.isPaused
+  const presentationBlocked = tutorialOpen || Boolean(document.querySelector('[role="dialog"]'))
 
   const showCelebration = useCallback((nextCelebration: CelebrationState) => {
     setCelebration(nextCelebration)
@@ -171,6 +174,7 @@ export function UiEffects() {
       return
     }
 
+    let fanfarePlayed = false
     newEvents.forEach((event) => {
       seenEventIdsRef.current.add(event.id)
 
@@ -199,11 +203,13 @@ export function UiEffects() {
       }
 
       if (event.type === 'achievement_unlocked') {
-        play('achievementFanfare', { hapticMs: 28, volume: 0.9 })
+        if (!fanfarePlayed) play('achievementFanfare', { hapticMs: 28, volume: 0.9 })
+        fanfarePlayed = true
       }
 
       if (event.type === 'collection_reward_unlocked' || event.type === 'daily_challenge_claimed') {
-        play('achievementFanfare', { hapticMs: 18, volume: 0.7 })
+        if (!fanfarePlayed) play('achievementFanfare', { hapticMs: 18, volume: 0.7 })
+        fanfarePlayed = true
       }
 
       if (event.type === 'daily_reward_claimed' || event.type === 'daily_challenge_rerolled') {
@@ -233,6 +239,9 @@ export function UiEffects() {
         showCelebration(nextCelebration)
       }
     })
+    if (seenEventIdsRef.current.size > 500) {
+      seenEventIdsRef.current = new Set([...seenEventIdsRef.current].slice(-250))
+    }
   }, [play, showCelebration, showPrestige, state.uiEvents])
 
   useEffect(() => {
@@ -249,7 +258,7 @@ export function UiEffects() {
 
   return (
     <>
-      {celebration ? (
+      {celebration && !presentationBlocked ? (
         <div
           aria-live="polite"
           className={[

@@ -42,6 +42,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
   index,
   isDuplicateSkin,
   isSelected,
+  isRecent = false,
   item,
   onOpen,
   onToggleFavorite,
@@ -52,6 +53,7 @@ export const InventoryItemCard = memo(function InventoryItemCard({
   index: number
   isDuplicateSkin: boolean
   isSelected: boolean
+  isRecent?: boolean
   item: SkinInstance
   onOpen: (item: SkinInstance) => void
   onToggleFavorite: (itemId: string) => void
@@ -138,7 +140,9 @@ export const InventoryItemCard = memo(function InventoryItemCard({
         styles.border,
         isDuplicateSkin ? 'shadow-glow' : '',
         isSelected ? 'ring-2 ring-rarity-special' : '',
+        isRecent && !isSelected ? 'ring-2 ring-cs-green' : '',
       ].join(' ')}
+      data-recent-acquisition={isRecent ? 'true' : undefined}
       onContextMenu={handleContextMenu}
       onClick={handleCardClick}
       onKeyDown={(event) => {

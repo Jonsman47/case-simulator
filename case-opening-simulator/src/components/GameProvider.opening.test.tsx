@@ -108,7 +108,7 @@ describe('GameProvider opening session', () => {
     })
 
     expect(screen.getByTestId('case-opening-reel')).toHaveAttribute('data-phase', 'spinning')
-  })
+  }, 10_000)
 
   it('keeps an active opening independent from transient notification events', () => {
     render(

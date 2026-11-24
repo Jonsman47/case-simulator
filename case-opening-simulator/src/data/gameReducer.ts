@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid'
+import { getToastPriority } from '../notifications/toastPolicy'
 import { awardQuestCareerXp, getCareerLevelFromXp, recordCareerAction, startNextCareerRun } from '../career/careerProgress'
 import {
   careerUpgradesById,
@@ -239,7 +240,18 @@ function getAutomationSaleValue(state: GameState, item: SkinInstance) {
 }
 
 function appendEvents(state: GameState, events: GameUiEvent[]) {
-  return [...events, ...state.uiEvents].slice(0, UI_EVENTS_LIMIT)
+  const seen = new Set<string>()
+  const unique = [...events, ...state.uiEvents].filter((event) => {
+    const identity = event.type === 'case_opening_failed' || event.type === 'item_sale_failed' || event.type === 'trade_up_failed'
+      ? `${event.type}:${event.message}`
+      : `${event.type}:${event.id}`
+    if (seen.has(identity)) return false
+    seen.add(identity)
+    return true
+  })
+  const critical = unique.filter((event) => getToastPriority(event) === 'critical')
+  let ordinarySlots = Math.max(0, UI_EVENTS_LIMIT - critical.length)
+  return unique.filter((event) => getToastPriority(event) === 'critical' || ordinarySlots-- > 0)
 }
 
 function uniqueById<T extends { id: string }>(items: T[]) {
@@ -2887,6 +2899,7 @@ function claimAchievementReward(
   return {
     ...state,
     money: roundCurrency(clampNumber(state.money) + (reward.money ?? 0) + convertedLegacyCash),
+    uiEvents: appendEvents(state, [{ id: `achievement-claim:${achievementId}:${progress.runId ?? 'lifetime'}`, type: 'achievement_reward_claimed', count: 1, cash: roundCurrency((reward.money ?? 0) + convertedLegacyCash), createdAt: now }]),
     achievements: state.achievements.map((entry) => {
       if (entry !== progress) {
         return entry
@@ -2926,6 +2939,7 @@ function claimAllAchievementRewards(state: GameState, now = Date.now()): GameSta
   return {
     ...state,
     money: roundCurrency(clampNumber(state.money) + totals.money),
+    uiEvents: appendEvents(state, [{ id: `achievement-claim-all:${now}`, type: 'achievement_reward_claimed', count: claimableKeys.size, cash: roundCurrency(totals.money), createdAt: now }]),
     achievements: state.achievements.map((entry) => claimableKeys.has(`${entry.id}:${entry.runId ?? 'lifetime'}`)
       ? { ...entry, isClaimed: true, unlockedAt: entry.unlockedAt || now }
       : entry),
@@ -3921,6 +3935,11 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return {
         ...state,
         uiEvents: [],
+      }
+    case 'DISMISS_UI_EVENT':
+      return {
+        ...state,
+        uiEvents: state.uiEvents.filter((event) => event.id !== action.eventId),
       }
     case 'RESET_GAME':
       return defaultGameState

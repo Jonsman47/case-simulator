@@ -1,6 +1,6 @@
 import { Award, BookOpenCheck, Check, ChevronRight, Clock3, Compass, Gift, PackageOpen, ScrollText, Star } from 'lucide-react'
 import { nanoid } from 'nanoid'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { GlossaryTerm } from '../components/GlossaryTerm'
@@ -19,6 +19,23 @@ type QuestTab = 'current' | 'hunts' | 'completed'
 
 function rewardLabel(reward: QuestDefinition['stages'][number]['reward']) {
   return [reward.careerXp ? `${reward.careerXp} Career XP` : '', reward.openingCredits ? `${formatCurrency(reward.openingCredits)} toward opening cases` : '', reward.money ? `${formatCurrency(reward.money)} cash` : '', reward.title ?? reward.decoration ?? ''].filter(Boolean).join(' · ')
+}
+
+function QuestRequirementProgress({ label, current, target }: { label: string; current: number; target: number }) {
+  const previous = useRef(current)
+  const [changed, setChanged] = useState(false)
+  useEffect(() => {
+    if (current === previous.current) return
+    previous.current = current
+    setChanged(true)
+    const timer = window.setTimeout(() => setChanged(false), 700)
+    return () => window.clearTimeout(timer)
+  }, [current])
+  const complete = current >= target
+  return <div>
+    <div className="flex justify-between gap-3 text-xs text-cs-muted"><span>{label}</span><span className={changed || complete ? 'font-semibold text-cs-green' : ''}>{Math.min(current, target)}/{target}</span></div>
+    <div className="mt-1 h-1.5 overflow-hidden bg-cs-surface"><div className={`h-full transition-[width,background-color] duration-300 motion-reduce:transition-none ${complete ? 'bg-cs-green' : 'bg-rarity-classified'}`} style={{ width: `${Math.min(100, current / target * 100)}%` }} /></div>
+  </div>
 }
 
 function QuestCard({ quest }: { quest: QuestDefinition }) {
@@ -45,10 +62,7 @@ function QuestCard({ quest }: { quest: QuestDefinition }) {
         <p className="text-sm font-semibold text-cs-text">Stage {progress.stageIndex + 1}/{quest.stages.length}: {stage.title}</p>
         <p className="mt-1 text-xs leading-5 text-cs-muted">{stage.description}</p>
       </div>
-      <div className="mt-3 space-y-2">{status.requirements.map((requirement) => <div key={requirement.label}>
-        <div className="flex justify-between gap-3 text-xs text-cs-muted"><span>{requirement.label}</span><span>{Math.min(requirement.current, requirement.target)}/{requirement.target}</span></div>
-        <div className="mt-1 h-1.5 overflow-hidden bg-cs-surface"><div className="h-full bg-rarity-classified" style={{ width: `${Math.min(100, requirement.current / requirement.target * 100)}%` }} /></div>
-      </div>)}</div>
+      <div className="mt-3 space-y-2">{status.requirements.map((requirement) => <QuestRequirementProgress key={requirement.label} label={requirement.label} current={requirement.current} target={requirement.target} />)}</div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-3">
         <p className="flex min-w-0 items-center gap-2 text-xs text-cs-muted"><Gift aria-hidden="true" size={15} /><span>{rewardLabel(stage.reward)}</span></p>
         {stage.requirements.some((requirement) => requirement.type === 'deliver_item') && !progress.deliveredStageIds.includes(stage.id) ? <button className="min-h-10 border border-cs-amber px-3 text-sm font-semibold text-cs-amber hover:bg-cs-amber/10" disabled={!eligibleItems.length} onClick={() => setShowItems((value) => !value)} type="button">{eligibleItems.length ? `Choose item (${eligibleItems.length})` : 'No eligible item'}</button> : <button className="min-h-10 border border-cs-green px-3 text-sm font-semibold text-cs-green hover:bg-cs-green/10 disabled:cursor-not-allowed disabled:border-cs-border disabled:text-cs-muted" disabled={!status.complete} onClick={() => dispatch({ type: 'CLAIM_QUEST_STAGE', questId: quest.id, requestId: `quest:${quest.id}:${stage.id}:${nanoid()}`, now: Date.now() })} type="button">Claim stage</button>}

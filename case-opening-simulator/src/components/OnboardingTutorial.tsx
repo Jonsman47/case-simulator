@@ -134,7 +134,7 @@ export function OnboardingTutorial() {
   }, [])
 
   useEffect(() => {
-    if (open || activeUnlock || !nextUnpresented || state.marketplace.pendingAcquisition || document.querySelector('[aria-label="Case opening animation"]')) return
+    if (open || activeUnlock || !nextUnpresented || state.marketplace.pendingAcquisition || document.querySelector('[role="dialog"]')) return
     const timer = window.setTimeout(() => {
       setActiveUnlock(nextUnpresented)
       dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { presentedIds: [...(featureUnlocks.presentedIds ?? []), nextUnpresented] } })
@@ -180,7 +180,7 @@ export function OnboardingTutorial() {
     </>
   }
 
-  if (state.marketplace.pendingAcquisition || document.querySelector('[aria-label="Case opening animation"]')) return null
+  if (state.marketplace.pendingAcquisition || document.querySelector('[role="dialog"]')) return null
   const labels: Record<string, string> = { 'collection-book': 'Collection Book', quests: 'Quests', market: 'Market Price Checker', cswear: 'CSWEAR', 'trade-ups': 'Trade-Ups', business: 'Business', prestige: 'Prestige' }
   const paths: Record<string, string> = { 'collection-book': '/collection-book', quests: '/quests', market: '/market', cswear: '/cswear', 'trade-ups': '/trade-ups', business: '/business', prestige: '/prestige' }
   const unlockDescriptions: Record<string, string> = { 'collection-book': 'Your first skin discovery is recorded. Explore what you have found.', quests: 'Your first opening has started a real goal with a claimable reward.', market: 'Your first sale opened the price checker.', cswear: 'Your Career progress opened simulated skin trading.', 'trade-ups': 'You have enough compatible skins to combine ten into a higher-rarity result.', business: 'Career level 15 opens your first employee roles.', prestige: 'Your Career path is eligible for a Prestige review.' }

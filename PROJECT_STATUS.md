@@ -4,6 +4,12 @@ Updated: 2026-11-24
 Application directory: `case-opening-simulator/`
 Current save schema: v43
 
+## Usability overhaul — Prompt 4 of 4
+
+Notification dismissal now removes one event ID instead of clearing the queue. Three noncritical toasts show at once; routine messages expire after 4 seconds, progression after 8 seconds, and action failures wait for dismissal. Toasts and feature introductions defer around the tutorial, reveals, and other dialogs. The header, quest cards, Inventory, achievement claims, and Business operations now show compact committed-state feedback. The 320 px Large Text audit fixed a toast width overflow caused by viewport scrollbar sizing. A structured first-session browser path and a manual 30-minute player script are documented in `case-opening-simulator/docs/FINAL_UX_POLISH_AND_FIRST_SESSION_AUDIT.md`. Save schema stays v43 and gameplay formulas are unchanged.
+
+Local verification passed: standalone TypeScript, ESLint, 97 Vitest files / **548 tests**, production/PWA build, release validation with all 2,134 CS2 assets, **65/65 Chromium journeys**, and the Career plus six-playstyle early-game simulations. GitHub CI remains pending; the four-part overhaul will be marked complete after the remote gate passes.
+
 ## Usability overhaul — Prompt 3 of 4
 
 The player-facing Quests page now has Current Quests, Collection Hunts, and Completed & Journal tabs. Character meetings, portraits, reputation, rival scores, and dialogue are retired from the interface while all 36 stable quest IDs, saved stages, claims, rewards, and historical fields remain compatible. Two NPC-dependent requirements now use genuine discoveries or Trade-Ups. Case Opening Funds is the plain display name for the existing bounded opening credits, and opening controls show the quoted cash payment. The 151-definition achievement catalog was audited (129 active, 22 retired); sales milestones now count actual net item-sale proceeds, not Work or quest income. A 26-term contextual glossary connects gameplay controls to the existing Help Center. The backward-compatible v43 migration starts conservative sale and lifetime archives without changing claims or economic balances. Details: `case-opening-simulator/docs/QUEST_ACHIEVEMENT_AND_HELP_SIMPLIFICATION.md`.
