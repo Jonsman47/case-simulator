@@ -15,6 +15,7 @@ import { useGame } from '../hooks/useGame'
 import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import { useSearchParams } from 'react-router-dom'
 import { getOpeningCreditQuote } from '../rewards/dailyRewards'
+import { GlossaryTerm } from '../components/GlossaryTerm'
 import {
   canOpenCaseFromSelection,
   filterCases,
@@ -698,6 +699,7 @@ export function CaseSelectionView() {
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="border-l-4 border-rarity-special pl-4">
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Cases</h2>
+          <p className="mt-2 flex flex-wrap gap-3 text-xs text-cs-muted"><GlossaryTerm term="caseOdds" /><GlossaryTerm term="rarity" /><GlossaryTerm term="openingFunds" /></p>
           <p className="mt-2 font-mono text-xs uppercase text-cs-muted">
             {casesWithDisplayData.length} listed / {caseDefinitions.length} total
           </p>

@@ -24,6 +24,12 @@ function item(overrides: Partial<SkinInstance> = {}): SkinInstance {
 }
 
 describe('quest and NPC progression', () => {
+  it('keeps every active quest independent of retired character progress', () => {
+    const requirements = QUEST_DEFINITIONS.flatMap((quest) => quest.stages.flatMap((stage) => stage.requirements))
+    expect(requirements.every((requirement) => requirement.type !== 'npc_reputation' && requirement.type !== 'rival_discoveries')).toBe(true)
+    expect(QUEST_DEFINITIONS.find((quest) => quest.id === 'story-rooks-race')?.name).toBe('Current Run Discovery Challenge')
+    expect(QUEST_DEFINITIONS.find((quest) => quest.id === 'contract-kades-results')?.stages[1]?.requirements).toEqual([{ type: 'trade_ups', target: 5 }])
+  })
   it('ships 36 distinct quests and eight recurring NPCs', () => {
     expect(QUEST_DEFINITIONS).toHaveLength(36)
     expect(new Set(QUEST_DEFINITIONS.map((quest) => quest.id)).size).toBe(36)

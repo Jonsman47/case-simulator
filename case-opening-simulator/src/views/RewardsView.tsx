@@ -30,7 +30,7 @@ function formatCountdown(ms: number) {
 }
 
 function formatDailyReward(reward: DailyRewardDefinition) {
-  const creditText = reward.openingCredits ? ` + ${formatCurrency(reward.openingCredits)} opening credit` : ''
+  const creditText = reward.openingCredits ? ` + ${formatCurrency(reward.openingCredits)} toward opening cases` : ''
   if (reward.kind === DailyRewardKind.Money) {
     return `${formatCurrency(reward.money ?? 0)}${creditText}`
   }
@@ -51,7 +51,7 @@ function formatChallengeReward(challenge: DailyChallenge) {
 
   return [
     reward.money ? formatCurrency(reward.money) : undefined,
-    reward.openingCredits ? `${formatCurrency(reward.openingCredits)} opening credit` : undefined,
+    reward.openingCredits ? `${formatCurrency(reward.openingCredits)} toward opening cases` : undefined,
     reward.caseDiscountPercent ? `${Math.round(reward.caseDiscountPercent * 100)}% case discount` : undefined,
   ]
     .filter(Boolean)
@@ -136,7 +136,7 @@ export function RewardsView() {
         <div className="grid gap-2 border border-cs-border bg-cs-panel p-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryPill label="Streak" value={`${state.dailyRewards.streak} day${state.dailyRewards.streak === 1 ? '' : 's'}`} />
           <SummaryPill label="Reset" value={formatCountdown(nextResetAt - now)} />
-          <SummaryPill label="Opening credit" value={formatCurrency(state.dailyRewards.openingCredits)} />
+          <SummaryPill label="Case Opening Funds" value={formatCurrency(state.dailyRewards.openingCredits)} />
           <SummaryPill label="Rerolls" value={`${rerollsRemaining}/${DAILY_FREE_REROLLS}`} />
         </div>
       </div>
@@ -185,11 +185,11 @@ export function RewardsView() {
           <div className="mt-4 border border-cs-green/60 bg-cs-green/10 p-3 text-sm text-cs-muted">
             <div className="flex items-center gap-2 font-semibold text-cs-green">
               <Ticket size={16} />
-              Case funding
+              Case Opening Funds
             </div>
             <p className="mt-1">
-              Opening credit covers up to 35% of eligible cases costing $5 or less. It cannot be sold,
-              transferred, used for licenses, or spent by automation.
+              Extra money that helps pay for opening cases. It cannot buy skins or other items.
+              Eligible cases cost $5 or less; funds cover at most 35%, capped at $1.25 per case.
             </p>
           </div>
 

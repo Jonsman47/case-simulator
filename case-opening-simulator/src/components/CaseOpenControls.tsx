@@ -52,6 +52,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
   // be used directly; progression continues to control the 10+ batch ceiling.
   const openQuantities = [1, 2, 3, 5, ...batchQuantities]
   const effectiveLastQuantity = openQuantities.includes(lastQuantity) ? lastQuantity : 1
+  const selectedQuote = getOpeningCreditQuote(caseDef.cost, openingCredits, effectiveLastQuantity)
 
   return (
     <div>
@@ -63,6 +64,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
 
           return (
             <button
+              aria-label={`Open ${quantity}`}
               aria-pressed={effectiveLastQuantity === quantity}
               className={`inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap border px-3 py-2 text-sm font-semibold transition hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special active:translate-y-0 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60 disabled:hover:translate-y-0 ${effectiveLastQuantity === quantity ? 'border-rarity-special bg-rarity-special/25 text-rarity-special shadow-glow' : 'border-rarity-special bg-rarity-special/10 text-rarity-special hover:bg-rarity-special/20'}`}
               disabled={disabled}
@@ -70,7 +72,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
               onClick={() => { setLastQuantity(quantity); onOpen(quantity, { skipAnimations: quantity >= 10 && skipAnimations }) }}
               title={
                 quote.creditUsed > 0
-                  ? `${formatCurrency(quote.cashCost)} cash + ${formatCurrency(quote.creditUsed)} opening credit`
+                  ? `${formatCurrency(quote.cashCost)} cash + ${formatCurrency(quote.creditUsed)} Case Opening Funds`
                   : disabled && (canOpen || requiresLicense)
                     ? `Need ${formatCurrency(quote.cashCost)}`
                     : undefined
@@ -78,7 +80,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
               type="button"
             >
               {disabled || requiresLicense ? <Lock className="shrink-0" size={16} /> : <PackageOpen className="shrink-0" size={16} />}
-              Open {quantity}
+              <span className="min-w-0">Open {quantity}<span className="block text-[10px] font-normal">{formatCurrency(quote.cashCost)} cash</span></span>
             </button>
           )
         })}
@@ -113,12 +115,12 @@ export const CaseOpenControls = memo(function CaseOpenControls({
           </p>
         )}
       </div>
-      {openingCredits > 0 ? (
-        <div className="mt-3 inline-flex items-center gap-2 border border-cs-green/60 bg-cs-green/10 px-3 py-2 text-xs text-cs-green">
-          <Ticket size={14} />
-          {formatCurrency(openingCredits)} opening credit available for eligible cases
-        </div>
-      ) : null}
+      <div className="mt-3 border border-cs-border bg-cs-panel p-3 text-xs text-cs-muted" aria-label="Opening payment breakdown">
+        <p>Open {effectiveLastQuantity} cost: <strong className="text-cs-text">{formatCurrency(selectedQuote.fullCost)}</strong></p>
+        {selectedQuote.creditUsed > 0 ? <p className="mt-1 flex items-center gap-1"><Ticket size={13} /> Case Opening Funds used: −{formatCurrency(selectedQuote.creditUsed)}</p> : null}
+        <p className="mt-1">Cash you pay: <strong className="text-cs-text">{formatCurrency(selectedQuote.cashCost)}</strong> · Wallet: {formatCurrency(money)}</p>
+        {openingCredits > 0 ? <p className="mt-1">Case Opening Funds: {formatCurrency(openingCredits)}. Extra money for eligible case openings only; it cannot buy skins or other items. <span title="Eligible cases cost at most $5. Funds cover up to 35% of each opening, capped at $1.25 per case.">Usage limits ⓘ</span></p> : null}
+      </div>
     </div>
   )
 })

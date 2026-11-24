@@ -5,6 +5,7 @@ import {
   getAchievementScope,
   getNewAchievementUnlocks,
   getObtainableWearVariantCount,
+  toAchievementPlayerState,
 } from './achievements'
 import { SKIN_DEFINITIONS } from './skins'
 import { defaultGameState } from './gameState'
@@ -19,6 +20,33 @@ describe('achievement catalog', () => {
     expect(ACHIEVEMENTS.length).toBeGreaterThanOrEqual(80)
     expect(achievementIds.size).toBe(ACHIEVEMENTS.length)
     expect(hiddenAchievements.length).toBeGreaterThanOrEqual(5)
+  })
+
+  it('defines measurable progress for every active achievement', () => {
+    const active = ACHIEVEMENTS.filter((achievement) => !achievement.isRetired)
+    expect(active).toHaveLength(129)
+    expect(active.every((achievement) => achievement.getProgress && achievement.target && achievement.target > 0)).toBe(true)
+  })
+
+  it('does not unlock sale-revenue milestones from unrelated income', () => {
+    const sale = ACHIEVEMENTS.find((achievement) => achievement.id === 'money_earned_100')!
+    const workOnly = { ...defaultGameState, statistics: { ...defaultGameState.statistics, moneyEarned: 200, itemSaleRevenue: 0 } }
+    expect(sale.condition(toAchievementPlayerState(workOnly))).toBe(false)
+    expect(sale.getProgress?.(toAchievementPlayerState(workOnly))).toBe(0)
+    const sold = { ...workOnly, statistics: { ...workOnly.statistics, itemSaleRevenue: 100 } }
+    expect(sale.condition(toAchievementPlayerState(sold))).toBe(true)
+    expect(sale.getProgress?.(toAchievementPlayerState(sold))).toBe(100)
+  })
+
+  it('combines archived and current run counts for permanent milestones', () => {
+    const state = {
+      ...defaultGameState,
+      achievementLifetime: { ...defaultGameState.achievementLifetime, casesOpened: 90, tradeUpsCompleted: 4 },
+      statistics: { ...defaultGameState.statistics, casesOpened: 10, tradeUpsCompleted: 1 },
+    }
+    const unlocks = getNewAchievementUnlocks(state, 123)
+    expect(unlocks.progress.map((entry) => entry.id)).toContain('cases_opened_100')
+    expect(unlocks.progress.map((entry) => entry.id)).toContain('trade_ups_5')
   })
 
   it('uses the six integrated categories and explicit bounded run challenges', () => {

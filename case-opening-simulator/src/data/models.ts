@@ -567,6 +567,7 @@ export interface PlayerState {
     casesOpened: number
     moneySpent: number
     moneyEarned: number
+    itemSaleRevenue: number
     itemsSold: number
     tradeUpsCompleted: number
     drops: number
@@ -580,6 +581,7 @@ export interface PlayerState {
     marketSales: number
     dropsByRarity: Record<Rarity, number>
   }
+  achievementLifetime?: import('./gameState').AchievementLifetimeCounters
     career?: import('../career/careerProgress').CareerState
   lastBackupAt: number
   lastSaved: number

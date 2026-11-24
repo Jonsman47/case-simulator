@@ -145,6 +145,14 @@ function getLedgerValue(
   return state.economyLedger?.[scope]?.[key] ?? 0
 }
 
+function getLifetimeCount(state: PlayerState, key: 'casesOpened' | 'moneySpent' | 'tradeUpsCompleted' | 'auctionPurchases') {
+  return (state.achievementLifetime?.[key] ?? 0) + state.statistics[key]
+}
+
+function getLifetimeRarityDrops(state: PlayerState, rarity: Rarity) {
+  return (state.achievementLifetime?.dropsByRarity[rarity] ?? 0) + (state.statistics.dropsByRarity[rarity] ?? 0)
+}
+
 function getMarketplaceNegotiationCount(state: PlayerState) {
   return state.marketplace?.transactions.filter((transaction) => (
     transaction.type === 'negotiated-purchase' || transaction.type === 'negotiated-sale'
@@ -211,7 +219,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     name: 'First Crack',
     description: 'Open your first case.',
     category: 'Opening',
-    condition: (state) => state.statistics.casesOpened >= 1,
+    condition: (state) => getLifetimeCount(state, 'casesOpened') >= 1,
     reward: { money: 10 },
   },
   {
@@ -219,7 +227,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     name: 'Case Regular',
     description: 'Open 100 cases.',
     category: 'Opening',
-    condition: (state) => state.statistics.casesOpened >= 100,
+    condition: (state) => getLifetimeCount(state, 'casesOpened') >= 100,
     reward: { upgradePoints: 1, skillPoints: 1 },
   },
   {
@@ -227,7 +235,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     name: 'Unbox Machine',
     description: 'Open 10,000 cases.',
     category: 'Opening',
-    condition: (state) => state.statistics.casesOpened >= 10_000,
+    condition: (state) => getLifetimeCount(state, 'casesOpened') >= 10_000,
     reward: { upgradePoints: 5, badge: 'Unbox Machine' },
   },
   {
@@ -280,7 +288,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
   {
     id: 'first_100_value_item',
     name: 'Triple Digits',
-    description: 'Find an item worth at least $100.',
+    description: 'Acquire an item estimated at $100 or more, including a market purchase.',
     category: 'Inventory',
     condition: (state) => hasItemValueAtLeast(state, 100),
     reward: { money: 100 },
@@ -314,7 +322,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     name: 'Contract Signed',
     description: 'Complete your first trade-up contract.',
     category: 'Trade Ups',
-    condition: (state) => state.statistics.tradeUpsCompleted >= 1,
+    condition: (state) => getLifetimeCount(state, 'tradeUpsCompleted') >= 1,
     reward: { money: 50 },
   },
   {
@@ -376,7 +384,7 @@ const BASE_ACHIEVEMENTS: Achievement[] = [
     name: 'Deal Closed',
     description: 'Purchase your first simulated Auction House offer.',
     category: 'Automation',
-    condition: (state) => state.statistics.auctionPurchases >= 1,
+    condition: (state) => getLifetimeCount(state, 'auctionPurchases') >= 1,
     reward: { money: 50 },
   },
   {
@@ -456,7 +464,9 @@ const openingAchievementMilestones: Achievement[] = openingMilestones.map((targe
   name: `${formatMilestone(target)} Cases`,
   description: `Open ${target.toLocaleString()} cases.`,
   category: 'Opening',
-  condition: (state) => state.statistics.casesOpened >= target,
+  condition: (state) => getLifetimeCount(state, 'casesOpened') >= target,
+  getProgress: (state) => getLifetimeCount(state, 'casesOpened'),
+  target,
   reward: target >= 25_000
     ? { upgradePoints: 4, skillPoints: 3, badge: `${formatMilestone(target)} Cases` }
     : target >= 1_000
@@ -467,18 +477,22 @@ const openingAchievementMilestones: Achievement[] = openingMilestones.map((targe
 const spendingAchievements: Achievement[] = moneySpentMilestones.map((target) => ({
   id: `money_spent_${target}`,
   name: `${formatMilestone(target)} Spent`,
-  description: `Spend ${target.toLocaleString()} dollars on cases, licenses, upgrades, and automation.`,
+  description: `Spend $${target.toLocaleString()} cash on tracked openings, purchases, upgrades, and Business costs. Case Opening Funds do not count.`,
   category: 'Progression',
-  condition: (state) => state.statistics.moneySpent >= target,
+  condition: (state) => getLifetimeCount(state, 'moneySpent') >= target,
+  getProgress: (state) => getLifetimeCount(state, 'moneySpent'),
+  target,
   reward: target >= 1_000_000 ? { skillPoints: 2, badge: `${formatMilestone(target)} Spent` } : { money: Math.min(5_000, target * 0.01) },
 }))
 
 const earningAchievements: Achievement[] = moneyEarnedMilestones.map((target) => ({
   id: `money_earned_${target}`,
-  name: `${formatMilestone(target)} Earned`,
-  description: `Earn ${target.toLocaleString()} dollars from selling items.`,
+  name: `${formatMilestone(target)} in Sales`,
+  description: `Receive $${target.toLocaleString()} from item sales, after any marketplace fees. Work and quest cash do not count.`,
   category: 'Progression',
-  condition: (state) => state.statistics.moneyEarned >= target,
+  condition: (state) => state.statistics.itemSaleRevenue >= target,
+  getProgress: (state) => state.statistics.itemSaleRevenue,
+  target,
   reward: target >= 1_000_000 ? { upgradePoints: 4, badge: `${formatMilestone(target)} Earned` } : { upgradePoints: target >= 10_000 ? 1 : undefined, money: Math.min(2_500, target * 0.02) },
 }))
 
@@ -488,6 +502,8 @@ const inventoryAchievements: Achievement[] = inventoryValueMilestones.map((targe
   description: `Reach ${target.toLocaleString()} dollars in inventory value.`,
   category: 'Inventory',
   condition: (state) => state.inventoryValue >= target,
+  getProgress: (state) => state.inventoryValue,
+  target,
   reward: target >= 1_000_000 ? { upgradePoints: 5, skillPoints: 2, badge: `${formatMilestone(target)} Vault` } : { upgradePoints: 2 },
 }))
 
@@ -501,6 +517,8 @@ const rarityDiscoveryAchievements: Achievement[] = Object.values(Rarity).flatMap
       description: `Discover a ${label} item.`,
       category: 'Drops',
       condition: (state) => hasDiscoveredRarity(state, rarity),
+      getProgress: (state) => hasDiscoveredRarity(state, rarity) ? 1 : 0,
+      target: 1,
       reward: rarity === Rarity.SpecialItem || rarity === Rarity.Contraband
         ? { skillPoints: 1, badge: `First ${label}` }
         : { money: 25 },
@@ -511,6 +529,11 @@ const rarityDiscoveryAchievements: Achievement[] = Object.values(Rarity).flatMap
       description: `Discover every catalog ${label} item.`,
       category: 'Collection',
       condition: (state) => hasDiscoveredEverySkinOfRarity(state, rarity),
+      getProgress: (state) => {
+        const discovered = new Set(state.collectionBook.map((entry) => entry.skinId))
+        return SKIN_DEFINITIONS.filter((skin) => skin.rarity === rarity && discovered.has(skin.id)).length
+      },
+      target: SKIN_DEFINITIONS.filter((skin) => skin.rarity === rarity).length,
       reward: { upgradePoints: 2, skillPoints: rarity === Rarity.Covert || rarity === Rarity.SpecialItem ? 2 : 1 },
     },
   ] satisfies Achievement[]
@@ -530,7 +553,9 @@ const rarityDropCountAchievements: Achievement[] = [
     name: `${formatMilestone(target)} ${label} Drops`,
     description: `Pull ${target.toLocaleString()} ${label} items.`,
     category: 'Drops',
-    condition: (state) => (state.statistics.dropsByRarity[rarity] ?? 0) >= target,
+    condition: (state) => getLifetimeRarityDrops(state, rarity) >= target,
+    getProgress: (state) => getLifetimeRarityDrops(state, rarity),
+    target,
     reward: target >= 1_000 ? { skillPoints: 2, badge: `${label} Grinder` } : { upgradePoints: 1 },
   }))
 })
@@ -540,7 +565,9 @@ const tradeUpAchievements: Achievement[] = tradeUpMilestones.map((target) => ({
   name: `${formatMilestone(target)} Contracts`,
   description: `Complete ${target.toLocaleString()} trade-up contracts.`,
   category: 'Trade Ups',
-  condition: (state) => state.statistics.tradeUpsCompleted >= target,
+  condition: (state) => getLifetimeCount(state, 'tradeUpsCompleted') >= target,
+  getProgress: (state) => getLifetimeCount(state, 'tradeUpsCompleted'),
+  target,
   reward: target >= 500 ? { skillPoints: 2, badge: `${formatMilestone(target)} Contracts` } : { money: Math.min(2_500, target * 8) },
 }))
 
@@ -583,6 +610,8 @@ const prestigeAchievements: Achievement[] = prestigeMilestones.map((target) => (
   description: `Reach prestige level ${target}.`,
   category: 'Progression',
   condition: target <= 5 ? (state) => state.prestigeLevel >= target : () => false,
+  getProgress: (state) => state.prestigeLevel,
+  target,
   isRetired: target > 5,
   getBlockedReason: target > 5
     ? () => 'The legacy unbounded Prestige ladder was replaced by five typed tiers.'
@@ -596,6 +625,8 @@ const collectionPercentAchievements: Achievement[] = collectionMilestones.map((r
   description: `Discover ${Math.round(ratio * 100)}% of the catalog.`,
   category: 'Collection',
   condition: (state) => getCollectionCompletionRatio(state) >= ratio,
+  getProgress: (state) => new Set(state.collectionBook.map((entry) => entry.skinId)).size,
+  target: Math.ceil(SKIN_DEFINITIONS.length * ratio),
   reward: ratio >= 0.75 ? { skillPoints: 2, badge: `${Math.round(ratio * 100)}% Collection` } : { upgradePoints: 1 },
 }))
 
@@ -633,7 +664,9 @@ const hiddenAchievements: Achievement[] = [
     description: 'Recover from a broke run after opening cases.',
     category: 'Progression',
     isHidden: true,
-    condition: (state) => state.money >= 5 && state.statistics.casesOpened > 0 && state.statistics.moneySpent > 0,
+    condition: () => false,
+    isRetired: true,
+    getBlockedReason: () => 'Historical broke-run recovery could not be verified; completed records remain preserved.',
     reward: { money: 25, badge: 'Back From Zero' },
   },
   {
@@ -722,7 +755,7 @@ const careerIntegrationAchievements: Achievement[] = [
   {
     id: 'trade_up_profitable_lifetime',
     name: 'Contract Edge',
-    description: 'Achieve positive realized Trade-Up output value over consumed input value.',
+    description: 'Reach positive total estimated Trade-Up output value above consumed input value. Selling the output is not required.',
     category: 'Trade Ups',
     displayCategory: 'Trade-Ups',
     condition: (state) => getLedgerValue(state, 'lifetime', 'tradeUpOutputValue') > getLedgerValue(state, 'lifetime', 'tradeUpInputValue'),
@@ -948,9 +981,27 @@ const generatedAchievements = [
   ...careerIntegrationAchievements,
 ]
 
+const baseProgressTargets: Record<string, { target: number; getProgress: (state: PlayerState) => number }> = {
+  first_case_opened: { target: 1, getProgress: (state) => getLifetimeCount(state, 'casesOpened') },
+  cases_opened_100: { target: 100, getProgress: (state) => getLifetimeCount(state, 'casesOpened') },
+  cases_opened_10000: { target: 10_000, getProgress: (state) => getLifetimeCount(state, 'casesOpened') },
+  inventory_value_1k: { target: 1_000, getProgress: (state) => state.inventoryValue },
+  inventory_value_100k: { target: 100_000, getProgress: (state) => state.inventoryValue },
+  inventory_value_1m: { target: 1_000_000, getProgress: (state) => state.inventoryValue },
+  first_trade_up: { target: 1, getProgress: (state) => getLifetimeCount(state, 'tradeUpsCompleted') },
+  first_prestige: { target: 1, getProgress: (state) => state.prestigeLevel },
+  prestige_five: { target: 5, getProgress: (state) => state.prestigeLevel },
+  collection_catalog_complete: { target: SKIN_DEFINITIONS.length, getProgress: (state) => getUniqueLifetimeDiscoveries(state) },
+  auction_first_purchase: { target: 1, getProgress: (state) => getLifetimeCount(state, 'auctionPurchases') },
+}
+
 export const ACHIEVEMENTS: Achievement[] = Array.from(
   new Map([...BASE_ACHIEVEMENTS, ...generatedAchievements].map((achievement) => [achievement.id, achievement])).values(),
-)
+).map((achievement) => {
+  if (achievement.isRetired || achievement.getProgress) return achievement
+  const progress = baseProgressTargets[achievement.id]
+  return { ...achievement, target: progress?.target ?? 1, getProgress: progress?.getProgress ?? ((state) => achievement.condition(state) ? 1 : 0) }
+})
 
 export const achievementsById = new Map(ACHIEVEMENTS.map((achievement) => [achievement.id, achievement]))
 
@@ -1005,6 +1056,7 @@ export function toAchievementPlayerState(state: GameState): PlayerState {
     upcomingEvents: state.upcomingEvents,
     eventHistory: state.eventHistory,
     statistics: state.statistics,
+    achievementLifetime: state.achievementLifetime,
     lastBackupAt: state.lastBackupAt,
     lastSaved: state.lastSaved,
   }

@@ -38,6 +38,7 @@ export type QuestRequirement =
   | { type: 'deliver_item'; target: 1; weapon?: string; rarity?: Rarity; wear?: WearCondition; minimumValue?: number }
   | { type: 'npc_reputation'; target: number; npcId: string }
   | { type: 'rival_discoveries'; target: number }
+  | { type: 'distinct_cases'; target: number }
   | { type: 'weekly_manual_cases'; target: number }
   | { type: 'weekly_work_jobs'; target: number }
   | { type: 'weekly_market_sales'; target: number }
@@ -145,7 +146,7 @@ export const QUEST_NPCS: QuestNpcDefinition[] = [
 const reward = (careerXp: number, openingCredits = 0, money = 0, reputation = 1): QuestReward => ({ careerXp, openingCredits, money, reputation })
 const stage = (id: string, title: string, description: string, dialogue: string, requirements: QuestRequirement[], stageReward: QuestReward): QuestStageDefinition => ({ id, title, description, dialogue, requirements, reward: stageReward })
 
-export const QUEST_DEFINITIONS: QuestDefinition[] = [
+const legacyQuestDefinitions: QuestDefinition[] = [
   { id: 'story-first-crack', name: 'The First Crack', description: 'Mara introduces cases, discoveries, and keeping a collection record.', issuerId: 'mara-voss', category: 'story', scope: 'lifetime', relatedCaseIds: ['crate-4904'], stages: [stage('open-one', 'Open the first case', 'Open one case manually.', 'One honest roll. No promises—just see what the case holds.', [{ type: 'manual_cases', target: 1 }], reward(45, 1.5)), stage('find-three', 'Start a shelf', 'Discover three unique finishes.', 'Sold or kept, a genuine discovery still belongs in your record.', [{ type: 'discoveries', target: 3 }], reward(70, 1.5)), stage('wear-study', 'Notice the wear', 'Record three wear discoveries.', 'Finish names repeat. Wear tells you which copy you actually found.', [{ type: 'wear_discoveries', target: 3 }], { ...reward(90, 2), title: 'Mara’s First Shelf' })] },
   { id: 'story-curators-path', name: 'The Curator’s Path', description: 'Eli asks for breadth across weapon families and quality tiers.', issuerId: 'eli-mercer', category: 'story', scope: 'lifetime', minimumLevel: 3, prerequisiteQuestIds: ['story-first-crack'], stages: [stage('rifles', 'Rifle beginnings', 'Discover three rifle finishes.', 'A collection needs an anchor. Rifles will do.', [{ type: 'discover_weapon', weapon: 'AK-47', target: 1 }, { type: 'discover_weapon', weapon: 'M4', target: 1 }], reward(100, 1)), stage('pink', 'A classified page', 'Discover a Classified finish.', 'Pink is uncommon enough to remember, common enough to pursue honestly.', [{ type: 'discover_rarity', rarity: Rarity.Classified, target: 1 }], reward(130, 1.5)), stage('ten', 'Ten distinct records', 'Reach ten unique finish discoveries.', 'Ten entries: the beginning of a real catalog.', [{ type: 'discoveries', target: 10 }], { ...reward(160, 2), decoration: 'Curator Shelf' })] },
   { id: 'story-rooks-race', name: 'Rook’s Opening Race', description: 'A bounded collection contest against a simulated rival.', issuerId: 'rook-vega', category: 'story', scope: 'currentRun', minimumLevel: 5, stages: [stage('meet-rook', 'Answer the challenge', 'Complete three manual opening sessions.', 'I log my progress too. The rules are visible, and neither of us gets better odds.', [{ type: 'manual_sessions', target: 3 }], reward(90, 1)), stage('race-five', 'Five discoveries ahead', 'Reach five Current Run discoveries and stay ahead of Rook.', 'No timers. Your five records against my bounded score.', [{ type: 'rival_discoveries', target: 5 }], reward(125, 1.5)), stage('race-twelve', 'Win the shelf', 'Reach twelve Current Run discoveries and stay ahead of Rook.', 'A proper win is a record, not a rigged roll.', [{ type: 'rival_discoveries', target: 12 }], { ...reward(180, 2), title: 'Rook’s Rival' })] },
@@ -187,6 +188,42 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
   { id: 'weekly-active-shift', name: 'Weekly Active Shift', description: 'Mix Work and opening instead of waiting passively.', issuerId: 'mara-voss', category: 'repeatable', scope: 'lifetime', repeatable: 'weekly', stages: [stage('weekly', 'Work and open', 'Complete two Work jobs and open three cases this week.', 'Both activities use their authoritative completion records.', [{ type: 'weekly_work_jobs', target: 2 }, { type: 'weekly_manual_cases', target: 3 }], reward(90, 1, 2, 1))] },
   { id: 'weekly-broker-notes', name: 'Weekly Broker Notes', description: 'Settle a sale or make new discoveries this week.', issuerId: 'sana-bell', category: 'repeatable', scope: 'lifetime', repeatable: 'weekly', minimumLevel: 6, stages: [stage('weekly', 'Market and collection', 'Complete one market sale and record two new discoveries this week.', 'Only settled sales and new collection entries count.', [{ type: 'weekly_market_sales', target: 1 }, { type: 'weekly_discoveries', target: 2 }], reward(110, .5, 3, 1))] },
 ]
+
+// Keep IDs, stage IDs and rewards stable so older saves retain claims and completion.
+// The issuer field is historical metadata only; no new character progression uses it.
+const standaloneQuestCopy: Record<string, { name?: string; description?: string }> = {
+  'story-first-crack': { description: 'Open cases and start a permanent discovery record.' },
+  'story-curators-path': { description: 'Discover skins across weapon families and rarity tiers.' },
+  'story-rooks-race': { name: 'Current Run Discovery Challenge', description: 'Open in separate sessions and build your Current Run collection.' },
+  'story-pattern-language': { description: 'Record real openings and discover how Patterns are classified.' },
+  'story-contract-science': { description: 'Complete genuine Trade-Ups and study the results.' },
+  'story-broker-code': { description: 'Complete settled CSWEAR sales and build a trading record.' },
+  'story-case-chronicle': { description: 'Open different official weapon cases.' },
+  'story-gilded-circle': { description: 'Build difficult lifetime opening records at your own pace.' },
+  'contract-maras-sidearm': { name: 'Sidearm Delivery', description: 'Deliver one eligible sidearm from Inventory.' },
+  'contract-mercers-rifle': { name: 'Rifle Delivery', description: 'Deliver one eligible rifle from Inventory.' },
+  'contract-iris-sample': { name: 'Classified Sample', description: 'Own, then deliver an eligible Classified-or-better item.' },
+  'contract-kades-results': { name: 'Trade-Up Result Set', description: 'Complete and record five genuine Trade-Ups.' },
+  'contract-sanas-ledger': { name: 'Settled Sales Ledger', description: 'Complete three genuine CSWEAR player sales.' },
+}
+
+export const QUEST_DEFINITIONS: QuestDefinition[] = legacyQuestDefinitions.map((quest) => ({
+  ...quest,
+  ...standaloneQuestCopy[quest.id],
+  stages: quest.stages.map((entry) => {
+    if (quest.id === 'story-curators-path' && entry.id === 'rifles') return { ...entry, description: 'Discover one AK-47 skin and one M4 skin.' }
+    if (quest.id === 'story-case-chronicle' && entry.id === 'variety') return { ...entry, requirements: [{ type: 'distinct_cases', target: 5 }] }
+    if (quest.id === 'story-rooks-race' && entry.id === 'meet-rook') return { ...entry, title: 'Open in three sessions' }
+    if (quest.id === 'story-rooks-race' && entry.id === 'race-five') return { ...entry, title: 'Five discoveries this run', description: 'Record five different Current Run skins.', requirements: [{ type: 'discoveries', target: 5 }] }
+    if (quest.id === 'story-rooks-race' && entry.id === 'race-twelve') return { ...entry, title: 'Twelve discoveries this run', description: 'Record twelve different Current Run skins.', requirements: [{ type: 'discoveries', target: 12 }], reward: { ...entry.reward, title: 'Run Collector' } }
+    if (quest.id === 'contract-maras-sidearm' && entry.id === 'deliver') return { ...entry, description: 'Deliver one eligible unlocked sidearm from Inventory.' }
+    if (quest.id === 'contract-kades-results' && entry.id === 'reputation') return { ...entry, title: 'Five completed contracts', description: 'Complete five Trade-Ups in total.', requirements: [{ type: 'trade_ups', target: 5 }] }
+    if (quest.id === 'contract-iris-sample' && entry.id === 'deliver') return { ...entry, description: 'Deliver one eligible unlocked item; it leaves Inventory once.' }
+    if (quest.id === 'story-first-crack' && entry.id === 'wear-study') return { ...entry, reward: { ...entry.reward, title: 'First Shelf' } }
+    if (quest.id === 'story-broker-code' && entry.id === 'five-sales') return { ...entry, reward: { ...entry.reward, title: 'Trusted Broker' } }
+    return entry
+  }),
+}))
 
 export const questsById = new Map(QUEST_DEFINITIONS.map((quest) => [quest.id, quest]))
 export const questNpcsById = new Map(QUEST_NPCS.map((npc) => [npc.id, npc]))
@@ -308,6 +345,7 @@ function requirementProgress(state: GameState, definition: QuestDefinition, requ
       return { current, target, label: requirement.caseIds ? 'Eligible cases opened' : definition.id.includes('tour') ? 'Different cases opened' : 'Manual cases opened' }
     }
     case 'manual_sessions': return { current: scopedSessions, target, label: 'Distinct opening sessions' }
+    case 'distinct_cases': return { current: Object.values(scopedCases).filter((count) => count > 0).length, target, label: 'Different case types opened' }
     case 'discoveries': return { current: collection.length, target, label: definition.scope === 'currentRun' ? 'Current Run discoveries' : 'Unique discoveries' }
     case 'discover_weapon': return { current: collection.filter((entry) => { const skin = skinsById.get(entry.skinId); return skin ? weaponMatches(skin.weapon, requirement.weapon) : false }).length, target, label: `${requirement.weapon} discoveries` }
     case 'discover_rarity': return { current: collection.filter((entry) => skinsById.get(entry.skinId)?.rarity === requirement.rarity).length, target, label: `${requirement.rarity} discoveries` }
@@ -351,7 +389,7 @@ export function recordQuestActivity(before: GameState, after: GameState, action:
   const work = Math.max(0, after.statistics.workJobsCompleted - before.statistics.workJobsCompleted)
   const sales = Math.max(0, after.statistics.marketSales - before.statistics.marketSales)
   if (opened === 0 && discoveries === 0 && work === 0 && sales === 0) return after.quests
-  let quests = syncQuestSystemTime(after.quests, now)
+  const quests = syncQuestSystemTime(after.quests, now)
   const activity = { ...quests.activity, caseOpenCounts: { ...quests.activity.caseOpenCounts }, runCaseOpenCounts: { ...quests.activity.runCaseOpenCounts } }
   if (action.type === 'OPEN_CASE' && opened > 0) {
     activity.manualCases += opened; activity.runManualCases += opened; activity.weeklyManualCases += opened
@@ -366,15 +404,12 @@ export function recordQuestActivity(before: GameState, after: GameState, action:
   activity.weeklyDiscoveries += discoveries
   activity.weeklyWorkJobs += work
   activity.weeklyMarketSales += sales
-  const rook = quests.npc['rook-vega'] ?? createNpcState()
-  const rivalScore = Math.min(80, Math.floor((activity.runManualCases + after.statistics.marketSales * 2) / 5))
-  if (rivalScore !== rook.rivalScore) quests = { ...quests, npc: { ...quests.npc, 'rook-vega': { ...rook, rivalScore } } }
   return { ...quests, activity }
 }
 
 export function resetQuestsForPrestige(state: QuestSystemState, now: number): QuestSystemState {
   const progress = Object.fromEntries(Object.entries(state.progress).filter(([id]) => questsById.get(id)?.scope === 'lifetime'))
-  return { ...syncQuestSystemTime(state, now), progress, trackedQuestIds: state.trackedQuestIds.filter((id) => questsById.get(id)?.scope === 'lifetime'), activity: { ...state.activity, runCaseOpenCounts: {}, runManualCases: 0, runManualSessions: 0 }, npc: { ...state.npc, 'rook-vega': { ...(state.npc['rook-vega'] ?? createNpcState()), rivalScore: 0 } } }
+  return { ...syncQuestSystemTime(state, now), progress, trackedQuestIds: state.trackedQuestIds.filter((id) => questsById.get(id)?.scope === 'lifetime'), activity: { ...state.activity, runCaseOpenCounts: {}, runManualCases: 0, runManualSessions: 0 } }
 }
 
 export function getEligibleDeliveryItems(state: GameState, definition: QuestDefinition) {

@@ -734,6 +734,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.money).toBe(234.31)
     expect(nextState.inventory).toHaveLength(0)
     expect(nextState.statistics.moneyEarned).toBe(184.31)
+    expect(nextState.statistics.itemSaleRevenue).toBe(184.31)
     expect(nextState.statistics.itemsSold).toBe(1)
     expect(nextState.collectionBook[0]?.timesFound).toBe(2)
     expect(findUiEvent(nextState, 'item_sold')).toMatchObject({
@@ -1469,6 +1470,9 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.automation).toEqual(defaultGameState.automation)
     expect(nextState.collectionBook).toHaveLength(1)
     expect(nextState.prestigeLevel).toBe(1)
+    expect(nextState.achievementLifetime.casesOpened).toBe(25_000)
+    expect(nextState.achievementLifetime.moneySpent).toBe(250_000)
+    expect(nextState.statistics.casesOpened).toBe(0)
     expect(nextState.prestigePoints).toBeGreaterThanOrEqual(4)
     expect(nextState.skillPoints).toBe(1)
     expect(nextState.upgradePoints).toBe(0)
@@ -2044,6 +2048,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(nextState.money).toBe(10)
     expect(nextState.lastPoopCleaningAt).toBe(1_782_216_000_000)
     expect(nextState.statistics.moneyEarned).toBe(10)
+    expect(nextState.statistics.itemSaleRevenue).toBe(0)
     expect(findUiEvent(nextState, 'minigame_completed')).toMatchObject({
       name: 'Poop Cleaning',
       reward: 10,

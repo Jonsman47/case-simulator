@@ -49,6 +49,7 @@ import {
 } from '../utils/offlineProgress'
 import { applyCollectionRewardsToCases } from '../utils/collectionRewards'
 import { applyPrestigeEffectsToCases } from '../data/prestige'
+import { applyUpgradeEffectsToCases } from '../data/upgrades'
 import { getCareerOpeningAnimationSpeedBonus } from '../career/careerUpgrades'
 import { getExternalSkinMarketValues, HAS_EXTERNAL_SKIN_PRICES } from '../data/skinPrices'
 import { applyDailyRewardsToCases } from '../rewards/dailyRewards'
@@ -169,8 +170,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
       SKIN_DEFINITIONS,
       getGameEventCollectionRewardMultiplier(state.activeEvents),
     )
+    const upgradedCases = applyUpgradeEffectsToCases(rewardedCases, state.upgrades, skinDefinitionsById)
     const prestigeCases = applyPrestigeEffectsToCases(
-      rewardedCases,
+      upgradedCases,
       state.prestigeBonuses,
       skinDefinitionsById,
     )
@@ -188,6 +190,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     state.activeEvents,
     state.dailyRewards,
     state.prestigeBonuses,
+    state.upgrades,
     state.prestigeLevel,
     state.statistics.casesOpened,
   ])

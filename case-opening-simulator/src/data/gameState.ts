@@ -125,6 +125,7 @@ export interface GameStatistics {
   casesOpened: number
   moneySpent: number
   moneyEarned: number
+  itemSaleRevenue: number
   itemsSold: number
   marketPurchases: number
   marketSales: number
@@ -136,6 +137,14 @@ export interface GameStatistics {
   workJobsCompleted: number
   bestPrecisionScore: number
   bestMemoryScore: number
+  dropsByRarity: DropRarityCounts
+}
+
+export interface AchievementLifetimeCounters {
+  casesOpened: number
+  moneySpent: number
+  tradeUpsCompleted: number
+  auctionPurchases: number
   dropsByRarity: DropRarityCounts
 }
 
@@ -444,6 +453,7 @@ export interface GameState {
   lastMarketTick: number
   lastEventTick: number
   statistics: GameStatistics
+  achievementLifetime: AchievementLifetimeCounters
   economyLedger: EconomyLedgerState
   career: CareerState
   careerUpgrades: CareerUpgradeState
@@ -607,6 +617,7 @@ export const defaultGameState: GameState = {
     casesOpened: 0,
     moneySpent: 0,
     moneyEarned: 0,
+    itemSaleRevenue: 0,
     itemsSold: 0,
     marketPurchases: 0,
     marketSales: 0,
@@ -620,6 +631,7 @@ export const defaultGameState: GameState = {
     bestMemoryScore: 0,
     dropsByRarity: defaultDropsByRarity,
   },
+  achievementLifetime: { casesOpened: 0, moneySpent: 0, tradeUpsCompleted: 0, auctionPurchases: 0, dropsByRarity: { ...defaultDropsByRarity } },
   economyLedger: createEconomyLedger({ now: 0, runId: 'initial-run' }),
   career: createCareerState({ now: 0, runId: 'initial-run' }),
   careerUpgrades: createDefaultCareerUpgradeState(0),

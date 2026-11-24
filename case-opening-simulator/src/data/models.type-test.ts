@@ -212,6 +212,7 @@ export const examplePlayerState: PlayerState = {
     casesOpened: 12,
     moneySpent: 30,
     moneyEarned: 7.5,
+    itemSaleRevenue: 0,
     itemsSold: 1,
     tradeUpsCompleted: 0,
     drops: 12,

@@ -4,6 +4,10 @@ const saveKey = 'case-opening-simulator:game-state'
 
 async function dismissTutorial(page: Page) {
   const skip = page.getByRole('button', { name: 'Skip beginner tutorial' })
+  await expect.poll(async () => {
+    const dismissed = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.onboarding?.isDismissed === true, saveKey)
+    return dismissed || await skip.isVisible().catch(() => false)
+  }).toBe(true)
   if (await skip.isVisible().catch(() => false)) await skip.click()
   await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.onboarding?.isDismissed === true, saveKey)
   const needsRegressionAccess = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.ui?.featureUnlocks?.unlockedIds?.length !== 7, saveKey)
@@ -150,10 +154,12 @@ test('opening advances a tracked story quest and the exact-once reward survives 
   const reloaded = await readSave(page)
   expect(reloaded.state.dailyRewards.openingCredits).toBe(claimed.state.dailyRewards.openingCredits)
 
-  await page.getByRole('button', { name: 'Characters' }).click()
-  const maraCard = page.locator('article').filter({ hasText: 'Mara Voss' })
-  await maraCard.getByRole('button', { name: 'Meet character' }).click()
-  await expect(maraCard.getByRole('button', { name: 'Revisit introduction' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Quest sections' }).getByRole('button')).toHaveCount(3)
+  await expect(page.getByRole('button', { name: 'Characters' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Collection Hunts' }).click()
+  await expect(page.getByTestId('quest-hunt-sidearm-sampler')).toBeVisible()
+  await page.getByRole('button', { name: 'Current Quests' }).click()
+  await expect(page.getByTestId('quest-story-first-crack')).toContainText('Stage 2/3')
 })
 
 test('deterministic Gold fixture is skippable and creates a permanent journal record', async ({ page }) => {
@@ -541,11 +547,87 @@ test('quest notification derives from a completed stage and clears after claimin
   await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: save })
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.getByRole('link', { name: /^Cases/ }).hover()
-  await expect(page.getByRole('status', { name: 'Quests & Characters, 1 notification' })).toHaveText('1')
+  await expect(page.getByRole('status', { name: 'Quests & Collection Hunts, 1 notification' })).toHaveText('1')
   await page.goto('/quests')
   await page.getByRole('button', { name: 'Claim stage' }).first().click()
   await page.getByRole('link', { name: /^Cases/ }).hover()
-  await expect(page.getByRole('status', { name: /Quests & Characters/ })).toHaveCount(0)
+  await expect(page.getByRole('status', { name: /Quests & Collection Hunts/ })).toHaveCount(0)
+})
+
+test('standalone quests keep progress and exact-once rewards on a legacy character save', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const save = await readSave(page)
+  save.version = 42
+  save.state.quests.npc['rook-vega'].rivalScore = 99
+  save.state.quests.activity.manualCases = 1
+  await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: save })
+  await page.goto('/quests?tab=characters')
+  await expect(page.getByRole('heading', { name: 'Quests & Collection Hunts' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Quest sections' }).getByRole('button')).toHaveCount(3)
+  await expect(page.getByRole('button', { name: /Meet Character/ })).toHaveCount(0)
+  const before = await readSave(page)
+  await page.getByTestId('quest-story-first-crack').getByRole('button', { name: 'Claim stage' }).click()
+  await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.quests?.progress?.['story-first-crack']?.stageIndex === 1, saveKey)
+  const claimed = await readSave(page)
+  expect(claimed.version).toBe(43)
+  expect(claimed.state.quests.npc['rook-vega'].rivalScore).toBe(99)
+  expect(claimed.state.dailyRewards.openingCredits - before.state.dailyRewards.openingCredits).toBe(1.5)
+  await page.getByRole('button', { name: 'Collection Hunts' }).click()
+  await expect(page.getByRole('heading', { name: 'Quests & Collection Hunts' })).toBeVisible()
+  await page.getByRole('button', { name: 'Completed & Journal' }).click()
+  await expect(page.getByText('Permanent Drop Journal')).toBeVisible()
+})
+
+test('contextual Float help works by hover, keyboard and touch-sized tap', async ({ page }) => {
+  await page.goto('/help')
+  await dismissTutorial(page)
+  await page.goto('/inventory')
+  const term = page.getByRole('button', { name: 'Explain Wear condition' })
+  await term.hover()
+  await expect(page.getByRole('dialog', { name: 'Wear condition explanation' })).toContainText('how worn')
+  await page.getByRole('button', { name: 'More details' }).click()
+  await expect(page.getByRole('dialog')).toContainText('Factory New')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.setViewportSize({ width: 375, height: 812 })
+  await page.getByRole('button', { name: 'Explain Wear condition' }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('link', { name: 'Help Center' }).click()
+  await expect(page).toHaveURL(/\/help\?term=wear/)
+  await expect(page.locator('#glossary-wear')).toContainText('Factory New')
+})
+
+test('Case Opening Funds quote uses real payment and Work does not advance sale income', async ({ page }) => {
+  await page.goto('/')
+  await dismissTutorial(page)
+  const save = await readSave(page)
+  save.state.dailyRewards.openingCredits = 2
+  await page.addInitScript(({ key, envelope }) => localStorage.setItem(key, JSON.stringify(envelope)), { key: saveKey, envelope: save })
+  await page.goto('/cases')
+  const breakdown = page.getByLabel('Opening payment breakdown')
+  await expect(breakdown).toContainText('Case Opening Funds used')
+  await expect(breakdown).toContainText('Cash you pay')
+  const before = await readSave(page)
+  const fullCost = Number((await breakdown.textContent())?.match(/Open 1 cost: \$([\d.]+)/)?.[1])
+  const fundsUsed = Number((await breakdown.textContent())?.match(/Funds used: −\$([\d.]+)/)?.[1])
+  const cashCost = Number((await breakdown.textContent())?.match(/Cash you pay: \$([\d.]+)/)?.[1])
+  expect(fullCost - fundsUsed).toBeCloseTo(cashCost, 2)
+  await openBatch(page, 1)
+  await page.waitForFunction(({ key, count }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.casesOpened > count, { key: saveKey, count: before.state.statistics.casesOpened })
+  const afterOpen = await readSave(page)
+  expect(before.state.money - afterOpen.state.money).toBeCloseTo(cashCost, 2)
+  expect(before.state.dailyRewards.openingCredits - afterOpen.state.dailyRewards.openingCredits).toBeCloseTo(fundsUsed, 2)
+  await page.goto('/work')
+  await page.getByRole('button', { name: 'Play Sort Boxes' }).click()
+  await page.getByRole('button', { name: 'Start Sort Boxes' }).click()
+  for (const color of ['Red', 'Blue', 'Green', 'Yellow']) {
+    await page.getByRole('button', { name: `${color} box` }).click()
+    await page.getByRole('button', { name: `${color} container` }).click()
+  }
+  await page.waitForFunction(({ key, amount }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.moneyEarned > amount, { key: saveKey, amount: afterOpen.state.statistics.moneyEarned })
+  const afterWork = await readSave(page)
+  expect(afterWork.state.statistics.itemSaleRevenue).toBe(afterOpen.state.statistics.itemSaleRevenue)
 })
 
 test('Help Center search and trade-up workbench remain usable at laptop width', async ({ page }) => {

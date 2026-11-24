@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useGame } from '../hooks/useGame'
+import { GlossaryTerm } from '../components/GlossaryTerm'
 import {
   BUSINESS_MAX_TRAINING_LEVEL,
   EMPLOYEE_ROLE_DEFINITIONS,
@@ -122,6 +123,7 @@ export function Business() {
           <div className="border-l-4 border-rarity-mil-spec pl-4">
             <p className="font-mono text-xs uppercase text-rarity-mil-spec">Career operations</p>
             <h1 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Business</h1>
+            <p className="mt-2 flex flex-wrap gap-3 text-xs text-cs-muted"><GlossaryTerm term="payroll" /><GlossaryTerm term="operatingBudget" /><GlossaryTerm term="costBasis" /></p>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-cs-muted">Employees automate configured routines using real cash, items, wages, market supply and risk limits. Negotiation and exceptional acquisitions remain your decisions.</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

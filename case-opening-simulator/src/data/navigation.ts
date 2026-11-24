@@ -36,7 +36,7 @@ export const primaryNavigationItems: NavigationItem[] = [
       { label: 'Case Licenses', path: '/cases' },
       { label: 'Collection Book', path: '/collection-book' },
       { label: 'Daily Rewards', path: '/rewards' },
-      { label: 'Quests & Characters', path: '/quests', icon: ScrollText },
+      { label: 'Quests & Collection Hunts', path: '/quests', icon: ScrollText },
     ],
   },
   {

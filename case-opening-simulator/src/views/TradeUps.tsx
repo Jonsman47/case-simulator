@@ -8,6 +8,7 @@ import { AcquisitionReveal } from '../components/AcquisitionReveal'
 import { AssetImage } from '../components/AssetImage'
 import { ItemEditionBadge } from '../components/ItemEditionBadge'
 import { PatternBadge } from '../components/PatternInfo'
+import { GlossaryTerm } from '../components/GlossaryTerm'
 import { CASE_DEFINITIONS } from '../data/cases'
 import { Rarity, WearCondition, type SkinInstance } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
@@ -193,7 +194,7 @@ export function TradeUps() {
 
   return <section className="trade-up-workbench w-full min-w-0 border border-cs-border bg-cs-surface p-3 sm:p-4" data-testid="trade-up-workbench">
     <header className="flex flex-col gap-3 border-l-4 border-rarity-restricted pl-3 lg:flex-row lg:items-end lg:justify-between">
-      <div><p className="font-mono text-[10px] uppercase tracking-[.22em] text-rarity-restricted">Tactical contract desk</p><h1 className="mt-0.5 text-2xl font-semibold text-cs-text">Trade-Up Workbench</h1><p className="mt-1 max-w-3xl text-sm text-cs-muted">Commit eligible skins, inspect the honest odds, and accept the result. Profitability informs your choice—it never decides for you.</p></div>
+      <div><p className="font-mono text-[10px] uppercase tracking-[.22em] text-rarity-restricted">Tactical contract desk</p><h1 className="mt-0.5 text-2xl font-semibold text-cs-text">Trade-Up Workbench</h1><p className="mt-1 max-w-3xl text-sm text-cs-muted">Commit eligible skins, inspect the honest odds, and accept the result. Profitability informs your choice—it never decides for you.</p><p className="mt-2 flex flex-wrap gap-3 text-xs text-cs-muted"><GlossaryTerm term="tradeup" /><GlossaryTerm term="float" /><GlossaryTerm term="ev" /><GlossaryTerm term="roi" /><GlossaryTerm term="stattrak" /></p></div>
       <div className="flex max-w-4xl flex-wrap gap-1.5"><button aria-pressed={rarity === 'all'} className={`min-h-9 border px-2.5 font-mono text-[9px] uppercase ${rarity === 'all' ? 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted' : 'border-cs-border text-cs-muted'}`} onClick={() => changeRarity('all')} type="button">All rarities</button>{descendingRarities.map((entry) => <button aria-pressed={rarity === entry} className={`min-h-9 border px-2.5 font-mono text-[9px] uppercase ${rarity === entry ? 'border-rarity-restricted bg-rarity-restricted/10 text-rarity-restricted' : 'border-cs-border text-cs-muted'}`} key={entry} onClick={() => changeRarity(entry)} type="button">{getRarityLabel(entry)} · {state.inventory.filter((item) => item.rarity === entry && isTradeUpEligibleItem(item)).length}</button>)}</div>
     </header>
 

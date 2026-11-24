@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type InputHTMLAttributes, type ReactNode } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { GlossaryTerm } from './GlossaryTerm'
 import { List, type ListImperativeAPI } from 'react-window'
 import { Rarity, WearCondition, type NpcMarketListing, type PlayerMarketListing } from '../data/models'
 import { getSkinRarityColor } from '../data/rarities'
@@ -92,7 +93,7 @@ export function NpcMarketplace() {
 
   return <section className="border border-cs-border bg-cs-panel p-3 sm:p-4">
     <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-      <div><p className="font-mono text-xs uppercase text-rarity-special">Procedural simulated market</p><h2 className="mt-1 text-3xl font-semibold text-cs-text">CSWEAR</h2><p className="mt-1 max-w-3xl text-sm text-cs-muted">{SKIN_DEFINITIONS.length.toLocaleString()} skin markets and {totalVirtualSupply.toLocaleString()} estimated active offers, generated on demand. Counts are simulator estimates, not live CSFloat inventory.</p></div>
+      <div><p className="font-mono text-xs uppercase text-rarity-special">Procedural simulated market</p><h2 className="mt-1 text-3xl font-semibold text-cs-text">CSWEAR</h2><p className="mt-1 max-w-3xl text-sm text-cs-muted">{SKIN_DEFINITIONS.length.toLocaleString()} skin markets and {totalVirtualSupply.toLocaleString()} estimated active offers, generated on demand. Counts are simulator estimates, not live CSFloat inventory.</p><p className="mt-2 flex flex-wrap gap-3 text-xs text-cs-muted"><GlossaryTerm term="escrow" /><GlossaryTerm term="marketValue" /><GlossaryTerm term="realizedProfit" /><GlossaryTerm term="costBasis" /></p></div>
       <div className="grid grid-cols-3 gap-1 border border-cs-border bg-cs-surface p-1"><TabButton active={tab === 'browse'} icon={<ShoppingCart size={15} />} label="Browse" onClick={() => setTab('browse')} /><TabButton active={tab === 'sell'} icon={<ListPlus size={15} />} label={`My Listings (${state.marketplace.playerListings.length})`} onClick={() => setTab('sell')} /><TabButton active={tab === 'history'} icon={<History size={15} />} label="History" onClick={() => setTab('history')} /></div>
     </div>
     {tab === 'browse' ? selectedSkinId ? <SkinListingMarket onBack={returnToCatalog} skinId={selectedSkinId} /> : <SkinMarketCatalog onSelectSkin={selectSkin} /> : null}

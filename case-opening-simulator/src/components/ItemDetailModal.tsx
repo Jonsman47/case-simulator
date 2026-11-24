@@ -20,6 +20,7 @@ import { PriceChart } from './PriceChart'
 import { PatternBadge, PatternDetails } from './PatternInfo'
 import { isExceptionalPattern } from '../utils/skinPatterns'
 import { ItemEditionBadge } from './ItemEditionBadge'
+import { GlossaryTerm } from './GlossaryTerm'
 
 export interface ItemDetailModalProps {
   item: SkinInstance | undefined
@@ -491,6 +492,7 @@ export function ItemDetailModal({
                 value={formatCurrency(currentSaleValue)}
               />
             </div>
+            <p className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-cs-muted"><GlossaryTerm term="wear" /><GlossaryTerm term="float" /><GlossaryTerm term="pattern" /><GlossaryTerm term="marketValue" /><GlossaryTerm term="stattrak" /></p>
           </div>
 
           <aside className="flex flex-col gap-4">

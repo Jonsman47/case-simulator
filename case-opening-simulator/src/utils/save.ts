@@ -11,6 +11,7 @@ import {
   type GameUiState,
   type FeatureId,
   type GameStatistics,
+  type AchievementLifetimeCounters,
   type OnboardingStepId,
   type OnboardingTipId,
   type TradeUpHistoryEntry,
@@ -112,7 +113,7 @@ import { createDefaultQuestSystem, normalizeQuestSystem } from '../quests/questS
 import { createDefaultDropJournal, normalizeDropJournal } from '../quests/dropJournal'
 
 export const SAVE_STORAGE_KEY = 'case-opening-simulator:game-state'
-export const CURRENT_SAVE_VERSION = 42
+export const CURRENT_SAVE_VERSION = 43
 export const BACKUP_INTERVAL_MS = 7 * 24 * 60 * 60 * 1_000
 export const PERSISTED_MARKET_HISTORY_MAX_TRACKED_SKINS = 160
 export const PERSISTED_MARKET_HISTORY_MAX_POINTS = 120
@@ -414,6 +415,7 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
     casesOpened: value.casesOpened,
     moneySpent: value.moneySpent,
     moneyEarned: value.moneyEarned,
+    itemSaleRevenue: Math.max(0, normalizeNumber(value.itemSaleRevenue, 0)),
     itemsSold: normalizeNumber(value.itemsSold, 0),
     marketPurchases: Math.max(0, Math.floor(normalizeNumber(value.marketPurchases, 0))),
     marketSales: Math.max(0, Math.floor(normalizeNumber(value.marketSales, 0))),
@@ -426,6 +428,17 @@ function normalizeStatistics(value: unknown): GameStatistics | null {
     bestPrecisionScore: Math.min(1, Math.max(0, normalizeNumber(value.bestPrecisionScore, 0))),
     bestMemoryScore: Math.min(1, Math.max(0, normalizeNumber(value.bestMemoryScore, 0))),
     dropsByRarity: normalizeDropsByRarity(value.dropsByRarity),
+  }
+}
+
+function normalizeAchievementLifetime(value: unknown): AchievementLifetimeCounters {
+  const source = isRecord(value) ? value : {}
+  return {
+    casesOpened: Math.max(0, Math.floor(normalizeNumber(source.casesOpened, 0))),
+    moneySpent: Math.max(0, normalizeNumber(source.moneySpent, 0)),
+    tradeUpsCompleted: Math.max(0, Math.floor(normalizeNumber(source.tradeUpsCompleted, 0))),
+    auctionPurchases: Math.max(0, Math.floor(normalizeNumber(source.auctionPurchases, 0))),
+    dropsByRarity: normalizeDropsByRarity(source.dropsByRarity),
   }
 }
 
@@ -1829,6 +1842,14 @@ function migrateV41ToV42(value: unknown): unknown {
   }
 }
 
+function migrateV42ToV43(value: unknown): unknown {
+  if (!isRecord(value)) return value
+  const statistics = isRecord(value.statistics) ? value.statistics : {}
+  // Historical moneyEarned included Work and quest cash. The truncated sale
+  // history cannot establish an exact lifetime total, so start conservatively.
+  return { ...value, statistics: { ...statistics, itemSaleRevenue: 0 }, achievementLifetime: normalizeAchievementLifetime(undefined) }
+}
+
 const migrations: Record<number, (value: unknown) => unknown> = {
   0: migrateV0ToV1,
   1: migrateV1ToV2,
@@ -1872,6 +1893,7 @@ const migrations: Record<number, (value: unknown) => unknown> = {
   39: migrateV39ToV40,
   40: migrateV40ToV41,
   41: migrateV41ToV42,
+  42: migrateV42ToV43,
 }
 
 function getEnvelope(value: unknown) {
@@ -1951,6 +1973,7 @@ export function toPlayerState(state: GameState): PlayerState {
     upcomingEvents: state.upcomingEvents,
     eventHistory: state.eventHistory,
     statistics: state.statistics,
+    achievementLifetime: state.achievementLifetime,
     career: state.career,
     careerUpgrades: state.careerUpgrades,
     quests: state.quests,
@@ -2022,6 +2045,7 @@ function playerStateToGameState(state: PlayerState): GameState {
     upcomingEvents: state.upcomingEvents,
     eventHistory: state.eventHistory,
     statistics: state.statistics,
+    achievementLifetime: normalizeAchievementLifetime(state.achievementLifetime),
     career,
     careerUpgrades: normalizeCareerUpgradeState(state.careerUpgrades, state.lastSaved),
     quests: normalizeQuestSystem(state.quests, state.lastSaved),
@@ -2137,6 +2161,7 @@ function normalizeGameState(value: unknown, savedAt: number): GameState {
     lastMarketTick: normalizeNumber(value.lastMarketTick, 0),
     lastEventTick: normalizeNumber(value.lastEventTick, 0),
     statistics,
+    achievementLifetime: normalizeAchievementLifetime(value.achievementLifetime),
     economyLedger,
     career,
     careerUpgrades,

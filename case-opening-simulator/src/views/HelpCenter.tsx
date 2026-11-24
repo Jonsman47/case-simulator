@@ -1,7 +1,8 @@
 import { AlertTriangle, BookOpen, BriefcaseBusiness, ExternalLink, HelpCircle, PackageOpen, RotateCcw, Search, ShieldCheck } from 'lucide-react'
-import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useGame } from '../hooks/useGame'
+import { GLOSSARY, type GlossaryKey } from '../data/glossary'
 import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import type { OnboardingTipId } from '../data/gameState'
 
@@ -20,14 +21,15 @@ const HELP_ARTICLES: HelpArticle[] = [
   { category: 'Cases & Odds', title: 'Real odds and negative expected value', body: 'Standard weapon cases use the published rarity distribution. Every opening is independent: there is no pity counter or guaranteed Gold. Case price and key cost are both shown before opening.', example: 'A long losing streak does not improve the next roll. Budget openings as entertainment, not guaranteed profit.', path: '/cases', warning: 'Ordinary case opening has negative expected value.' },
   { category: 'Inventory & Patterns', title: 'Float, wear and Pattern', body: 'Float determines wear inside the skin’s valid range. Pattern is the permanent paint seed (0–1000 where applicable). Only documented finish- and weapon-specific patterns receive premiums.', example: 'Pattern #661 can be important for a specific Case Hardened skin; it is not universally valuable.', path: '/inventory' },
   { category: 'Quests & Collection Hunts', title: 'Discovery and ownership goals', body: 'Quest stages use authoritative opening, inventory, Work, market and journal progress. Discovery remains recorded after selling; ownership and delivery goals require the actual item.', example: 'Track up to the supported limit and claim a completed stage from its quest card.', path: '/quests', guide: 'quests' },
-  { category: 'NPCs & Rivals', title: 'Collectors, specialists and rivals', body: 'NPC quests request exact categories of discoveries or items. Delivery permanently consumes the selected eligible item and the confirmation names the reward.', example: 'Locked, favorited and trophy items are excluded from delivery choices.', path: '/quests?tab=characters' },
+  { category: 'Quests & Collection Hunts', title: 'What quest verbs mean', body: 'Open means receive an item from a case. Discover means record a distinct skin permanently. Own means hold it now. Deliver means give up an eligible item after confirming.', example: 'Selling a discovered skin keeps its discovery, but no longer satisfies an ownership goal.', path: '/quests' },
+  { category: 'Cases & Odds', title: 'Case Opening Funds', body: 'Case Opening Funds help pay for eligible case openings. They cannot buy skins or other items. The payment breakdown shows the exact cash you pay.', example: 'Cases costing at most $5 may use funds for up to 35% of the opening, capped at $1.25 per case.', path: '/cases' },
   { category: 'CSWEAR & Trading', title: 'Buying, selling, fees and escrow', body: 'Estimated value is not realized profit. Bought items require a claim; listed items move into seven-day escrow. A sale settles only when a buyer accepts, after the displayed fee.', example: 'Compare asking price, credible estimate, cost basis and expected proceeds before listing.', path: '/cswear', guide: 'cswear' },
   { category: 'Trade-Ups', title: 'Contracts, float and risk', body: 'Ordinary contracts consume 10 same-rarity eligible items. Eligible Covert contracts consume 5. Collection weighting and normalized input float determine the real output distribution, while input opportunity cost measures what you permanently give up.', example: 'Expected value is the probability-weighted average, not a promised result.', path: '/trade-ups', warning: 'Execution permanently consumes every selected input.', guide: 'trade_up' },
   { category: 'Work', title: 'Skill-based early cash', body: 'Each job has a persistent cooldown and a bounded payout. Precision and Memory reward performance, while accessible keyboard or click alternatives remain available.', example: 'A claimed job cannot be replayed for another reward until its cooldown expires.', path: '/work' },
   { category: 'Career & Upgrades', title: 'XP, specializations and prerequisites', body: 'Career XP comes from meaningful verified activity and uses anti-farming windows. The 95 upgrades have level, specialization activity and prerequisite requirements.', example: 'Unlocking an upgrade means it is available to consider; purchasing still costs the displayed cash.', path: '/career', guide: 'career' },
   { category: 'Business & Employees', title: 'Wages, budgets and controls', body: 'Employees automate bounded economic activity using allocated budgets. They pay wages, respect inventory and risk controls, and pause for exceptional or high-value decisions.', example: 'Market Scouts notify you about watchlist matches; they do not secretly buy the item.', path: '/business', guide: 'business' },
   { category: 'Prestige & Legacy Vault', title: 'Exactly what resets', body: 'Prestige resets run cash, non-vault inventory, run XP/upgrades, employees, budgets, licenses and current-run records. It preserves lifetime achievements, All Time Collection, Prestige perks, history and exact Vault items.', example: 'A verified recovery snapshot is created before the atomic reset.', path: '/prestige', warning: 'Review the reset list and Legacy Vault before confirming.', guide: 'prestige' },
-  { category: 'Achievements & Stats', title: 'Claiming and honest accounting', body: 'Completed achievements with rewards stay claimable until claimed. Stats separate cash flow, realized profit, inventory value and net worth using the bounded economy ledger.', example: 'Claim All is exact-once and the navigation badge updates immediately.', path: '/progress' },
+  { category: 'Achievements & Stats', title: 'Claiming and honest accounting', body: 'Completed achievements with rewards stay claimable until claimed. Item-sale milestones count actual sale proceeds after fees; Work and quest cash do not count. Current Run goals reset on Prestige.', example: 'Claim All is exact-once and the navigation badge updates immediately.', path: '/progress' },
   { category: 'Saves & Recovery', title: 'Local saves, cloud conflicts and backups', body: 'Autosave is local-first. Cloud sync can use local mock behavior or configured Supabase. Conflicts require choosing a complete version; balances and inventories are never blindly added together.', example: 'Export a backup before destructive actions or moving devices.', path: '/settings', warning: 'Never overwrite the only copy of a valuable save.' },
 ]
 
@@ -35,6 +37,8 @@ const categories = Array.from(new Set(HELP_ARTICLES.map((article) => article.cat
 
 export function HelpCenter() {
   const { dispatch, state, updateOnboardingState } = useGame()
+  const [searchParams] = useSearchParams()
+  const selectedTerm = searchParams.get('term') as GlossaryKey | null
   const [query, setQuery] = useSessionStorageState('help:query', '')
   const [category, setCategory] = useSessionStorageState('help:category', 'All')
   const articles = useMemo(() => HELP_ARTICLES.filter((article) => {
@@ -42,6 +46,14 @@ export function HelpCenter() {
     const haystack = `${article.category} ${article.title} ${article.body} ${article.example ?? ''}`.toLowerCase()
     return matchesCategory && haystack.includes(query.trim().toLowerCase())
   }), [category, query])
+  const glossaryEntries = useMemo(() => Object.entries(GLOSSARY).filter(([key, entry]) => {
+    const search = query.trim().toLowerCase()
+    return !search || key === selectedTerm || `${entry.label} ${entry.short} ${entry.detail}`.toLowerCase().includes(search)
+  }), [query, selectedTerm])
+
+  useEffect(() => {
+    if (selectedTerm && selectedTerm in GLOSSARY) window.requestAnimationFrame(() => document.getElementById(`glossary-${selectedTerm}`)?.scrollIntoView({ block: 'center' }))
+  }, [selectedTerm])
 
   function replayBeginner() {
     updateOnboardingState({ activeStepId: 'welcome', lastValidStepId: 'welcome', caseOpenBaseline: state.statistics.casesOpened, openedItemId: undefined, completedStepIds: [], isDismissed: false, isPaused: false, isReviewing: true })
@@ -71,5 +83,6 @@ export function HelpCenter() {
       <div className="mt-3 flex flex-wrap gap-2"><Link className="inline-flex min-h-9 items-center gap-2 border border-cs-border px-3 text-xs font-semibold text-cs-text hover:border-rarity-industrial" to={article.path}>Open screen <ExternalLink size={13} /></Link>{article.guide ? <button className="min-h-9 border border-cs-border px-3 text-xs text-cs-muted hover:text-cs-text" onClick={() => replayGuide(article.guide!)} type="button">Replay feature guide</button> : null}</div>
     </article>)}</div>
     {articles.length === 0 ? <div className="mt-4 border border-cs-border bg-cs-panel p-8 text-center text-sm text-cs-muted">No help articles match that search.</div> : null}
+    <section aria-label="CS2 glossary" className="mt-5 border border-cs-border bg-cs-panel p-4"><h2 className="text-lg font-semibold text-cs-text">CS2 glossary</h2><p className="mt-1 text-xs text-cs-muted">Quick definitions with optional detail. Tap or focus an explained term anywhere in the game to return here.</p><div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{glossaryEntries.map(([key, entry]) => <article id={`glossary-${key}`} className={`border p-3 ${selectedTerm === key ? 'border-rarity-industrial' : 'border-cs-border'}`} key={key}><h3 className="font-semibold text-cs-text">{entry.label}</h3><p className="mt-1 text-xs text-cs-muted">{entry.short}</p><details className="mt-2 text-xs text-cs-muted"><summary className="cursor-pointer text-rarity-industrial">More details</summary><p className="mt-1">{entry.detail}</p></details></article>)}</div>{glossaryEntries.length === 0 ? <p className="mt-3 text-sm text-cs-muted">No glossary terms match that search.</p> : null}</section>
   </section>
 }

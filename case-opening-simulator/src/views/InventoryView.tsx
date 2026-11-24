@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { BulkActionsToolbar } from '../components/BulkActionsToolbar'
 import { InventoryFilterBar } from '../components/InventoryFilterBar'
 import { InventoryItemCard } from '../components/InventoryItemCard'
+import { GlossaryTerm } from '../components/GlossaryTerm'
 import { InventoryValueChart } from '../components/InventoryValueChart'
 import { Tooltip } from '../components/Tooltip'
 import type { SkinInstance } from '../data/models'
@@ -300,6 +301,7 @@ export function InventoryView() {
       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div className="border-l-4 border-rarity-industrial pl-4">
           <h2 className="text-2xl font-semibold text-cs-text sm:text-3xl">Inventory</h2>
+          <p className="mt-2 flex flex-wrap gap-3 text-xs text-cs-muted"><GlossaryTerm term="discovery" /><GlossaryTerm term="marketValue" /><GlossaryTerm term="wear" /></p>
           <p className="mt-2 text-sm text-cs-muted">
             {filteredItems.length} of {state.inventory.length} items
           </p>

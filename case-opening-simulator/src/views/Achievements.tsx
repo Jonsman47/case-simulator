@@ -34,7 +34,7 @@ function formatReward(achievement: Achievement, careerXp = 0) {
 
   return [
     (reward?.money || reward?.upgradePoints || reward?.skillPoints)
-      ? formatCurrency((reward?.money ?? 0) + (reward?.upgradePoints ?? 0) * 100 + (reward?.skillPoints ?? 0) * 50)
+      ? `${formatCurrency((reward?.money ?? 0) + (reward?.upgradePoints ?? 0) * 100 + (reward?.skillPoints ?? 0) * 50)} cash${reward?.upgradePoints || reward?.skillPoints ? ' (includes legacy point conversion)' : ''}`
       : undefined,
     reward?.badge ? `${reward.badge} badge` : undefined,
     careerXp > 0 ? `${careerXp} Career XP` : undefined,
@@ -197,7 +197,7 @@ export function Achievements() {
                   const scope = getAchievementScope(achievement)
                   const progressValue = getAchievementProgressValue(achievement, state)
                   const target = achievement.target ?? 1
-                  const progressPercent = Math.min(100, Math.max(0, progressValue / Math.max(1, target) * 100))
+                  const progressPercent = Math.min(100, Math.max(0, progressValue / Math.max(0.000001, target) * 100))
                   const blockedReason = !isUnlocked ? getAchievementBlockedReason(achievement, state) : undefined
                   const displayName = achievement.isHidden && !isUnlocked
                     ? 'Hidden Achievement'

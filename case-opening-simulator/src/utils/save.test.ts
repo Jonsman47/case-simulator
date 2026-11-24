@@ -92,6 +92,19 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
 }
 
 describe('save system', () => {
+  it('migrates v42 sale milestones conservatively without changing cash or claims', () => {
+    const legacy = makeState({
+      money: 321,
+      statistics: { ...defaultGameState.statistics, moneyEarned: 500, itemsSold: 2 },
+      achievements: [{ id: 'money_earned_100', isClaimed: true, unlockedAt: 123, scope: 'lifetime' }],
+    })
+    const loaded = parseGameSaveText(JSON.stringify({ version: 42, savedAt: 456, state: legacy }))
+    expect(loaded.money).toBe(321)
+    expect(loaded.statistics.itemSaleRevenue).toBe(0)
+    expect(loaded.achievementLifetime.casesOpened).toBe(0)
+    expect(loaded.achievements).toContainEqual(expect.objectContaining({ id: 'money_earned_100', isClaimed: true }))
+    expect(createSaveEnvelope(loaded).version).toBe(43)
+  })
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
@@ -763,7 +776,7 @@ describe('save system', () => {
     expect(migrated.ui.onboarding.isDismissed).toBe(true)
     expect(migrated.ui.notifications).toEqual(defaultGameState.ui.notifications)
     expect(migrated.ui.tradeUpHistory).toEqual([])
-    expect(createSaveEnvelope(migrated).version).toBe(42)
+    expect(createSaveEnvelope(migrated).version).toBe(CURRENT_SAVE_VERSION)
   })
 
   it('keeps all previously available features and dismisses legacy onboarding in v41 saves', () => {

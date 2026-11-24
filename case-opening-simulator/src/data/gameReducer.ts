@@ -148,13 +148,11 @@ import {
 import {
   MAX_TRACKED_QUESTS,
   QUEST_DEFINITIONS,
-  QUEST_HISTORY_LIMIT,
   QUEST_REQUEST_LIMIT,
   getQuestProgressState,
   getQuestStageStatus,
   isQuestItemEligible,
   isQuestUnlocked,
-  questNpcsById,
   questsById,
   recordQuestActivity,
   resetQuestsForPrestige,
@@ -1026,6 +1024,7 @@ function openCase(
       exceptionalPatternDrops: state.statistics.exceptionalPatternDrops + exceptionalPatternDrops,
       moneySpent: roundCurrency(state.statistics.moneySpent + totalCost),
       moneyEarned: roundCurrency(state.statistics.moneyEarned + autoSellValue),
+      itemSaleRevenue: roundCurrency(state.statistics.itemSaleRevenue + autoSellValue),
       itemsSold: state.statistics.itemsSold + autoSoldItems.length,
       dropsByRarity,
     },
@@ -1364,6 +1363,14 @@ function prestigeRun(
 
   const prestigedState = withInventoryValuation({
     ...defaultGameState,
+    statistics: { ...defaultGameState.statistics, itemSaleRevenue: state.statistics.itemSaleRevenue },
+    achievementLifetime: {
+      casesOpened: state.achievementLifetime.casesOpened + state.statistics.casesOpened,
+      moneySpent: roundCurrency(state.achievementLifetime.moneySpent + state.statistics.moneySpent),
+      tradeUpsCompleted: state.achievementLifetime.tradeUpsCompleted + state.statistics.tradeUpsCompleted,
+      auctionPurchases: state.achievementLifetime.auctionPurchases + state.statistics.auctionPurchases,
+      dropsByRarity: Object.fromEntries(Object.entries(state.statistics.dropsByRarity).map(([rarity, count]) => [rarity, count + state.achievementLifetime.dropsByRarity[rarity as Rarity]])) as typeof state.statistics.dropsByRarity,
+    },
     money: startingMoney,
     inventory: vaultedItems,
     prestigeLevel: state.prestigeLevel + 1,
@@ -2553,6 +2560,7 @@ function sellItem(state: GameState, itemId: string): GameState {
     statistics: {
       ...state.statistics,
       moneyEarned: roundCurrency(state.statistics.moneyEarned + salePrice),
+      itemSaleRevenue: roundCurrency(state.statistics.itemSaleRevenue + salePrice),
       itemsSold: state.statistics.itemsSold + 1,
     },
   }, soldAt), {
@@ -2622,6 +2630,7 @@ function sellItems(state: GameState, itemIds: string[]): GameState {
     statistics: {
       ...state.statistics,
       moneyEarned: roundCurrency(state.statistics.moneyEarned + saleValue),
+      itemSaleRevenue: roundCurrency(state.statistics.itemSaleRevenue + saleValue),
       itemsSold: state.statistics.itemsSold + soldItems.length,
     },
   }, soldAt), {
@@ -2795,6 +2804,7 @@ function completePlayerMarketSale(
       marketSales: state.statistics.marketSales + 1,
       itemsSold: state.statistics.itemsSold + 1,
       moneyEarned: roundCurrency(state.statistics.moneyEarned + netPrice),
+      itemSaleRevenue: roundCurrency(state.statistics.itemSaleRevenue + netPrice),
     },
   }
 }
@@ -2836,6 +2846,7 @@ function tickMarketplaceState(state: GameState, now = Date.now(), prng: Prng = M
       marketSales: state.statistics.marketSales + result.completedSales.length,
       itemsSold: state.statistics.itemsSold + result.completedSales.length,
       moneyEarned: roundCurrency(state.statistics.moneyEarned + revenue),
+      itemSaleRevenue: roundCurrency(state.statistics.itemSaleRevenue + revenue),
     },
   }, now)
 }
@@ -3199,18 +3210,12 @@ function claimQuestStage(state: GameState, questId: string, requestId: string, n
   const reward = stage.reward
   const stageEventId = `${questId}:${stage.id}:${definition.repeatable ? state.quests.currentPeriod : state.economyLedger.currentRunId}`
   const isFinalStage = progress.stageIndex >= definition.stages.length - 1
-  const npcState = state.quests.npc[definition.issuerId]
   const nextProgress = {
     ...progress,
     stageIndex: isFinalStage ? progress.stageIndex : progress.stageIndex + 1,
     claimedStageIds: [...progress.claimedStageIds, stage.id],
     completedAt: isFinalStage ? now : undefined,
   }
-  const nextNpc = npcState ? {
-    ...npcState,
-    reputation: npcState.reputation + Math.min(10, Math.max(0, Math.floor(reward.reputation ?? 0))),
-    history: [...npcState.history, { id: stageEventId, message: stage.dialogue, timestamp: now }].slice(-QUEST_HISTORY_LIMIT),
-  } : npcState
   const moneyReward = Math.min(100, Math.max(0, Number(reward.money ?? 0)))
   const creditReward = Math.min(10, Math.max(0, Number(reward.openingCredits ?? 0)))
   const career = awardQuestCareerXp(state.career, {
@@ -3237,7 +3242,6 @@ function claimQuestStage(state: GameState, questId: string, requestId: string, n
           ? [...state.quests.cosmetics.titles, reward.title]
           : state.quests.cosmetics.titles,
       },
-      npc: nextNpc ? { ...state.quests.npc, [definition.issuerId]: nextNpc } : state.quests.npc,
     },
     statistics: { ...state.statistics, moneyEarned: roundCurrency(state.statistics.moneyEarned + moneyReward) },
     lastError: undefined,
@@ -3245,7 +3249,7 @@ function claimQuestStage(state: GameState, questId: string, requestId: string, n
       id: requestId,
       type: 'quest_reward_claimed',
       questId,
-      message: `${stage.title} complete${creditReward ? ` · +$${creditReward.toFixed(2)} Opening Credits` : ''}`,
+      message: `${stage.title} complete${creditReward ? ` · +$${creditReward.toFixed(2)} toward opening cases` : ''}`,
       createdAt: now,
     }]),
   }
@@ -3273,7 +3277,7 @@ function deliverQuestItem(state: GameState, questId: string, itemId: string, req
       processedRequestIds: appendQuestRequest(state, requestId),
     },
     lastError: undefined,
-    uiEvents: appendEvents(state, [{ id: requestId, type: 'npc_item_delivered', questId, message: `${item.weapon} | ${item.finish} delivered.`, createdAt: now }]),
+    uiEvents: appendEvents(state, [{ id: requestId, type: 'npc_item_delivered', questId, message: `${item.weapon} | ${item.finish} delivered for a quest.`, createdAt: now }]),
   }, now)
 }
 
@@ -3527,28 +3531,9 @@ function reduceGameState(state: GameState, action: GameAction): GameState {
       return claimQuestStage(state, action.questId, action.requestId, action.now ?? Date.now())
     case 'DELIVER_QUEST_ITEM':
       return deliverQuestItem(state, action.questId, action.itemId, action.requestId, action.now ?? Date.now())
-    case 'MARK_NPC_DIALOGUE_SEEN': {
-      const npcDefinition = questNpcsById.get(action.npcId)
-      const npc = state.quests.npc[action.npcId]
-      if (!npcDefinition || !npc || npc.seenDialogueIds.includes(action.dialogueId)) return state
-      const now = action.now ?? Date.now()
-      return {
-        ...state,
-        quests: {
-          ...state.quests,
-          npc: {
-            ...state.quests.npc,
-            [action.npcId]: {
-              ...npc,
-              seenDialogueIds: [...npc.seenDialogueIds, action.dialogueId].slice(-160),
-              history: action.message
-                ? [...npc.history, { id: action.dialogueId, message: action.message, timestamp: now }].slice(-QUEST_HISTORY_LIMIT)
-                : npc.history,
-            },
-          },
-        },
-      }
-    }
+    case 'MARK_NPC_DIALOGUE_SEEN':
+      // Historical action type remains readable, but retired character actions do nothing.
+      return state
     case 'UNLOCK_CASE':
       if (state.casesUnlocked.includes(action.caseId)) {
         return state
