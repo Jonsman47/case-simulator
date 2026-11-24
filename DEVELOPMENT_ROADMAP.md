@@ -4,7 +4,7 @@ Updated: 2026-11-24
 
 ## Usability overhaul — Prompt 2 of 4
 
-Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**
 
 - Default Trade-Up picker now groups all eligible input rarities by descending rarity and current value, with automatic contract compatibility after the first selection and a single valid quick-fill pool.
 - Warehouse Rush now accepts pointer dragging and immediate first-action start while retaining number keys, shared scoring, exact-once rewards, and cooldowns.
@@ -12,7 +12,7 @@ Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
 - Multi-open reveals now enter the existing summary automatically, preserve premium inspection time, and recover committed batch results after reload in the same browser session.
 - Save schema remains v42; gameplay and economy formulas remain unchanged. Detailed notes: `case-opening-simulator/docs/GAMEPLAY_FRICTION_FIXES.md`.
 
-Local exit evidence: 93 Vitest files / 532 tests, TypeScript, lint, production build, release verification, Career simulation, six early-game playstyles, and **59/59 Chrome journeys** passed. GitHub CI remains pending. Prompts 3 and 4 remain planned.
+Exit evidence: 93 Vitest files / 532 tests, TypeScript, lint, production build, release verification, Career simulation, six early-game playstyles, and **59/59 Chrome journeys** passed. GitHub CI [run 45394801777](https://github.com/Jonsman47/case-simulator/actions/runs/45394801777) passed for implementation commit `3f15889`, including Linux browser journeys. Prompts 3 and 4 remain planned.
 
 ## Usability overhaul — Prompt 1 of 4
 
