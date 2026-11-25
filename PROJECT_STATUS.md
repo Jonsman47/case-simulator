@@ -1,6 +1,6 @@
 # CS2 Case Opening Simulator — Project Status
 
-Updated: 2026-11-24
+Updated: 2026-11-25
 Application directory: `case-opening-simulator/`
 Current save schema: v43
 
@@ -8,7 +8,7 @@ Current save schema: v43
 
 Notification dismissal now removes one event ID instead of clearing the queue. Three noncritical toasts show at once; routine messages expire after 4 seconds, progression after 8 seconds, and action failures wait for dismissal. Toasts and feature introductions defer around the tutorial, reveals, and other dialogs. The header, quest cards, Inventory, achievement claims, and Business operations now show compact committed-state feedback. The 320 px Large Text audit fixed a toast width overflow caused by viewport scrollbar sizing. A structured first-session browser path and a manual 30-minute player script are documented in `case-opening-simulator/docs/FINAL_UX_POLISH_AND_FIRST_SESSION_AUDIT.md`. Save schema stays v43 and gameplay formulas are unchanged.
 
-Local verification passed: standalone TypeScript, ESLint, 97 Vitest files / **548 tests**, production/PWA build, release validation with all 2,134 CS2 assets, **65/65 Chromium journeys**, and the Career plus six-playstyle early-game simulations. GitHub CI remains pending; the four-part overhaul will be marked complete after the remote gate passes.
+Local verification passed: standalone TypeScript, ESLint, 97 Vitest files / **548 tests**, production/PWA build, release validation with all 2,134 CS2 assets, **65/65 Chromium journeys**, and the Career plus six-playstyle early-game simulations. GitHub [CI run 45491667594](https://github.com/Jonsman47/case-simulator/actions/runs/45491667594) passed for implementation commit `0de25af`, including all 65 Linux browser journeys. **The four-part usability overhaul is complete.** A separate human first-session playtest remains the next qualitative check.
 
 ## Usability overhaul — Prompt 3 of 4
 

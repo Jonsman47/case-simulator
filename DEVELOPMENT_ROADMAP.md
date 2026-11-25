@@ -1,17 +1,17 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-11-24
+Updated: 2026-11-25
 
 ## Usability overhaul — Prompt 4 of 4
 
-Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**
 
 - Fixed per-ID toast dismissal, bounded three-visible noncritical presentation, independent timeouts, deduplication, and persistent critical failures; claimable badges remain tied to reward state.
 - Coordinated toasts, feature introductions, tutorial spotlights, opening and Trade-Up reveals, and Work dialogs. Added restrained cash, XP, quest, achievement-claim, acquired-item, and employee-operation feedback with reduced-motion support.
 - Audited a real first-session path and 320 px Large Text/Light Mode layout, fixed the toast overflow, and prepared a manual 30-minute player script. Detailed findings: `case-opening-simulator/docs/FINAL_UX_POLISH_AND_FIRST_SESSION_AUDIT.md`.
 - Kept save schema v43 and all gameplay and economy authorities unchanged.
 
-Local verification passed: 548 unit tests, 65/65 Playwright journeys, TypeScript, lint, build, release, Career, and early-game simulations. Remote GitHub CI remains before marking the four-part overhaul complete.
+Local verification passed: 548 unit tests, 65/65 Playwright journeys, TypeScript, lint, build, release, Career, and early-game simulations. GitHub [CI run 45491667594](https://github.com/Jonsman47/case-simulator/actions/runs/45491667594) passed for implementation commit `0de25af`, including 65 Linux browser journeys. The four-part overhaul is complete; the independent 30-minute human playtest in the final audit document remains a qualitative follow-up.
 
 ## Usability overhaul — Prompt 3 of 4
 
