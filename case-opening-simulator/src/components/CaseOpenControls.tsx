@@ -119,7 +119,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
         <p>Open {effectiveLastQuantity} cost: <strong className="text-cs-text">{formatCurrency(selectedQuote.fullCost)}</strong></p>
         {selectedQuote.creditUsed > 0 ? <p className="mt-1 flex items-center gap-1"><Ticket size={13} /> Case Opening Funds used: −{formatCurrency(selectedQuote.creditUsed)}</p> : null}
         <p className="mt-1">Cash you pay: <strong className="text-cs-text">{formatCurrency(selectedQuote.cashCost)}</strong> · Wallet: {formatCurrency(money)}</p>
-        {openingCredits > 0 ? <p className="mt-1">Case Opening Funds: {formatCurrency(openingCredits)}. Extra money for eligible case openings only; it cannot buy skins or other items. <span title="Eligible cases cost at most $5. Funds cover up to 35% of each opening, capped at $1.25 per case.">Usage limits ⓘ</span></p> : null}
+        {openingCredits > 0 ? <p className="mt-1">Case Opening Funds: {formatCurrency(openingCredits)}. These pay for case openings first; any remaining cost comes from your wallet.</p> : null}
       </div>
     </div>
   )

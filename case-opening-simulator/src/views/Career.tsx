@@ -11,7 +11,6 @@ import {
   Search,
   ShieldCheck,
   TrendingUp,
-  Trophy,
   WalletCards,
   type LucideIcon,
 } from 'lucide-react'
@@ -38,6 +37,7 @@ import { useSessionStorageState } from '../hooks/useSessionStorageState'
 import { formatCurrency } from '../utils/format'
 import { getPrestigeEligibilityV2 } from '../prestige/prestigeSystem'
 import { getNewlyUnlockedUpgradeIds } from '../notifications/notificationSelectors'
+import { GlossaryText } from '../components/GlossaryText'
 
 type UpgradeFilter = 'all' | 'available' | 'affordable' | 'locked' | 'purchased' | 'maxed'
 
@@ -47,11 +47,11 @@ const specializationCards: Array<{
   description: string
   icon: LucideIcon
 }> = [
-  { id: 'caseOpening', label: 'Case Opening', description: 'Workflow, research, collection planning and safe Case Operator controls.', icon: PackageOpen },
-  { id: 'trading', label: 'Trading', description: 'Price evidence, CSWEAR research, selling and manual negotiation insight.', icon: TrendingUp },
-  { id: 'collecting', label: 'Collecting', description: 'Discovery research, organization, storage and showcase capacity.', icon: Gem },
-  { id: 'tradeUps', label: 'Trade-Ups', description: 'Honest EV, probability, float planning and Specialist safeguards.', icon: Repeat2 },
-  { id: 'business', label: 'Business', description: 'Employee capacity, scheduling, infrastructure and ledger-backed reporting.', icon: BriefcaseBusiness },
+  { id: 'caseOpening', label: 'Case Opening', description: 'Improve opening tools, batch controls and case research.', icon: PackageOpen },
+  { id: 'trading', label: 'Trading', description: 'Understand prices and improve your selling workflow.', icon: TrendingUp },
+  { id: 'collecting', label: 'Collecting', description: 'Organize skins and track collection progress.', icon: Gem },
+  { id: 'tradeUps', label: 'Trade-Ups', description: 'Study outcomes and manage contracts safely.', icon: Repeat2 },
+  { id: 'business', label: 'Business', description: 'Manage employees and routine operations.', icon: BriefcaseBusiness },
 ]
 
 const activityRows: Array<[string, CareerSpecializationId]> = [
@@ -98,6 +98,7 @@ function UpgradeCard({ definition, expanded, onExpand }: { definition: CareerUpg
         </span>
         {expanded ? <ChevronUp className="mt-1 shrink-0 text-cs-muted" size={16} /> : <ChevronDown className="mt-1 shrink-0 text-cs-muted" size={16} />}
       </button>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-cs-border px-3 py-2 text-xs sm:px-4"><span className="text-cs-muted">{status.isMaxLevel ? 'Fully upgraded' : `Next cost ${formatCurrency(status.cashCost)}`}</span><button className="min-h-9 border border-rarity-special px-3 font-semibold text-rarity-special disabled:border-cs-border disabled:text-cs-muted" disabled={!canPurchase} onClick={() => dispatch({ type: 'PURCHASE_CAREER_UPGRADE', upgradeId: definition.id, now: Date.now() })} type="button">{status.isMaxLevel ? 'Owned' : canPurchase ? 'Purchase' : 'Locked'}</button></div>
       {expanded ? (
         <div className="border-t border-cs-border p-3 sm:p-4">
           <div className="grid gap-2 sm:grid-cols-2"><Metric label="Current effect" value={getCareerUpgradeCurrentEffect(definition, status.level)} /><Metric label="Next effect" value={getCareerUpgradeNextEffect(definition, status.level)} /><Metric label="Gameplay consumer" value={definition.consumer} /><Metric label="Reset policy" value="Resets on Prestige" /></div>
@@ -106,7 +107,6 @@ function UpgradeCard({ definition, expanded, onExpand }: { definition: CareerUpg
               {lockedReasons.length > 0 ? <p>Requires: {lockedReasons.join(' · ')}</p> : <p>All unlock requirements met.</p>}
               {!status.isMaxLevel ? <p>Cost {formatCurrency(status.cost)}{status.creditUsed > 0 ? ` · ${formatCurrency(status.creditUsed)} transition credit · ${formatCurrency(status.cashCost)} cash` : ''}</p> : <p>Every available level is active.</p>}
             </div>
-            <button className="min-h-10 shrink-0 border border-rarity-special px-4 text-sm font-semibold text-rarity-special hover:bg-rarity-special/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:border-cs-border disabled:text-cs-muted disabled:hover:bg-transparent" disabled={!canPurchase} onClick={() => dispatch({ type: 'PURCHASE_CAREER_UPGRADE', upgradeId: definition.id, now: Date.now() })} type="button">{status.isMaxLevel ? 'Maximum level' : canPurchase ? `Purchase · ${formatCurrency(status.cashCost)}` : 'Locked'}</button>
           </div>
         </div>
       ) : null}
@@ -117,7 +117,7 @@ function UpgradeCard({ definition, expanded, onExpand }: { definition: CareerUpg
 export function Career() {
   const { dispatch, state } = useGame()
   const [specialization, setSpecialization] = useSessionStorageState<UpgradeSpecialization>('career:specialization', 'caseOpening')
-  const [filter, setFilter] = useSessionStorageState<UpgradeFilter>('career:filter', 'all')
+  const [filter, setFilter] = useSessionStorageState<UpgradeFilter>('career:filter', 'available')
   const [search, setSearch] = useSessionStorageState('career:search', '')
   const [expandedId, setExpandedId] = useState<string>()
   const snapshot = getCareerSnapshot(state.career)
@@ -131,10 +131,8 @@ export function Career() {
       dispatch({ type: 'UPDATE_NOTIFICATION_STATE', notifications: { acknowledgedUpgradeIds: Array.from(new Set([...state.ui.notifications.acknowledgedUpgradeIds, ...unlocked])) } })
     }
   }, [dispatch, state])
-  const availableUpgradeCount = CAREER_UPGRADE_DEFINITIONS.filter((definition) => {
-    const status = getCareerUpgradeStatus(definition, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
-    return !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet && status.canAfford
-  }).length
+  const statusById = useMemo(() => new Map(CAREER_UPGRADE_DEFINITIONS.map((definition) => [definition.id, getCareerUpgradeStatus(definition, { career: state.career, money: state.money, upgrades: state.careerUpgrades })])), [state.career, state.careerUpgrades, state.money])
+  const availableUpgradeCount = [...statusById.values()].filter((status) => !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet && status.canAfford).length
 
   const visibleDefinitions = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -142,7 +140,7 @@ export function Career() {
       .filter((definition) => definition.specialization === specialization)
       .filter((definition) => !query || `${definition.name} ${definition.description} ${definition.group}`.toLowerCase().includes(query))
       .filter((definition) => {
-        const status = getCareerUpgradeStatus(definition, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
+        const status = statusById.get(definition.id)!
         if (filter === 'available') return !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet
         if (filter === 'affordable') return !status.isMaxLevel && status.levelMet && status.activityMet && status.prerequisitesMet && status.canAfford
         if (filter === 'locked') return !status.levelMet || !status.activityMet || !status.prerequisitesMet
@@ -151,13 +149,13 @@ export function Career() {
         return true
       })
       .sort((left, right) => {
-        const leftStatus = getCareerUpgradeStatus(left, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
-        const rightStatus = getCareerUpgradeStatus(right, { career: state.career, money: state.money, upgrades: state.careerUpgrades })
+        const leftStatus = statusById.get(left.id)!
+        const rightStatus = statusById.get(right.id)!
         const leftAvailable = !leftStatus.isMaxLevel && leftStatus.levelMet && leftStatus.activityMet && leftStatus.prerequisitesMet && leftStatus.canAfford ? 0 : 1
         const rightAvailable = !rightStatus.isMaxLevel && rightStatus.levelMet && rightStatus.activityMet && rightStatus.prerequisitesMet && rightStatus.canAfford ? 0 : 1
         return leftAvailable - rightAvailable || left.requiredLevel - right.requiredLevel || left.name.localeCompare(right.name)
       })
-  }, [filter, search, specialization, state.career, state.careerUpgrades, state.money])
+  }, [filter, search, specialization, statusById])
 
   const grouped = useMemo(() => {
     const groups = new Map<string, CareerUpgradeDefinition[]>()
@@ -167,31 +165,14 @@ export function Career() {
 
   return (
     <section className="w-full space-y-3">
-      <header className="border border-cs-border bg-cs-surface p-4 sm:p-6 lg:p-7">
-        <div className="flex flex-col gap-4 border-b border-cs-border pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="border-l-4 border-rarity-special pl-4"><p className="font-mono text-xs uppercase text-rarity-special">Trading career</p><h1 className="mt-1 text-3xl font-semibold text-cs-text sm:text-4xl">Career &amp; Upgrades</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-cs-muted">Ninety-five working upgrades across five independent paths. Research reveals information; it never changes official case odds, predicts drops, or guarantees profit.</p></div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><Metric label="Career level" testId="career-level" value={`${snapshot.level}`} /><Metric label="Rank" testId="career-rank" value={snapshot.rank.name} /><Metric label="Balance" value={formatCurrency(state.money)} /><Metric label="Transition credit" value={formatCurrency(state.careerUpgrades.migration.transitionCredit)} /></div>
+      <header className="border-l-4 border-rarity-special bg-cs-surface p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-widest text-rarity-special">Your progression</p><h1 className="mt-1 text-2xl font-bold text-cs-text sm:text-3xl">Career &amp; Upgrades</h1><p className="mt-1 text-sm text-cs-muted"><GlossaryText parts={['Play to gain ', { term: 'careerXp', label: 'XP' }, ', choose a ', { term: 'specialization', label: 'path' }, ', then buy the upgrades you want.']} /></p></div><Link className="inline-flex min-h-9 items-center border border-cs-border px-3 text-xs text-cs-muted" to="/progress">Achievements &amp; Stats</Link></div>
+        <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(15rem,.8fr)]">
+          <div className="min-w-0" data-testid="career-xp"><div className="flex flex-wrap items-end gap-x-3 gap-y-1"><span className="font-mono text-3xl font-bold text-rarity-special" data-testid="career-level">{snapshot.level}</span><div><p className="text-sm font-semibold" data-testid="career-rank">{snapshot.rank.name}</p><p className="text-xs text-cs-muted">{snapshot.currentRunXp.toLocaleString()} current-run XP · {snapshot.xpForNextLevel.toLocaleString()} to next level</p></div></div><div className="mt-3"><ProgressBar label={snapshot.level >= 100 ? 'Career level complete' : `Progress to level ${snapshot.level + 1}`} value={snapshot.levelProgress} /></div></div>
+          <div className="min-w-0 border-l border-cs-border pl-3 text-xs"><p className="font-mono uppercase text-cs-muted">Next rank</p><p className="mt-1 font-semibold text-cs-text">{snapshot.nextRank?.name ?? 'CS2 Trading Legend'}</p><p className="mt-1 text-cs-muted">{snapshot.nextRank ? `Reach level ${snapshot.nextRank.minimumLevel}` : `Highest rank reached ${rankRecord ? `on ${new Date(rankRecord.earnedAt).toLocaleDateString()}` : ''}`}</p><p className="mt-3 text-cs-green">{availableUpgradeCount} upgrades affordable now</p><p className="mt-1 text-cs-muted">{prestigeEligibility.canPrestige ? 'Prestige is ready to review' : prestigeEligibility.reasons[0] ?? 'Review Prestige for future goals'}</p></div>
         </div>
-        <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,.45fr)]">
-          <div className="border border-cs-border bg-cs-panel p-4" data-testid="career-xp"><div className="flex items-center justify-between gap-3"><div><p className="font-mono text-[10px] uppercase text-cs-muted">Current-run XP</p><p className="mt-1 text-xl font-semibold text-cs-text">{snapshot.currentRunXp.toLocaleString()} current-run XP</p><p className="mt-1 text-xs text-cs-muted">Next level at {snapshot.nextLevelXp.toLocaleString()} XP</p></div><Trophy className="text-rarity-special" size={24} /></div><div className="mt-4"><ProgressBar label={snapshot.level >= 100 ? 'Career level complete' : `Progress to level ${snapshot.level + 1}`} value={snapshot.levelProgress} /></div></div>
-          <div className="border border-cs-border bg-cs-panel p-4"><p className="font-mono text-[10px] uppercase text-cs-muted">Next rank</p><p className="mt-1 font-semibold text-cs-text">{snapshot.nextRank?.name ?? 'CS2 Trading Legend'}</p><p className="mt-2 text-xs leading-5 text-cs-muted">{snapshot.nextRank ? `Reach Career level ${snapshot.nextRank.minimumLevel}. Ranks are earned through XP, not forced waiting.` : `Highest career rank reached ${rankRecord ? `on ${new Date(rankRecord.earnedAt).toLocaleDateString()}` : ''}.`}</p></div>
-        </div>
+        {state.careerUpgrades.migration.transitionCredit > 0 ? <p className="mt-3 text-xs text-cs-muted">Legacy transition credit: {formatCurrency(state.careerUpgrades.migration.transitionCredit)}</p> : null}
       </header>
-
-      <section className="border border-cs-border bg-cs-surface p-4 sm:p-5" aria-labelledby="next-career-goals">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="font-mono text-xs uppercase text-rarity-special">What to do next</p>
-            <h2 className="mt-1 text-xl font-semibold text-cs-text" id="next-career-goals">Career goals</h2>
-          </div>
-          <Link className="border border-cs-border px-3 py-2 text-xs font-semibold text-cs-muted hover:text-cs-text" to="/progress">View achievements &amp; stats</Link>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <Metric label="Next level" value={snapshot.level >= 100 ? 'Level cap reached' : `${snapshot.xpForNextLevel.toLocaleString()} XP remaining`} />
-          <Metric label="Available upgrades" value={availableUpgradeCount > 0 ? `${availableUpgradeCount} affordable now` : 'Build branch XP or cash'} />
-          <Metric label="Next Prestige goal" value={prestigeEligibility.canPrestige ? `${prestigeEligibility.tier.name} is optional and ready` : prestigeEligibility.reasons[0] ?? 'Review Prestige paths'} />
-        </div>
-      </section>
 
       <section className="border border-cs-border bg-cs-surface p-3 sm:p-4" aria-labelledby="specializations-title">
         <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="font-mono text-xs uppercase text-rarity-special">Choose a path</p><h2 className="mt-1 text-xl font-semibold text-cs-text" id="specializations-title">Specializations</h2></div><p className="text-xs text-cs-muted">{CAREER_UPGRADE_COUNTS.total} nodes · flexible cross-training</p></div>
@@ -202,21 +183,21 @@ export function Career() {
 
       <section className="border border-cs-border bg-cs-surface p-3 sm:p-4" aria-labelledby="upgrade-explorer-title">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><p className="font-mono text-xs uppercase text-rarity-special">{selectedSpecialization.label}</p><h2 className="mt-1 text-2xl font-semibold text-cs-text" id="upgrade-explorer-title">Upgrade explorer</h2><p className="mt-1 max-w-2xl text-sm text-cs-muted">Open one upgrade to see its exact consumer, next effect, cost, prerequisites and Prestige policy.</p></div><label className="flex min-h-10 min-w-0 items-center gap-2 border border-cs-border bg-cs-panel px-3 lg:w-72"><Search className="shrink-0 text-cs-muted" size={16} /><span className="sr-only">Search upgrades</span><input className="min-w-0 flex-1 bg-transparent text-sm text-cs-text outline-none" onChange={(event) => setSearch(event.target.value)} placeholder="Search this branch" value={search} /></label></div>
-        <div className="mt-4 flex flex-wrap gap-2" aria-label="Upgrade filters">{(['all', 'available', 'affordable', 'locked', 'purchased', 'maxed'] as UpgradeFilter[]).map((entry) => <button className={['min-h-9 border px-3 text-xs capitalize', filter === entry ? 'border-rarity-special bg-rarity-special/10 text-rarity-special' : 'border-cs-border text-cs-muted'].join(' ')} key={entry} onClick={() => setFilter(entry)} type="button">{entry}</button>)}</div>
-        <aside className="mt-4 border border-cs-border bg-cs-panel p-3" aria-label={`${selectedSpecialization.label} active toolkit`}>
+        <div className="mt-4 flex flex-wrap gap-2" aria-label="Upgrade filters">{(['available', 'affordable', 'purchased', 'locked', 'all'] as UpgradeFilter[]).map((entry) => <button className={['min-h-9 border px-3 text-xs capitalize', filter === entry ? 'border-rarity-special bg-rarity-special/10 text-rarity-special' : 'border-cs-border text-cs-muted'].join(' ')} key={entry} onClick={() => setFilter(entry)} type="button">{entry === 'purchased' ? 'Owned' : entry}</button>)}</div>
+        <details className="mt-4 border border-cs-border bg-cs-panel p-3" aria-label={`${selectedSpecialization.label} active toolkit`}><summary className="cursor-pointer text-sm font-semibold text-cs-text">Active tools in this path · {activeCapabilities.length}</summary>
           <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold text-cs-text">Active specialization toolkit</p><span className="font-mono text-[10px] uppercase text-cs-muted">{activeCapabilities.length} active nodes</span></div>
           {activeCapabilities.length > 0 ? <ul className="mt-3 grid gap-2 md:grid-cols-2">{activeCapabilities.map((capability) => <li className="min-w-0 border border-cs-border bg-cs-surface px-3 py-2" key={capability.id}><p className="text-xs font-semibold text-cs-text">{capability.name} · Lv {capability.level}</p><p className="mt-1 text-xs text-rarity-special">{capability.effect}</p><p className="mt-1 text-[11px] leading-4 text-cs-muted">Active in: {capability.consumer}</p></li>)}</ul> : <p className="mt-2 text-xs leading-5 text-cs-muted">Purchase an upgrade in this branch to activate its research tool or mechanical consumer. Locked tools do not reveal data or apply hidden effects.</p>}
-        </aside>
+        </details>
         {grouped.length > 0 ? <div className="mt-5 space-y-5">{grouped.map(([group, definitions]) => <section key={group}><h3 className="flex items-center gap-2 font-semibold text-cs-text"><ShieldCheck className="text-cs-green" size={17} />{group}</h3><div className="content-card-grid mt-2 grid gap-2 xl:grid-cols-2">{definitions.map((definition) => <UpgradeCard definition={definition} expanded={expandedId === definition.id} key={definition.id} onExpand={() => setExpandedId((current) => current === definition.id ? undefined : definition.id)} />)}</div></section>)}</div> : <div className="mt-5 border border-cs-border bg-cs-panel p-6 text-center text-sm text-cs-muted">No upgrades match this filter.</div>}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,.45fr)]">
+      <details className="border border-cs-border bg-cs-surface p-4"><summary className="cursor-pointer font-semibold text-cs-text">More Career details</summary><div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,.45fr)]">
         <section className="border border-cs-border bg-cs-surface p-4 sm:p-6" aria-labelledby="activity-title"><div className="flex items-center gap-2"><WalletCards className="text-cs-green" size={19} /><h2 className="font-semibold text-cs-text" id="activity-title">Career activity</h2></div><div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{activityRows.map(([label, id]) => <Metric key={id} label={`${label} XP`} value={(state.career.specializations[id]?.currentRunXp ?? 0).toLocaleString()} />)}</div></section>
         <section className="border border-cs-border bg-cs-surface p-4 sm:p-6" aria-labelledby="milestones-title"><div className="flex items-center gap-2"><Info className="text-rarity-special" size={18} /><h2 className="font-semibold text-cs-text" id="milestones-title">Recent milestones</h2></div>{state.career.recentMilestones.length > 0 ? <ol className="mt-3 space-y-2">{state.career.recentMilestones.slice(0, 5).map((milestone) => <li className="border-l-2 border-cs-border pl-3" key={milestone.id}><p className="text-sm font-medium text-cs-text">{milestone.title}</p><p className="mt-1 text-xs leading-5 text-cs-muted">{milestone.description}</p></li>)}</ol> : <p className="mt-3 border border-cs-border bg-cs-panel p-3 text-sm text-cs-muted">Complete a paid opening, Work job, trade, contract, discovery, or Business operation to begin your log.</p>}</section>
       </div>
 
       {state.careerUpgrades.migration.note ? <aside className="border border-rarity-special/40 bg-rarity-special/5 px-4 py-3 text-xs leading-5 text-cs-muted"><span className="font-semibold text-rarity-special">Legacy transition:</span> {state.careerUpgrades.migration.note}</aside> : null}
-      <section className="border border-cs-border bg-cs-surface p-4" aria-labelledby="rank-path-title"><h2 className="font-semibold text-cs-text" id="rank-path-title">Career rank path</h2><div className="content-card-grid mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">{CAREER_RANKS.map((rank) => { const reached = snapshot.level >= rank.minimumLevel; return <div className={['min-w-0 border p-3', reached ? 'border-rarity-special/50 bg-rarity-special/5' : 'border-cs-border bg-cs-panel'].join(' ')} key={rank.id}><p className={['font-mono text-[10px] uppercase', reached ? 'text-rarity-special' : 'text-cs-muted'].join(' ')}>Level {rank.minimumLevel}</p><p className="mt-1 text-sm font-semibold text-cs-text">{rank.name}</p></div> })}</div></section>
+      <section className="mt-4 border border-cs-border bg-cs-surface p-4" aria-labelledby="rank-path-title"><h2 className="font-semibold text-cs-text" id="rank-path-title">Career rank path</h2><div className="content-card-grid mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-6">{CAREER_RANKS.map((rank) => { const reached = snapshot.level >= rank.minimumLevel; return <div className={['min-w-0 border p-3', reached ? 'border-rarity-special/50 bg-rarity-special/5' : 'border-cs-border bg-cs-panel'].join(' ')} key={rank.id}><p className={['font-mono text-[10px] uppercase', reached ? 'text-rarity-special' : 'text-cs-muted'].join(' ')}>Level {rank.minimumLevel}</p><p className="mt-1 text-sm font-semibold text-cs-text">{rank.name}</p></div> })}</div></section></details>
     </section>
   )
 }

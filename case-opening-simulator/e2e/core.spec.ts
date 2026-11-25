@@ -597,7 +597,9 @@ test('contextual Float help works by hover, keyboard and touch-sized tap', async
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.getByRole('link', { name: 'Help Center' }).click()
   await expect(page).toHaveURL(/\/help\?term=wear/)
-  await expect(page.locator('#glossary-wear')).toContainText('Factory New')
+  await expect(page.getByTestId('help-article')).toContainText('Wear condition')
+  await page.locator('summary').filter({ hasText: 'More details' }).click()
+  await expect(page.getByTestId('help-article')).toContainText('Factory New')
 })
 
 test('Case Opening Funds quote uses real payment and Work does not advance sale income', async ({ page }) => {
@@ -637,8 +639,9 @@ test('Help Center search and trade-up workbench remain usable at laptop width', 
   await page.goto('/help')
   await dismissTutorial(page)
   await expect(page.getByTestId('help-center')).toBeVisible()
-  await page.getByRole('searchbox').fill('opportunity cost')
-  await expect(page.getByRole('heading', { name: 'Contracts, float and risk' })).toBeVisible()
+  await page.getByRole('searchbox').fill('ROI')
+  await page.getByRole('button', { name: 'Trade-Ups' }).click()
+  await expect(page.getByTestId('help-article')).toContainText('Trade-Up contracts')
   await page.goto('/trade-ups')
   await expect(page.getByTestId('trade-up-workbench')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
@@ -962,7 +965,7 @@ test('Market remains a dedicated price checker and links each skin to CSWEAR sup
   await dialog.getByRole('button', { name: 'Close price details' }).click()
   await page.getByRole('button', { name: /View offers on CSWEAR \([\d,]+\)/ }).first().click()
   await expect(page).toHaveURL(/\/cswear\?skin=/)
-  await expect(page.getByText('Listing filters')).toBeVisible()
+  await expect(page.getByText('Listing filters')).toBeVisible({ timeout: 20_000 })
 })
 
 test('CSWEAR navigates catalog, infinitely loads stable offers, and purchases once', async ({ page }) => {

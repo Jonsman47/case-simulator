@@ -12,9 +12,6 @@ import {
 export const DAILY_REWARD_DISCOUNT_DURATION_MS = 24 * 60 * 60 * 1_000
 export const DAILY_FREE_REROLLS = 1
 export const MAX_OPENING_CREDIT_BALANCE = 20
-export const MAX_OPENING_CREDIT_CASE_COST = 5
-export const MAX_OPENING_CREDIT_SHARE = 0.35
-export const MAX_OPENING_CREDIT_PER_CASE = 1.25
 
 export type DailyChallengeProgressEvent =
   | { type: 'cases_opened'; amount: number; caseId?: string; sessionId?: string }
@@ -389,11 +386,8 @@ export function addOpeningCredits(currentBalance: number, amount: number) {
 export function getOpeningCreditQuote(caseCost: number, creditBalance: number, quantity = 1) {
   const safeQuantity = Math.max(1, Math.floor(quantity))
   const fullCost = roundCurrency(Math.max(0, caseCost) * safeQuantity)
-  const eligible = caseCost > 0 && caseCost <= MAX_OPENING_CREDIT_CASE_COST && creditBalance > 0
-  const perCaseCredit = eligible
-    ? Math.min(caseCost * MAX_OPENING_CREDIT_SHARE, MAX_OPENING_CREDIT_PER_CASE)
-    : 0
-  const creditUsed = roundCurrency(Math.min(Math.max(0, creditBalance), perCaseCredit * safeQuantity))
+  const eligible = fullCost > 0 && creditBalance > 0
+  const creditUsed = roundCurrency(Math.min(Math.max(0, creditBalance), fullCost))
 
   return {
     eligible,

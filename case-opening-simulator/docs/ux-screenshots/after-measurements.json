@@ -1,0 +1,23 @@
+{
+  "home": {
+    "scrollHeight": 917,
+    "viewportHeight": 768,
+    "horizontalOverflow": false,
+    "mainTop": 120,
+    "visibleActions": 4
+  },
+  "help": {
+    "scrollHeight": 799,
+    "viewportHeight": 768,
+    "horizontalOverflow": false,
+    "mainTop": 120,
+    "visibleActions": 14
+  },
+  "career": {
+    "scrollHeight": 959,
+    "viewportHeight": 768,
+    "horizontalOverflow": false,
+    "mainTop": 120,
+    "visibleActions": 13
+  }
+}

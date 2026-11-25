@@ -138,15 +138,16 @@ describe('daily rewards helpers', () => {
     expect(replayed[2].progress).toBe(1)
   })
 
-  it('caps non-cash opening credits and only subsidizes eligible cases', () => {
+  it('caps case-only funds and spends them before wallet cash at any case price', () => {
     expect(addOpeningCredits(19, 5)).toBe(20)
     expect(getOpeningCreditQuote(4, 10, 2)).toEqual({
       eligible: true,
       fullCost: 8,
-      creditUsed: 2.5,
-      cashCost: 5.5,
+      creditUsed: 8,
+      cashCost: 0,
     })
-    expect(getOpeningCreditQuote(6, 10, 1).creditUsed).toBe(0)
+    expect(getOpeningCreditQuote(6, 2, 1)).toEqual({ eligible: true, fullCost: 6, creditUsed: 2, cashCost: 4 })
+    expect(getOpeningCreditQuote(6, 0, 1)).toEqual({ eligible: false, fullCost: 6, creditUsed: 0, cashCost: 6 })
   })
 
   it('applies active daily case discounts and drops expired discounts', () => {

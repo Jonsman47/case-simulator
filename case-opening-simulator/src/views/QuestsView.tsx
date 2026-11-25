@@ -48,23 +48,23 @@ function QuestCard({ quest }: { quest: QuestDefinition }) {
   const [showItems, setShowItems] = useState(false)
   const isComplete = Boolean(progress.completedAt)
 
-  return <article className="min-w-0 border border-cs-border bg-cs-panel p-3" data-testid={`quest-${quest.id}`}>
+  return <article className="min-w-0 border border-cs-border bg-cs-panel p-3" data-onboarding-target={quest.id === 'story-first-crack' ? 'quest-beginner' : undefined} data-testid={`quest-${quest.id}`}>
     <div className="flex min-w-0 items-start gap-3">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-[10px] uppercase text-rarity-classified">{quest.category}</span>{quest.optional ? <span className="text-[10px] uppercase text-cs-muted">Optional</span> : null}</div>
         <h3 className="mt-1 text-lg font-semibold text-cs-text">{quest.name}</h3>
         <p className="mt-1 text-sm text-cs-muted">{quest.description}</p>
       </div>
-      <button aria-label={tracked ? `Untrack ${quest.name}` : `Track ${quest.name}`} className={`border p-2 ${tracked ? 'border-rarity-special text-rarity-special' : 'border-cs-border text-cs-muted hover:text-cs-text'}`} onClick={() => dispatch({ type: 'TRACK_QUEST', questId: quest.id })} type="button"><Star aria-hidden="true" fill={tracked ? 'currentColor' : 'none'} size={16} /></button>
+      <button aria-label={tracked ? `Untrack ${quest.name}` : `Track ${quest.name}`} className={`border p-2 ${tracked ? 'border-rarity-special text-rarity-special' : 'border-cs-border text-cs-muted hover:text-cs-text'}`} data-onboarding-target={quest.id === 'story-first-crack' ? 'quest-track' : undefined} onClick={() => dispatch({ type: 'TRACK_QUEST', questId: quest.id })} type="button"><Star aria-hidden="true" fill={tracked ? 'currentColor' : 'none'} size={16} /></button>
     </div>
     {isComplete ? <p className="mt-4 flex items-center gap-2 border border-cs-green/40 bg-cs-green/10 px-3 py-2 text-sm text-cs-green"><Check size={16} /> Quest complete</p> : stage ? <>
       <div className="mt-4 border-l-2 border-rarity-classified pl-3">
         <p className="text-sm font-semibold text-cs-text">Stage {progress.stageIndex + 1}/{quest.stages.length}: {stage.title}</p>
         <p className="mt-1 text-xs leading-5 text-cs-muted">{stage.description}</p>
       </div>
-      <div className="mt-3 space-y-2">{status.requirements.map((requirement) => <QuestRequirementProgress key={requirement.label} label={requirement.label} current={requirement.current} target={requirement.target} />)}</div>
+      <div className="mt-3 space-y-2" data-onboarding-target={quest.id === 'story-first-crack' ? 'quest-progress' : undefined}>{status.requirements.map((requirement) => <QuestRequirementProgress key={requirement.label} label={requirement.label} current={requirement.current} target={requirement.target} />)}</div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-cs-border pt-3">
-        <p className="flex min-w-0 items-center gap-2 text-xs text-cs-muted"><Gift aria-hidden="true" size={15} /><span>{rewardLabel(stage.reward)}</span></p>
+        <p className="flex min-w-0 items-center gap-2 text-xs text-cs-muted" data-onboarding-target={quest.id === 'story-first-crack' ? 'quest-reward' : undefined}><Gift aria-hidden="true" size={15} /><span>{rewardLabel(stage.reward)}</span></p>
         {stage.requirements.some((requirement) => requirement.type === 'deliver_item') && !progress.deliveredStageIds.includes(stage.id) ? <button className="min-h-10 border border-cs-amber px-3 text-sm font-semibold text-cs-amber hover:bg-cs-amber/10" disabled={!eligibleItems.length} onClick={() => setShowItems((value) => !value)} type="button">{eligibleItems.length ? `Choose item (${eligibleItems.length})` : 'No eligible item'}</button> : <button className="min-h-10 border border-cs-green px-3 text-sm font-semibold text-cs-green hover:bg-cs-green/10 disabled:cursor-not-allowed disabled:border-cs-border disabled:text-cs-muted" disabled={!status.complete} onClick={() => dispatch({ type: 'CLAIM_QUEST_STAGE', questId: quest.id, requestId: `quest:${quest.id}:${stage.id}:${nanoid()}`, now: Date.now() })} type="button">Claim stage</button>}
       </div>
       {showItems ? <div className="mt-3 max-h-52 space-y-2 overflow-y-auto border border-cs-border bg-cs-surface p-2">{eligibleItems.map((item) => <button className="flex w-full items-center gap-3 border border-cs-border p-2 text-left hover:border-cs-amber" key={item.instanceId} onClick={() => { dispatch({ type: 'DELIVER_QUEST_ITEM', questId: quest.id, itemId: item.instanceId, requestId: `delivery:${quest.id}:${item.instanceId}:${nanoid()}`, now: Date.now() }); setShowItems(false) }} type="button"><AssetImage alt="" className="h-10 w-14 object-contain" src={item.image} /><span className="min-w-0 flex-1 truncate text-sm text-cs-text">{item.weapon} | {item.finish}</span><span className="text-xs text-cs-muted">{formatCurrency(item.marketValue)}</span></button>)}</div> : null}

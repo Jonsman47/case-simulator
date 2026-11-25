@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight, Pause, Play, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { FeatureId, OnboardingStepId } from '../data/gameState'
 import { useGame } from '../hooks/useGame'
 
@@ -26,10 +26,18 @@ const steps: Step[] = [
   { id: 'understand_drop', title: 'Your new skin', body: 'Rarity is the drop tier. Wear describes its condition. Estimated value shows what the market suggests it may be worth.', mode: 'spotlight', target: 'opening-result', recovery: 'The result may have closed; continue to Inventory.' },
   { id: 'inventory_nav', title: 'Visit Inventory', body: 'Your acquired skins live in Inventory. You can keep them, collect them, or sell them later.', mode: 'spotlight', target: 'nav-inventory', destination: '/inventory', needsEvent: true, recovery: 'Use Go to Inventory if navigation is hidden.' },
   { id: 'inspect_item', title: 'Inspect your skin', body: 'Select the skin you just opened to see its details. You do not need to sell it.', mode: 'spotlight', target: 'acquired-item', requiredRoute: '/inventory', needsEvent: true, recovery: 'If it was auto-sold, review the opening in Recent Activity and skip this step.' },
-  { id: 'quests', title: 'Quests give you goals', body: 'Quests turn openings and collecting into goals with rewards. Visit Quests to see a beginner objective.', mode: 'spotlight', target: 'nav-quests', destination: '/quests', needsEvent: true, recovery: 'Use Go to Quests if its navigation is hidden.' },
+  { id: 'quests', title: 'Find a quest', body: 'Quests give you short goals and rewards. Visit Quests & Collection Hunts to see one you can work on now.', mode: 'spotlight', target: 'nav-quests', destination: '/quests', needsEvent: true, recovery: 'Use Go to Quests if its navigation is hidden.' },
   { id: 'work', title: 'Earn cash in Work', body: 'If you need more money to open cases, Work minigames let you earn it. You can explore now or skip this step.', mode: 'spotlight', target: 'nav-work', destination: '/work', needsEvent: true, recovery: 'Use Go to Work or Skip step.' },
-  { id: 'finish_home', title: 'You are ready', body: 'Home now shows Continue Opening, current goals, available rewards, and your next unlock. Return here whenever you need a next move.', mode: 'dialog', requiredRoute: '/', recovery: 'Go Home, then finish.' },
+  { id: 'finish_home', title: 'You are ready', body: "You're ready to play! Open cases, collect skins, complete quests, and earn money through Work. More features unlock as you progress. Help is here whenever you need it.", mode: 'dialog', requiredRoute: '/', recovery: 'Go Home, then finish.' },
 ]
+
+const inspectionLessons = [
+  { target: 'inspection-name', title: 'Your skin', body: 'This is the weapon and finish you received.' },
+  { target: 'inspection-rarity', title: 'Rarity', body: 'Rarity shows how uncommon a skin is. Higher rarities are harder to obtain.' },
+  { target: 'inspection-wear', title: 'Wear and Float', body: 'Float determines how worn a skin looks. Usually, lower means cleaner.' },
+  { target: 'inspection-pattern', title: 'Pattern', body: 'A Pattern number can change the design. A few Patterns are especially valuable.' },
+  { target: 'inspection-value', title: 'Estimated value', body: 'This is an approximate market value, not guaranteed money from a sale.' },
+] as const
 
 function useSpotlight(target: string | undefined, active: boolean) {
   const [rect, setRect] = useState<DOMRect | undefined>()
@@ -102,9 +110,19 @@ export function OnboardingTutorial() {
   const index = Math.max(0, steps.findIndex((step) => step.id === onboarding.activeStepId))
   const step = steps[index]
   const open = (!onboarding.isDismissed || onboarding.isReviewing) && !onboarding.isPaused
-  const openingDialogOpen = Boolean(document.querySelector('[aria-label="Case opening animation"]'))
-  const targetRect = useSpotlight(step.target, open && step.mode === 'spotlight' && (!openingDialogOpen || step.id === 'understand_drop'))
   const [domRevision, setDomRevision] = useState(0)
+  const [inspectionStage, setInspectionStage] = useState(0)
+  const [questStage, setQuestStage] = useState(0)
+  const openingDialogOpen = Boolean(document.querySelector('[aria-label="Case opening animation"]'))
+  const itemDialogOpen = Boolean(document.querySelector('[data-onboarding-target="item-details"]'))
+  const beginnerQuestAvailable = Boolean(document.querySelector('[data-onboarding-target="quest-beginner"]'))
+  const beginnerQuestTracked = state.quests.trackedQuestIds.includes('story-first-crack')
+  const inspectionLesson = step.id === 'inspect_item' && inspectionStage > 0 ? inspectionLessons[inspectionStage - 1] : undefined
+  const questTarget = step.id === 'quests' && location.pathname === '/quests' && beginnerQuestAvailable
+    ? questStage === 2 ? 'quest-progress' : questStage === 3 ? 'quest-reward' : questStage === 4 ? 'quest-track' : 'quest-beginner'
+    : undefined
+  const target = inspectionLesson?.target ?? questTarget ?? step.target
+  const targetRect = useSpotlight(target, open && step.mode === 'spotlight' && (!openingDialogOpen || step.id === 'understand_drop'))
   const [selectedCaseEvent, setSelectedCaseEvent] = useState(0)
   const selectedCaseBaseline = useRef(0)
   const [activeUnlock, setActiveUnlock] = useState<FeatureId>()
@@ -144,9 +162,13 @@ export function OnboardingTutorial() {
 
   useEffect(() => {
     if (!open) return
-    const mutation = new MutationObserver(() => setDomRevision((value) => value + 1))
+    let frame = 0
+    const mutation = new MutationObserver(() => {
+      if (frame) return
+      frame = requestAnimationFrame(() => { frame = 0; setDomRevision((value) => value + 1) })
+    })
     mutation.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-reveal-complete', 'data-item-instance-id'] })
-    return () => mutation.disconnect()
+    return () => { mutation.disconnect(); cancelAnimationFrame(frame) }
   }, [open])
 
   useEffect(() => {
@@ -156,10 +178,15 @@ export function OnboardingTutorial() {
     else if (step.id === 'open_case' && state.statistics.casesOpened > (onboarding.caseOpenBaseline ?? state.statistics.casesOpened)) advance(index + 1)
     else if (step.id === 'await_opening_result' && onboarding.openedItemId && document.querySelector(`[data-reveal-complete="${onboarding.openedItemId}"]`)) advance(index + 1)
     else if (step.id === 'inventory_nav' && location.pathname === '/inventory') advance(index + 1)
-    else if (step.id === 'inspect_item' && onboarding.openedItemId && document.querySelector(`[data-onboarding-target="item-details"][data-item-instance-id="${onboarding.openedItemId}"]`)) advance(index + 1)
-    else if (step.id === 'quests' && location.pathname === '/quests') advance(index + 1)
+    else if (step.id === 'inspect_item' && inspectionStage === 0 && onboarding.openedItemId && document.querySelector(`[data-onboarding-target="item-details"][data-item-instance-id="${onboarding.openedItemId}"]`)) queueMicrotask(() => setInspectionStage(1))
+    else if (step.id === 'quests' && location.pathname === '/quests' && questStage === 0) queueMicrotask(() => setQuestStage(1))
     else if (step.id === 'work' && location.pathname === '/work') advance(index + 1)
-  }, [advance, domRevision, index, location.pathname, onboarding.caseOpenBaseline, onboarding.openedItemId, open, selectedCaseEvent, state.statistics.casesOpened, step.id])
+  }, [advance, beginnerQuestTracked, domRevision, index, inspectionStage, location.pathname, onboarding.caseOpenBaseline, onboarding.openedItemId, open, questStage, selectedCaseEvent, state.statistics.casesOpened, step.id])
+
+  useEffect(() => {
+    if (step.id !== 'inspect_item') queueMicrotask(() => setInspectionStage(0))
+    if (step.id !== 'quests') queueMicrotask(() => setQuestStage(0))
+  }, [step.id])
 
   if (onboarding.isPaused && !onboarding.isDismissed) return <button className="fixed bottom-3 right-3 z-[80] inline-flex min-h-11 items-center gap-2 border border-rarity-special bg-cs-surface px-3 text-sm font-semibold text-rarity-special shadow-glow" onClick={() => updateOnboardingState({ isPaused: false, isReviewing: true })} type="button"><Play size={16} /> Resume tutorial</button>
 
@@ -168,14 +195,44 @@ export function OnboardingTutorial() {
     const needsRoute = step.requiredRoute && location.pathname !== step.requiredRoute
     const targetMissing = step.mode === 'spotlight' && !targetRect
     const canContinueSaved = step.id === 'await_opening_result' && Boolean(onboarding.openedItemId && state.lastOpenedItems.some((item) => item.instanceId === onboarding.openedItemId)) && !openingDialogOpen
+    const questLesson = step.id === 'quests' && location.pathname === '/quests' && beginnerQuestAvailable
+      ? [undefined,
+          { title: 'A goal you can follow', body: 'This quest tells you exactly what to do. Your first case has already counted toward it.' },
+          { title: 'Watch your progress', body: 'This number shows how close you are to the current goal.' },
+          { title: 'Claim the reward', body: 'When a stage is complete, claim its reward here. Tracking and claiming are separate.' },
+          { title: 'Track a quest', body: 'Track this quest to keep it on Home. You can change tracked quests later.' },
+        ][questStage]
+      : undefined
+    const title = inspectionLesson?.title ?? questLesson?.title ?? step.title
+    const body = inspectionLesson?.body ?? questLesson?.body ?? (step.id === 'quests' && location.pathname === '/quests' && !beginnerQuestAvailable ? 'No beginner quest is available right now. Quests show a clear goal, progress, and a reward you can claim when ready.' : step.body)
+    const closeItem = () => document.querySelector<HTMLButtonElement>('[aria-label="Close item details"]')?.click()
+    const next = () => {
+      if (step.id === 'understand_drop') document.querySelector<HTMLButtonElement>('[aria-label="Case opening animation"] [aria-label="Skip opening animation"]')?.click()
+      if (step.id === 'inspect_item' && inspectionStage > 0) {
+        if (inspectionStage < inspectionLessons.length) setInspectionStage(inspectionStage + 1)
+        else { closeItem(); advance(index + 1) }
+      } else if (step.id === 'quests' && location.pathname === '/quests') {
+        if (!beginnerQuestAvailable || questStage >= 4) advance(index + 1)
+        else setQuestStage(questStage + 1)
+      } else if (step.id === 'finish_home') finish()
+      else advance(index + 1)
+    }
+    const back = () => {
+      if (step.id === 'inspect_item' && inspectionStage > 1) setInspectionStage(inspectionStage - 1)
+      else if (step.id === 'inspect_item' && inspectionStage === 1) { closeItem(); setInspectionStage(0) }
+      else if (step.id === 'quests' && questStage > 1) setQuestStage(questStage - 1)
+      else advance(index - 1, false)
+    }
+    const showContinue = (step.mode === 'dialog' && !needsRoute) || step.id === 'cash' || step.id === 'understand_drop' || canContinueSaved || (step.id === 'inspect_item' && inspectionStage > 0) || (step.id === 'quests' && location.pathname === '/quests' && (!beginnerQuestAvailable || questStage < 4 || beginnerQuestTracked))
     return <>
-      {centered ? <div className="fixed inset-0 z-[65] bg-black/75" /> : step.mode === 'wait' || (openingDialogOpen && step.id !== 'understand_drop') ? null : targetRect ? <div aria-hidden="true" className={`pointer-events-none fixed rounded border-2 border-rarity-special shadow-[0_0_0_9999px_rgba(0,0,0,.68),0_0_24px_rgb(var(--rarity-special)_/_0.6)] ${step.id === 'understand_drop' ? 'z-[100]' : 'z-[65]'}`} style={{ left: Math.max(2, targetRect.left - 4), top: Math.max(2, targetRect.top - 4), width: targetRect.width + 8, height: targetRect.height + 8 }} /> : <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[65] bg-black/50" />}
+      {centered ? <div className="fixed inset-0 z-[65] bg-black/75" /> : step.mode === 'wait' || (openingDialogOpen && step.id !== 'understand_drop') ? null : targetRect ? <div aria-hidden="true" className={`pointer-events-none fixed rounded border-2 border-rarity-special ${itemDialogOpen ? 'shadow-[0_0_16px_rgb(var(--rarity-special)_/_0.8)]' : 'shadow-[0_0_0_9999px_rgba(0,0,0,.68),0_0_24px_rgb(var(--rarity-special)_/_0.6)]'} ${step.id === 'understand_drop' ? 'z-[100]' : 'z-[65]'}`} style={{ left: Math.max(2, targetRect.left - 4), top: Math.max(2, targetRect.top - 4), width: targetRect.width + 8, height: targetRect.height + 8 }} /> : !itemDialogOpen ? <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-[65] bg-black/50" /> : null}
       <aside aria-label="Interactive beginner tutorial" className={`fixed ${openingDialogOpen ? 'z-[110]' : 'z-[70]'} max-h-[calc(100dvh-1rem)] overflow-y-auto border border-rarity-special bg-cs-surface p-3 shadow-glow ${centered ? 'left-1/2 top-1/2 w-[min(28rem,calc(100vw-1rem))] -translate-x-1/2 -translate-y-1/2' : ''}`} data-testid="onboarding-tutorial" style={centered ? undefined : getPanelStyle(targetRect)}>
-        <div className="flex items-start gap-3"><img alt="" className="h-12 w-12 shrink-0 rounded-full border border-rarity-special bg-cs-panel" src={`${import.meta.env.BASE_URL}assets/guide-portrait.svg`} /><div className="min-w-0 flex-1"><p className="font-mono text-[10px] uppercase text-rarity-special">Guide · {index + 1}/{steps.length}</p><h2 className="mt-1 font-semibold text-cs-text">{step.title}</h2></div><button aria-label="Skip beginner tutorial" className="grid h-9 w-9 shrink-0 place-items-center border border-cs-border text-cs-muted" onClick={() => updateOnboardingState({ isDismissed: true, isPaused: false, isReviewing: false })} type="button"><X size={16} /></button></div>
-        <p className="mt-3 text-sm leading-5 text-cs-text">{step.body}</p>
+        <div className="flex items-start gap-3"><img alt="" className="h-12 w-12 shrink-0 rounded-full border border-rarity-special bg-cs-panel" src={`${import.meta.env.BASE_URL}assets/guide-portrait.svg`} /><div className="min-w-0 flex-1"><p className="font-mono text-[10px] uppercase text-rarity-special">Guide · {index + 1}/{steps.length}</p><h2 className="mt-1 font-semibold text-cs-text">{title}</h2></div><button aria-label="Skip beginner tutorial" className="grid h-9 w-9 shrink-0 place-items-center border border-cs-border text-cs-muted" onClick={() => updateOnboardingState({ isDismissed: true, isPaused: false, isReviewing: false })} type="button"><X size={16} /></button></div>
+        <p className="mt-3 text-sm leading-5 text-cs-text">{body}</p>
         {openingDialogOpen && step.id === 'inventory_nav' ? <p className="mt-2 text-xs text-cs-amber">Close the result panel, then choose Inventory.</p> : null}
         {needsRoute || targetMissing ? <p className="mt-2 text-xs text-cs-amber">{step.recovery}</p> : null}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><div className="flex gap-1"><button aria-label="Previous tutorial step" className="inline-flex min-h-9 items-center gap-1 border border-cs-border px-2 text-xs text-cs-muted disabled:opacity-30" disabled={index === 0} onClick={() => advance(index - 1, false)} type="button"><ArrowLeft size={13} /> Back</button><button className="inline-flex min-h-9 items-center gap-1 border border-cs-border px-2 text-xs text-cs-muted" onClick={() => updateOnboardingState({ isPaused: true, isReviewing: false })} type="button"><Pause size={13} /> Pause</button></div><div className="flex gap-1">{step.id === 'work' || step.id === 'inspect_item' ? <button className="min-h-9 border border-cs-border px-2 text-xs text-cs-muted" onClick={() => advance(index + 1)} type="button">Skip step</button> : null}{needsRoute || (targetMissing && step.destination) ? <button className="min-h-9 border border-rarity-special px-2 text-xs text-rarity-special" onClick={() => navigate(step.requiredRoute ?? step.destination!)} type="button">Go to {step.requiredRoute === '/' ? 'Home' : step.requiredRoute === '/cases' ? 'Cases' : step.requiredRoute === '/inventory' ? 'Inventory' : step.destination?.slice(1)}</button> : null}{(step.mode === 'dialog' && !needsRoute) || step.id === 'cash' || step.id === 'understand_drop' || canContinueSaved ? <button className="inline-flex min-h-9 items-center gap-1 border border-rarity-special bg-rarity-special/10 px-3 text-xs font-semibold text-rarity-special" onClick={() => step.id === 'finish_home' ? finish() : advance(index + 1)} type="button">{step.id === 'finish_home' ? 'Finish' : 'Continue'} <ArrowRight size={13} /></button> : null}</div></div>
+        {step.id === 'finish_home' ? <Link className="mt-2 inline-block text-xs font-semibold text-rarity-special underline" to="/help">Open Help</Link> : null}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><div className="flex gap-1"><button aria-label="Previous tutorial step" className="inline-flex min-h-9 items-center gap-1 border border-cs-border px-2 text-xs text-cs-muted disabled:opacity-30" disabled={index === 0} onClick={back} type="button"><ArrowLeft size={13} /> Back</button><button className="inline-flex min-h-9 items-center gap-1 border border-cs-border px-2 text-xs text-cs-muted" onClick={() => updateOnboardingState({ isPaused: true, isReviewing: false })} type="button"><Pause size={13} /> Pause</button></div><div className="flex flex-wrap gap-1">{step.id === 'work' || step.id === 'inspect_item' || (step.id === 'quests' && questStage > 0) ? <button className="min-h-9 border border-cs-border px-2 text-xs text-cs-muted" onClick={() => { if (step.id === 'inspect_item') closeItem(); advance(index + 1) }} type="button">{step.id === 'inspect_item' ? 'Skip inspection' : step.id === 'quests' ? 'Skip quest lesson' : 'Skip step'}</button> : null}{needsRoute || (targetMissing && step.destination) ? <button className="min-h-9 border border-rarity-special px-2 text-xs text-rarity-special" onClick={() => navigate(step.requiredRoute ?? step.destination!)} type="button">Go to {step.requiredRoute === '/' ? 'Home' : step.requiredRoute === '/cases' ? 'Cases' : step.requiredRoute === '/inventory' ? 'Inventory' : step.destination?.slice(1)}</button> : null}{showContinue ? <button className="inline-flex min-h-9 items-center gap-1 border border-rarity-special bg-rarity-special/10 px-3 text-xs font-semibold text-rarity-special" onClick={next} type="button">{step.id === 'finish_home' ? 'Finish' : step.id === 'inspect_item' && inspectionStage > 0 ? 'Next' : 'Continue'} <ArrowRight size={13} /></button> : null}</div></div>
       </aside>
     </>
   }

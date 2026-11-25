@@ -21,6 +21,7 @@ export interface CaseOpeningAnimationProps {
   careerXpEarned?: number
   finalItem: SkinInstance
   finalItems?: SkinInstance[]
+  holdResultOpen?: boolean
   firstRareItemIds?: string[]
   personalBestItemIds?: string[]
   newDiscoveryItemIds?: string[]
@@ -73,7 +74,7 @@ function getReelLayout(batchSize: number): ReelLayout {
     return {
       afterCount: 12,
       cardWidthRem: 3.3,
-      fillerCount: 40,
+      fillerCount: 32,
       slotPitchRem: 3.8,
       startIndex: 3,
       targetIndex: 18,
@@ -85,31 +86,31 @@ function getReelLayout(batchSize: number): ReelLayout {
     // during deceleration; this keeps the CS-style ticker continuous instead of
     // ending on a blank panel.
     return {
-      afterCount: 20,
+      afterCount: 12,
       cardWidthRem: 5.25,
-      fillerCount: 60,
+      fillerCount: 35,
       slotPitchRem: 5.75,
       startIndex: 5,
-      targetIndex: 28,
+      targetIndex: 22,
     }
   }
 
   if (batchSize > 6) {
-    return { afterCount: 20, cardWidthRem: 7.25, fillerCount: 60, slotPitchRem: 7.75, startIndex: 5, targetIndex: 28 }
+    return { afterCount: 12, cardWidthRem: 7.25, fillerCount: 35, slotPitchRem: 7.75, startIndex: 5, targetIndex: 22 }
   }
 
   if (batchSize > 3) {
-    return { afterCount: 20, cardWidthRem: 8, fillerCount: 60, slotPitchRem: 8.5, startIndex: 5, targetIndex: 28 }
+    return { afterCount: 12, cardWidthRem: 8, fillerCount: 35, slotPitchRem: 8.5, startIndex: 5, targetIndex: 22 }
   }
 
   if (batchSize > 1) {
-    return { afterCount: 20, cardWidthRem: 9.5, fillerCount: 60, slotPitchRem: 10, startIndex: 5, targetIndex: 28 }
+    return { afterCount: 12, cardWidthRem: 9.5, fillerCount: 35, slotPitchRem: 10, startIndex: 5, targetIndex: 22 }
   }
 
   return {
     afterCount: 30,
     cardWidthRem: 8,
-    fillerCount: 96,
+    fillerCount: 88,
     slotPitchRem: 8.75,
     startIndex: 8,
     targetIndex: 56,
@@ -304,6 +305,7 @@ export function CaseOpeningAnimation({
   firstRareItemIds = [],
   newDiscoveryItemIds = [],
   onComplete,
+  holdResultOpen = false,
   potentialSkins,
   personalBestItemIds = [],
   soundEnabled = false,
@@ -356,7 +358,7 @@ export function CaseOpeningAnimation({
       : primaryItem.rarity === Rarity.Classified
         ? 'classified'
         : 'standard'
-  const keepsResultsOpen = isPremiumBatch && batchSize === 1
+  const keepsResultsOpen = (isPremiumBatch || holdResultOpen) && batchSize === 1
   const totalValue = useMemo(() => items.reduce((total, item) => total + item.marketValue, 0), [items])
   const isRolling = rollStarted && (phase === 'spinning' || phase === 'quickReveal')
   const trackTransform = getTrackTransform(isRolling, layout)

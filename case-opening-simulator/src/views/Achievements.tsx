@@ -5,6 +5,7 @@ import { useGame } from '../hooks/useGame'
 import type { Achievement, AchievementDisplayCategory } from '../data/models'
 import { formatCurrency } from '../utils/format'
 import { getAchievementCareerXp } from '../career/careerProgress'
+import { GlossaryText } from '../components/GlossaryText'
 import {
   getAchievementBlockedReason,
   getAchievementProgressValue,
@@ -103,7 +104,7 @@ export function Achievements() {
           <p className="font-mono text-xs uppercase text-rarity-special">Milestones</p>
           <h2 className="mt-1 text-2xl font-semibold text-cs-text sm:text-3xl">Achievements</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">
-            Lifetime accomplishments and bounded Current Run goals across the complete trading career.
+            <GlossaryText parts={[{ term: 'achievement', label: 'Achievements' }, ' record specific milestones. Lifetime goals stay with you; Current Run goals reset after Prestige.']} />
           </p>
         </div>
         <div className="content-card-grid grid gap-2 border border-cs-border bg-cs-panel p-2 sm:grid-cols-5">

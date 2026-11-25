@@ -1320,6 +1320,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           caseName={summaryCase?.name ?? activeOpeningSummary.startedEvent.caseId}
           finalItem={openingAnimationItem}
           finalItems={openingAnimationItems}
+          holdResultOpen={activeOpeningSummary.startedEvent.quantity === 1 && (!state.ui.onboarding.isDismissed || state.ui.onboarding.isReviewing) && !state.ui.onboarding.isPaused}
           firstRareItemIds={state.dropJournal.entries.filter((entry) => entry.isFirstRare).map((entry) => entry.instanceId)}
           careerXpEarned={openingCareerXp}
           newDiscoveryItemIds={openingDiscoveryItemIds}

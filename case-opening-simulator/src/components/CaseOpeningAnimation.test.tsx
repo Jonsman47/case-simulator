@@ -323,7 +323,7 @@ describe('CaseOpeningAnimation', () => {
     screen.getAllByTestId('case-opening-target').forEach((target) => {
       expect(target).not.toHaveClass('border-rarity-special')
     })
-    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '49')
+    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '35')
   }, 15_000)
 
   it('renders 100 simultaneous case cells and reels for a 100 case open', () => {

@@ -91,7 +91,7 @@ function OutcomeCard({ outcome, onInspect }: { outcome: TradeUpOutcome; onInspec
 
 export function TradeUps() {
   const { claimAcquisition, state, tradeUpItems } = useGame()
-  const [rarity, setRarity] = useSessionStorageState<Rarity | 'all'>('trade-ups:rarity-v2', 'all')
+  const [rarity, setRarity] = useState<Rarity | 'all'>('all')
   const [selectedIds, setSelectedIds] = useSessionStorageState<string[]>('trade-ups:selected', [])
   const [search, setSearch] = useSessionStorageState('trade-ups:search', '')
   const [wear, setWear] = useSessionStorageState<'all' | WearCondition>('trade-ups:wear', 'all')
@@ -157,7 +157,7 @@ export function TradeUps() {
   function resetReview() { setReviewing(false); setRiskAccepted(false) }
   function toggle(item: SkinInstance) {
     if (selectedIds.includes(item.instanceId)) {
-      setSelectedIds((current) => current.filter((id) => id !== item.instanceId)); setSelectionNotice(undefined); resetReview(); return
+      setSelectedIds((current) => current.filter((id) => id !== item.instanceId)); if (selectedIds.length === 1) setRarity('all'); setSelectionNotice(undefined); resetReview(); return
     }
     const reason = getTradeUpCompatibilityReason(item, selected)
     if (reason) { setSelectionNotice(`${getItemEditionLabel(item)} ${item.weapon} | ${item.finish}: ${reason}`); return }
@@ -165,7 +165,7 @@ export function TradeUps() {
     setSelectedIds((current) => [...current, item.instanceId]); setSelectionNotice(undefined); resetReview()
   }
   function changeRarity(next: Rarity | 'all') { setRarity(next); setSelectedIds([]); resetReview(); setCollection('all'); setSelectionNotice(selected.length ? 'Previous inputs were cleared because the contract type changed.' : undefined) }
-  function clearContract() { setSelectedIds([]); resetReview(); setSelectionNotice(undefined) }
+  function clearContract() { setSelectedIds([]); setRarity('all'); resetReview(); setSelectionNotice(undefined) }
   function quickFill(mode: TradeUpQuickFillMode) {
     // Before the first pick, use the highest rarity with a complete edition pool.
     const counts = new Map<string, number>()
@@ -189,7 +189,7 @@ export function TradeUps() {
   }
   function execute() {
     if (!analysis.canTradeUp || !reviewing || (highRisk && !riskAccepted)) return
-    tradeUpItems([...selectedIds]); setSelectedIds([]); resetReview()
+    tradeUpItems([...selectedIds]); setSelectedIds([]); setRarity('all'); resetReview()
   }
 
   return <section className="trade-up-workbench w-full min-w-0 border border-cs-border bg-cs-surface p-3 sm:p-4" data-testid="trade-up-workbench">
@@ -206,7 +206,7 @@ export function TradeUps() {
             <div><div className="flex items-center gap-2"><Stamp className="text-rarity-restricted" size={20} /><div><p className="font-mono text-[9px] uppercase tracking-[.2em] text-rarity-restricted">Official exchange contract</p><h2 className="text-lg font-semibold text-cs-text">{activeRarity ? `${getRarityLabel(activeRarity)} → ${getRarityLabel(getNextTradeUpRarity(activeRarity)!)}` : 'Choose any eligible skin'}</h2></div></div><p className="mt-1.5 text-xs text-cs-muted">Edition group: <strong className={analysis.editionGroup === 'mixed' ? 'text-rarity-covert' : 'text-cs-text'}>{contractEdition}</strong></p></div>
             <div className="flex flex-wrap items-center justify-end gap-2"><span className="border border-cs-border bg-cs-surface/70 px-2.5 py-1.5 font-mono text-xs text-cs-text">{selected.length}/{capacity} signed</span><button className="inline-flex min-h-9 items-center gap-1.5 border border-cs-border px-2.5 text-xs text-cs-muted disabled:opacity-40" disabled={!selected.length} onClick={clearContract} type="button"><RotateCcw size={13} /> Clear</button><button aria-label="Review contract from header" className="inline-flex min-h-9 items-center gap-1.5 border border-rarity-restricted/60 bg-rarity-restricted/10 px-2.5 text-xs font-semibold text-rarity-restricted disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted" disabled={!analysis.canTradeUp} onClick={() => { setReviewing(true); setRiskAccepted(false) }} type="button">Review <ArrowRight size={13} /></button></div>
           </div>
-          <div className={`content-card-grid relative mt-3 grid gap-2 ${capacity === 5 ? 'grid-cols-1 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-5'}`}>{Array.from({ length: capacity }, (_, index) => <ContractSlot index={index} item={selected[index]} key={index} onRemove={(id) => { setSelectedIds((current) => current.filter((entry) => entry !== id)); resetReview() }} />)}</div>
+          <div className={`content-card-grid relative mt-3 grid gap-2 ${capacity === 5 ? 'grid-cols-1 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-5'}`}>{Array.from({ length: capacity }, (_, index) => <ContractSlot index={index} item={selected[index]} key={index} onRemove={(id) => { setSelectedIds((current) => current.filter((entry) => entry !== id)); if (selectedIds.length === 1) setRarity('all'); resetReview() }} />)}</div>
           <div className="relative mt-3 h-2 border border-cs-border bg-cs-surface"><div className="h-full bg-rarity-restricted transition-[width] duration-300" style={{ width: `${selected.length / capacity * 100}%` }} /></div>
           {selectionNotice ? <div className="relative mt-3 flex items-start justify-between gap-3 border border-cs-amber/60 bg-cs-amber/10 p-2.5 text-xs text-cs-amber" role="alert"><span>{selectionNotice}</span><button aria-label="Dismiss selection explanation" onClick={() => setSelectionNotice(undefined)} type="button"><X size={14} /></button></div> : null}
           {analysis.message && selected.length === capacity ? <div className="relative mt-3 flex items-start gap-2 border border-rarity-covert/60 bg-rarity-covert/10 p-2.5 text-xs text-rarity-covert" role="alert"><AlertOctagon className="mt-0.5 shrink-0" size={15} />{analysis.message}</div> : null}

@@ -1850,7 +1850,7 @@ describe('gameReducer OPEN_CASE', () => {
     expect(repeatedState.lastError).toBe('Daily reward already claimed today.')
   })
 
-  it('spends bounded opening credit on manual low-cost cases without creating cash', () => {
+  it('spends restricted opening funds before wallet cash without creating cash', () => {
     const now = Date.now()
     const state = makeState({
       money: 0.13,
@@ -1866,10 +1866,34 @@ describe('gameReducer OPEN_CASE', () => {
     })
 
     expect(openedState.inventory).toHaveLength(1)
-    expect(openedState.money).toBe(0)
-    expect(openedState.dailyRewards.openingCredits).toBe(0.93)
-    expect(openedState.statistics.moneySpent).toBe(0.13)
-    expect(openedState.economyLedger.recentTransactions.at(-1)).toMatchObject({ moneyDelta: -0.13 })
+    expect(openedState.money).toBe(0.13)
+    expect(openedState.dailyRewards.openingCredits).toBe(0.8)
+    expect(openedState.statistics.moneySpent).toBe(0)
+    expect(openedState.economyLedger.recentTransactions.at(-1)).toMatchObject({ moneyDelta: 0 })
+  })
+
+  it('uses remaining opening funds once across an affordable batch', () => {
+    const now = Date.now()
+    const state = makeState({
+      money: 0.3,
+      dailyRewards: { ...createDefaultDailyRewardsState(now), openingCredits: 0.25 },
+    })
+    const action = { type: 'OPEN_CASE' as const, payload: { caseId: 'starter_case', quantity: 3, now, openingEventId: 'funded-batch' } }
+    const opened = gameReducer(state, action)
+
+    expect(opened.inventory).toHaveLength(2)
+    expect(opened.money).toBe(0.15)
+    expect(opened.dailyRewards.openingCredits).toBe(0)
+    expect(opened.statistics.moneySpent).toBe(0.15)
+    expect(gameReducer(opened, action)).toEqual(opened)
+  })
+
+  it('does not convert restricted opening funds into unrestricted spending cash', () => {
+    const state = makeState({ money: 0, dailyRewards: { ...createDefaultDailyRewardsState(), openingCredits: 20 } })
+    const after = gameReducer(state, { type: 'SPEND_MONEY', amount: 1 })
+    expect(after.dailyRewards.openingCredits).toBe(20)
+    expect(after.money).toBe(0)
+    expect(after.lastError).toContain('Not enough money')
   })
 
   it('continues daily streaks from yesterday and grants the day-two case discount', () => {

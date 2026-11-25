@@ -4,6 +4,14 @@ Updated: 2026-11-25
 Application directory: `case-opening-simulator/`
 Current save schema: v43
 
+## Post-overhaul usability and performance corrections
+
+The beginner's first single-case result now remains visible until they continue. Skin inspection teaches the real name, rarity, wear/Float, Pattern, and estimated value inside the undimmed item dialog; the Quest lesson uses the actual quest card, progress, reward, and tracking control. The closing guide links to Help. Home emphasizes the actual selected case, current quote, next goal, unlock, and persisted activity. Help is a searchable 14-topic guide with one article at a time, Career presents five plain-language paths and a filtered upgrade explorer, and Credits/About explains the project and attributions. Four additional glossary terms and further contextual placements explain gameplay in place.
+
+Manual case openings now consume the existing restricted Case Opening Funds balance before wallet cash, up to the quoted opening cost. The $20 balance cap, reward amounts, official odds, item generation, and other spending rules remain. Trade-Ups opens at All rarities on every fresh visit. A measured opening-reel reduction removes offscreen cards without changing committed outcomes. Save schema remains v43. Implementation and benchmark evidence: `case-opening-simulator/docs/USABILITY_AND_PERFORMANCE_CORRECTIONS.md`.
+
+Local verification passed 550 Vitest tests in 97 files, standalone TypeScript and ESLint, the production/PWA build and release gate, 69/69 Chromium journeys, and the Career plus six-playstyle early-game simulations. The early-game model now uses the same Opening Funds quote as live gameplay; its two-hour deterministic checkpoints remained close to the prior baseline. Browser screenshots and route measurements are recorded in the new documentation. GitHub CI is pending the remote run.
+
 ## Usability overhaul — Prompt 4 of 4
 
 Notification dismissal now removes one event ID instead of clearing the queue. Three noncritical toasts show at once; routine messages expire after 4 seconds, progression after 8 seconds, and action failures wait for dismissal. Toasts and feature introductions defer around the tutorial, reveals, and other dialogs. The header, quest cards, Inventory, achievement claims, and Business operations now show compact committed-state feedback. The 320 px Large Text audit fixed a toast width overflow caused by viewport scrollbar sizing. A structured first-session browser path and a manual 30-minute player script are documented in `case-opening-simulator/docs/FINAL_UX_POLISH_AND_FIRST_SESSION_AUDIT.md`. Save schema stays v43 and gameplay formulas are unchanged.

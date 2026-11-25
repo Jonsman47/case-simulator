@@ -1,0 +1,107 @@
+{
+  "date": "2026-11-25T09:12:54.463Z",
+  "baseUrl": "http://127.0.0.1:4174",
+  "browser": "156.0.8078.4",
+  "viewport": "1366x768",
+  "routes": {
+    "home": {
+      "path": "/",
+      "wallMs": 1362,
+      "domContentLoadedMs": 307,
+      "longTaskCount": 4,
+      "longTaskTotalMs": 757,
+      "visibleImages": 2,
+      "domNodes": 397,
+      "resourceCount": 41
+    },
+    "cases": {
+      "path": "/cases",
+      "wallMs": 1283,
+      "domContentLoadedMs": 212,
+      "longTaskCount": 3,
+      "longTaskTotalMs": 711,
+      "visibleImages": 85,
+      "domNodes": 1630,
+      "resourceCount": 51
+    },
+    "inventory": {
+      "path": "/inventory",
+      "wallMs": 693,
+      "domContentLoadedMs": 215,
+      "longTaskCount": 1,
+      "longTaskTotalMs": 52,
+      "visibleImages": 0,
+      "domNodes": 436,
+      "resourceCount": 47
+    },
+    "cswear": {
+      "path": "/cswear",
+      "wallMs": 677,
+      "domContentLoadedMs": 188,
+      "longTaskCount": 2,
+      "longTaskTotalMs": 117,
+      "visibleImages": 0,
+      "domNodes": 272,
+      "resourceCount": 37
+    },
+    "career": {
+      "path": "/career",
+      "wallMs": 723,
+      "domContentLoadedMs": 209,
+      "longTaskCount": 2,
+      "longTaskTotalMs": 130,
+      "visibleImages": 0,
+      "domNodes": 753,
+      "resourceCount": 39
+    },
+    "quests": {
+      "path": "/quests",
+      "wallMs": 771,
+      "domContentLoadedMs": 252,
+      "longTaskCount": 3,
+      "longTaskTotalMs": 187,
+      "visibleImages": 0,
+      "domNodes": 268,
+      "resourceCount": 37
+    },
+    "help": {
+      "path": "/help",
+      "wallMs": 747,
+      "domContentLoadedMs": 224,
+      "longTaskCount": 3,
+      "longTaskTotalMs": 183,
+      "visibleImages": 0,
+      "domNodes": 750,
+      "resourceCount": 40
+    }
+  },
+  "opening": {
+    "1": {
+      "readyMs": 2278,
+      "frameCount": 27,
+      "frameMedianMs": 50,
+      "frameP95Ms": 67,
+      "over50Ms": 15,
+      "domNodes": 2174,
+      "saveCount": 1,
+      "longestSaveMs": 1
+    },
+    "10": {
+      "readyMs": 1783,
+      "frameCount": 21,
+      "frameMedianMs": 67,
+      "frameP95Ms": 83,
+      "over50Ms": 16,
+      "domNodes": 4679,
+      "saveCount": 2,
+      "longestSaveMs": 2
+    }
+  },
+  "largeInventory": {
+    "wallMs": 735,
+    "domNodes": 843,
+    "longTaskCount": 2,
+    "longTaskTotalMs": 142,
+    "longestSaveMs": 0
+  }
+}

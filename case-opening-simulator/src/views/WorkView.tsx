@@ -2,6 +2,7 @@ import { Box, BrainCircuit, Check, CircuitBoard, Clock3, Crosshair, Gem, Play, R
 import { Component, useCallback, useEffect, useRef, useState, type DragEvent, type ReactElement, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CircuitRepairJob, DiamondMinerJob, PackageDeliveryJob, WarehouseRushJob } from '../components/WorkExpansionGames'
+import { GlossaryTerm } from '../components/GlossaryTerm'
 import { getSkillMinigameRewardMultiplier } from '../data/skills'
 import { getClickIncomeMultiplier } from '../data/upgrades'
 import { useGame } from '../hooks/useGame'
@@ -99,6 +100,7 @@ export function WorkView() {
           <p className="font-mono text-xs uppercase text-cs-green">Skill Jobs</p>
           <h2 className="mt-1 text-3xl font-semibold text-cs-text">Work</h2>
           <p className="mt-2 max-w-2xl text-sm text-cs-muted">Short, cooldown-limited jobs for early-game cash. Better play improves skill-job rewards within a fixed safe cap.</p>
+          <p className="mt-1 text-xs text-cs-muted">Jobs also build <GlossaryTerm term="careerXp" label="Career XP" />.</p>
         </div>
         <div className="inline-flex items-center gap-2 border border-cs-border bg-cs-panel px-3 py-2 font-mono text-xs uppercase text-cs-muted"><Trophy size={15} /> Eight available jobs</div>
       </div>

@@ -861,6 +861,7 @@ function openCase(
   openingEventId?: string,
   useOpeningCredits = false,
 ): GameState {
+  if (openingEventId && state.uiEvents.some((event) => event.id === openingEventId && event.type === 'case_opening_started')) return state
   const baseCaseDef = CASE_DEFINITIONS.find((definition) => definition.id === caseId)
 
   if (!baseCaseDef) {

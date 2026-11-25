@@ -399,6 +399,7 @@ export function ItemDetailModal({
             <div className="flex flex-wrap items-center gap-2">
               <span
                 className={`border px-2 py-1 font-mono text-xs uppercase ${styles.label}`}
+                data-onboarding-target="inspection-rarity"
                 style={{
                   borderColor: rarityColor,
                 }}
@@ -406,9 +407,9 @@ export function ItemDetailModal({
                 {getSkinRarityLabel(item)}
               </span>
               <ItemEditionBadge item={item} showRegular />
-              <PatternBadge item={item} />
+              <span data-onboarding-target="inspection-pattern"><PatternBadge item={item} /></span>
             </div>
-            <h2 className="mt-3 truncate text-2xl font-semibold text-cs-text sm:text-3xl" id={titleId}>
+            <h2 className="mt-3 truncate text-2xl font-semibold text-cs-text sm:text-3xl" data-onboarding-target="inspection-name" id={titleId}>
               {item.weapon} | {item.finish}
             </h2>
             <p className="mt-1 font-mono text-xs uppercase text-cs-muted" id={descriptionId}>
@@ -484,9 +485,9 @@ export function ItemDetailModal({
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <DetailStat label="Wear Condition" value={getWearLabel(item.wear)} />
-              <DetailStat label="Float Value" value={item.floatValue.toFixed(3)} />
+              <div className="grid gap-3" data-onboarding-target="inspection-wear"><DetailStat label="Wear Condition" value={getWearLabel(item.wear)} /><DetailStat label="Float Value" value={item.floatValue.toFixed(3)} /></div>
               <DetailStat
+                onboardingTarget="inspection-value"
                 label={`Estimated Value · ${priceConfidence === 'market' ? 'Market source' : priceConfidence === 'fallback' ? 'Condition fallback' : 'Catalog estimate'}`}
                 tone="green"
                 value={formatCurrency(currentSaleValue)}
@@ -644,15 +645,17 @@ export function ItemDetailModal({
 
 function DetailStat({
   label,
+  onboardingTarget,
   tone = 'default',
   value,
 }: {
   label: string
+  onboardingTarget?: string
   tone?: 'default' | 'green'
   value: string
 }) {
   return (
-    <dl className="border border-cs-border bg-cs-panel px-3 py-2">
+    <dl className="border border-cs-border bg-cs-panel px-3 py-2" data-onboarding-target={onboardingTarget}>
       <dt className="font-mono text-xs uppercase text-cs-muted">{label}</dt>
       <dd className={['mt-1 font-mono text-lg', tone === 'green' ? 'text-cs-green' : 'text-cs-text'].join(' ')}>
         {value}

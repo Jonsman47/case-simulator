@@ -24,6 +24,8 @@ test('fresh player follows the real first-opening tutorial and returns to Home',
   await expect(page.getByTestId('toast-stack')).toBeHidden()
   await opening.getByRole('button', { name: 'Skip opening animation' }).click()
   await expect(guide).toContainText('Your new skin', { timeout: 15_000 })
+  await expect(opening).toBeVisible()
+  await expect(opening.getByTestId('opening-result')).toContainText('|')
   await page.waitForFunction(({ key, expected }) => JSON.parse(localStorage.getItem(key) ?? '{}').state?.statistics?.casesOpened === expected, { key: saveKey, expected: before + 1 })
   const after = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? '{}').state.statistics.casesOpened, saveKey)
   expect(after).toBe(before + 1)
@@ -32,15 +34,38 @@ test('fresh player follows the real first-opening tutorial and returns to Home',
   if (await close.isVisible().catch(() => false)) await close.click().catch(() => undefined)
   await expect(opening).toBeHidden({ timeout: 15_000 })
   await page.locator('[data-onboarding-target="nav-inventory"]:visible').first().click()
-  await expect(guide).toContainText('Inspect your skin')
+  await expect(page).toHaveURL(/\/inventory/, { timeout: 20_000 })
+  await expect(guide).toContainText('Inspect your skin', { timeout: 20_000 })
   await page.locator('[data-onboarding-target="acquired-item"]').click()
-  await expect(guide).toContainText('Quests give you goals')
+  for (const [target, lesson] of [
+    ['inspection-name', 'weapon and finish'],
+    ['inspection-rarity', 'Rarity shows'],
+    ['inspection-wear', 'Float determines'],
+    ['inspection-pattern', 'Pattern number'],
+    ['inspection-value', 'approximate market value'],
+  ]) {
+    await expect(guide).toContainText(lesson)
+    await expect(page.locator(`[data-onboarding-target="${target}"]`)).toBeVisible()
+    await page.locator(`[data-onboarding-target="${target}"]`).click()
+    await guide.getByRole('button', { name: 'Next' }).click()
+  }
+  await expect(guide).toContainText('Find a quest')
   await expect(page.getByTestId('toast-stack')).toBeHidden()
   await guide.getByRole('button', { name: 'Go to quests' }).click()
+  await expect(guide).toContainText('A goal you can follow')
+  await expect(page.locator('[data-onboarding-target="quest-beginner"]')).toBeVisible()
+  await guide.getByRole('button', { name: 'Continue' }).click()
+  await expect(guide).toContainText('Watch your progress')
+  await guide.getByRole('button', { name: 'Continue' }).click()
+  await expect(guide).toContainText('Claim the reward')
+  await guide.getByRole('button', { name: 'Continue' }).click()
+  await expect(guide).toContainText('Track a quest')
+  await guide.getByRole('button', { name: 'Skip quest lesson' }).click()
   await expect(guide).toContainText('Earn cash in Work')
   await page.locator('[data-onboarding-target="nav-work"]:visible').first().click()
   await expect(guide).toContainText('You are ready')
   await guide.getByRole('button', { name: 'Go to Home' }).click()
+  await expect(guide.getByRole('link', { name: 'Open Help' })).toHaveAttribute('href', '/help')
   await guide.getByRole('button', { name: 'Finish' }).click()
   await expect(guide).toBeHidden()
   await expect(page.getByRole('heading', { name: 'Continue Opening' })).toBeVisible()

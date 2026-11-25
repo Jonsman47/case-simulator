@@ -6,6 +6,7 @@ import { applyWearMultiplier, getWearConditionForFloat, randomFloatForSkin } fro
 import { applyPatternPremium, classifySkinPattern, generatePaintSeed } from '../../utils/skinPatterns'
 import { createInitialMarketValues } from '../../market/marketSimulation'
 import { createSimulationRandom, deriveSimulationSeed } from '../careerEconomy/seededRandom'
+import { getOpeningCreditQuote } from '../../rewards/dailyRewards'
 
 export type EarlyGamePlaystyle = 'fresh-beginner' | 'opening-focused' | 'collector' | 'trader' | 'quest-focused' | 'work-focused'
 
@@ -92,8 +93,9 @@ export function runEarlyGameScenario(playstyle: EarlyGamePlaystyle, runs = 500, 
         const caseDef = casesOpened >= 5
             ? openingCases[casesOpened % openingCases.length]
             : openingCases[0]
-        const maximumCredit = Math.min(credits, caseDef.cost * 0.35, 1.25)
-        const cashCost = caseDef.cost - maximumCredit
+        const quote = getOpeningCreditQuote(caseDef.cost, credits)
+        const maximumCredit = quote.creditUsed
+        const cashCost = quote.cashCost
         if (cash >= cashCost) {
           cash -= cashCost
           credits -= maximumCredit

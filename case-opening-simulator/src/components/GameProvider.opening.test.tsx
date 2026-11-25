@@ -143,6 +143,8 @@ describe('GameProvider opening session', () => {
       vi.advanceTimersByTime(650)
     })
 
+    expect(screen.getByRole('dialog', { name: 'Case opening animation' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Skip opening animation' }))
     expect(screen.queryByRole('dialog', { name: 'Case opening animation' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Disable animations' }))

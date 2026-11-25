@@ -25,6 +25,8 @@ describe('contextual glossary', () => {
     render(<MemoryRouter><GlossaryTerm term="openingFunds" /></MemoryRouter>)
     const trigger = screen.getByRole('button', { name: 'Explain Case Opening Funds' })
     fireEvent.click(trigger)
+    expect(screen.getByRole('dialog', { name: 'Case Opening Funds explanation' })).toHaveTextContent('It pays first')
+    fireEvent.click(screen.getByRole('button', { name: 'More details' }))
     expect(screen.getByRole('dialog', { name: 'Case Opening Funds explanation' })).toHaveTextContent('cannot buy skins')
     fireEvent.click(screen.getByRole('dialog', { name: 'Case Opening Funds explanation' }).querySelector('button[aria-label="Close explanation"]')!)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()

@@ -188,8 +188,8 @@ export function RewardsView() {
               Case Opening Funds
             </div>
             <p className="mt-1">
-              Extra money that helps pay for opening cases. It cannot buy skins or other items.
-              Eligible cases cost $5 or less; funds cover at most 35%, capped at $1.25 per case.
+              Opening Funds work like money, but you can only spend them on opening cases.
+              They pay first; your wallet covers any remaining cost.
             </p>
           </div>
 
