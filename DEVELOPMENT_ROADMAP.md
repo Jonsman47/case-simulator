@@ -4,13 +4,13 @@ Updated: 2026-11-25
 
 ## Post-overhaul usability and performance corrections
 
-Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+Status: **COMPLETE — LOCAL AND GITHUB CI VERIFICATION PASSED**
 
 - Hold the tutorial's first committed result open, teach five actual item fields, introduce real Quest controls, and end with a Help link.
 - Make Home, Help, Career, and Credits easier to scan; extend contextual glossary coverage and retain all progression authorities.
 - Apply existing restricted Case Opening Funds first on manual case openings, keep other purchases and automated operator budgets unchanged, and reset each new Trade-Up visit to All rarities.
 - Profile production and development routes, CSWEAR listing entry, opening frames, save writes, and large Inventory. Reduce offscreen reel cards and coalesce tutorial target observation. Evidence and limitations: `case-opening-simulator/docs/USABILITY_AND_PERFORMANCE_CORRECTIONS.md`.
-- Local verification passed 550 unit tests, 69/69 Chromium journeys, standalone TypeScript, lint, build, release, and Career/early-game simulations. The early-game model now uses the live Opening Funds quote. GitHub CI is pending. Save schema remains v43.
+- Local verification passed 550 unit tests, 69/69 Chromium journeys, standalone TypeScript, lint, build, release, and Career/early-game simulations. The early-game model now uses the live Opening Funds quote. GitHub [CI run 45632050499](https://github.com/Jonsman47/case-simulator/actions/runs/45632050499) passed on implementation commit `24539f5`, including the Linux browser suite. Save schema remains v43. Physical-device animation pacing and human playtesting remain follow-ups.
 
 ## Usability overhaul — Prompt 4 of 4
 
