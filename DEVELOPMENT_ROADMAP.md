@@ -1,6 +1,18 @@
 # CS2 Case Opening Simulator — Six-Stage Development Roadmap
 
-Updated: 2026-11-25
+Updated: 2026-11-26
+
+## Performance and Work game bug fixes
+
+Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+
+- Profiled repeated case opening, Work, inventory inspection and navigation in development Chromium and Firefox. A full-state prop in every Case card was a confirmed development render hotspot. Stable memoized card props substantially reduced the worst matched Firefox stall, though smaller stalls remain.
+- Removed per-pointer-move React rendering during Warehouse drags; added hidden-tab pause and cleanup. Centered Inventory sale confirmation now keeps the exact item and sale actions in view.
+- Added seeded, validated Package Delivery maps with session recovery; Memory Circuit now plays cumulative 3/5/7 sequences with four synced, mute-aware tones.
+- Extended the existing spotlight architecture into optional concise feature walkthroughs. No economy changes or save-schema bump.
+- Measurements, known limits and verification: `case-opening-simulator/docs/PERFORMANCE_AND_WORK_GAME_BUGFIX_REPORT.md`.
+
+Local gates passed: 561 unit tests, 71 Chromium browser journeys, TypeScript, lint, production/PWA release, and the full Career plus six-playstyle simulations. Production Firefox still showed 501–650 ms reveal-phase frame gaps across two corrected stress captures; physical-browser investigation remains a follow-up.
 
 ## Post-overhaul usability and performance corrections
 

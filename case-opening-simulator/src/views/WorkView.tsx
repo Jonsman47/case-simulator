@@ -7,6 +7,7 @@ import { getSkillMinigameRewardMultiplier } from '../data/skills'
 import { getClickIncomeMultiplier } from '../data/upgrades'
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
+import { createMemorySequence, getMemoryRoundSequence, memoryPadFrequencies, memoryRoundLengths } from '../utils/memoryCircuit'
 import { writePoopCleanupLastCompleted } from '../utils/poopCleanupMinigame'
 import { formatWorkCooldown, getPrecisionHitResult, getWorkBaseReward, getWorkMiniGameCooldownRemaining, workMiniGamesById, type WorkMiniGameId } from '../utils/workMinigames'
 
@@ -14,7 +15,6 @@ const poopIds = ['left', 'center', 'right'] as const
 const boxIds = ['red', 'blue', 'green', 'yellow'] as const
 const memoryPadLabels = ['Amber', 'Cyan', 'Violet', 'Green'] as const
 const precisionAttempts = 5
-const memoryRoundLengths = [3, 4, 5] as const
 const workAsset = (name: string) => `/assets/work/${name}`
 type SortBoxId = (typeof boxIds)[number]
 
@@ -154,7 +154,7 @@ function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { des
   const rewardMax = getWorkBaseReward(gameId, 1) * economyMultiplier
   const isAvailable = cooldownRemaining <= 0
 
-  return <article className="group flex h-full min-h-0 min-w-0 flex-col border border-cs-border bg-cs-surface p-2.5 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60" data-layout-card="true">
+  return <article className="group flex h-full min-h-0 min-w-0 flex-col border border-cs-border bg-cs-surface p-2.5 shadow-[0_10px_28px_rgb(0_0_0_/_0.16)] transition hover:-translate-y-0.5 hover:border-rarity-special/60" data-guide-target="work-job-card" data-layout-card="true">
     <div className="flex min-w-0 items-start gap-3">
       <span className="relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden border border-cs-border bg-[radial-gradient(circle,rgb(var(--cs-panel-muted)),rgb(var(--cs-bg)))]"><img alt={definition.name} className="h-10 w-10 object-contain transition group-hover:scale-105 [image-rendering:pixelated]" loading="lazy" src={thumbnail} /><i className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center bg-cs-bg/90 text-rarity-special">{icon}</i></span>
       <div className="min-w-0">
@@ -164,16 +164,16 @@ function JobOverviewCard({ description, gameId, icon, onPlay, thumbnail }: { des
     </div>
     <p className="mt-2 text-xs leading-5 text-cs-muted">{jobInstructions[gameId]}</p>
     <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5">
+      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5" data-guide-target="work-reward">
         <p className="font-mono text-[10px] uppercase text-cs-muted">Reward</p>
         <p className="mt-1 break-words font-mono text-xs font-semibold text-cs-green">+{formatWorkReward(rewardMin)}{rewardMax !== rewardMin ? `–${formatWorkReward(rewardMax)}` : ''}</p>
       </div>
-      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5 text-right">
+      <div className="min-w-0 border border-cs-border bg-cs-panel px-2 py-1.5 text-right" data-guide-target="work-cooldown">
         <p className="font-mono text-[10px] uppercase text-cs-muted">{isAvailable ? 'Status' : 'Available in'}</p>
         <p className={`mt-1 break-words font-mono text-xs font-semibold ${isAvailable ? 'text-cs-green' : 'text-cs-text'}`}>{isAvailable ? 'Ready' : formatWorkCooldown(cooldownRemaining)}</p>
       </div>
     </div>
-    <button className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special transition hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-cs-panel disabled:text-cs-muted" disabled={!isAvailable} onClick={() => onPlay(gameId)} type="button"><Play size={15} />{isAvailable ? `Play ${definition.name}` : 'On cooldown'}</button>
+    <button className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 border border-rarity-special bg-rarity-special/10 px-3 text-sm font-semibold text-rarity-special transition hover:bg-rarity-special/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rarity-special disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-cs-panel disabled:text-cs-muted" data-guide-target="work-play" disabled={!isAvailable} onClick={() => onPlay(gameId)} type="button"><Play size={15} />{isAvailable ? `Play ${definition.name}` : 'On cooldown'}</button>
   </article>
 }
 
@@ -366,39 +366,65 @@ function MemoryCircuitJob() {
   const { dispatch, state } = useGame()
   const [phase, setPhase] = useState<'idle' | 'countdown' | 'showing' | 'input' | 'transition' | 'finished'>('idle')
   const [countdown, setCountdown] = useState(3); const [round, setRound] = useState(0); const [sequence, setSequence] = useState<number[]>([]); const [displayIndex, setDisplayIndex] = useState(0); const [isFlashOn, setIsFlashOn] = useState(false); const [inputIndex, setInputIndex] = useState(0); const [litPad, setLitPad] = useState<number>(); const [earnedSteps, setEarnedSteps] = useState(0); const [feedback, setFeedback] = useState(''); const completedRef = useRef(false)
+  const fullSequenceRef = useRef<number[]>([])
+  const audioRef = useRef<AudioContext | null>(null)
+  const transitionTimerRef = useRef<number | undefined>(undefined)
+  const flashTimerRef = useRef<number | undefined>(undefined)
   const totalSteps = memoryRoundLengths.reduce((sum, value) => sum + value, 0)
-  const reset = useCallback(() => { completedRef.current = false; setPhase('idle'); setCountdown(3); setRound(0); setSequence([]); setDisplayIndex(0); setIsFlashOn(false); setInputIndex(0); setLitPad(undefined); setEarnedSteps(0); setFeedback('') }, [])
-  const beginRound = useCallback((nextRound: number) => { const nextSequence = Array.from({ length: memoryRoundLengths[nextRound] }, () => Math.floor(Math.random() * memoryPadLabels.length)); setRound(nextRound); setSequence(nextSequence); setDisplayIndex(0); setInputIndex(0); setLitPad(undefined); setIsFlashOn(false); setCountdown(3); setFeedback('Get ready'); setPhase('countdown') }, [])
+  const playPad = useCallback((pad: number) => {
+    if (!state.settings.soundEnabled || state.settings.soundVolume <= 0 || typeof AudioContext === 'undefined') return
+    try {
+      const context = audioRef.current
+      if (!context) return
+      if (context.state === 'suspended') void context.resume()
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const at = context.currentTime
+      oscillator.type = 'sine'
+      oscillator.frequency.value = memoryPadFrequencies[pad]
+      gain.gain.setValueAtTime(Math.min(0.11, state.settings.soundVolume * 0.11), at)
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.18)
+      oscillator.connect(gain); gain.connect(context.destination)
+      oscillator.start(at); oscillator.stop(at + 0.18)
+    } catch { /* Sound is optional; visual playback remains authoritative. */ }
+  }, [state.settings.soundEnabled, state.settings.soundVolume])
+  useEffect(() => () => {
+    window.clearTimeout(transitionTimerRef.current)
+    window.clearTimeout(flashTimerRef.current)
+    if (audioRef.current) void audioRef.current.close()
+  }, [])
+  const reset = useCallback(() => { window.clearTimeout(transitionTimerRef.current); window.clearTimeout(flashTimerRef.current); completedRef.current = false; fullSequenceRef.current = []; setPhase('idle'); setCountdown(3); setRound(0); setSequence([]); setDisplayIndex(0); setIsFlashOn(false); setInputIndex(0); setLitPad(undefined); setEarnedSteps(0); setFeedback('') }, [])
+  const beginRound = useCallback((nextRound: number) => { setRound(nextRound); setSequence(getMemoryRoundSequence(fullSequenceRef.current, nextRound)); setDisplayIndex(0); setInputIndex(0); setLitPad(undefined); setIsFlashOn(false); setCountdown(3); setFeedback('Get ready'); setPhase('countdown') }, [])
   useEffect(() => {
     if (phase !== 'countdown') return
     const timeout = window.setTimeout(() => {
       if (countdown > 1) { setCountdown((value) => value - 1); return }
-      setFeedback('WATCH THE SEQUENCE'); setDisplayIndex(0); setLitPad(sequence[0]); setIsFlashOn(true); setPhase('showing')
+      setFeedback('WATCH THE SEQUENCE'); setDisplayIndex(0); setLitPad(sequence[0]); playPad(sequence[0]); setIsFlashOn(true); setPhase('showing')
     }, 650)
     return () => window.clearTimeout(timeout)
-  }, [countdown, phase, sequence])
+  }, [countdown, phase, playPad, sequence])
   useEffect(() => {
     if (phase !== 'showing' || sequence.length === 0) return
     const timeout = window.setTimeout(() => {
       if (isFlashOn) { setLitPad(undefined); setIsFlashOn(false); return }
       const nextIndex = displayIndex + 1
       if (nextIndex >= sequence.length) { setFeedback('YOUR TURN'); setPhase('input'); return }
-      setDisplayIndex(nextIndex); setLitPad(sequence[nextIndex]); setIsFlashOn(true)
+      setDisplayIndex(nextIndex); setLitPad(sequence[nextIndex]); playPad(sequence[nextIndex]); setIsFlashOn(true)
     }, isFlashOn ? 480 : 260)
     return () => window.clearTimeout(timeout)
-  }, [displayIndex, isFlashOn, phase, sequence])
+  }, [displayIndex, isFlashOn, phase, playPad, sequence])
   const finishGame = useCallback((finalSteps: number) => { if (completedRef.current) return; const performance = finalSteps / totalSteps; completedRef.current = true; setPhase('finished'); setFeedback(`${Math.round(performance * 100)}% recall`); dispatch({ type: 'COMPLETE_WORK_MINIGAME', gameId: 'memoryCircuit', now: getCurrentTimestamp(), performance }) }, [dispatch, totalSteps])
   const choosePad = useCallback((pad: number) => {
     if (phase !== 'input' || completedRef.current) return
-    setLitPad(pad); window.setTimeout(() => setLitPad(undefined), 140)
-    if (pad !== sequence[inputIndex]) { playWorkTone(state.settings.soundEnabled, state.settings.soundVolume, 'miss'); setFeedback('Incorrect — preparing the next round'); setPhase('transition'); if (round + 1 >= memoryRoundLengths.length) finishGame(earnedSteps); else window.setTimeout(() => beginRound(round + 1), 700); return }
-    const nextSteps = earnedSteps + 1; setEarnedSteps(nextSteps); playWorkTone(state.settings.soundEnabled, state.settings.soundVolume, 'good')
-    if (inputIndex + 1 >= sequence.length) { setFeedback('Round complete'); setPhase('transition'); if (round + 1 >= memoryRoundLengths.length) finishGame(nextSteps); else window.setTimeout(() => beginRound(round + 1), 700) } else { setFeedback(`Correct · ${inputIndex + 1}/${sequence.length}`); setInputIndex((value) => value + 1) }
-  }, [beginRound, earnedSteps, finishGame, inputIndex, phase, round, sequence, state.settings.soundEnabled, state.settings.soundVolume])
+    playPad(pad); setLitPad(pad); window.clearTimeout(flashTimerRef.current); flashTimerRef.current = window.setTimeout(() => setLitPad(undefined), 140)
+    if (pad !== sequence[inputIndex]) { setFeedback('Incorrect — preparing the next round'); setPhase('transition'); if (round + 1 >= memoryRoundLengths.length) finishGame(earnedSteps); else transitionTimerRef.current = window.setTimeout(() => beginRound(round + 1), 700); return }
+    const nextSteps = earnedSteps + 1; setEarnedSteps(nextSteps)
+    if (inputIndex + 1 >= sequence.length) { setFeedback('Round complete'); setPhase('transition'); if (round + 1 >= memoryRoundLengths.length) finishGame(nextSteps); else transitionTimerRef.current = window.setTimeout(() => beginRound(round + 1), 700) } else { setFeedback(`Correct · ${inputIndex + 1}/${sequence.length}`); setInputIndex((value) => value + 1) }
+  }, [beginRound, earnedSteps, finishGame, inputIndex, phase, playPad, round, sequence])
   useEffect(() => { if (phase !== 'input') return; const onKeyDown = (event: KeyboardEvent) => { const pad = Number(event.key) - 1; if (pad >= 0 && pad < 4) choosePad(pad) }; window.addEventListener('keydown', onKeyDown); return () => window.removeEventListener('keydown', onKeyDown) }, [choosePad, phase])
   const performanceScore = earnedSteps / totalSteps
   const reward = getWorkBaseReward('memoryCircuit', performanceScore) * getRewardMultiplier(state.upgrades, state.learnedSkillNodeIds)
-  return <JobFrame description="Memory sequence · 15 minute cooldown" gameId="memoryCircuit" icon={<BrainCircuit size={20} />} instructions="Watch and repeat three growing light sequences. A 3–2–1 countdown starts every round; input stays locked until YOUR TURN." onReset={reset} title="Memory Circuit">{() => phase === 'idle' ? <StartPanel action="Start Memory Circuit" icon={<Sparkles size={16} />} onStart={() => { completedRef.current = false; setEarnedSteps(0); beginRound(0) }} text="Three rounds: remember sequences of 3, 4, then 5 signals. Use buttons or number keys 1–4." /> : (
+  return <JobFrame description="Memory sequence · 15 minute cooldown" gameId="memoryCircuit" icon={<BrainCircuit size={20} />} instructions="Watch and repeat one growing light sequence. Each round adds two signals: 3, then 5, then 7. Input stays locked until YOUR TURN." onReset={reset} title="Memory Circuit">{() => phase === 'idle' ? <StartPanel action="Start Memory Circuit" icon={<Sparkles size={16} />} onStart={() => { completedRef.current = false; setEarnedSteps(0); fullSequenceRef.current = createMemorySequence(); if (state.settings.soundEnabled && typeof AudioContext !== 'undefined') { try { audioRef.current ??= new AudioContext(); if (audioRef.current.state === 'suspended') void audioRef.current.resume() } catch { /* Browser audio permission is optional. */ } } beginRound(0) }} text="Three rounds: repeat 3, then the same 3 plus 2, then the same 5 plus 2. Use buttons or number keys 1–4." /> : (
     <div className="relative mt-3 flex min-h-[18rem] flex-col border border-cs-border bg-cs-bg p-3 sm:p-4">
       <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 font-mono text-xs uppercase text-cs-muted"><span>Round {round + 1} / {memoryRoundLengths.length} · Signal {phase === 'showing' ? Math.min(displayIndex + 1, sequence.length) : Math.min(inputIndex + 1, sequence.length)} / {sequence.length}</span><span aria-live="assertive" className={`font-semibold ${phase === 'input' ? 'text-cs-green' : phase === 'showing' || phase === 'countdown' ? 'text-rarity-special' : 'text-cs-muted'}`} role="status">{phase === 'countdown' ? `Starting in ${countdown}` : feedback}</span></div>
       {phase === 'countdown' ? <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-cs-bg/75"><span className="grid h-24 w-24 place-items-center border-2 border-rarity-special bg-cs-surface font-mono text-5xl font-bold text-rarity-special shadow-glow">{countdown}</span></div> : null}

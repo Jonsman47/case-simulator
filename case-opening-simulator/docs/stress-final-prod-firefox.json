@@ -1,0 +1,241 @@
+{
+  "date": "2026-11-26T14:08:42.450Z",
+  "browser": "firefox",
+  "browserVersion": "157.0",
+  "baseUrl": "http://127.0.0.1:4174",
+  "viewport": "1366x768",
+  "cycles": 4,
+  "durationMs": 39069,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 5183
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 8431
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 10873
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 11254
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 12922
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 13214
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 20207
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 21475
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 26175
+    },
+    {
+      "name": "/",
+      "elapsedMs": 26655
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 26831
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 27032
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 27221
+    },
+    {
+      "name": "/",
+      "elapsedMs": 27361
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 27515
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 27703
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 30719
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 31662
+    },
+    {
+      "name": "/",
+      "elapsedMs": 31769
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 31775
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 34383
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 35247
+    },
+    {
+      "name": "/",
+      "elapsedMs": 35365
+    },
+    {
+      "name": "repeat-cycle-2",
+      "elapsedMs": 35370
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 38092
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 38962
+    },
+    {
+      "name": "/",
+      "elapsedMs": 39063
+    },
+    {
+      "name": "repeat-cycle-3",
+      "elapsedMs": 39069
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 713,
+  "frameP95Ms": 200,
+  "maxFrameMs": 650,
+  "framesOver200": 32,
+  "topStalls": [
+    {
+      "atMs": 3318,
+      "gapMs": 650,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 2651,
+      "gapMs": 502,
+      "phase": "case 1: animation"
+    },
+    {
+      "atMs": 7190,
+      "gapMs": 483,
+      "phase": "case 2: skip reveal"
+    },
+    {
+      "atMs": 29608,
+      "gapMs": 449,
+      "phase": "repeat 1: skip reveal"
+    },
+    {
+      "atMs": 1081,
+      "gapMs": 433,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 9445,
+      "gapMs": 419,
+      "phase": "case 3: animation"
+    },
+    {
+      "atMs": 30041,
+      "gapMs": 417,
+      "phase": "repeat 1: summary"
+    },
+    {
+      "atMs": 8026,
+      "gapMs": 385,
+      "phase": "case 2: skip reveal"
+    },
+    {
+      "atMs": 30458,
+      "gapMs": 383,
+      "phase": "navigate /inventory"
+    },
+    {
+      "atMs": 3718,
+      "gapMs": 367,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 7624,
+      "gapMs": 367,
+      "phase": "case 2: skip reveal"
+    },
+    {
+      "atMs": 6690,
+      "gapMs": 352,
+      "phase": "case 2: animation"
+    },
+    {
+      "atMs": 6155,
+      "gapMs": 317,
+      "phase": "case 2: animation"
+    },
+    {
+      "atMs": 8376,
+      "gapMs": 317,
+      "phase": "case 2: summary"
+    },
+    {
+      "atMs": 33580,
+      "gapMs": 317,
+      "phase": "repeat 2: skip reveal"
+    },
+    {
+      "atMs": 36902,
+      "gapMs": 317,
+      "phase": "repeat 3: skip reveal"
+    },
+    {
+      "atMs": 37385,
+      "gapMs": 317,
+      "phase": "repeat 3: summary"
+    },
+    {
+      "atMs": 9761,
+      "gapMs": 300,
+      "phase": "case 3: animation"
+    },
+    {
+      "atMs": 10245,
+      "gapMs": 300,
+      "phase": "case 3: skip reveal"
+    },
+    {
+      "atMs": 8693,
+      "gapMs": 283,
+      "phase": "case 3: transaction click"
+    }
+  ],
+  "longTaskCount": 0,
+  "longTasksOver200": 0,
+  "maxLongTaskMs": 0,
+  "topLongTasks": [],
+  "maxEventLoopDelayMs": 202,
+  "saveCount": 8,
+  "maxSerializeMs": 3,
+  "maxWriteMs": 2,
+  "heapStartMb": null,
+  "heapEndMb": null,
+  "hotspots": []
+}

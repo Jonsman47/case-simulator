@@ -1,0 +1,308 @@
+{
+  "date": "2026-11-25T20:54:30.637Z",
+  "browser": "chromium",
+  "browserVersion": "156.0.8078.4",
+  "baseUrl": "http://127.0.0.1:5175",
+  "viewport": "1366x768",
+  "cycles": 4,
+  "durationMs": 26625,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 3058
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 4888
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 6649
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 7257
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 7915
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 8293
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 11996
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 13304
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 18002
+    },
+    {
+      "name": "/",
+      "elapsedMs": 18265
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 18377
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 18508
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 18626
+    },
+    {
+      "name": "/",
+      "elapsedMs": 18850
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 18990
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 19077
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 21233
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 21697
+    },
+    {
+      "name": "/",
+      "elapsedMs": 21751
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 21752
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 23702
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 24134
+    },
+    {
+      "name": "/",
+      "elapsedMs": 24187
+    },
+    {
+      "name": "repeat-cycle-2",
+      "elapsedMs": 24192
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 26164
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 26535
+    },
+    {
+      "name": "/",
+      "elapsedMs": 26619
+    },
+    {
+      "name": "repeat-cycle-3",
+      "elapsedMs": 26625
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 827,
+  "frameP95Ms": 67,
+  "maxFrameMs": 417,
+  "framesOver200": 7,
+  "topStalls": [
+    {
+      "atMs": 25185,
+      "gapMs": 417,
+      "phase": "repeat 3: animation"
+    },
+    {
+      "atMs": 5336,
+      "gapMs": 367,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 22702,
+      "gapMs": 367,
+      "phase": "repeat 2: transaction click"
+    },
+    {
+      "atMs": 1302,
+      "gapMs": 350,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 20252,
+      "gapMs": 317,
+      "phase": "repeat 1: transaction click"
+    },
+    {
+      "atMs": 3502,
+      "gapMs": 300,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 1669,
+      "gapMs": 283,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 452,
+      "gapMs": 183,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 4802,
+      "gapMs": 117,
+      "phase": "case 2: summary"
+    },
+    {
+      "atMs": 7252,
+      "gapMs": 117,
+      "phase": "/inventory"
+    }
+  ],
+  "longTaskCount": 21,
+  "longTasksOver200": 6,
+  "maxLongTaskMs": 396,
+  "topLongTasks": [
+    {
+      "atMs": 24765,
+      "durationMs": 396,
+      "phase": "repeat 3: transaction click"
+    },
+    {
+      "atMs": 4958,
+      "durationMs": 383,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 22330,
+      "durationMs": 377,
+      "phase": "repeat 2: transaction click"
+    },
+    {
+      "atMs": 3159,
+      "durationMs": 344,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 19931,
+      "durationMs": 309,
+      "phase": "repeat 1: transaction click"
+    },
+    {
+      "atMs": 1376,
+      "durationMs": 289,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 336,
+      "durationMs": 115,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 12933,
+      "durationMs": 109,
+      "phase": "warehouse-drag-80"
+    }
+  ],
+  "maxEventLoopDelayMs": 345,
+  "saveCount": 8,
+  "maxSerializeMs": 4.7,
+  "maxWriteMs": 2.4,
+  "heapStartMb": 58,
+  "heapEndMb": 58,
+  "hotspots": [
+    {
+      "functionName": "(idle)",
+      "url": "",
+      "hits": 10619
+    },
+    {
+      "functionName": "(program)",
+      "url": "",
+      "hits": 1626
+    },
+    {
+      "functionName": "run",
+      "url": "",
+      "hits": 128
+    },
+    {
+      "functionName": "JSON.stringify",
+      "url": "",
+      "hits": 71
+    },
+    {
+      "functionName": "(garbage collector)",
+      "url": "",
+      "hits": 69
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 56
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 47
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 46
+    },
+    {
+      "functionName": "addObjectDiffToProperties",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=c4a3b001",
+      "hits": 45
+    },
+    {
+      "functionName": "getBoundingClientRect",
+      "url": "",
+      "hits": 44
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 43
+    },
+    {
+      "functionName": "query",
+      "url": "",
+      "hits": 41
+    },
+    {
+      "functionName": "addValueToProperties",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=c4a3b001",
+      "hits": 41
+    },
+    {
+      "functionName": "",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-window.js?v=c4a3b001",
+      "hits": 40
+    },
+    {
+      "functionName": "exports.createElement",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-BytbQO6c.js?v=c4a3b001",
+      "hits": 38
+    }
+  ]
+}

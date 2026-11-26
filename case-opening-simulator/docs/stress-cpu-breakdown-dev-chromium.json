@@ -1,0 +1,251 @@
+{
+  "date": "2026-11-25T20:56:03.739Z",
+  "browser": "chromium",
+  "browserVersion": "156.0.8078.4",
+  "baseUrl": "http://127.0.0.1:5175",
+  "viewport": "1366x768",
+  "cycles": 2,
+  "durationMs": 21268,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 3038
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 4849
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 6645
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 7137
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 7864
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 8206
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 11542
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 12908
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 17585
+    },
+    {
+      "name": "/",
+      "elapsedMs": 17783
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 17905
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 18020
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 18184
+    },
+    {
+      "name": "/",
+      "elapsedMs": 18375
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 18467
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 18599
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 20670
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 21223
+    },
+    {
+      "name": "/",
+      "elapsedMs": 21267
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 21268
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 663,
+  "frameP95Ms": 67,
+  "maxFrameMs": 350,
+  "framesOver200": 5,
+  "topStalls": [
+    {
+      "atMs": 1303,
+      "gapMs": 350,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 3503,
+      "gapMs": 350,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 19702,
+      "gapMs": 350,
+      "phase": "repeat 1: transaction click"
+    },
+    {
+      "atMs": 5269,
+      "gapMs": 333,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 1669,
+      "gapMs": 283,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 436,
+      "gapMs": 167,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 2536,
+      "gapMs": 117,
+      "phase": "case 1: animation"
+    }
+  ],
+  "longTaskCount": 15,
+  "longTasksOver200": 4,
+  "maxLongTaskMs": 351,
+  "topLongTasks": [
+    {
+      "atMs": 4926,
+      "durationMs": 351,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 3156,
+      "durationMs": 342,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 19350,
+      "durationMs": 329,
+      "phase": "repeat 1: transaction click"
+    },
+    {
+      "atMs": 1378,
+      "durationMs": 298,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 323,
+      "durationMs": 112,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 12658,
+      "durationMs": 110,
+      "phase": "warehouse-drag-80"
+    }
+  ],
+  "maxEventLoopDelayMs": 360,
+  "saveCount": 6,
+  "maxSerializeMs": 4.5,
+  "maxWriteMs": 2.2,
+  "heapStartMb": 58,
+  "heapEndMb": 58,
+  "hotspots": [
+    {
+      "functionName": "(idle)",
+      "url": "",
+      "hits": 9309
+    },
+    {
+      "functionName": "(program)",
+      "url": "",
+      "hits": 1134
+    },
+    {
+      "functionName": "run",
+      "url": "",
+      "hits": 60
+    },
+    {
+      "functionName": "(garbage collector)",
+      "url": "",
+      "hits": 51
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 41
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 40
+    },
+    {
+      "functionName": "JSON.stringify",
+      "url": "",
+      "hits": 31
+    },
+    {
+      "functionName": "focus",
+      "url": "",
+      "hits": 30
+    },
+    {
+      "functionName": "query",
+      "url": "",
+      "hits": 28
+    },
+    {
+      "functionName": "exports.createElement",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-BytbQO6c.js?v=c4a3b001",
+      "hits": 27
+    },
+    {
+      "functionName": "AudioContext",
+      "url": "",
+      "hits": 26
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 25
+    },
+    {
+      "functionName": "exports.createElement",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-BytbQO6c.js?v=c4a3b001",
+      "hits": 24
+    },
+    {
+      "functionName": "",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-window.js?v=c4a3b001",
+      "hits": 23
+    },
+    {
+      "functionName": "addValueToProperties",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-dom_client.js?v=c4a3b001",
+      "hits": 22
+    }
+  ]
+}

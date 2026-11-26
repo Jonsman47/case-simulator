@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 import '@testing-library/jest-dom/vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { Profiler } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DiamondMinerJob, WarehouseRushJob } from './WorkExpansionGames'
 
@@ -16,7 +17,7 @@ describe('Work expansion input', () => {
     Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', { configurable: true, value: () => true })
     Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', { configurable: true, value: vi.fn() })
   })
-  afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks() })
+  afterEach(() => { cleanup(); Reflect.deleteProperty(document, 'hidden'); vi.useRealTimers(); vi.restoreAllMocks() })
 
   it('starts Warehouse Rush on the first keyboard action and scores that box', () => {
     render(<WarehouseRushJob />)
@@ -41,6 +42,34 @@ describe('Work expansion input', () => {
     fireEvent.pointerDown(nextBox, { pointerId: 2, pointerType: 'touch' })
     fireEvent.pointerCancel(nextBox, { pointerId: 2, pointerType: 'touch' })
     expect(container).toHaveTextContent('1 correct · 0 missed')
+  })
+
+  it('moves the drag image without a React commit for every pointer event', () => {
+    let commits = 0
+    render(<Profiler id="warehouse" onRender={() => { commits += 1 }}><WarehouseRushJob /></Profiler>)
+    const box = screen.getByAltText('red package')
+    fireEvent.pointerDown(box, { pointerId: 7, pointerType: 'mouse', clientX: 10, clientY: 10 })
+    const afterStart = commits
+    for (let index = 0; index < 80; index += 1) fireEvent.pointerMove(box, { pointerId: 7, pointerType: 'mouse', clientX: index + 20, clientY: 40 })
+    expect(commits).toBe(afterStart)
+    expect(document.querySelector('img.pointer-events-none.fixed')).toHaveStyle({ left: '99px', top: '40px' })
+  })
+
+  it('pauses the conveyor deadline while the browser tab is hidden and removes its timer on unmount', () => {
+    const view = render(<WarehouseRushJob />)
+    fireEvent.keyDown(window, { key: '1' })
+    expect(screen.getByText('1 correct · 0 missed')).toBeInTheDocument()
+    Object.defineProperty(document, 'hidden', { configurable: true, value: true })
+    fireEvent(document, new Event('visibilitychange'))
+    act(() => { vi.advanceTimersByTime(10_000) })
+    expect(screen.getByText('1 correct · 0 missed')).toBeInTheDocument()
+    Object.defineProperty(document, 'hidden', { configurable: true, value: false })
+    fireEvent(document, new Event('visibilitychange'))
+    act(() => { vi.advanceTimersByTime(1_750) })
+    expect(screen.getByText('1 correct · 1 missed')).toBeInTheDocument()
+    view.unmount()
+    act(() => { vi.advanceTimersByTime(10_000) })
+    expect(dispatch).not.toHaveBeenCalled()
   })
 
   it('keeps Diamond Miner mechanics intact with concise, accurate instructions', () => {

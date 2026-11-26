@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AssetImage } from '../components/AssetImage'
 import { GLOSSARY, type GlossaryKey } from '../data/glossary'
+import { getWalkthrough } from '../data/featureWalkthroughs'
 import type { OnboardingTipId } from '../data/gameState'
 import { useGame } from '../hooks/useGame'
 import { useSessionStorageState } from '../hooks/useSessionStorageState'
@@ -77,7 +78,7 @@ export function HelpCenter() {
           <div className="mt-5 grid gap-4 xl:grid-cols-2"><section><h3 className="flex items-center gap-2 font-semibold"><BookOpen size={17} className="text-rarity-industrial" /> Try this</h3><ol className="mt-2 list-inside list-decimal space-y-1 text-sm leading-6 text-cs-muted">{selectedArticle.steps.map((entry) => <li key={entry}>{entry}</li>)}</ol></section><section className="border-l-2 border-rarity-industrial bg-cs-panel p-3"><h3 className="text-sm font-semibold">Example</h3><p className="mt-1 text-sm leading-6 text-cs-muted">{selectedArticle.example}</p></section></div>
           <p className="mt-5 flex items-start gap-2 border border-cs-border p-3 text-sm text-cs-muted"><AlertTriangle size={17} className="mt-0.5 shrink-0 text-cs-amber" /><span><strong className="text-cs-text">Common mistake: </strong>{selectedArticle.mistake}</span></p>
           <details className="mt-3 border border-cs-border bg-cs-panel p-3"><summary className="cursor-pointer text-sm font-semibold text-rarity-industrial">More details</summary><p className="mt-2 text-sm leading-6 text-cs-muted">{selectedArticle.advanced}</p></details>
-          <div className="mt-5 flex flex-wrap gap-2"><Link className="inline-flex min-h-10 items-center gap-2 border border-rarity-industrial px-3 text-sm font-semibold text-rarity-industrial" to={selectedArticle.path}>Open feature <ExternalLink size={14} /></Link>{selectedArticle.guide ? <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-muted" onClick={() => replayGuide(selectedArticle.guide!)} type="button">Replay feature guide</button> : null}</div>
+          <div className="mt-5 flex flex-wrap gap-2"><Link className="inline-flex min-h-10 items-center gap-2 border border-rarity-industrial px-3 text-sm font-semibold text-rarity-industrial" to={selectedArticle.path}>Open feature <ExternalLink size={14} /></Link>{getWalkthrough(selectedArticle.path) ? <Link className="inline-flex min-h-10 items-center border border-cs-border px-3 text-sm text-cs-muted" to={`${selectedArticle.path}?guide=1`}>Walk through this page</Link> : null}{selectedArticle.guide ? <button className="min-h-10 border border-cs-border px-3 text-sm text-cs-muted" onClick={() => replayGuide(selectedArticle.guide!)} type="button">Replay feature guide</button> : null}</div>
         </>}
       </article>
     </div>

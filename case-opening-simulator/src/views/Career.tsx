@@ -165,7 +165,7 @@ export function Career() {
 
   return (
     <section className="w-full space-y-3">
-      <header className="border-l-4 border-rarity-special bg-cs-surface p-4 sm:p-5">
+      <header className="border-l-4 border-rarity-special bg-cs-surface p-4 sm:p-5" data-guide-target="career-progress">
         <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-widest text-rarity-special">Your progression</p><h1 className="mt-1 text-2xl font-bold text-cs-text sm:text-3xl">Career &amp; Upgrades</h1><p className="mt-1 text-sm text-cs-muted"><GlossaryText parts={['Play to gain ', { term: 'careerXp', label: 'XP' }, ', choose a ', { term: 'specialization', label: 'path' }, ', then buy the upgrades you want.']} /></p></div><Link className="inline-flex min-h-9 items-center border border-cs-border px-3 text-xs text-cs-muted" to="/progress">Achievements &amp; Stats</Link></div>
         <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-[minmax(0,1.5fr)_minmax(15rem,.8fr)]">
           <div className="min-w-0" data-testid="career-xp"><div className="flex flex-wrap items-end gap-x-3 gap-y-1"><span className="font-mono text-3xl font-bold text-rarity-special" data-testid="career-level">{snapshot.level}</span><div><p className="text-sm font-semibold" data-testid="career-rank">{snapshot.rank.name}</p><p className="text-xs text-cs-muted">{snapshot.currentRunXp.toLocaleString()} current-run XP · {snapshot.xpForNextLevel.toLocaleString()} to next level</p></div></div><div className="mt-3"><ProgressBar label={snapshot.level >= 100 ? 'Career level complete' : `Progress to level ${snapshot.level + 1}`} value={snapshot.levelProgress} /></div></div>

@@ -1,0 +1,323 @@
+{
+  "date": "2026-11-25T20:59:18.142Z",
+  "browser": "chromium",
+  "browserVersion": "156.0.8078.4",
+  "baseUrl": "http://127.0.0.1:5175",
+  "viewport": "1366x768",
+  "cycles": 4,
+  "durationMs": 26436,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 3370
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 4991
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 6670
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 7192
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 7905
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 8266
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 12321
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 13623
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 18336
+    },
+    {
+      "name": "/",
+      "elapsedMs": 18532
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 18681
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 18833
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 19088
+    },
+    {
+      "name": "/",
+      "elapsedMs": 19178
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 19320
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 19411
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 21414
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 21928
+    },
+    {
+      "name": "/",
+      "elapsedMs": 21967
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 21968
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 23686
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 24179
+    },
+    {
+      "name": "/",
+      "elapsedMs": 24218
+    },
+    {
+      "name": "repeat-cycle-2",
+      "elapsedMs": 24219
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 26002
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 26387
+    },
+    {
+      "name": "/",
+      "elapsedMs": 26435
+    },
+    {
+      "name": "repeat-cycle-3",
+      "elapsedMs": 26436
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 815,
+  "frameP95Ms": 67,
+  "maxFrameMs": 367,
+  "framesOver200": 2,
+  "topStalls": [
+    {
+      "atMs": 1386,
+      "gapMs": 367,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 1686,
+      "gapMs": 217,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 20385,
+      "gapMs": 200,
+      "phase": "repeat 1: animation"
+    },
+    {
+      "atMs": 453,
+      "gapMs": 183,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 3669,
+      "gapMs": 183,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 5286,
+      "gapMs": 183,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 22768,
+      "gapMs": 183,
+      "phase": "repeat 2: transaction click"
+    },
+    {
+      "atMs": 25035,
+      "gapMs": 183,
+      "phase": "repeat 3: transaction click"
+    },
+    {
+      "atMs": 6052,
+      "gapMs": 150,
+      "phase": "case 3: animation"
+    },
+    {
+      "atMs": 2953,
+      "gapMs": 133,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 3086,
+      "gapMs": 133,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 7186,
+      "gapMs": 117,
+      "phase": "navigate /inventory"
+    },
+    {
+      "atMs": 25185,
+      "gapMs": 117,
+      "phase": "repeat 3: animation"
+    }
+  ],
+  "longTaskCount": 23,
+  "longTasksOver200": 1,
+  "maxLongTaskMs": 226,
+  "topLongTasks": [
+    {
+      "atMs": 1460,
+      "durationMs": 226,
+      "phase": "case 1: transaction click"
+    },
+    {
+      "atMs": 24842,
+      "durationMs": 197,
+      "phase": "repeat 3: transaction click"
+    },
+    {
+      "atMs": 5093,
+      "durationMs": 196,
+      "phase": "case 3: transaction click"
+    },
+    {
+      "atMs": 3478,
+      "durationMs": 195,
+      "phase": "case 2: transaction click"
+    },
+    {
+      "atMs": 20178,
+      "durationMs": 190,
+      "phase": "repeat 1: transaction click"
+    },
+    {
+      "atMs": 22577,
+      "durationMs": 185,
+      "phase": "repeat 2: transaction click"
+    },
+    {
+      "atMs": 2919,
+      "durationMs": 122,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 342,
+      "durationMs": 119,
+      "phase": "initializing"
+    }
+  ],
+  "maxEventLoopDelayMs": 282,
+  "saveCount": 8,
+  "maxSerializeMs": 3.8,
+  "maxWriteMs": 2.6,
+  "heapStartMb": 54,
+  "heapEndMb": 54,
+  "hotspots": [
+    {
+      "functionName": "(idle)",
+      "url": "",
+      "hits": 10763
+    },
+    {
+      "functionName": "(program)",
+      "url": "",
+      "hits": 1619
+    },
+    {
+      "functionName": "(garbage collector)",
+      "url": "",
+      "hits": 79
+    },
+    {
+      "functionName": "getBoundingClientRect",
+      "url": "",
+      "hits": 46
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 43
+    },
+    {
+      "functionName": "",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-window.js?v=c4a3b001",
+      "hits": 42
+    },
+    {
+      "functionName": "query",
+      "url": "",
+      "hits": 41
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 40
+    },
+    {
+      "functionName": "exports.createElement",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-BytbQO6c.js?v=c4a3b001",
+      "hits": 35
+    },
+    {
+      "functionName": "focus",
+      "url": "",
+      "hits": 32
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 32
+    },
+    {
+      "functionName": "exports.jsxDEV",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c4a3b001",
+      "hits": 32
+    },
+    {
+      "functionName": "exports.createElement",
+      "url": "http://127.0.0.1:5175/node_modules/.vite/deps/react-BytbQO6c.js?v=c4a3b001",
+      "hits": 30
+    },
+    {
+      "functionName": "",
+      "url": "",
+      "hits": 27
+    },
+    {
+      "functionName": "formatCurrency",
+      "url": "http://127.0.0.1:5175/src/utils/format.ts",
+      "hits": 27
+    }
+  ]
+}

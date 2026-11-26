@@ -2,6 +2,7 @@ import { ArrowLeft, ArrowRight, Pause, Play, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import type { FeatureId, OnboardingStepId } from '../data/gameState'
+import { getWalkthrough } from '../data/featureWalkthroughs'
 import { useGame } from '../hooks/useGame'
 
 interface Step {
@@ -48,7 +49,7 @@ function useSpotlight(target: string | undefined, active: boolean) {
     let watched: Element | null = null
     let resizeObserver: ResizeObserver | undefined
     const measure = () => {
-      const choices = [...document.querySelectorAll(`[data-onboarding-target="${target}"]`)]
+      const choices = [...document.querySelectorAll(target.startsWith('[') ? target : `[data-onboarding-target="${target}"]`)]
       const visible = (candidate: Element) => { const box = candidate.getBoundingClientRect(); return box.width > 0 && box.height > 0 }
       const mobileMenu = document.querySelector('[data-onboarding-target="mobile-menu"]')
       const node = choices.find(visible) ?? (target.startsWith('nav-') && mobileMenu && visible(mobileMenu) ? mobileMenu : null)
@@ -129,6 +130,37 @@ export function OnboardingTutorial() {
   const featureUnlocks = state.ui.featureUnlocks
   const nextUnpresented = useMemo(() => featureUnlocks.unlockedIds.find((id) => !(featureUnlocks.presentedIds ?? []).includes(id)), [featureUnlocks])
   const featureAtRoute = featureUnlocks.unlockedIds.find((id) => `/${id}` === location.pathname || (id === 'market' && location.pathname === '/market'))
+  const walkthrough = getWalkthrough(location.pathname)
+  const walkthroughParams = new URLSearchParams(location.search)
+  const walkthroughOpen = !open && walkthroughParams.get('guide') === '1' && Boolean(walkthrough)
+  const walkthroughIndex = Math.min(Math.max(Number(walkthroughParams.get('step')) || 0, 0), Math.max(0, (walkthrough?.steps.length ?? 1) - 1))
+  const walkthroughStep = walkthrough?.steps[walkthroughIndex]
+  const [walkthroughBlocked, setWalkthroughBlocked] = useState(false)
+  useEffect(() => {
+    if (!walkthroughOpen) return
+    const check = () => setWalkthroughBlocked(Boolean(document.querySelector('[aria-label="Case opening animation"], [aria-label="Trade-Up reveal"], [aria-label$="minigame"]')))
+    const observer = new MutationObserver(check)
+    observer.observe(document.body, { childList: true, subtree: true })
+    check()
+    return () => observer.disconnect()
+  }, [walkthroughOpen])
+  const walkthroughRect = useSpotlight(walkthroughStep?.target, walkthroughOpen && !walkthroughBlocked)
+  useEffect(() => {
+    if (!walkthroughOpen || walkthroughBlocked || !walkthroughStep) return
+    const target = document.querySelector(walkthroughStep.target)
+    if (!target || typeof target.scrollIntoView !== 'function') return
+    const rect = target.getBoundingClientRect()
+    if (rect.top < 8 || rect.bottom > window.innerHeight - 8) target.scrollIntoView({ block: 'center', behavior: 'instant' })
+  }, [walkthroughBlocked, walkthroughOpen, walkthroughStep])
+
+  const closeWalkthrough = () => {
+    if (walkthrough && featureUnlocks.unlockedIds.includes(walkthrough.id as FeatureId) && !featureUnlocks.introducedIds.includes(walkthrough.id as FeatureId)) dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { introducedIds: [...featureUnlocks.introducedIds, walkthrough.id as FeatureId] } })
+    navigate(location.pathname, { replace: true })
+  }
+  const moveWalkthrough = (next: number) => {
+    if (!walkthrough || next >= walkthrough.steps.length) { closeWalkthrough(); return }
+    navigate(`${location.pathname}?guide=1&step=${Math.max(0, next)}`, { replace: true })
+  }
 
   const advance = useCallback((nextIndex: number, completed = true) => {
     const next = steps[Math.max(0, Math.min(steps.length - 1, nextIndex))]
@@ -237,6 +269,20 @@ export function OnboardingTutorial() {
     </>
   }
 
+  if (walkthroughOpen && walkthrough && walkthroughStep) {
+    if (walkthroughBlocked) return null
+    return <>
+      {walkthroughRect ? <div aria-hidden="true" className="pointer-events-none fixed z-[105] rounded border-2 border-rarity-special shadow-[0_0_0_9999px_rgba(0,0,0,.56),0_0_18px_rgb(var(--rarity-special)_/_0.55)]" data-testid="walkthrough-spotlight" style={{ left: Math.max(2, walkthroughRect.left - 4), top: Math.max(2, walkthroughRect.top - 4), width: walkthroughRect.width + 8, height: walkthroughRect.height + 8 }} /> : null}
+      <aside aria-label={`${walkthrough.label} walkthrough`} className="fixed z-[110] max-h-[calc(100dvh-1rem)] overflow-y-auto border border-rarity-special bg-cs-surface p-3 shadow-glow" data-testid="feature-walkthrough" style={getPanelStyle(walkthroughRect)}>
+        <p className="font-mono text-[10px] uppercase text-rarity-special">{walkthrough.label} · {walkthroughIndex + 1}/{walkthrough.steps.length}</p>
+        <h2 className="mt-1 font-semibold text-cs-text">{walkthroughStep.title}</h2>
+        <p className="mt-2 text-sm leading-5 text-cs-text">{walkthroughStep.body}</p>
+        {!walkthroughRect ? <p className="mt-2 text-xs text-cs-amber">{walkthroughStep.recovery ?? 'This control is not visible in the current state. Continue or skip the guide.'}</p> : null}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2"><button className="min-h-9 border border-cs-border px-2 text-xs text-cs-muted" onClick={closeWalkthrough} type="button">Skip guide</button><div className="flex gap-1"><button className="min-h-9 border border-cs-border px-2 text-xs text-cs-muted disabled:opacity-40" disabled={walkthroughIndex === 0} onClick={() => moveWalkthrough(walkthroughIndex - 1)} type="button">Back</button><button className="min-h-9 border border-rarity-special bg-rarity-special/10 px-3 text-xs font-semibold text-rarity-special" onClick={() => moveWalkthrough(walkthroughIndex + 1)} type="button">{walkthroughIndex + 1 === walkthrough.steps.length ? 'Finish' : 'Next'}</button></div></div>
+      </aside>
+    </>
+  }
+
   if (state.marketplace.pendingAcquisition || document.querySelector('[role="dialog"]')) return null
   const labels: Record<string, string> = { 'collection-book': 'Collection Book', quests: 'Quests', market: 'Market Price Checker', cswear: 'CSWEAR', 'trade-ups': 'Trade-Ups', business: 'Business', prestige: 'Prestige' }
   const paths: Record<string, string> = { 'collection-book': '/collection-book', quests: '/quests', market: '/market', cswear: '/cswear', 'trade-ups': '/trade-ups', business: '/business', prestige: '/prestige' }
@@ -251,7 +297,7 @@ export function OnboardingTutorial() {
       business: 'Employees unlock through Career levels and require wages and budgets.',
       prestige: 'Review the exact eligibility and reset effects before committing.',
     }
-    return <aside aria-label={`${labels[featureAtRoute]} introduction`} className="pointer-events-none fixed bottom-3 left-3 z-[70] w-[min(22rem,calc(100vw-1.5rem))] border border-rarity-special bg-cs-surface p-3 shadow-glow max-sm:bottom-auto max-sm:top-3" role="status"><p className="font-mono text-[10px] uppercase text-rarity-special">First visit</p><h2 className="mt-1 font-semibold">{labels[featureAtRoute]}</h2><p className="mt-1 text-sm text-cs-muted">{explanations[featureAtRoute]}</p><button className="pointer-events-auto mt-3 min-h-9 border border-rarity-special px-3 text-xs font-semibold text-rarity-special" onClick={() => dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { introducedIds: [...featureUnlocks.introducedIds, featureAtRoute] } })} type="button">Got it</button></aside>
+    return <aside aria-label={`${labels[featureAtRoute]} introduction`} className="pointer-events-none fixed bottom-3 left-3 z-[70] w-[min(22rem,calc(100vw-1.5rem))] border border-rarity-special bg-cs-surface p-3 shadow-glow max-sm:bottom-auto max-sm:top-3" role="status"><p className="font-mono text-[10px] uppercase text-rarity-special">First visit</p><h2 className="mt-1 font-semibold">{labels[featureAtRoute]}</h2><p className="mt-1 text-sm text-cs-muted">{explanations[featureAtRoute]}</p><div className="pointer-events-auto mt-3 flex gap-2"><button className="min-h-9 border border-rarity-special px-3 text-xs font-semibold text-rarity-special" onClick={() => navigate(`${location.pathname}?guide=1`, { replace: true })} type="button">Show me around</button><button className="min-h-9 border border-cs-border px-3 text-xs text-cs-muted" onClick={() => dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { introducedIds: [...featureUnlocks.introducedIds, featureAtRoute] } })} type="button">Maybe later</button></div></aside>
   }
   if (!activeUnlock) return null
   const acknowledge = () => { dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { acknowledgedIds: [...featureUnlocks.acknowledgedIds, activeUnlock] } }); setActiveUnlock(undefined) }

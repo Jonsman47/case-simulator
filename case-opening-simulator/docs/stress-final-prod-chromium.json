@@ -1,0 +1,237 @@
+{
+  "date": "2026-11-26T14:09:20.448Z",
+  "browser": "chromium",
+  "browserVersion": "156.0.8078.4",
+  "baseUrl": "http://127.0.0.1:4174",
+  "viewport": "1366x768",
+  "cycles": 4,
+  "durationMs": 21214,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 2460
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 3920
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 5328
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 5586
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 6088
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 6280
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 9930
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 11179
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 15828
+    },
+    {
+      "name": "/",
+      "elapsedMs": 16057
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 16168
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 16377
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 16465
+    },
+    {
+      "name": "/",
+      "elapsedMs": 16528
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 16610
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 16699
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 17866
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 18222
+    },
+    {
+      "name": "/",
+      "elapsedMs": 18280
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 18281
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 19428
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 19742
+    },
+    {
+      "name": "/",
+      "elapsedMs": 19780
+    },
+    {
+      "name": "repeat-cycle-2",
+      "elapsedMs": 19781
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 20875
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 21165
+    },
+    {
+      "name": "/",
+      "elapsedMs": 21213
+    },
+    {
+      "name": "repeat-cycle-3",
+      "elapsedMs": 21214
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 702,
+  "frameP95Ms": 67,
+  "maxFrameMs": 250,
+  "framesOver200": 1,
+  "topStalls": [
+    {
+      "atMs": 949,
+      "gapMs": 250,
+      "phase": "initializing"
+    },
+    {
+      "atMs": 2299,
+      "gapMs": 117,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 3332,
+      "gapMs": 117,
+      "phase": "case 2: animation"
+    },
+    {
+      "atMs": 20481,
+      "gapMs": 117,
+      "phase": "repeat 3: skip reveal"
+    }
+  ],
+  "longTaskCount": 9,
+  "longTasksOver200": 0,
+  "maxLongTaskMs": 89,
+  "topLongTasks": [],
+  "maxEventLoopDelayMs": 226,
+  "saveCount": 8,
+  "maxSerializeMs": 4.5,
+  "maxWriteMs": 2.1,
+  "heapStartMb": 18,
+  "heapEndMb": 18,
+  "hotspots": [
+    {
+      "functionName": "(idle)",
+      "url": "",
+      "hits": 10329
+    },
+    {
+      "functionName": "(program)",
+      "url": "",
+      "hits": 1424
+    },
+    {
+      "functionName": "(garbage collector)",
+      "url": "",
+      "hits": 60
+    },
+    {
+      "functionName": "",
+      "url": "http://127.0.0.1:4174/assets/vendor-virtual-v3UUEBYi.js",
+      "hits": 41
+    },
+    {
+      "functionName": "query",
+      "url": "",
+      "hits": 40
+    },
+    {
+      "functionName": "focus",
+      "url": "",
+      "hits": 36
+    },
+    {
+      "functionName": "AudioContext",
+      "url": "",
+      "hits": 27
+    },
+    {
+      "functionName": "getBoundingClientRect",
+      "url": "",
+      "hits": 27
+    },
+    {
+      "functionName": "focus",
+      "url": "",
+      "hits": 24
+    },
+    {
+      "functionName": "W",
+      "url": "http://127.0.0.1:4174/assets/index-CQbHDZnJ.js",
+      "hits": 22
+    },
+    {
+      "functionName": "getCSSContent",
+      "url": "",
+      "hits": 20
+    },
+    {
+      "functionName": "getCSSContent",
+      "url": "",
+      "hits": 19
+    },
+    {
+      "functionName": "",
+      "url": "",
+      "hits": 17
+    },
+    {
+      "functionName": "Xn",
+      "url": "http://127.0.0.1:4174/assets/chart-CqkOcUED.js",
+      "hits": 17
+    },
+    {
+      "functionName": "JSON.stringify",
+      "url": "",
+      "hits": 16
+    }
+  ]
+}

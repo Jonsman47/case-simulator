@@ -1,0 +1,241 @@
+{
+  "date": "2026-11-26T14:10:42.930Z",
+  "browser": "firefox",
+  "browserVersion": "157.0",
+  "baseUrl": "http://127.0.0.1:4174",
+  "viewport": "1366x768",
+  "cycles": 4,
+  "durationMs": 37544,
+  "milestones": [
+    {
+      "name": "open-10-1",
+      "elapsedMs": 3928
+    },
+    {
+      "name": "open-10-2",
+      "elapsedMs": 6506
+    },
+    {
+      "name": "open-10-3",
+      "elapsedMs": 9340
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 9818
+    },
+    {
+      "name": "inspect-3",
+      "elapsedMs": 11570
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 11887
+    },
+    {
+      "name": "warehouse-drag-80",
+      "elapsedMs": 18939
+    },
+    {
+      "name": "warehouse-10",
+      "elapsedMs": 20222
+    },
+    {
+      "name": "memory-first-input",
+      "elapsedMs": 24903
+    },
+    {
+      "name": "/",
+      "elapsedMs": 25422
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 25580
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 25800
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 26014
+    },
+    {
+      "name": "/",
+      "elapsedMs": 26154
+    },
+    {
+      "name": "/cases",
+      "elapsedMs": 26290
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 26483
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 29191
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 30386
+    },
+    {
+      "name": "/",
+      "elapsedMs": 30511
+    },
+    {
+      "name": "repeat-cycle-1",
+      "elapsedMs": 30516
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 33104
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 33904
+    },
+    {
+      "name": "/",
+      "elapsedMs": 34019
+    },
+    {
+      "name": "repeat-cycle-2",
+      "elapsedMs": 34024
+    },
+    {
+      "name": "/inventory",
+      "elapsedMs": 36893
+    },
+    {
+      "name": "/work",
+      "elapsedMs": 37420
+    },
+    {
+      "name": "/",
+      "elapsedMs": 37538
+    },
+    {
+      "name": "repeat-cycle-3",
+      "elapsedMs": 37544
+    }
+  ],
+  "consoleErrors": [],
+  "frameCount": 691,
+  "frameP95Ms": 200,
+  "maxFrameMs": 501,
+  "framesOver200": 31,
+  "topStalls": [
+    {
+      "atMs": 5009,
+      "gapMs": 501,
+      "phase": "case 2: animation"
+    },
+    {
+      "atMs": 7913,
+      "gapMs": 501,
+      "phase": "case 3: skip reveal"
+    },
+    {
+      "atMs": 2739,
+      "gapMs": 434,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 7396,
+      "gapMs": 401,
+      "phase": "case 3: animation"
+    },
+    {
+      "atMs": 8331,
+      "gapMs": 401,
+      "phase": "case 3: skip reveal"
+    },
+    {
+      "atMs": 3190,
+      "gapMs": 384,
+      "phase": "case 1: skip reveal"
+    },
+    {
+      "atMs": 5393,
+      "gapMs": 357,
+      "phase": "case 2: skip reveal"
+    },
+    {
+      "atMs": 8731,
+      "gapMs": 334,
+      "phase": "case 3: skip reveal"
+    },
+    {
+      "atMs": 35888,
+      "gapMs": 334,
+      "phase": "repeat 3: skip reveal"
+    },
+    {
+      "atMs": 2272,
+      "gapMs": 317,
+      "phase": "case 1: animation"
+    },
+    {
+      "atMs": 6478,
+      "gapMs": 317,
+      "phase": "case 2: summary"
+    },
+    {
+      "atMs": 28127,
+      "gapMs": 317,
+      "phase": "repeat 1: skip reveal"
+    },
+    {
+      "atMs": 28611,
+      "gapMs": 317,
+      "phase": "repeat 1: summary"
+    },
+    {
+      "atMs": 32400,
+      "gapMs": 317,
+      "phase": "repeat 2: skip reveal"
+    },
+    {
+      "atMs": 29913,
+      "gapMs": 300,
+      "phase": "repeat cycle 1 inventory"
+    },
+    {
+      "atMs": 31899,
+      "gapMs": 300,
+      "phase": "repeat 2: skip reveal"
+    },
+    {
+      "atMs": 35388,
+      "gapMs": 300,
+      "phase": "repeat 3: skip reveal"
+    },
+    {
+      "atMs": 36356,
+      "gapMs": 300,
+      "phase": "repeat 3: summary"
+    },
+    {
+      "atMs": 3490,
+      "gapMs": 284,
+      "phase": "case 1: summary"
+    },
+    {
+      "atMs": 5877,
+      "gapMs": 284,
+      "phase": "case 2: skip reveal"
+    }
+  ],
+  "longTaskCount": 0,
+  "longTasksOver200": 0,
+  "maxLongTaskMs": 0,
+  "topLongTasks": [],
+  "maxEventLoopDelayMs": 207,
+  "saveCount": 8,
+  "maxSerializeMs": 2,
+  "maxWriteMs": 2,
+  "heapStartMb": null,
+  "heapEndMb": null,
+  "hotspots": []
+}

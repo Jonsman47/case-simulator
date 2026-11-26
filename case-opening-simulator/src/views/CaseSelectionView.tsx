@@ -1,6 +1,6 @@
 import type { ChartData, ChartOptions } from 'chart.js'
 import { History, Lock, Star } from 'lucide-react'
-import { type TouchEvent, useMemo, useRef, useState } from 'react'
+import { memo, type TouchEvent, useCallback, useMemo, useRef, useState } from 'react'
 import { AssetImage } from '../components/AssetImage'
 import { CaseOpenControls, type CaseOpenOptions } from '../components/CaseOpenControls'
 import { PriceChart } from '../components/PriceChart'
@@ -104,22 +104,36 @@ function getBestDropLabel(skin: SkinBase | undefined) {
   return `${skin.weapon} | ${skin.finish}`
 }
 
-function CaseCard({
+const CaseCard = memo(function CaseCard({
   bestDrop,
-  caseDef,
+  badgeClass,
+  canOpen,
+  caseCost,
+  caseId,
+  caseImage,
+  caseName,
+  licenseCost,
   isFavorite,
   isSelected,
   isStarter,
   onSelect,
-  state,
+  statusLabel,
+  unlockLabel,
 }: {
   bestDrop: SkinBase | undefined
-  caseDef: CaseDefinition
+  badgeClass: string
+  canOpen: boolean
+  caseCost: number
+  caseId: string
+  caseImage: string
+  caseName: string
+  licenseCost?: number
   isFavorite: boolean
   isSelected: boolean
   isStarter: boolean
-  onSelect: (caseDef: CaseDefinition) => void
-  state: GameState
+  onSelect: (caseId: string) => void
+  statusLabel: string
+  unlockLabel: string
 }) {
   return (
     <button
@@ -131,40 +145,40 @@ function CaseCard({
         'group flex h-full min-h-[13.5rem] min-w-0 flex-col border bg-cs-panel p-2.5 text-left outline-none transition-colors hover:bg-cs-panelMuted focus-visible:ring-2 focus-visible:ring-rarity-special sm:min-h-[15rem] sm:p-3',
         isSelected ? 'border-rarity-special ring-2 ring-rarity-special' : 'border-cs-border',
       ].join(' ')}
-      onClick={() => onSelect(caseDef)}
+      onClick={() => onSelect(caseId)}
       type="button"
     >
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
-        <span className={`max-w-full border px-2 py-1 text-center font-mono text-[10px] uppercase leading-4 ${getCaseBadgeClass(caseDef, state)}`}>
-          {getCaseStatusLabel(caseDef, state)}
+        <span className={`max-w-full border px-2 py-1 text-center font-mono text-[10px] uppercase leading-4 ${badgeClass}`}>
+          {statusLabel}
         </span>
         <span className="inline-flex min-w-0 flex-col items-end gap-1 break-words text-right font-mono text-xs text-cs-muted">
           <span className="inline-flex max-w-full flex-wrap items-center justify-end gap-2">
           {isFavorite ? <Star aria-hidden="true" fill="currentColor" size={14} className="text-rarity-special" /> : null}
-          {formatCurrency(caseDef.cost)}
+          {formatCurrency(caseCost)}
           </span>
-          {!canOpenCaseFromSelection(caseDef, state) && requiresCaseLicense(caseDef) ? (
+          {!canOpen && licenseCost !== undefined ? (
             <span className="inline-flex items-center gap-1 text-cs-amber">
               <Lock size={12} />
-              {formatCurrency(caseDef.caseLicenseCost ?? 0)}
+              {formatCurrency(licenseCost)}
             </span>
           ) : null}
         </span>
       </div>
 
       <div className="mt-2 grid h-16 place-items-center border border-cs-border bg-cs-surface sm:h-20">
-        <AssetImage alt="" className="h-14 w-14 object-contain sm:h-16 sm:w-16" draggable={false} src={caseDef.image} />
+        <AssetImage alt="" className="h-14 w-14 object-contain sm:h-16 sm:w-16" draggable={false} src={caseImage} />
       </div>
 
       <div className="mt-3 min-w-0">
-        <h3 className="break-words text-base font-semibold leading-5 text-cs-text">{caseDef.name}</h3>
-        <p className="mt-1 break-words text-xs text-cs-muted">{getUnlockProgressLabel(caseDef, state)}</p>
+        <h3 className="break-words text-base font-semibold leading-5 text-cs-text">{caseName}</h3>
+        <p className="mt-1 break-words text-xs text-cs-muted">{unlockLabel}</p>
       </div>
 
       <dl className="mt-3 grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 text-xs">
         <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Open Cost</dt>
-          <dd className="mt-1 break-words font-semibold text-cs-text">{formatCurrency(caseDef.cost)}</dd>
+          <dd className="mt-1 break-words font-semibold text-cs-text">{formatCurrency(caseCost)}</dd>
         </div>
         <div className="min-w-0 border border-cs-border bg-cs-surface px-2 py-1.5">
           <dt className="font-mono text-[10px] uppercase text-cs-muted">Best Drop</dt>
@@ -186,7 +200,7 @@ function CaseCard({
       </div>
     </button>
   )
-}
+})
 
 function RarityDistributionChart({ rarityStats }: { rarityStats: CaseRarityStat[] }) {
   const data = useMemo<ChartData<'pie'>>(
@@ -675,6 +689,11 @@ export function CaseSelectionView() {
     return sortCases(filterCases(caseDefinitions, filter), sort, state)
   }, [caseDefinitions, filter, sort, state])
   const [selectedCaseId, setSelectedCaseId] = useSessionStorageState<string | undefined>('cases:selected-case', undefined)
+  const selectCase = useCallback((caseId: string) => {
+    setSelectedCaseId(caseId)
+    dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { selectedCaseId: caseId } })
+    window.dispatchEvent(new CustomEvent('tutorial:case-selected', { detail: caseId }))
+  }, [dispatch, setSelectedCaseId])
   const selectedCase = useMemo(() => {
     return (
       casesWithDisplayData.find((caseDef) => caseDef.id === searchParams.get('case')) ??
@@ -747,13 +766,20 @@ export function CaseSelectionView() {
           {casesWithDisplayData.map((caseDef) => (
             <CaseCard
               bestDrop={getBestPossibleDrop(caseDef, skinsById, state.marketValues)}
-              caseDef={caseDef}
+              badgeClass={getCaseBadgeClass(caseDef, state)}
+              canOpen={canOpenCaseFromSelection(caseDef, state)}
+              caseCost={caseDef.cost}
+              caseId={caseDef.id}
+              caseImage={caseDef.image}
+              caseName={caseDef.name}
+              licenseCost={requiresCaseLicense(caseDef) ? caseDef.caseLicenseCost ?? getCaseLicenseCost(caseDef) : undefined}
               isFavorite={favoriteCaseIds.has(caseDef.id)}
               isSelected={caseDef.id === selectedCase?.id}
               isStarter={caseDef.id === starterCaseId}
               key={caseDef.id}
-              onSelect={(nextCase) => { setSelectedCaseId(nextCase.id); dispatch({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { selectedCaseId: nextCase.id } }); window.dispatchEvent(new CustomEvent('tutorial:case-selected', { detail: nextCase.id })) }}
-              state={state}
+              onSelect={selectCase}
+              statusLabel={getCaseStatusLabel(caseDef, state)}
+              unlockLabel={getUnlockProgressLabel(caseDef, state)}
             />
           ))}
         </div>

@@ -61,7 +61,7 @@ const quickRevealDurationMs = 420
 const audioRollStartMs = 1250
 const audioRevealAtMs = 8000
 const normalRollDurationMs = audioRevealAtMs - audioRollStartMs
-const maxAnimatedBatchItems = 120
+const maxAnimatedBatchItems = 20
 const placeholderCaseImage = '/assets/placeholder.png'
 const rareSpecialSuspenseImage = '/assets/GOLDGOLDGOLD.png'
 const preRevealAccentColor = 'rgb(var(--rarity-special))'
@@ -72,12 +72,12 @@ function getReelLayout(batchSize: number): ReelLayout {
     // the target card. Without the extra cards, the ticker can reveal the dark stage
     // before the final item lands under the center marker.
     return {
-      afterCount: 12,
+      afterCount: 6,
       cardWidthRem: 3.3,
-      fillerCount: 32,
+      fillerCount: 17,
       slotPitchRem: 3.8,
-      startIndex: 3,
-      targetIndex: 18,
+      startIndex: 2,
+      targetIndex: 10,
     }
   }
 
@@ -86,25 +86,25 @@ function getReelLayout(batchSize: number): ReelLayout {
     // during deceleration; this keeps the CS-style ticker continuous instead of
     // ending on a blank panel.
     return {
-      afterCount: 12,
+      afterCount: 7,
       cardWidthRem: 5.25,
-      fillerCount: 35,
+      fillerCount: 20,
       slotPitchRem: 5.75,
-      startIndex: 5,
-      targetIndex: 22,
+      startIndex: 3,
+      targetIndex: 12,
     }
   }
 
   if (batchSize > 6) {
-    return { afterCount: 12, cardWidthRem: 7.25, fillerCount: 35, slotPitchRem: 7.75, startIndex: 5, targetIndex: 22 }
+    return { afterCount: 7, cardWidthRem: 7.25, fillerCount: 20, slotPitchRem: 7.75, startIndex: 3, targetIndex: 12 }
   }
 
   if (batchSize > 3) {
-    return { afterCount: 12, cardWidthRem: 8, fillerCount: 35, slotPitchRem: 8.5, startIndex: 5, targetIndex: 22 }
+    return { afterCount: 7, cardWidthRem: 8, fillerCount: 20, slotPitchRem: 8.5, startIndex: 3, targetIndex: 12 }
   }
 
   if (batchSize > 1) {
-    return { afterCount: 12, cardWidthRem: 9.5, fillerCount: 35, slotPitchRem: 10, startIndex: 5, targetIndex: 22 }
+    return { afterCount: 7, cardWidthRem: 9.5, fillerCount: 20, slotPitchRem: 10, startIndex: 3, targetIndex: 12 }
   }
 
   return {

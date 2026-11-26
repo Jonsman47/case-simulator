@@ -82,6 +82,95 @@ export const DELIVERY_OBSTACLES = new Set(['0-2', '1-2', '3-1', '3-3'])
 export const DELIVERY_PACKAGES = ['1-1', '4-0'] as const
 export const DELIVERY_DESTINATIONS = ['0-4', '4-4'] as const
 
+export interface DeliveryMap {
+  seed: number
+  layout: 'barrier' | 'scattered' | 'zigzag' | 'fallback'
+  start: GridPoint
+  obstacles: string[]
+  packages: string[]
+  destinations: string[]
+  shortestRoute: number
+}
+
+type DeliveryDirection = 'down' | 'left' | 'right' | 'up'
+const deliveryDirections: DeliveryDirection[] = ['up', 'right', 'down', 'left']
+const deliveryCells = Array.from({ length: DELIVERY_GRID_SIZE ** 2 }, (_, index) => `${Math.floor(index / DELIVERY_GRID_SIZE)}-${index % DELIVERY_GRID_SIZE}`)
+
+function pointFromKey(key: string): GridPoint {
+  const [row, column] = key.split('-').map(Number)
+  return { row, column }
+}
+
+export function findShortestDeliveryRoute(map: Pick<DeliveryMap, 'start' | 'obstacles' | 'packages' | 'destinations'>): DeliveryDirection[] | undefined {
+  const obstacles = new Set(map.obstacles)
+  const startKey = pointKey(map.start)
+  if (obstacles.has(startKey) || new Set([...map.obstacles, startKey, ...map.packages, ...map.destinations]).size !== 1 + map.obstacles.length + map.packages.length + map.destinations.length) return undefined
+  const queue: Array<{ point: GridPoint; picked: number; delivered: number; route: DeliveryDirection[] }> = [{ point: map.start, picked: 0, delivered: 0, route: [] }]
+  const visited = new Set<string>()
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index]
+    if (current.delivered === (1 << map.destinations.length) - 1) return current.route
+    if (current.route.length >= DELIVERY_MAX_MOVES) continue
+    for (const direction of deliveryDirections) {
+      const next = moveDeliveryPosition(current.point, direction, obstacles)
+      if (next === current.point) continue
+      const key = pointKey(next)
+      let picked = current.picked
+      let delivered = current.delivered
+      const packageIndex = map.packages.indexOf(key)
+      if (packageIndex >= 0) picked |= 1 << packageIndex
+      const destinationIndex = map.destinations.indexOf(key)
+      if (destinationIndex >= 0 && !(delivered & (1 << destinationIndex)) && picked.toString(2).replaceAll('0', '').length > delivered.toString(2).replaceAll('0', '').length) delivered |= 1 << destinationIndex
+      const identity = `${key}:${picked}:${delivered}`
+      if (visited.has(identity)) continue
+      visited.add(identity)
+      queue.push({ point: next, picked, delivered, route: [...current.route, direction] })
+    }
+  }
+  return undefined
+}
+
+export function generateDeliveryMap(seed: number): DeliveryMap {
+  const random = createPrng(seed)
+  for (let attempt = 0; attempt < 160; attempt += 1) {
+    const layout = (['scattered', 'barrier', 'zigzag'] as const)[(attempt + (seed >>> 0) % 3) % 3]
+    const obstacles = new Set<string>()
+    if (layout === 'barrier') {
+      const row = 1 + Math.floor(random() * 3)
+      const gap = Math.floor(random() * DELIVERY_GRID_SIZE)
+      for (let column = 0; column < DELIVERY_GRID_SIZE; column += 1) if (column !== gap) obstacles.add(`${row}-${column}`)
+    } else if (layout === 'zigzag') {
+      const row = 1 + Math.floor(random() * 3)
+      const column = 1 + Math.floor(random() * 3)
+      for (let offset = 0; offset < 2; offset += 1) { obstacles.add(`${row}-${(column + offset) % 5}`); obstacles.add(`${(row + offset + 2) % 5}-${column}`) }
+    }
+    while (obstacles.size < 4) obstacles.add(deliveryCells[Math.floor(random() * deliveryCells.length)])
+    const available = deliveryCells.filter((key) => !obstacles.has(key))
+    for (let index = available.length - 1; index > 0; index -= 1) {
+      const swap = Math.floor(random() * (index + 1))
+      ;[available[index], available[swap]] = [available[swap], available[index]]
+    }
+    const candidate = {
+      seed: seed >>> 0, layout, start: pointFromKey(available[0]), obstacles: [...obstacles],
+      packages: available.slice(1, 3), destinations: available.slice(3, 5), shortestRoute: 0,
+    }
+    const route = findShortestDeliveryRoute(candidate)
+    if (route && route.length >= 9 && route.length <= 20) return { ...candidate, shortestRoute: route.length }
+  }
+  const rotate = (point: GridPoint) => {
+    let result = point
+    for (let index = 0; index < (seed >>> 0) % 4; index += 1) result = { row: result.column, column: DELIVERY_GRID_SIZE - 1 - result.row }
+    return result
+  }
+  const fallback = {
+    seed: seed >>> 0, layout: 'fallback' as const, start: rotate({ row: 0, column: 0 }),
+    obstacles: [...DELIVERY_OBSTACLES].map((key) => pointKey(rotate(pointFromKey(key)))),
+    packages: DELIVERY_PACKAGES.map((key) => pointKey(rotate(pointFromKey(key)))),
+    destinations: DELIVERY_DESTINATIONS.map((key) => pointKey(rotate(pointFromKey(key)))), shortestRoute: 0,
+  }
+  return { ...fallback, shortestRoute: findShortestDeliveryRoute(fallback)?.length ?? DELIVERY_MAX_MOVES }
+}
+
 export function pointKey(point: GridPoint) {
   return `${point.row}-${point.column}`
 }

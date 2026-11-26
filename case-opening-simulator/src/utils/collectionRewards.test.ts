@@ -3,6 +3,7 @@ import { CaseStatus, Rarity, WearCondition, type CaseDefinition, type Collection
 import {
   applyCollectionLuckToDropTable,
   applyCollectionRewardsToCase,
+  applyCollectionRewardsToCases,
   applyCollectionSellValueBonus,
   getCollectionRewardStatuses,
   getCollectionPrestigeBonus,
@@ -143,6 +144,12 @@ describe('collection rewards', () => {
     expect(rewardedCase.cost).toBe(9.5)
     expect(boostedDropTable.reduce((total, drop) => total + drop.weight, 0)).toBeCloseTo(100)
     expect(betaWeightAfter).toBeGreaterThan(betaWeightBefore)
+  })
+
+  it('shares the catalog lookup without changing any batch case cost or drop weight', () => {
+    const reward: CollectionRewardProgress = { id: 'luck', type: 'RarityLuck', targetId: Rarity.Consumer, bonus: 0.02, unlockedAt: 123 }
+    const cases = [caseDef, { ...caseDef, id: 'second_case' }]
+    expect(applyCollectionRewardsToCases(cases, [reward], skins)).toEqual(cases.map((entry) => applyCollectionRewardsToCase(entry, [reward], skins)))
   })
 
   it('exposes full-game prestige bonuses as carry-over rewards', () => {

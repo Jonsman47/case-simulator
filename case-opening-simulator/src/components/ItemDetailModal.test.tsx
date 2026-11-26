@@ -88,6 +88,29 @@ function ItemDetailModalHarness({
 }
 
 describe('ItemDetailModal', () => {
+  it('confirms the exact sale in a separate dialog and restores focus after cancellation', async () => {
+    render(<ItemDetailModalHarness />)
+    const sell = screen.getByRole('button', { name: 'Sell Instantly' })
+    fireEvent.click(sell)
+    const confirmation = screen.getByRole('dialog', { name: 'Confirm sale' })
+    expect(confirmation).toBeInTheDocument()
+    expect(confirmation).toHaveTextContent('AK-47 | Redline')
+    expect(confirmation).toHaveTextContent('Field-Tested')
+    expect(confirmation).toHaveTextContent('$75.00')
+    expect(screen.getByRole('button', { name: 'Confirm Sale' })).toBeInTheDocument()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Confirm sale' })).not.toBeInTheDocument()
+    await vi.waitFor(() => expect(sell).toHaveFocus())
+    fireEvent.click(sell)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm Sale' }))
+    expect(screen.getByText('Closed')).toBeInTheDocument()
+  })
+
+  it('does not offer instant sale for a locked item', () => {
+    render(<ItemDetailModalHarness initialItems={[makeItem({ isLocked: true })]} />)
+    expect(screen.getByRole('button', { name: 'Sell Instantly' })).toBeDisabled()
+  })
+
   it('toggles lock and favorite flags through the modal actions', () => {
     render(<ItemDetailModalHarness />)
 

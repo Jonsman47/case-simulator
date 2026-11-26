@@ -303,6 +303,15 @@ export function applyCollectionLuckToDropTable(
 ) {
   const skinsById = new Map(skins.map((skin) => [skin.id, skin]))
 
+  return applyCollectionLuckWithLookup(dropTable, collectionRewards, skinsById, rewardMultiplier)
+}
+
+function applyCollectionLuckWithLookup(
+  dropTable: DropTableEntry[],
+  collectionRewards: CollectionRewardProgress[],
+  skinsById: ReadonlyMap<string, SkinBase>,
+  rewardMultiplier: number,
+) {
   return normalizeDropTable(
     dropTable.map((drop) => {
       const luckBonus = getRarityLuckBonusForSkin(
@@ -345,7 +354,14 @@ export function applyCollectionRewardsToCases(
   skins: SkinBase[] = SKIN_DEFINITIONS,
   rewardMultiplier = 1,
 ) {
+  // The catalog lookup is independent of case and reward state. Construct it
+  // once per batch instead of once for every case on each progression update.
+  const skinsById = new Map(skins.map((skin) => [skin.id, skin]))
   return caseDefinitions.map((caseDef) =>
-    applyCollectionRewardsToCase(caseDef, collectionRewards, skins, rewardMultiplier),
+    ({
+      ...caseDef,
+      cost: getCollectionCaseCost(caseDef, collectionRewards, rewardMultiplier),
+      dropTable: applyCollectionLuckWithLookup(caseDef.dropTable, collectionRewards, skinsById, rewardMultiplier),
+    }),
   )
 }

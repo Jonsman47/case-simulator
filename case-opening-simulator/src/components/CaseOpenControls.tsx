@@ -65,6 +65,7 @@ export const CaseOpenControls = memo(function CaseOpenControls({
           return (
             <button
               aria-label={`Open ${quantity}`}
+              data-guide-target={quantity === 1 ? 'open-one-button' : undefined}
               aria-pressed={effectiveLastQuantity === quantity}
               className={`inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap border px-3 py-2 text-sm font-semibold transition hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-rarity-special active:translate-y-0 disabled:cursor-not-allowed disabled:border-cs-border disabled:bg-transparent disabled:text-cs-muted disabled:opacity-60 disabled:hover:translate-y-0 ${effectiveLastQuantity === quantity ? 'border-rarity-special bg-rarity-special/25 text-rarity-special shadow-glow' : 'border-rarity-special bg-rarity-special/10 text-rarity-special hover:bg-rarity-special/20'}`}
               disabled={disabled}

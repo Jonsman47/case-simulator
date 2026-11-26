@@ -15,17 +15,15 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent a
 import { useGame } from '../hooks/useGame'
 import { formatCurrency } from '../utils/format'
 import {
-  DELIVERY_DESTINATIONS,
   DELIVERY_GRID_SIZE,
   DELIVERY_MAX_MOVES,
-  DELIVERY_OBSTACLES,
-  DELIVERY_PACKAGES,
   calculateCircuitPerformance,
   calculateDeliveryPerformance,
   calculateMiningPerformance,
   calculateWarehousePerformance,
   canMineBlock,
   createCircuitPuzzle,
+  generateDeliveryMap,
   generateMiningGrid,
   getCircuitConnections,
   getCircuitHint,
@@ -34,6 +32,7 @@ import {
   moveDeliveryPosition,
   pointKey,
   type GridPoint,
+  type DeliveryMap,
   type MiningResource,
 } from '../utils/workExpansion'
 import { getWorkBaseReward, type WorkMiniGameId } from '../utils/workMinigames'
@@ -181,21 +180,62 @@ export function DiamondMinerJob() {
   )
 }
 
+const packageRunKey = 'work:package-delivery-active-v1'
+interface PackageRun {
+  seed: number
+  position: GridPoint
+  packages: string[]
+  destinations: string[]
+  carrying: number
+  delivered: number
+  moves: number
+}
+
+function readPackageRun(): PackageRun | undefined {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(packageRunKey) ?? 'null') as PackageRun | null
+    if (!saved || !Number.isInteger(saved.seed) || !Number.isInteger(saved.moves) || saved.moves < 0 || saved.moves >= DELIVERY_MAX_MOVES) return undefined
+    const map = generateDeliveryMap(saved.seed)
+    if (!saved.position || !Number.isInteger(saved.position.row) || !Number.isInteger(saved.position.column) || !Array.isArray(saved.packages) || !Array.isArray(saved.destinations)) return undefined
+    const remainingPackages = new Set(saved.packages)
+    const remainingDestinations = new Set(saved.destinations)
+    if (map.obstacles.includes(pointKey(saved.position)) || saved.position.row < 0 || saved.position.column < 0 || saved.position.row >= DELIVERY_GRID_SIZE || saved.position.column >= DELIVERY_GRID_SIZE ||
+      saved.packages.some((key) => !map.packages.includes(key)) || saved.destinations.some((key) => !map.destinations.includes(key)) ||
+      remainingPackages.size !== saved.packages.length || remainingDestinations.size !== saved.destinations.length ||
+      !Number.isInteger(saved.carrying) || !Number.isInteger(saved.delivered) || saved.carrying < 0 || saved.delivered < 0 ||
+      saved.carrying + saved.delivered + saved.packages.length !== map.packages.length || saved.delivered + saved.destinations.length !== map.destinations.length) return undefined
+    return saved
+  } catch { return undefined }
+}
+
+function writePackageRun(run: PackageRun | undefined) {
+  try {
+    if (run) sessionStorage.setItem(packageRunKey, JSON.stringify(run))
+    else sessionStorage.removeItem(packageRunKey)
+  } catch { /* Session recovery is best effort; gameplay transactions remain authoritative. */ }
+}
+
 export function PackageDeliveryJob() {
   const { dispatch } = useGame()
-  const [status, setStatus] = useState<'idle' | 'running' | 'finished'>('idle')
-  const [position, setPosition] = useState<GridPoint>({ column: 0, row: 0 })
-  const [packages, setPackages] = useState<Set<string>>(() => new Set(DELIVERY_PACKAGES))
-  const [destinations, setDestinations] = useState<Set<string>>(() => new Set(DELIVERY_DESTINATIONS))
-  const [carrying, setCarrying] = useState(0)
-  const [delivered, setDelivered] = useState(0)
-  const [moves, setMoves] = useState(0)
+  const [initialRun] = useState(readPackageRun)
+  const [map, setMap] = useState<DeliveryMap>(() => generateDeliveryMap(initialRun?.seed ?? 1))
+  const lastSeedRef = useRef(map.seed)
+  const obstacles = useMemo(() => new Set(map.obstacles), [map])
+  const [status, setStatus] = useState<'idle' | 'running' | 'finished'>(initialRun ? 'running' : 'idle')
+  const [position, setPosition] = useState<GridPoint>(initialRun?.position ?? map.start)
+  const [packages, setPackages] = useState<Set<string>>(() => new Set(initialRun?.packages ?? map.packages))
+  const [destinations, setDestinations] = useState<Set<string>>(() => new Set(initialRun?.destinations ?? map.destinations))
+  const [carrying, setCarrying] = useState(initialRun?.carrying ?? 0)
+  const [delivered, setDelivered] = useState(initialRun?.delivered ?? 0)
+  const [moves, setMoves] = useState(initialRun?.moves ?? 0)
   const [feedback, setFeedback] = useState('Collect a parcel, then reach a beacon.')
   const [performance, setPerformance] = useState(0)
   const [deliveredFlash, setDeliveredFlash] = useState<string>()
   const completedRef = useRef(false)
+  const deliveryFlashTimerRef = useRef<number | undefined>(undefined)
   const gameRef = useRef<HTMLElement>(null)
   const reward = useRewardPreview('packageDelivery', performance)
+  useEffect(() => () => window.clearTimeout(deliveryFlashTimerRef.current), [])
 
   const complete = useCallback((nextDelivered: number, nextMoves: number) => {
     if (completedRef.current) return
@@ -203,26 +243,35 @@ export function PackageDeliveryJob() {
     completedRef.current = true
     setPerformance(score)
     setStatus('finished')
+    writePackageRun(undefined)
     dispatch({ type: 'COMPLETE_WORK_MINIGAME', gameId: 'packageDelivery', now: Date.now(), performance: score })
   }, [dispatch])
 
   const move = useCallback((direction: 'down' | 'left' | 'right' | 'up') => {
     if (status !== 'running' || completedRef.current) return
-    const next = moveDeliveryPosition(position, direction)
+    const next = moveDeliveryPosition(position, direction, obstacles)
     if (next.row === position.row && next.column === position.column) { setFeedback('Route blocked — choose another street.'); return }
     const key = pointKey(next)
     const nextMoves = moves + 1
     let nextCarrying = carrying
     let nextDelivered = delivered
-    if (packages.has(key)) { const nextPackages = new Set(packages); nextPackages.delete(key); setPackages(nextPackages); nextCarrying += 1; setFeedback('Package collected.') }
-    else if (destinations.has(key) && nextCarrying > 0) { const nextDestinations = new Set(destinations); nextDestinations.delete(key); setDestinations(nextDestinations); nextCarrying -= 1; nextDelivered += 1; setDeliveredFlash(key); window.setTimeout(() => setDeliveredFlash(undefined), 700); setFeedback('Delivery confirmed — target secured!') }
+    let nextPackages = packages
+    let nextDestinations = destinations
+    if (packages.has(key)) { nextPackages = new Set(packages); nextPackages.delete(key); setPackages(nextPackages); nextCarrying += 1; setFeedback('Package collected.') }
+    else if (destinations.has(key) && nextCarrying > 0) { nextDestinations = new Set(destinations); nextDestinations.delete(key); setDestinations(nextDestinations); nextCarrying -= 1; nextDelivered += 1; setDeliveredFlash(key); window.clearTimeout(deliveryFlashTimerRef.current); deliveryFlashTimerRef.current = window.setTimeout(() => setDeliveredFlash(undefined), 700); setFeedback('Delivery confirmed — target secured!') }
     else setFeedback('Keep moving.')
     setPosition(next); setMoves(nextMoves); setCarrying(nextCarrying); setDelivered(nextDelivered)
-    if (nextDelivered >= DELIVERY_DESTINATIONS.length || nextMoves >= DELIVERY_MAX_MOVES) complete(nextDelivered, nextMoves)
-  }, [carrying, complete, delivered, destinations, moves, packages, position, status])
+    if (nextDelivered >= map.destinations.length || nextMoves >= DELIVERY_MAX_MOVES) complete(nextDelivered, nextMoves)
+    else writePackageRun({ seed: map.seed, position: next, packages: [...nextPackages], destinations: [...nextDestinations], carrying: nextCarrying, delivered: nextDelivered, moves: nextMoves })
+  }, [carrying, complete, delivered, destinations, map, moves, obstacles, packages, position, status])
 
   function start() {
-    completedRef.current = false; setStatus('running'); setPosition({ column: 0, row: 0 }); setPackages(new Set(DELIVERY_PACKAGES)); setDestinations(new Set(DELIVERY_DESTINATIONS)); setCarrying(0); setDelivered(0); setMoves(0); setPerformance(0); setDeliveredFlash(undefined); setFeedback('Collect a parcel, then reach a green delivery target.'); window.requestAnimationFrame(() => gameRef.current?.focus())
+    const entropy = new Uint32Array(1)
+    crypto.getRandomValues(entropy)
+    const seed = entropy[0] === lastSeedRef.current ? (entropy[0] + 1) >>> 0 : entropy[0]
+    const nextMap = generateDeliveryMap(seed)
+    lastSeedRef.current = seed
+    completedRef.current = false; setMap(nextMap); setStatus('running'); setPosition(nextMap.start); setPackages(new Set(nextMap.packages)); setDestinations(new Set(nextMap.destinations)); setCarrying(0); setDelivered(0); setMoves(0); setPerformance(0); setDeliveredFlash(undefined); setFeedback('Collect a parcel, then reach a green delivery target.'); writePackageRun({ seed, position: nextMap.start, packages: nextMap.packages, destinations: nextMap.destinations, carrying: 0, delivered: 0, moves: 0 }); window.requestAnimationFrame(() => gameRef.current?.focus())
   }
 
   function handleKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
@@ -234,11 +283,11 @@ export function PackageDeliveryJob() {
   }
 
   return (
-    <section data-testid="packageDelivery-game" onKeyDown={handleKeyDown} ref={gameRef} tabIndex={status === 'running' ? 0 : -1}>
+    <section data-map-seed={map.seed} data-testid="packageDelivery-game" onKeyDown={handleKeyDown} ref={gameRef} tabIndex={status === 'running' ? 0 : -1}>
       <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase text-rarity-special">Route planning · 15 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Package Delivery</h3><p className="mt-1 text-sm text-cs-muted">Collect both parcels and deliver them to the green targets in 22 moves. Use WASD, arrow keys, or touch controls while the game is focused.</p></div><Truck className="text-rarity-special" size={28} /></div>
       {status === 'idle' ? <StartJob icon={<Play size={16} />} onStart={start}>Start route</StartJob> : null}
       {status !== 'idle' ? <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">
-        <div className="grid grid-cols-5 gap-1 border border-cs-border bg-[#0a0f16] p-2 focus-within:border-rarity-special" aria-label="Delivery map">{Array.from({ length: DELIVERY_GRID_SIZE * DELIVERY_GRID_SIZE }, (_, index) => { const point={ row: Math.floor(index / DELIVERY_GRID_SIZE), column: index % DELIVERY_GRID_SIZE }; const key=pointKey(point); const obstacle=DELIVERY_OBSTACLES.has(key); const occupied=point.row===position.row&&point.column===position.column; return <div className={`relative aspect-square overflow-hidden border ${obstacle ? 'border-rarity-covert/40 bg-rarity-covert/15' : 'border-cs-border bg-cover'}`} key={key} style={obstacle ? undefined : { backgroundImage: `url(${workAsset('road-tile.png')})` }}>{packages.has(key) ? <img alt="Waiting package" className="absolute inset-1 h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] object-contain [image-rendering:pixelated]" src={workAsset('package.png')} /> : null}{destinations.has(key) ? <span aria-label="Delivery target" className="absolute inset-0.5 grid animate-pulse place-items-center border-2 border-cs-green bg-cs-green/35 text-white shadow-[inset_0_0_16px_rgb(var(--cs-green)/0.45),0_0_14px_rgb(var(--cs-green)/0.55)] motion-reduce:animate-none"><PackageCheck size={22} strokeWidth={3} /><span className="sr-only">Green delivery target</span></span> : null}{deliveredFlash === key ? <span className="absolute inset-0 z-20 grid place-items-center bg-cs-green/80 text-white"><CheckCircle2 size={28} /></span> : null}{occupied ? <img alt="Delivery vehicle" className="absolute inset-1 z-10 h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] object-contain drop-shadow-lg" src={workAsset('delivery-van.png')} /> : null}</div> })}</div>
+        <div className="grid grid-cols-5 gap-1 border border-cs-border bg-[#0a0f16] p-2 focus-within:border-rarity-special" aria-label="Delivery map">{Array.from({ length: DELIVERY_GRID_SIZE * DELIVERY_GRID_SIZE }, (_, index) => { const point={ row: Math.floor(index / DELIVERY_GRID_SIZE), column: index % DELIVERY_GRID_SIZE }; const key=pointKey(point); const obstacle=obstacles.has(key); const occupied=point.row===position.row&&point.column===position.column; return <div className={`relative aspect-square overflow-hidden border ${obstacle ? 'border-rarity-covert/40 bg-rarity-covert/15' : 'border-cs-border bg-cover'}`} key={key} style={obstacle ? undefined : { backgroundImage: `url(${workAsset('road-tile.png')})` }}>{packages.has(key) ? <img alt="Waiting package" className="absolute inset-1 h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] object-contain [image-rendering:pixelated]" src={workAsset('package.png')} /> : null}{destinations.has(key) ? <span aria-label="Delivery target" className="absolute inset-0.5 grid animate-pulse place-items-center border-2 border-cs-green bg-cs-green/35 text-white shadow-[inset_0_0_16px_rgb(var(--cs-green)/0.45),0_0_14px_rgb(var(--cs-green)/0.55)] motion-reduce:animate-none"><PackageCheck size={22} strokeWidth={3} /><span className="sr-only">Green delivery target</span></span> : null}{deliveredFlash === key ? <span className="absolute inset-0 z-20 grid place-items-center bg-cs-green/80 text-white"><CheckCircle2 size={28} /></span> : null}{occupied ? <img alt="Delivery vehicle" className="absolute inset-1 z-10 h-[calc(100%-0.5rem)] w-[calc(100%-0.5rem)] object-contain drop-shadow-lg" src={workAsset('delivery-van.png')} /> : null}</div> })}</div>
         <aside><div className="grid grid-cols-2 gap-2"><div className="border border-cs-border bg-cs-panel p-2"><p className="font-mono text-[10px] uppercase text-cs-muted">Moves</p><p className="font-mono text-lg text-cs-text">{moves}/{DELIVERY_MAX_MOVES}</p></div><div className="border border-cs-border bg-cs-panel p-2"><p className="font-mono text-[10px] uppercase text-cs-muted">Delivered</p><p className="font-mono text-lg text-cs-green">{delivered}/2</p></div></div><p aria-live="polite" className="mt-2 min-h-10 text-xs text-cs-muted">{feedback} {carrying ? `Carrying ${carrying}.` : ''}</p><div className="mx-auto mt-2 grid w-32 grid-cols-3 gap-1"><span /><button aria-label="Drive up" className="grid h-10 place-items-center border border-cs-border text-cs-text" disabled={status !== 'running'} onClick={() => move('up')} type="button"><ArrowUp size={18} /></button><span /><button aria-label="Drive left" className="grid h-10 place-items-center border border-cs-border text-cs-text" disabled={status !== 'running'} onClick={() => move('left')} type="button"><ArrowLeft size={18} /></button><button aria-label="Drive down" className="grid h-10 place-items-center border border-cs-border text-cs-text" disabled={status !== 'running'} onClick={() => move('down')} type="button"><ArrowDown size={18} /></button><button aria-label="Drive right" className="grid h-10 place-items-center border border-cs-border text-cs-text" disabled={status !== 'running'} onClick={() => move('right')} type="button"><ArrowRight size={18} /></button></div></aside>
       </div> : null}
       {status === 'finished' ? <ResultBanner performance={performance} reward={reward} /> : null}
@@ -260,6 +309,7 @@ export function WarehouseRushJob() {
   const settledIndexRef = useRef(-1)
   const dragRef = useRef<{ pointerId: number; x: number; y: number } | undefined>(undefined)
   const boxRef = useRef<HTMLImageElement>(null)
+  const dragImageRef = useRef<HTMLImageElement>(null)
   const reward = useRewardPreview('warehouseRush', performance)
   const current = items[index]
 
@@ -292,9 +342,25 @@ export function WarehouseRushJob() {
 
   useEffect(() => {
     if (status !== 'running' || !current) return
-    const timeout = window.setTimeout(() => settle(undefined), Math.max(850, 1_750 - index * 75))
-    return () => window.clearTimeout(timeout)
-  }, [current, index, settle, status])
+    let remaining = Math.max(850, 1_750 - index * 75)
+    let deadline = 0
+    let timeout: number | undefined
+    const arm = () => {
+      if (document.hidden) return
+      deadline = Date.now() + remaining
+      timeout = window.setTimeout(() => settle(undefined), remaining)
+    }
+    const onVisibilityChange = () => {
+      window.clearTimeout(timeout)
+      if (document.hidden) {
+        remaining = Math.max(0, deadline - Date.now())
+        clearDrag()
+      } else arm()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    arm()
+    return () => { window.clearTimeout(timeout); document.removeEventListener('visibilitychange', onVisibilityChange) }
+  }, [clearDrag, current, index, settle, status])
 
   useEffect(() => {
     if (status === 'finished') return
@@ -323,7 +389,12 @@ export function WarehouseRushJob() {
     if (dragRef.current?.pointerId !== event.pointerId) return
     const next = { pointerId: event.pointerId, x: event.clientX, y: event.clientY }
     dragRef.current = next
-    setDrag(next)
+    // Pointer motion is visual only. Keep it outside React's render path so the
+    // conveyor, status panel, and parent Work view do not rerender per pixel.
+    if (dragImageRef.current) {
+      dragImageRef.current.style.left = `${next.x}px`
+      dragImageRef.current.style.top = `${next.y}px`
+    }
   }
 
   function pointerEnd(event: ReactPointerEvent<HTMLImageElement>, cancelled = false) {
@@ -340,7 +411,7 @@ export function WarehouseRushJob() {
     <section data-testid="warehouseRush-game">
       <div className="flex items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase text-rarity-special">Timed sorting · 18 minute cooldown</p><h3 className="mt-1 text-xl font-semibold text-cs-text">Warehouse Rush</h3><p className="mt-1 text-sm text-cs-muted">Drag each moving box into the matching color bin, tap a bin, or press its number (1–4). Correct bins score points; wrong bins and boxes that reach the end count as mistakes. The round starts with your first action and ends after ten boxes.</p></div><Warehouse className="text-rarity-special" size={28} /></div>
       {status !== 'finished' ? <div className="mt-3 border border-cs-border bg-[#0a0f16] p-3"><div className="flex items-center justify-between font-mono text-xs uppercase text-cs-muted"><span>Package {Math.min(index + 1, 10)}/10</span><span>{correct} correct · {mistakes} missed</span></div><div className="relative mt-3 flex h-28 items-center justify-center overflow-hidden border border-cs-border bg-cs-panel work-conveyor"><div className="absolute inset-x-0 bottom-0 h-7 bg-repeat-x [image-rendering:pixelated]" style={{ backgroundImage: `url(${workAsset('conveyor-horizontal.png')})`, backgroundSize: '32px 32px' }} />{current ? <img alt={`${current} package`} className={`relative z-10 h-20 w-20 cursor-grab touch-none select-none object-contain [image-rendering:pixelated] ${status === 'running' && !drag ? 'work-package-arrival' : ''} ${drag ? 'opacity-35' : ''}`} draggable={false} key={index} onPointerCancel={(event) => pointerEnd(event, true)} onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} ref={boxRef} src={crateImages[current]} /> : null}</div><p aria-live="polite" className="mt-2 min-h-5 text-center text-xs font-semibold text-cs-green">{feedback || (status === 'idle' ? 'Pick up the box or choose a bin to begin.' : 'Sort the next box.')}</p><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">{warehouseLanes.map((lane, laneIndex) => <button aria-label={`Sort into ${lane} dock`} className={`flex min-h-20 min-w-0 items-center justify-center gap-2 border bg-cs-panel px-2 text-xs font-semibold uppercase text-cs-text transition ${drag ? 'border-rarity-special bg-rarity-special/10' : 'border-cs-border hover:border-rarity-special'}`} data-warehouse-lane={lane} key={lane} onClick={() => { if (!dragRef.current) settle(lane) }} type="button"><span className="font-mono text-rarity-special">{laneIndex + 1}</span><img alt="" className="h-10 w-10 object-contain [image-rendering:pixelated]" src={dockImages[lane]} /><span className="truncate">{lane}</span></button>)}</div></div> : null}
-      {drag && current ? <img alt="" aria-hidden="true" className="pointer-events-none fixed z-[100] h-20 w-20 -translate-x-1/2 -translate-y-1/2 object-contain opacity-90 drop-shadow-xl [image-rendering:pixelated]" src={crateImages[current]} style={{ left: drag.x, top: drag.y }} /> : null}
+      {drag && current ? <img alt="" aria-hidden="true" className="pointer-events-none fixed z-[100] h-20 w-20 -translate-x-1/2 -translate-y-1/2 object-contain opacity-90 drop-shadow-xl [image-rendering:pixelated]" ref={dragImageRef} src={crateImages[current]} style={{ left: drag.x, top: drag.y }} /> : null}
       {status === 'finished' ? <ResultBanner performance={performance} reward={reward} /> : null}
     </section>
   )

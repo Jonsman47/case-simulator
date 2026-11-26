@@ -65,4 +65,15 @@ describe('OnboardingTutorial', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Maybe later' }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_FEATURE_UNLOCK_STATE', featureUnlocks: { acknowledgedIds: ['quests'] } })
   })
+
+  it('resumes an optional page walkthrough at the URL step and allows back or skip without gameplay', () => {
+    const dismissed = { ...defaultGameState.ui, onboarding: { ...defaultGameState.ui.onboarding, isDismissed: true } }
+    const { dispatch } = renderTutorial({ ui: dismissed }, '/work?guide=1&step=1')
+    expect(screen.getByTestId('feature-walkthrough')).toHaveTextContent('Check pay and cooldown')
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByTestId('feature-walkthrough')).toHaveTextContent('Choose a job')
+    fireEvent.click(screen.getByRole('button', { name: 'Skip guide' }))
+    expect(screen.queryByTestId('feature-walkthrough')).not.toBeInTheDocument()
+    expect(dispatch).not.toHaveBeenCalled()
+  })
 })

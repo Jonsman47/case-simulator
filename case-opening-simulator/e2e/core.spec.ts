@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { findShortestDeliveryRoute, generateDeliveryMap } from '../src/utils/workExpansion'
 
 const saveKey = 'case-opening-simulator:game-state'
 
@@ -233,7 +234,15 @@ test('the four expansion Work games accept real input and settle once through th
   await page.getByRole('button', { name: 'Start route' }).click()
   await expect(page.getByLabel('Delivery target').first()).toBeVisible()
   const deliveryGame = page.getByTestId('packageDelivery-game')
-  await deliveryGame.pressSequentially('sdsdddwwssaaaassdddd')
+  const deliverySeed = Number(await deliveryGame.getAttribute('data-map-seed'))
+  const deliveryRoute = findShortestDeliveryRoute(generateDeliveryMap(deliverySeed))
+  expect(deliveryRoute).toBeDefined()
+  await deliveryGame.press({ up: 'w', right: 'd', down: 's', left: 'a' }[deliveryRoute![0]])
+  await page.getByRole('button', { name: 'Close Package Delivery' }).click()
+  await page.reload()
+  await page.getByRole('button', { name: 'Play Package Delivery' }).click()
+  await expect(page.getByTestId('packageDelivery-game')).toHaveAttribute('data-map-seed', String(deliverySeed))
+  for (const direction of deliveryRoute!.slice(1)) await page.getByTestId('packageDelivery-game').press({ up: 'w', right: 'd', down: 's', left: 'a' }[direction])
   await expect(page.getByText(/Score \d+%/)).toBeVisible()
   await page.getByRole('button', { name: 'Close Package Delivery' }).click()
   await page.getByRole('button', { name: /Dismiss .* notification/i }).last().click()
@@ -483,7 +492,7 @@ test('focused Memory Circuit stays visible, completes all rounds, and cannot cla
   await assertGameVisible()
   await expect(page.getByRole('button', { name: /Memory pad 1/i })).toBeDisabled()
 
-  for (const length of [3, 4, 5]) {
+  for (const length of [3, 5, 7]) {
     await expect(page.getByText('YOUR TURN')).toBeVisible({ timeout: 8_000 })
     await assertGameVisible()
     for (let index = 0; index < length; index += 1) await page.getByRole('button', { name: /Memory pad 1/i }).click()
@@ -1102,6 +1111,12 @@ test('inventory images load, selling is exact once, and the result survives relo
   const beforeSale = await readSave(page)
   await itemCard.click()
   await expect(page.getByRole('dialog').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Sell Instantly', exact: true }).click()
+  const saleDialog = page.getByRole('dialog', { name: 'Confirm sale' })
+  await expect(saleDialog).toBeInViewport()
+  await expect(saleDialog.getByRole('button', { name: 'Confirm Sale' })).toBeInViewport()
+  await saleDialog.getByRole('button', { name: 'Cancel' }).click()
+  await expect(saleDialog).not.toBeVisible()
   await page.getByRole('button', { name: 'Sell Instantly', exact: true }).click()
   await page.getByRole('button', { name: 'Confirm Sale' }).click()
   await page.waitForFunction((key) => {

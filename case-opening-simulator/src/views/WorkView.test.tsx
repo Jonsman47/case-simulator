@@ -88,7 +88,46 @@ describe('WorkView', () => {
 
   afterEach(() => {
     cleanup()
+    vi.unstubAllGlobals()
     vi.useRealTimers()
+  })
+
+  it('uses the matching pad note during playback and input, and creates no audio when muted', async () => {
+    const played: number[] = []
+    const contexts: number[] = []
+    class TestAudioContext {
+      currentTime = 0
+      destination = {}
+      state = 'running'
+      constructor() { contexts.push(1) }
+      createOscillator() {
+        const frequency = { value: 0 }
+        return { frequency, type: 'sine', connect: () => {}, start: () => played.push(frequency.value), stop: () => {} }
+      }
+      createGain() { return { gain: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} }, connect: () => {} } }
+      close() { return Promise.resolve() }
+      resume() { return Promise.resolve() }
+    }
+    vi.stubGlobal('AudioContext', TestAudioContext)
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0)
+    renderWork()
+    openJob('Memory Circuit')
+    fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
+    expect(contexts).toHaveLength(1)
+    for (let count = 0; count < 3; count += 1) await act(async () => { vi.advanceTimersByTime(650) })
+    expect(played[0]).toBe(392)
+    for (let count = 0; count < 3; count += 1) {
+      await act(async () => { vi.advanceTimersByTime(480) })
+      await act(async () => { vi.advanceTimersByTime(260) })
+    }
+    fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+    expect(played.at(-1)).toBe(392)
+    cleanup()
+    renderWork({ settings: { ...defaultGameState.settings, soundEnabled: false } })
+    openJob('Memory Circuit')
+    fireEvent.click(screen.getByRole('button', { name: 'Start Memory Circuit' }))
+    expect(contexts).toHaveLength(1)
+    random.mockRestore()
   })
 
   it('shows all eight Work games with compact visual launch cards', () => {
@@ -315,9 +354,9 @@ describe('WorkView', () => {
     expect(deliveryGame).toHaveAttribute('tabindex', '0')
     expect(screen.getAllByLabelText('Delivery target')).toHaveLength(2)
     fireEvent.keyDown(deliveryGame, { key: 'w' })
-    expect(screen.getByText(/Route blocked/)).toBeInTheDocument()
+    expect(screen.getByTestId('packageDelivery-game')).toHaveAttribute('data-map-seed')
     fireEvent.keyDown(deliveryGame, { key: 'd' })
-    expect(screen.getByText(/Keep moving/)).toBeInTheDocument()
+    expect(screen.getByTestId('packageDelivery-game')).toHaveAttribute('data-map-seed')
     fireEvent.click(screen.getByRole('button', { name: 'Close Package Delivery' }))
 
     openJob('Warehouse Rush')
@@ -355,12 +394,12 @@ describe('WorkView', () => {
     for (let index = 0; index < 3; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
 
     await act(async () => { vi.advanceTimersByTime(700) })
-    await watchSequence(4)
-    for (let index = 0; index < 4; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
-
-    await act(async () => { vi.advanceTimersByTime(700) })
     await watchSequence(5)
     for (let index = 0; index < 5; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
+
+    await act(async () => { vi.advanceTimersByTime(700) })
+    await watchSequence(7)
+    for (let index = 0; index < 7; index += 1) fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
     fireEvent.click(screen.getByRole('button', { name: /Memory pad 1/i }))
 
     expect(dispatch).toHaveBeenCalledTimes(1)

@@ -323,10 +323,10 @@ describe('CaseOpeningAnimation', () => {
     screen.getAllByTestId('case-opening-target').forEach((target) => {
       expect(target).not.toHaveClass('border-rarity-special')
     })
-    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '35')
+    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '20')
   }, 15_000)
 
-  it('renders 100 simultaneous case cells and reels for a 100 case open', () => {
+  it('caps decorative reels for a 100 case open while retaining the full batch result', () => {
     const finalItems = makeBatchItems(100)
 
     render(
@@ -338,14 +338,15 @@ describe('CaseOpeningAnimation', () => {
       />,
     )
 
-    expect(screen.getAllByTestId('case-pre-roll-cell')).toHaveLength(100)
+    expect(screen.getAllByTestId('case-pre-roll-cell')).toHaveLength(20)
+    expect(screen.getByTestId('hidden-batch-count')).toHaveTextContent('+80 more')
 
     act(() => {
       vi.advanceTimersByTime(1_250)
     })
 
-    expect(screen.getAllByTestId('case-opening-target')).toHaveLength(100)
-    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '31')
+    expect(screen.getAllByTestId('case-opening-target')).toHaveLength(20)
+    expect(screen.getAllByTestId('roulette-track')[0]).toHaveAttribute('data-reel-length', '17')
   }, 15_000)
 
   it('caps 1000-open animation rendering while keeping the batch count visible', () => {
@@ -360,14 +361,14 @@ describe('CaseOpeningAnimation', () => {
       />,
     )
 
-    expect(screen.getAllByTestId('case-pre-roll-cell')).toHaveLength(120)
-    expect(screen.getByTestId('hidden-batch-count')).toHaveTextContent('+880 more')
+    expect(screen.getAllByTestId('case-pre-roll-cell')).toHaveLength(20)
+    expect(screen.getByTestId('hidden-batch-count')).toHaveTextContent('+980 more')
 
     act(() => {
       vi.advanceTimersByTime(1_250)
     })
 
-    expect(screen.getAllByTestId('case-opening-target')).toHaveLength(120)
+    expect(screen.getAllByTestId('case-opening-target')).toHaveLength(20)
     expect(screen.queryByTestId('animated-rolling-case')).not.toBeInTheDocument()
   }, 15_000)
 

@@ -174,9 +174,14 @@ export function ItemDetailModal({
   const titleId = useId()
   const descriptionId = useId()
   const modalRef = useRef<HTMLElement | null>(null)
+  const saleDialogRef = useRef<HTMLElement | null>(null)
+  const sellButtonRef = useRef<HTMLButtonElement | null>(null)
+  const saleSubmittedRef = useRef(false)
   const pinchDistanceRef = useRef<number | undefined>(undefined)
   const previousFocusRef = useRef<Element | null>(null)
   const [confirmingSaleForItemId, setConfirmingSaleForItemId] = useState<string | undefined>()
+  const [saleDialogOpenedAt, setSaleDialogOpenedAt] = useState(0)
+  const isConfirmingSale = Boolean(item && confirmingSaleForItemId === item.instanceId)
   const [imageZoom, setImageZoom] = useState<{ itemId: string; scale: number } | undefined>()
   const [isTrophySelectorOpen, setIsTrophySelectorOpen] = useState(false)
   const [selectedTrophySlot, setSelectedTrophySlot] = useState<string>(
@@ -222,11 +227,14 @@ export function ItemDetailModal({
     function handleDocumentKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
-        onClose()
+        if (isConfirmingSale) {
+          setConfirmingSaleForItemId(undefined)
+          queueMicrotask(() => sellButtonRef.current?.focus())
+        } else onClose()
         return
       }
 
-      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      if (!isConfirmingSale && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
         if (isFormControl(event.target)) {
           return
         }
@@ -245,12 +253,13 @@ export function ItemDetailModal({
         }
       }
 
-      if (event.key === 'Tab' && modalRef.current) {
-        const focusableElements = getFocusableElements(modalRef.current)
+      const focusRoot = isConfirmingSale ? saleDialogRef.current : modalRef.current
+      if (event.key === 'Tab' && focusRoot) {
+        const focusableElements = getFocusableElements(focusRoot)
 
         if (focusableElements.length === 0) {
           event.preventDefault()
-          modalRef.current.focus()
+          focusRoot.focus()
           return
         }
 
@@ -272,7 +281,11 @@ export function ItemDetailModal({
     return () => {
       document.removeEventListener('keydown', handleDocumentKeyDown)
     }
-  }, [item, items, onClose, onItemChange])
+  }, [isConfirmingSale, item, items, onClose, onItemChange])
+
+  useEffect(() => {
+    if (isConfirmingSale) saleDialogRef.current?.querySelector<HTMLElement>('button')?.focus()
+  }, [isConfirmingSale])
 
   if (!item) {
     return null
@@ -280,7 +293,6 @@ export function ItemDetailModal({
 
   const selectedItem = item
   const canUseItemActions = isOwned
-  const isConfirmingSale = confirmingSaleForItemId === selectedItem.instanceId
   const lockedSaleTooltip = isOwned
     ? 'Locked items cannot be sold unless unlocked.'
     : 'Sold items are kept here as recent drop history.'
@@ -354,12 +366,19 @@ export function ItemDetailModal({
   }
 
   function confirmSale() {
-    if (!canUseItemActions) {
+    if (!canUseItemActions || selectedItem.isLocked || saleSubmittedRef.current) {
       return
     }
 
+    saleSubmittedRef.current = true
     onSell(selectedItem.instanceId)
     closeModal()
+  }
+
+  function cancelSale() {
+    saleSubmittedRef.current = false
+    setConfirmingSaleForItemId(undefined)
+    queueMicrotask(() => sellButtonRef.current?.focus())
   }
 
   function assignTrophySlot() {
@@ -380,6 +399,7 @@ export function ItemDetailModal({
     >
       <section
         aria-describedby={descriptionId}
+        inert={isConfirmingSale}
         aria-modal="true"
         aria-labelledby={titleId}
         className={[
@@ -546,7 +566,8 @@ export function ItemDetailModal({
                     aria-describedby={item.isLocked || !isOwned ? 'locked-sale-tooltip' : undefined}
                     className="min-h-11 w-full border border-rarity-covert px-3 py-2 text-sm font-semibold text-rarity-covert transition-colors hover:bg-rarity-covert/10 disabled:cursor-not-allowed disabled:border-cs-border disabled:text-cs-muted disabled:opacity-60"
                     disabled={item.isLocked || !canUseItemActions}
-                    onClick={() => setConfirmingSaleForItemId(item.instanceId)}
+                    onClick={() => { saleSubmittedRef.current = false; setSaleDialogOpenedAt(Date.now()); setConfirmingSaleForItemId(item.instanceId) }}
+                    ref={sellButtonRef}
                     type="button"
                   >
                     Sell Instantly
@@ -601,44 +622,31 @@ export function ItemDetailModal({
                 </div>
               ) : null}
 
-              {isConfirmingSale ? (
-                <div
-                  aria-label="Confirm sale"
-                  className="mt-4 border border-rarity-covert bg-cs-surface p-4"
-                  role="dialog"
-                >
-                  <p className="text-sm text-cs-muted">
-                    Instant-sell this item for{' '}
-                    <span className="font-semibold text-cs-green">{formatCurrency(currentSaleValue)}</span>?
-                  </p>
-                  <p className="mt-1 text-xs text-cs-muted">This is a liquidity-adjusted quote worth 85–95% of current fair market value.</p>
-                  {isExceptionalPattern(selectedItem) ? (
-                    <p className="mt-2 border border-rarity-special bg-rarity-special/10 p-2 text-sm text-rarity-special">
-                      This is an exceptional paint pattern. Auto-sell and trade-ups protect it, but this manual sale is permanent.
-                    </p>
-                  ) : null}
-                  <div className="mt-4 grid gap-2 sm:flex sm:justify-end">
-                    <button
-                      className="min-h-11 border border-cs-border px-3 py-2 text-sm font-medium text-cs-muted transition-colors hover:text-cs-text"
-                      onClick={() => setConfirmingSaleForItemId(undefined)}
-                      type="button"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="min-h-11 border border-rarity-covert bg-rarity-covert/10 px-3 py-2 text-sm font-semibold text-rarity-covert transition-colors hover:bg-rarity-covert/20"
-                      onClick={confirmSale}
-                      type="button"
-                    >
-                      Confirm Sale
-                    </button>
-                  </div>
-                </div>
-              ) : null}
             </div>
           </aside>
         </div>
       </section>
+      {isConfirmingSale ? (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/80 p-3 sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) cancelSale() }}>
+          <section aria-label="Confirm sale" aria-modal="true" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col border border-rarity-covert bg-cs-surface text-cs-text shadow-glow sm:max-h-[calc(100dvh-3rem)]" data-testid="instant-sale-dialog" ref={saleDialogRef} role="dialog" tabIndex={-1}>
+            <div className="min-h-0 overflow-y-auto p-4 sm:p-5">
+              <h3 className="text-lg font-semibold">Sell this exact skin?</h3>
+              <div className="mt-3 flex min-w-0 items-center gap-3 border border-cs-border bg-cs-panel p-2">
+                <AssetImage alt={`${selectedItem.weapon} ${selectedItem.finish}`} className="h-20 w-20 shrink-0 object-contain" src={selectedItem.image} />
+                <div className="min-w-0"><p className="break-words font-semibold">{selectedItem.weapon} | {selectedItem.finish}</p><p className="mt-1 text-xs text-cs-muted">{getWearLabel(selectedItem.wear)} · {selectedItem.statTrak ? 'StatTrak™' : selectedItem.souvenir ? 'Souvenir' : 'Regular'}</p></div>
+              </div>
+              <p className="mt-3 text-sm">Cash you receive: <strong className="text-cs-green">{formatCurrency(currentSaleValue)}</strong></p>
+              <p className="mt-1 text-xs text-cs-muted">The instant-sale adjustment is included in this quote. It pays 85–95% of current fair market value; the sale is permanent.</p>
+              {(selectedItem.instantSaleAvailableAt ?? 0) > saleDialogOpenedAt ? <p className="mt-2 text-sm text-rarity-covert">This item is still in its 24-hour instant-resale hold. The sale will be rejected.</p> : null}
+              {isExceptionalPattern(selectedItem) ? <p className="mt-2 border border-rarity-special bg-rarity-special/10 p-2 text-sm text-rarity-special">Exceptional paint pattern: this manual sale is permanent.</p> : null}
+            </div>
+            <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-cs-border bg-cs-surface p-3 sm:p-4">
+              <button className="min-h-11 border border-cs-border px-3 text-sm font-medium" onClick={cancelSale} type="button">Cancel</button>
+              <button className="min-h-11 border border-rarity-covert bg-rarity-covert/10 px-3 text-sm font-semibold text-rarity-covert" onClick={confirmSale} type="button">Confirm Sale</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   )
 }
