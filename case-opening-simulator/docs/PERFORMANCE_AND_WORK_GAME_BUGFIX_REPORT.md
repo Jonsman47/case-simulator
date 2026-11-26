@@ -21,6 +21,7 @@ On the final production build, the corrected four-cycle stress path measured a 2
 | Firefox, event-loop delay maximum | 873 ms | 322 ms |
 | Firefox, 95th-percentile frame gap | 234 ms | 234 ms |
 | Chromium, four cycles, longest frame gap | 417 ms | 367 ms |
+| Chromium, Long Tasks over 50 ms | 21 | 23 |
 | Chromium, Long Tasks over 200 ms | 6 | 1 |
 | Chromium, longest Long Task | 396 ms | 226 ms |
 | Chromium, event-loop delay maximum | 345 ms | 282 ms |
@@ -30,6 +31,8 @@ Raw matched captures: `stress-extended-after-reels-dev-firefox.json`, `stress-af
 The matched Firefox runs observed maximum save serialization and write time of 3 ms each, with zero console errors. The four-cycle Chromium runs observed 4.7/2.4 ms before and 3.8/2.6 ms after for serialization/write. Chromium's sampled JavaScript heap was 58→58 MiB before and 54→54 MiB after across the recorded path; this short, sampled result is insufficient to rule out a long-session leak. The stress script records route milestones and phase-tagged stalls for future comparison.
 
 Among the Chromium run's recorded top frame stalls, the worst case-animation gap fell from 417 to 200 ms and transaction-click gap from 367 to 217 ms. The after run's overall 367 ms maximum was tagged during initialization. The scripted Warehouse drag produced no entry in the top-stall sample, while the React Profiler test establishes the narrower fact that pointer movement causes no board commits. These observations do not substitute for a physical Firefox frame trace.
+
+The number of Chromium tasks over 50 ms did not fall; the main gain was fewer severe tasks over 200 ms. Route transitions are timestamped in the raw captures and the path repeatedly navigates between Cases, Inventory, Home and Work, but a separate input-to-paint navigation latency percentile was not captured. That remains an explicit measurement gap rather than an asserted speedup.
 
 The multi-case reel also bounds decorative cards and animated lanes while retaining all committed outcomes and result-summary items. In isolation that reel change barely improved matched Firefox stress results; the Case card render change had the clearer effect. Warehouse dragging now moves the visual box directly through a ref during pointer movement; React does not commit the whole board on every pointer pixel. A Profiler test observes zero React commits over 80 pointer moves. Browser focus changes pause the conveyor deadline and cancel an active drag, with timer/listener cleanup. Keyboard, touch, first-action start, scoring and exact-once Work settlement remain on the existing path.
 
@@ -55,4 +58,4 @@ No case odds, item generation, pricing, reward amounts, Career curves, cloud rev
 
 ## Verification
 
-Standalone `npm run lint` and `npm run typecheck` passed. `npm run verify:release` passed, including 99 Vitest files / 561 tests, production/PWA build and all 2,134 CS2 images; `npm test` is the same 561-test command exercised inside that gate. `npm run simulate:career` passed both the 300,000-career / 500,000-opening economy model and the six-playstyle early-game model (500 runs per style, zero repeated rewards). The full Chromium Playwright suite passed **71/71** journeys, including selling, all Work games, beginner tutorial, optional guide, marketplace, save reload, and mobile layout. Performance runs completed in development and production Chromium and Firefox as described above. The remote GitHub CI conclusion is pending until the pushed commit's workflow finishes.
+Standalone `npm run lint` and `npm run typecheck` passed. `npm run verify:release` passed, including 99 Vitest files / 561 tests, production/PWA build and all 2,134 CS2 images; `npm test` is the same 561-test command exercised inside that gate. `npm run simulate:career` passed both the 300,000-career / 500,000-opening economy model and the six-playstyle early-game model (500 runs per style, zero repeated rewards). The full Chromium Playwright suite passed **71/71** journeys, including selling, all Work games, beginner tutorial, optional guide, marketplace, save reload, and mobile layout. Performance runs completed in development and production Chromium and Firefox as described above. GitHub [CI run 45836781304](https://github.com/Jonsman47/case-simulator/actions/runs/45836781304) passed for implementation commit `3a59c1071e2075c87756b69c934f63dfa9a308a9`, including 71/71 Linux browser journeys. The final documentation-only commit receives its own CI run.

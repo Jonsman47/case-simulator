@@ -4,7 +4,7 @@ Updated: 2026-11-26
 
 ## Performance and Work game bug fixes
 
-Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
+Status: **LOCAL AND GITHUB CI VERIFICATION PASSED; FIREFOX FRAME-PACING FOLLOW-UP REMAINS**
 
 - Profiled repeated case opening, Work, inventory inspection and navigation in development Chromium and Firefox. A full-state prop in every Case card was a confirmed development render hotspot. Stable memoized card props substantially reduced the worst matched Firefox stall, though smaller stalls remain.
 - Removed per-pointer-move React rendering during Warehouse drags; added hidden-tab pause and cleanup. Centered Inventory sale confirmation now keeps the exact item and sale actions in view.
@@ -12,7 +12,7 @@ Status: **LOCAL VERIFICATION PASSED — GITHUB CI PENDING**
 - Extended the existing spotlight architecture into optional concise feature walkthroughs. No economy changes or save-schema bump.
 - Measurements, known limits and verification: `case-opening-simulator/docs/PERFORMANCE_AND_WORK_GAME_BUGFIX_REPORT.md`.
 
-Local gates passed: 561 unit tests, 71 Chromium browser journeys, TypeScript, lint, production/PWA release, and the full Career plus six-playstyle simulations. Production Firefox still showed 501–650 ms reveal-phase frame gaps across two corrected stress captures; physical-browser investigation remains a follow-up.
+Local gates passed: 561 unit tests, 71 Chromium browser journeys, TypeScript, lint, production/PWA release, and the full Career plus six-playstyle simulations. GitHub [CI run 45836781304](https://github.com/Jonsman47/case-simulator/actions/runs/45836781304) passed the implementation commit, including 71/71 Linux browser journeys. Production Firefox still showed 501–650 ms reveal-phase frame gaps across two corrected stress captures; physical-browser investigation remains a follow-up.
 
 ## Post-overhaul usability and performance corrections
 

@@ -4,11 +4,11 @@ Updated: 2026-11-26
 Application directory: `case-opening-simulator/`
 Current save schema: v43
 
-## Performance and Work game bug fixes — local verification passed
+## Performance and Work game bug fixes — local and GitHub CI passed
 
 Matched development stress runs reproduced near-second Firefox stalls during repeated ten-case opening and navigation. The Case card render path repeatedly compared full game-state props; passing stable primitives to memoized cards reduced the longest observed Firefox frame gap from 901 ms to 417 ms in matched eight-cycle sessions. This improves the reported freeze but does not prove all stalls gone. Warehouse dragging now avoids React updates per pointer pixel and pauses safely on tab changes. Inventory selling uses an immediate centered confirmation. Package Delivery maps are seeded, varied and route-validated, with active session recovery. Memory Circuit repeats cumulative 3/5/7 prefixes and plays muted-aware pad tones. Optional stepwise guides now cover eight main features. See `case-opening-simulator/docs/PERFORMANCE_AND_WORK_GAME_BUGFIX_REPORT.md` for raw measurements, limitations and final verification status. Economy formulas and save v43 remain unchanged.
 
-Local verification passed: 99 Vitest files / **561 tests**, standalone TypeScript and ESLint, production/PWA release gate with 2,134 images, **71/71 Chromium browser journeys**, and Career plus six-playstyle early-game simulations. Final production Firefox stress runs still showed 501–650 ms reveal-phase frame gaps; no complete freeze-elimination claim is made. GitHub CI awaits the pushed commit.
+Local verification passed: 99 Vitest files / **561 tests**, standalone TypeScript and ESLint, production/PWA release gate with 2,134 images, **71/71 Chromium browser journeys**, and Career plus six-playstyle early-game simulations. GitHub [CI run 45836781304](https://github.com/Jonsman47/case-simulator/actions/runs/45836781304) passed for implementation commit `3a59c10`, including 71/71 Linux browser journeys. Final production Firefox stress runs still showed 501–650 ms reveal-phase frame gaps; no complete freeze-elimination claim is made.
 
 ## Post-overhaul usability and performance corrections
 
